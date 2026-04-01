@@ -34,9 +34,20 @@ interface Deal {
   billingInfo?: string[]
 }
 
+interface XeroData {
+  connected: boolean
+  organisation?: string
+  error?: string
+  totalIncome?: number
+  totalExpenses?: number
+  netProfit?: number
+  bankBalance?: number
+}
+
 interface DashboardData {
   connected: { billing: boolean; primary: boolean }
   billingAlerts?: BillingAlert[]
+  xero?: XeroData
   calendar?: {
     todayEvents: Array<{
       id?: string | null
@@ -479,6 +490,22 @@ export default function DashboardPage() {
               value={currencySplit || '—'}
               valueClass="text-zinc-300"
             />
+            {data?.xero?.connected && (
+              <>
+                <InsightCard
+                  label="Bank Balance"
+                  value={typeof data.xero.bankBalance === 'number' ? `£${Math.abs(data.xero.bankBalance).toLocaleString('en-GB', { minimumFractionDigits: 0 })}` : '—'}
+                  valueClass={(data.xero.bankBalance ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                  sub={data.xero.organisation ?? undefined}
+                />
+                <InsightCard
+                  label="Net Profit YTD"
+                  value={typeof data.xero.netProfit === 'number' ? `£${Math.abs(data.xero.netProfit).toLocaleString('en-GB', { minimumFractionDigits: 0 })}` : '—'}
+                  valueClass={(data.xero.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-400'}
+                  sub="from Xero"
+                />
+              </>
+            )}
           </div>
         )}
       </div>

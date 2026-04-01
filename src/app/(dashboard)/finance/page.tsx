@@ -35,9 +35,29 @@ interface BillingTracker {
   error?: string
 }
 
+interface XeroData {
+  connected: boolean
+  organisation?: string
+  error?: string
+  totalIncome?: number
+  totalExpenses?: number
+  netProfit?: number
+  bankBalance?: number
+  invoices?: Array<{
+    invoiceNumber?: string
+    contact?: string
+    total?: number
+    amountDue?: number
+    dueDate?: string
+    status?: string
+    type?: string
+  }>
+}
+
 interface DashboardData {
   connected: { billing: boolean; primary: boolean }
   billingTracker?: BillingTracker
+  xero?: XeroData
 }
 
 type Tab = 'deals' | 'billing' | 'invoicing' | 'summary' | 'expenses'
@@ -50,47 +70,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'expenses', label: 'Expenses' },
 ]
 
-// ---- Xero types ----
-
-interface XeroData {
-  connected: boolean
-  organisation?: string | null
-  error?: string
-  pnl?: { totalIncome: number; totalExpenses: number; netProfit: number } | null
-  banks?: Array<{ name?: string; code?: string; balance?: string | null }>
-  invoices?: Array<{
-    invoiceNumber?: string
-    contact?: string
-    total?: number
-    amountDue?: number
-    dueDate?: string
-    status?: string
-    currency?: string
-  }>
-}
-
 // ---- Expenses Tab ----
 
-function ExpensesTab() {
-  const [xero, setXero] = useState<XeroData | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetch('/api/xero/data')
-      .then(r => r.json())
-      .then(setXero)
-      .catch(() => setXero({ connected: false }))
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
-      </div>
-    )
-  }
-
+function ExpensesTab({ xero }: { xero?: XeroData }) {
   if (!xero?.connected) {
     return (
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-6 py-12 text-center">
@@ -126,6 +108,7 @@ function ExpensesTab() {
     switch (s) {
       case 'PAID': return 'text-emerald-400'
       case 'AUTHORISED': return 'text-amber-400'
+      case 'OVERDUE': return 'text-red-400'
       case 'VOIDED': return 'text-zinc-600'
       default: return 'text-zinc-400'
     }
@@ -141,44 +124,33 @@ function ExpensesTab() {
       )}
 
       {/* P&L KPIs */}
-      {xero.pnl && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Income YTD</p>
-            <p className="font-mono text-2xl font-bold text-emerald-400">{fmt(xero.pnl.totalIncome)}</p>
-          </div>
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Expenses YTD</p>
-            <p className="font-mono text-2xl font-bold text-red-400">{fmt(xero.pnl.totalExpenses)}</p>
-          </div>
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Net Profit YTD</p>
-            <p className={`font-mono text-2xl font-bold ${(xero.pnl.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-400'}`}>
-              {fmt(xero.pnl.netProfit)}
-            </p>
-          </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Income YTD</p>
+          <p className="font-mono text-2xl font-bold text-emerald-400">{fmt(xero.totalIncome)}</p>
         </div>
-      )}
-
-      {/* Bank Summary */}
-      {xero.banks && xero.banks.length > 0 && (
-        <div>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Bank Accounts</p>
-          <div className="flex flex-wrap gap-3">
-            {xero.banks.map((b, i) => (
-              <div key={i} className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 min-w-[160px]">
-                <p className="text-[10px] text-zinc-500 mb-1">{b.name ?? 'Account'}</p>
-                <p className="font-mono text-lg font-bold text-zinc-100">{b.code ?? '—'}</p>
-              </div>
-            ))}
-          </div>
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Expenses YTD</p>
+          <p className="font-mono text-2xl font-bold text-red-400">{fmt(xero.totalExpenses)}</p>
         </div>
-      )}
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Net Profit YTD</p>
+          <p className={`font-mono text-2xl font-bold ${(xero.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-400'}`}>
+            {fmt(xero.netProfit)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Bank Balance</p>
+          <p className={`font-mono text-2xl font-bold ${(xero.bankBalance ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {fmt(xero.bankBalance)}
+          </p>
+        </div>
+      </div>
 
-      {/* Recent Invoices */}
+      {/* Invoices */}
       {xero.invoices && xero.invoices.length > 0 && (
         <div>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Recent Outgoing Invoices</p>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Invoices (Authorised / Overdue)</p>
           <div className="overflow-x-auto rounded-xl border border-zinc-800">
             <table className="w-full text-xs">
               <thead>
@@ -654,7 +626,7 @@ function FinancePageInner() {
 
         {/* Tab content */}
         {activeTab === 'expenses' ? (
-          <ExpensesTab />
+          <ExpensesTab xero={data?.xero} />
         ) : !bt ? (
           <p className="text-sm text-zinc-500">No billing data available.</p>
         ) : bt.error ? (
