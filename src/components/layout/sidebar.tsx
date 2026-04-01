@@ -11,7 +11,6 @@ import {
   FolderKanban,
   CheckSquare,
   Users,
-  Bot,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -28,7 +27,6 @@ const navItems = [
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/reminders", label: "Reminders", icon: Bell },
   { href: "/team", label: "Team", icon: Users },
-  { href: "/agents", label: "AI Agents", icon: Bot },
 ];
 
 export function Sidebar() {

@@ -1,169 +1,169 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+"use client";
+
+import { useState } from "react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { FolderKanban, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const projects = [
-  {
-    name: "April 2025 Issue",
-    client: "In-house",
-    description: "Monthly flagship print and digital issue. Cover feature: sustainable fashion in 2025.",
-    status: "ACTIVE",
-    budget: 45000,
-    actuals: 38200,
-    startDate: "Feb 1",
-    dueDate: "Apr 3",
-    team: ["JS", "QT", "PA", "CA"],
-    tasksTotal: 24,
-    tasksDone: 18,
-  },
-  {
-    name: "ASOS Brand Partnership",
-    client: "ASOS",
-    description: "Sponsored editorial and social content package for ASOS spring collection launch.",
-    status: "ACTIVE",
-    budget: 22000,
-    actuals: 14100,
-    startDate: "Mar 10",
-    dueDate: "Apr 12",
-    team: ["JS", "SH", "CA"],
-    tasksTotal: 12,
-    tasksDone: 6,
-  },
-  {
-    name: "Digital Rebrand",
-    client: "Internal",
-    description: "Website redesign and new digital design system for outlandermag.com.",
-    status: "ACTIVE",
-    budget: 8000,
-    actuals: 9200,
-    startDate: "Jan 15",
-    dueDate: "Apr 30",
-    team: ["JS", "QT"],
-    tasksTotal: 32,
-    tasksDone: 20,
-  },
-  {
-    name: "LFW September Coverage",
-    client: "In-house",
-    description: "Pre-planning for London Fashion Week September 2025 press coverage and digital content.",
-    status: "PAUSED",
-    budget: 15000,
-    actuals: 1200,
-    startDate: "Apr 1",
-    dueDate: "Sep 12",
-    team: ["PA", "CA"],
-    tasksTotal: 8,
-    tasksDone: 1,
-  },
-];
-
-const statusStyles: Record<string, string> = {
-  ACTIVE: "bg-emerald-500/20 text-emerald-400",
-  PAUSED: "bg-amber-500/20 text-amber-400",
-  COMPLETED: "bg-blue-500/20 text-blue-400",
-  CANCELLED: "bg-red-500/20 text-red-400",
+type Project = {
+  id: number;
+  name: string;
+  client: string;
+  status: "active" | "on-hold" | "completed";
 };
 
-const avatarColors = ["bg-[#D4A853]", "bg-blue-500", "bg-emerald-500", "bg-purple-500", "bg-pink-500"];
-
-function MarginPill({ budget, actuals }: { budget: number; actuals: number }) {
-  const margin = ((budget - actuals) / budget) * 100;
-  const color =
-    margin < 0 ? "text-red-400 bg-red-500/10" :
-    margin < 15 ? "text-amber-400 bg-amber-500/10" :
-    "text-emerald-400 bg-emerald-500/10";
-  return (
-    <span className={`rounded px-1.5 py-0.5 font-mono text-xs font-semibold ${color}`}>
-      {margin >= 0 ? "+" : ""}{margin.toFixed(0)}% margin
-    </span>
-  );
-}
-
 export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newClient, setNewClient] = useState("");
+
+  function addProject() {
+    if (!newName.trim()) return;
+    setProjects((prev) => [
+      ...prev,
+      { id: Date.now(), name: newName, client: newClient, status: "active" },
+    ]);
+    setNewName("");
+    setNewClient("");
+    setIsOpen(false);
+  }
+
+  if (projects.length === 0) {
+    return (
+      <>
+        <div className="flex h-full items-center justify-center">
+          <EmptyState
+            icon={FolderKanban}
+            title="No projects yet"
+            description="Create your first project to track campaigns, shoots, and client work."
+            actionLabel="Create First Project"
+            onAction={() => setIsOpen(true)}
+          />
+        </div>
+        <AddProjectDialog
+          open={isOpen}
+          onOpenChange={setIsOpen}
+          name={newName}
+          client={newClient}
+          onNameChange={setNewName}
+          onClientChange={setNewClient}
+          onAdd={addProject}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-100">Projects</h1>
-        <Button size="sm" className="bg-[#D4A853] text-black hover:bg-[#c49a47]">
+        <h1 className="text-xl font-semibold text-zinc-100">Projects</h1>
+        <Button
+          size="sm"
+          onClick={() => setIsOpen(true)}
+          className="bg-[#D4A853] text-zinc-900 hover:bg-[#C49843]"
+        >
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           New Project
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {projects.map((project) => {
-          const pct = Math.min((project.actuals / project.budget) * 100, 100);
-          return (
-            <Card key={project.name} className="border-neutral-800 bg-neutral-900 hover:border-neutral-700 transition-colors cursor-pointer">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-sm font-semibold text-neutral-100">
-                      {project.name}
-                    </CardTitle>
-                    <p className="text-xs text-neutral-500">{project.client}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge className={`text-[10px] ${statusStyles[project.status]}`}>
-                      {project.status.toLowerCase()}
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-xs text-neutral-500 line-clamp-2">{project.description}</p>
-
-                {/* Budget */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-neutral-500">Budget usage</span>
-                    <MarginPill budget={project.budget} actuals={project.actuals} />
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-neutral-800">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        pct > 100 ? "bg-red-500" : pct > 80 ? "bg-amber-500" : "bg-[#D4A853]"
-                      }`}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-neutral-600">
-                    <span>£{project.actuals.toLocaleString()} spent</span>
-                    <span>£{project.budget.toLocaleString()} budget</span>
-                  </div>
-                </div>
-
-                {/* Tasks */}
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] text-neutral-500">Tasks</p>
-                    <p className="text-xs text-neutral-300">
-                      {project.tasksDone}/{project.tasksTotal} complete
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] text-neutral-500">Due</p>
-                    <p className="font-mono text-xs text-neutral-300">{project.dueDate}</p>
-                  </div>
-                </div>
-
-                {/* Team */}
-                <div className="flex items-center gap-1">
-                  {project.team.map((initials, i) => (
-                    <Avatar key={i} className="h-5 w-5 -ml-1 first:ml-0 ring-1 ring-neutral-900">
-                      <AvatarFallback className={`text-[8px] font-bold text-black ${avatarColors[i % avatarColors.length]}`}>
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {projects.map((p) => (
+          <div key={p.id} className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-100">{p.name}</p>
+                {p.client && <p className="mt-0.5 text-xs text-zinc-500">{p.client}</p>}
+              </div>
+              <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400">
+                {p.status}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
+
+      <AddProjectDialog
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        name={newName}
+        client={newClient}
+        onNameChange={setNewName}
+        onClientChange={setNewClient}
+        onAdd={addProject}
+      />
     </div>
+  );
+}
+
+function AddProjectDialog({
+  open,
+  onOpenChange,
+  name,
+  client,
+  onNameChange,
+  onClientChange,
+  onAdd,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  name: string;
+  client: string;
+  onNameChange: (v: string) => void;
+  onClientChange: (v: string) => void;
+  onAdd: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md border-zinc-800 bg-zinc-900">
+        <DialogHeader>
+          <DialogTitle className="text-zinc-100">Create Project</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div>
+            <label className="mb-1 block text-xs text-zinc-400">Project name</label>
+            <Input
+              placeholder="e.g. Issue 03 Editorial"
+              value={name}
+              onChange={(e) => onNameChange(e.target.value)}
+              className="border-zinc-700 bg-zinc-800 text-sm text-zinc-200"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-zinc-400">Client (optional)</label>
+            <Input
+              placeholder="e.g. Nike UK"
+              value={client}
+              onChange={(e) => onClientChange(e.target.value)}
+              className="border-zinc-700 bg-zinc-800 text-sm text-zinc-200"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <button
+            onClick={() => onOpenChange(false)}
+            className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200"
+          >
+            Cancel
+          </button>
+          <Button
+            onClick={onAdd}
+            size="sm"
+            className="bg-[#D4A853] text-zinc-900 hover:bg-[#C49843]"
+          >
+            Create
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

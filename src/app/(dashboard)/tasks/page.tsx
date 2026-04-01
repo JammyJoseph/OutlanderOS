@@ -5,9 +5,6 @@ import {
   Plus,
   LayoutGrid,
   List,
-  Sparkles,
-  ChevronRight,
-  AlertTriangle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,274 +33,7 @@ type Task = {
   assigneeColor: string;
   due: string;
   project: string;
-  subtasksDone: number;
-  subtasksTotal: number;
-  overdue: boolean;
 };
-
-const allTasks: Task[] = [
-  // Joe
-  {
-    id: 1,
-    title: "Review Q1 campaign margins",
-    description: "Analyse P&L across all Q1 brand campaigns and flag any underperforming partnerships.",
-    priority: "HIGH",
-    status: "TODO",
-    assignee: "Joe",
-    assigneeInitials: "JS",
-    assigneeColor: "bg-[#D4A853]",
-    due: "Apr 4",
-    project: "Finance",
-    subtasksDone: 1,
-    subtasksTotal: 4,
-    overdue: false,
-  },
-  {
-    id: 2,
-    title: "Follow up Nike Q2 renewal",
-    description: "Chase Tom Bradley at Nike UK for signed IO. Partnership worth £45k.",
-    priority: "URGENT",
-    status: "IN_PROGRESS",
-    assignee: "Joe",
-    assigneeInitials: "JS",
-    assigneeColor: "bg-[#D4A853]",
-    due: "Apr 3",
-    project: "Q2 Campaigns",
-    subtasksDone: 0,
-    subtasksTotal: 2,
-    overdue: true,
-  },
-  {
-    id: 3,
-    title: "Prepare April payroll",
-    description: "Calculate payroll for all 5 team members including PAYE and pension contributions.",
-    priority: "URGENT",
-    status: "TODO",
-    assignee: "Joe",
-    assigneeInitials: "JS",
-    assigneeColor: "bg-[#D4A853]",
-    due: "Apr 25",
-    project: "Operations",
-    subtasksDone: 0,
-    subtasksTotal: 3,
-    overdue: false,
-  },
-  // Shreeya
-  {
-    id: 4,
-    title: "Send IO to New Balance",
-    description: "Draft and send the insertion order for the New Balance Q2 campaign. Value: £18,000.",
-    priority: "HIGH",
-    status: "TODO",
-    assignee: "Shreeya",
-    assigneeInitials: "SP",
-    assigneeColor: "bg-emerald-500",
-    due: "Apr 5",
-    project: "Q2 Campaigns",
-    subtasksDone: 2,
-    subtasksTotal: 3,
-    overdue: false,
-  },
-  {
-    id: 5,
-    title: "Follow up Adidas Q2 pitch",
-    description: "Send deck and pricing for Q2 Adidas renewal. Last touched March 20th.",
-    priority: "HIGH",
-    status: "IN_PROGRESS",
-    assignee: "Shreeya",
-    assigneeInitials: "SP",
-    assigneeColor: "bg-emerald-500",
-    due: "Apr 7",
-    project: "Q2 Campaigns",
-    subtasksDone: 1,
-    subtasksTotal: 2,
-    overdue: false,
-  },
-  {
-    id: 6,
-    title: "Update CRM with new leads",
-    description: "Log 12 new brand leads from LFW into HubSpot with contact info and deal stage.",
-    priority: "MEDIUM",
-    status: "DONE",
-    assignee: "Shreeya",
-    assigneeInitials: "SP",
-    assigneeColor: "bg-emerald-500",
-    due: "Mar 31",
-    project: "Operations",
-    subtasksDone: 3,
-    subtasksTotal: 3,
-    overdue: false,
-  },
-  // Callum
-  {
-    id: 7,
-    title: "Post BAPE campaign content",
-    description: "Schedule and post all 6 BAPE campaign assets across Instagram grid and stories.",
-    priority: "URGENT",
-    status: "IN_PROGRESS",
-    assignee: "Callum",
-    assigneeInitials: "CR",
-    assigneeColor: "bg-purple-500",
-    due: "Apr 2",
-    project: "Q2 Campaigns",
-    subtasksDone: 4,
-    subtasksTotal: 6,
-    overdue: true,
-  },
-  {
-    id: 8,
-    title: "Create stories for Palace shoot BTS",
-    description: "Edit and post behind-the-scenes content from the Palace x Adidas shoot.",
-    priority: "MEDIUM",
-    status: "TODO",
-    assignee: "Callum",
-    assigneeInitials: "CR",
-    assigneeColor: "bg-purple-500",
-    due: "Apr 6",
-    project: "Issue 02",
-    subtasksDone: 0,
-    subtasksTotal: 4,
-    overdue: false,
-  },
-  {
-    id: 9,
-    title: "Review analytics for March content",
-    description: "Pull Instagram and web analytics for March. Prepare monthly report for Quinn.",
-    priority: "MEDIUM",
-    status: "DONE",
-    assignee: "Callum",
-    assigneeInitials: "CR",
-    assigneeColor: "bg-purple-500",
-    due: "Apr 1",
-    project: "Operations",
-    subtasksDone: 5,
-    subtasksTotal: 5,
-    overdue: false,
-  },
-  // Patricia
-  {
-    id: 10,
-    title: "Book studio for Nike shoot",
-    description: "Source and confirm studio for Nike Q2 shoot. Budget: £1,800/day. Date: May 12.",
-    priority: "HIGH",
-    status: "TODO",
-    assignee: "Patricia",
-    assigneeInitials: "PC",
-    assigneeColor: "bg-pink-500",
-    due: "Apr 8",
-    project: "Q2 Campaigns",
-    subtasksDone: 1,
-    subtasksTotal: 3,
-    overdue: false,
-  },
-  {
-    id: 11,
-    title: "Confirm crew for Carhartt production",
-    description: "Lock in photographer, stylist, hair & makeup for Carhartt shoot on 18 April.",
-    priority: "URGENT",
-    status: "IN_PROGRESS",
-    assignee: "Patricia",
-    assigneeInitials: "PC",
-    assigneeColor: "bg-pink-500",
-    due: "Apr 4",
-    project: "Q2 Campaigns",
-    subtasksDone: 2,
-    subtasksTotal: 5,
-    overdue: false,
-  },
-  {
-    id: 12,
-    title: "Send call sheets for May shoots",
-    description: "Prepare and distribute call sheets for all confirmed May production days.",
-    priority: "MEDIUM",
-    status: "TODO",
-    assignee: "Patricia",
-    assigneeInitials: "PC",
-    assigneeColor: "bg-pink-500",
-    due: "Apr 15",
-    project: "Issue 02",
-    subtasksDone: 0,
-    subtasksTotal: 3,
-    overdue: false,
-  },
-  // Quinn
-  {
-    id: 13,
-    title: "Approve Q2 budget",
-    description: "Review and sign off on Q2 budget across all departments before April 7th.",
-    priority: "URGENT",
-    status: "TODO",
-    assignee: "Quinn",
-    assigneeInitials: "QT",
-    assigneeColor: "bg-blue-500",
-    due: "Apr 7",
-    project: "Finance",
-    subtasksDone: 0,
-    subtasksTotal: 2,
-    overdue: false,
-  },
-  {
-    id: 14,
-    title: "Review partnership proposals",
-    description: "Review 4 new brand partnership proposals from Shreeya and provide feedback.",
-    priority: "HIGH",
-    status: "IN_PROGRESS",
-    assignee: "Quinn",
-    assigneeInitials: "QT",
-    assigneeColor: "bg-blue-500",
-    due: "Apr 5",
-    project: "Q2 Campaigns",
-    subtasksDone: 2,
-    subtasksTotal: 4,
-    overdue: false,
-  },
-  {
-    id: 15,
-    title: "Sign off on Issue 02 content",
-    description: "Final sign-off on all editorial content for Issue 02 before send-to-print.",
-    priority: "HIGH",
-    status: "DONE",
-    assignee: "Quinn",
-    assigneeInitials: "QT",
-    assigneeColor: "bg-blue-500",
-    due: "Mar 31",
-    project: "Issue 02",
-    subtasksDone: 8,
-    subtasksTotal: 8,
-    overdue: false,
-  },
-];
-
-const suggestedTasks = [
-  {
-    id: "s1",
-    title: "Follow up with New Balance on invoice #OL-NB-2026-012",
-    reason: "Invoice 30 days overdue — £4,200 outstanding",
-    icon: "💰",
-    priority: "URGENT" as Priority,
-  },
-  {
-    id: "s2",
-    title: "Prepare VAT return before 7 April 2026",
-    reason: "HMRC reminder received 6 days ago — deadline approaching",
-    icon: "📋",
-    priority: "URGENT" as Priority,
-  },
-  {
-    id: "s3",
-    title: "Confirm crew for Hackney Wick shoot (4–5 April)",
-    reason: "Studio booked — crew not yet confirmed in system",
-    icon: "📸",
-    priority: "HIGH" as Priority,
-  },
-  {
-    id: "s4",
-    title: "Respond to Nike UK partnership inquiry",
-    reason: "Brand email from Tom Bradley unanswered for 72 hours",
-    icon: "✉️",
-    priority: "HIGH" as Priority,
-  },
-];
 
 const TEAM = ["Joe", "Quinn", "Shreeya", "Callum", "Patricia"];
 const PROJECTS = ["Q2 Campaigns", "Issue 02", "Finance", "Operations"];
@@ -327,15 +57,19 @@ const STATUS_COLORS: Record<Status, string> = {
   DONE: "border-t-emerald-500",
 };
 
-export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(allTasks);
-  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
-  const [assigneeFilter, setAssigneeFilter] = useState<"all" | string>("all");
-  const [taskScope, setTaskScope] = useState<"my" | "all">("all");
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true);
+const ASSIGNEE_COLORS: Record<string, string> = {
+  Joe: "bg-[#D4A853]",
+  Quinn: "bg-blue-500",
+  Shreeya: "bg-emerald-500",
+  Callum: "bg-purple-500",
+  Patricia: "bg-pink-500",
+};
 
-  // New task form state
+export default function TasksPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
+  const [isAddOpen, setIsAddOpen] = useState(false);
+
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -343,12 +77,6 @@ export default function TasksPage() {
     due: "",
     assignee: "Joe",
     project: "Operations",
-  });
-
-  const filtered = tasks.filter((t) => {
-    if (taskScope === "my" && t.assignee !== "Joe") return false;
-    if (assigneeFilter !== "all" && t.assignee !== assigneeFilter) return false;
-    return true;
   });
 
   const toggleDone = (id: number) => {
@@ -371,70 +99,21 @@ export default function TasksPage() {
       status: "TODO",
       assignee: newTask.assignee,
       assigneeInitials: newTask.assignee.slice(0, 2).toUpperCase(),
-      assigneeColor: "bg-neutral-600",
+      assigneeColor: ASSIGNEE_COLORS[newTask.assignee] ?? "bg-neutral-600",
       due: newTask.due || "TBD",
       project: newTask.project,
-      subtasksDone: 0,
-      subtasksTotal: 0,
-      overdue: false,
     };
     setTasks((prev) => [task, ...prev]);
     setNewTask({ title: "", description: "", priority: "MEDIUM", due: "", assignee: "Joe", project: "Operations" });
     setIsAddOpen(false);
   };
 
-  const overdueCount = tasks.filter((t) => t.overdue && t.status !== "DONE").length;
-
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-neutral-100">Tasks</h1>
-          {overdueCount > 0 && (
-            <Badge className="gap-1 bg-red-500/20 text-red-400">
-              <AlertTriangle className="h-3 w-3" />
-              {overdueCount} overdue
-            </Badge>
-          )}
-        </div>
+        <h1 className="text-xl font-semibold text-neutral-100">Tasks</h1>
         <div className="flex items-center gap-2">
-          {/* My Tasks / All Tasks */}
-          <div className="flex overflow-hidden rounded-md border border-neutral-800">
-            {(["my", "all"] as const).map((scope) => (
-              <button
-                key={scope}
-                onClick={() => setTaskScope(scope)}
-                className={cn(
-                  "px-3 py-1.5 text-xs transition-colors",
-                  taskScope === scope
-                    ? "bg-neutral-800 text-white"
-                    : "text-neutral-500 hover:text-neutral-300"
-                )}
-              >
-                {scope === "my" ? "My Tasks" : "All Tasks"}
-              </button>
-            ))}
-          </div>
-
-          {/* Assignee filter */}
-          <div className="flex overflow-hidden rounded-md border border-neutral-800">
-            {["all", ...TEAM].map((f) => (
-              <button
-                key={f}
-                onClick={() => setAssigneeFilter(f)}
-                className={cn(
-                  "px-2.5 py-1.5 text-xs transition-colors",
-                  assigneeFilter === f
-                    ? "bg-neutral-800 text-white"
-                    : "text-neutral-500 hover:text-neutral-300"
-                )}
-              >
-                {f === "all" ? "All" : f}
-              </button>
-            ))}
-          </div>
-
           {/* View toggle */}
           <div className="flex overflow-hidden rounded-md border border-neutral-800">
             <button
@@ -468,60 +147,14 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* AI Suggested Tasks */}
-      {showSuggestions && (
-        <div className="rounded-lg border border-[#D4A853]/20 bg-[#D4A853]/5 p-3">
-          <div className="mb-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-[#D4A853]" />
-              <span className="text-xs font-medium text-[#D4A853]">Suggested Tasks</span>
-              <span className="text-xs text-neutral-500">— AI-generated based on emails & deadlines</span>
-            </div>
-            <button
-              onClick={() => setShowSuggestions(false)}
-              className="text-xs text-neutral-600 hover:text-neutral-400"
-            >
-              Dismiss
-            </button>
-          </div>
-          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-            {suggestedTasks.map((s) => (
-              <div
-                key={s.id}
-                className="flex items-start gap-2.5 rounded-md border border-neutral-800 bg-neutral-900 p-2.5"
-              >
-                <span className="shrink-0 text-sm">{s.icon}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-neutral-200">{s.title}</p>
-                  <p className="mt-0.5 text-[10px] text-neutral-500">{s.reason}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Badge className={cn("text-[10px]", priorityStyles[s.priority])}>
-                    {s.priority.toLowerCase()}
-                  </Badge>
-                  <button className="text-neutral-600 hover:text-neutral-400">
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Kanban View */}
       {viewMode === "kanban" && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {STATUS_GROUPS.map((group) => {
-            const groupTasks = filtered.filter((t) => t.status === group);
+            const groupTasks = tasks.filter((t) => t.status === group);
             return (
               <div key={group} className="space-y-2">
-                <div
-                  className={cn(
-                    "rounded-t-md border-t-2 pb-1 pt-2",
-                    STATUS_COLORS[group]
-                  )}
-                >
+                <div className={cn("rounded-t-md border-t-2 pb-1 pt-2", STATUS_COLORS[group])}>
                   <div className="flex items-center gap-2 px-1">
                     <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
                       {STATUS_LABELS[group]}
@@ -536,8 +169,18 @@ export default function TasksPage() {
                     <TaskCard key={task.id} task={task} onToggle={toggleDone} />
                   ))}
                   {groupTasks.length === 0 && (
-                    <div className="rounded-md border border-dashed border-neutral-800 p-4 text-center text-xs text-neutral-700">
-                      No tasks
+                    <div className="rounded-md border border-dashed border-neutral-800 p-6 text-center">
+                      <p className="text-xs text-neutral-700">
+                        {group === "TODO" ? "Add your first task" : "No tasks here"}
+                      </p>
+                      {group === "TODO" && (
+                        <button
+                          onClick={() => setIsAddOpen(true)}
+                          className="mt-2 text-xs text-[#D4A853] hover:underline"
+                        >
+                          + Add task
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -550,65 +193,70 @@ export default function TasksPage() {
       {/* List View */}
       {viewMode === "list" && (
         <div className="space-y-1">
-          {STATUS_GROUPS.map((group) => {
-            const groupTasks = filtered.filter((t) => t.status === group);
-            if (groupTasks.length === 0) return null;
-            return (
-              <div key={group} className="space-y-0.5">
-                <div className="flex items-center gap-2 py-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-                    {STATUS_LABELS[group]}
-                  </span>
-                  <span className="text-[10px] text-neutral-700">({groupTasks.length})</span>
-                </div>
-                {groupTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center gap-3 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2.5 hover:border-neutral-700"
-                  >
-                    <button
-                      onClick={() => toggleDone(task.id)}
-                      className={cn(
-                        "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
-                        task.status === "DONE"
-                          ? "border-[#D4A853] bg-[#D4A853]"
-                          : "border-neutral-600 hover:border-neutral-400"
-                      )}
-                    >
-                      {task.status === "DONE" && (
-                        <svg viewBox="0 0 12 12" className="h-3 w-3 text-black">
-                          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </button>
-                    <p className={cn("flex-1 text-sm", task.status === "DONE" ? "text-neutral-600 line-through" : "text-neutral-200")}>
-                      {task.title}
-                    </p>
-                    <Badge className={cn("text-[10px]", priorityStyles[task.priority])}>
-                      {task.priority.toLowerCase()}
-                    </Badge>
-                    <span className="text-xs text-neutral-500">{task.project}</span>
-                    <div
-                      className={cn(
-                        "flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold text-white",
-                        task.assigneeColor
-                      )}
-                    >
-                      {task.assigneeInitials}
-                    </div>
-                    <span
-                      className={cn(
-                        "font-mono text-xs",
-                        task.overdue && task.status !== "DONE" ? "text-red-400" : "text-neutral-500"
-                      )}
-                    >
-                      {task.overdue && task.status !== "DONE" ? "⚠ " : ""}{task.due}
+          {tasks.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-neutral-800 py-12 text-center">
+              <p className="text-sm text-neutral-600">No tasks yet</p>
+              <button
+                onClick={() => setIsAddOpen(true)}
+                className="mt-2 text-xs text-[#D4A853] hover:underline"
+              >
+                Add your first task
+              </button>
+            </div>
+          ) : (
+            STATUS_GROUPS.map((group) => {
+              const groupTasks = tasks.filter((t) => t.status === group);
+              if (groupTasks.length === 0) return null;
+              return (
+                <div key={group} className="space-y-0.5">
+                  <div className="flex items-center gap-2 py-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                      {STATUS_LABELS[group]}
                     </span>
+                    <span className="text-[10px] text-neutral-700">({groupTasks.length})</span>
                   </div>
-                ))}
-              </div>
-            );
-          })}
+                  {groupTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center gap-3 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2.5 hover:border-neutral-700"
+                    >
+                      <button
+                        onClick={() => toggleDone(task.id)}
+                        className={cn(
+                          "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                          task.status === "DONE"
+                            ? "border-[#D4A853] bg-[#D4A853]"
+                            : "border-neutral-600 hover:border-neutral-400"
+                        )}
+                      >
+                        {task.status === "DONE" && (
+                          <svg viewBox="0 0 12 12" className="h-3 w-3 text-black">
+                            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                      <p className={cn("flex-1 text-sm", task.status === "DONE" ? "text-neutral-600 line-through" : "text-neutral-200")}>
+                        {task.title}
+                      </p>
+                      <Badge className={cn("text-[10px]", priorityStyles[task.priority])}>
+                        {task.priority.toLowerCase()}
+                      </Badge>
+                      <span className="text-xs text-neutral-500">{task.project}</span>
+                      <div
+                        className={cn(
+                          "flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold text-white",
+                          task.assigneeColor
+                        )}
+                      >
+                        {task.assigneeInitials}
+                      </div>
+                      <span className="font-mono text-xs text-neutral-500">{task.due}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })
+          )}
         </div>
       )}
 
@@ -715,7 +363,6 @@ function TaskCard({ task, onToggle }: { task: Task; onToggle: (id: number) => vo
   return (
     <Card className="cursor-pointer border-neutral-800 bg-neutral-900 transition-colors hover:border-neutral-700">
       <CardContent className="space-y-2.5 p-3">
-        {/* Title row */}
         <div className="flex items-start gap-2">
           <button
             onClick={() => onToggle(task.id)}
@@ -740,14 +387,12 @@ function TaskCard({ task, onToggle }: { task: Task; onToggle: (id: number) => vo
           </p>
         </div>
 
-        {/* Description */}
         {task.description && !isDone && (
           <p className="text-[10px] leading-relaxed text-neutral-600 line-clamp-2">
             {task.description}
           </p>
         )}
 
-        {/* Meta row */}
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge className={cn("text-[10px]", priorityStyles[task.priority])}>
             {task.priority.toLowerCase()}
@@ -759,31 +404,16 @@ function TaskCard({ task, onToggle }: { task: Task; onToggle: (id: number) => vo
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white",
-                task.assigneeColor
-              )}
-            >
-              {task.assigneeInitials}
-            </div>
-            {task.subtasksTotal > 0 && (
-              <span className="text-[10px] text-neutral-600">
-                {task.subtasksDone}/{task.subtasksTotal} subtasks
-              </span>
-            )}
-          </div>
-          <span
+          <div
             className={cn(
-              "font-mono text-[10px]",
-              task.overdue && !isDone ? "font-semibold text-red-400" : "text-neutral-600"
+              "flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white",
+              task.assigneeColor
             )}
           >
-            {task.overdue && !isDone ? "⚠ " : ""}{task.due}
-          </span>
+            {task.assigneeInitials}
+          </div>
+          <span className="font-mono text-[10px] text-neutral-600">{task.due}</span>
         </div>
       </CardContent>
     </Card>
