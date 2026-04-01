@@ -14,8 +14,19 @@ import {
   RefreshCw,
   AlertTriangle,
   Mail,
+  Users,
 } from 'lucide-react'
 import type { BillingAlert } from '@/lib/billing-engine'
+
+// ---- Slack types ----
+
+interface SlackMember {
+  name: string
+  email: string
+  presence: string
+  statusText: string
+  statusEmoji: string
+}
 
 // ---- Types ----
 
@@ -171,6 +182,54 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
     <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
       {children}
     </h2>
+  )
+}
+
+function TeamStatusCard() {
+  const [members, setMembers] = useState<SlackMember[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/slack/team-status')
+      .then(r => r.json())
+      .then(d => { setMembers(d.members ?? []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const presenceDot = (p: string) =>
+    p === 'active' ? 'bg-emerald-500' : p === 'away' ? 'bg-amber-500' : 'bg-zinc-600'
+
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-zinc-500">
+          <Users className="h-3.5 w-3.5" />
+          <span className="text-xs font-medium">Team Status</span>
+        </div>
+        <Link href="/team" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-[#D4A853] transition-colors">
+          View all <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+      {loading ? (
+        <div className="flex gap-2">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="h-5 w-16 animate-pulse rounded bg-zinc-800" />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {members.map(m => (
+            <div key={m.name} className="flex items-center gap-1.5 text-xs text-zinc-300">
+              <span className={`h-2 w-2 rounded-full shrink-0 ${presenceDot(m.presence)}`} />
+              {m.name}
+            </div>
+          ))}
+          {members.length === 0 && (
+            <span className="text-xs text-zinc-600">No Slack data available</span>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -331,6 +390,11 @@ function ConnectedDashboard({ data }: { data: DashboardData }) {
               </span>
             </div>
           </div>
+        </section>
+
+        {/* Team Status */}
+        <section>
+          <TeamStatusCard />
         </section>
 
         {/* Priority Actions */}

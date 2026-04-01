@@ -1,41 +1,68 @@
 import { NextResponse } from 'next/server'
 import { createSlackClient, getTeamMembers, getUserPresence } from '@/lib/slack-client'
 
-const TEAM_EMAILS = [
-  'silver@outlandermag.com',
-  'q@outlandermag.com',
-  'shreeya@outlandermag.com',
+const TEAM = [
+  { name: 'Joe Silver', email: 'silver@outlandermag.com' },
+  { name: 'Quinn Titsworth', email: 'q@outlandermag.com' },
+  { name: 'Shreeya Patel', email: 'shreeya@outlandermag.com' },
+  { name: 'Callum', email: '' },
+  { name: 'Patricia', email: '' },
 ]
 
 export async function GET() {
   const client = createSlackClient()
   if (!client) {
-    return NextResponse.json({ error: 'Slack not configured', members: [] })
+    return NextResponse.json({
+      members: TEAM.map(t => ({
+        name: t.name,
+        email: t.email,
+        presence: 'unknown',
+        statusText: '',
+        statusEmoji: '',
+      })),
+    })
   }
 
   try {
     const slackMembers = await getTeamMembers(client)
 
-    // Match Slack users to team by email
-    const matched = slackMembers.filter(m =>
-      TEAM_EMAILS.some(email => m.profile?.email?.toLowerCase() === email.toLowerCase())
-    )
+    const matched = TEAM.map(teamMember => {
+      let slackUser = null
+
+      if (teamMember.email) {
+        slackUser = slackMembers.find(
+          m => m.profile?.email?.toLowerCase() === teamMember.email.toLowerCase()
+        ) ?? null
+      }
+
+      if (!slackUser) {
+        const firstName = teamMember.name.split(' ')[0].toLowerCase()
+        slackUser = slackMembers.find(m => {
+          const realName = (m.profile?.real_name ?? m.name ?? '').toLowerCase()
+          const displayName = (m.profile?.display_name ?? '').toLowerCase()
+          return realName.startsWith(firstName) || displayName.startsWith(firstName)
+        }) ?? null
+      }
+
+      return { teamMember, slackUser }
+    })
 
     const withPresence = await Promise.all(
-      matched.map(async m => {
+      matched.map(async ({ teamMember, slackUser }) => {
         let presence = 'unknown'
-        try {
-          if (m.id) presence = (await getUserPresence(client, m.id)) ?? 'unknown'
-        } catch {
-          // ignore presence errors for individual users
+        if (slackUser?.id) {
+          try {
+            presence = (await getUserPresence(client, slackUser.id)) ?? 'unknown'
+          } catch {
+            // ignore individual presence errors
+          }
         }
         return {
-          id: m.id,
-          name: m.profile?.real_name ?? m.name,
-          email: m.profile?.email,
+          name: teamMember.name,
+          email: teamMember.email || slackUser?.profile?.email || '',
           presence,
-          statusText: m.profile?.status_text,
-          statusEmoji: m.profile?.status_emoji,
+          statusText: slackUser?.profile?.status_text ?? '',
+          statusEmoji: slackUser?.profile?.status_emoji ?? '',
         }
       })
     )
@@ -43,6 +70,15 @@ export async function GET() {
     return NextResponse.json({ members: withPresence })
   } catch (err) {
     console.error('Slack team-status error:', err)
-    return NextResponse.json({ error: String(err), members: [] })
+    return NextResponse.json({
+      error: String(err),
+      members: TEAM.map(t => ({
+        name: t.name,
+        email: t.email,
+        presence: 'unknown',
+        statusText: '',
+        statusEmoji: '',
+      })),
+    })
   }
 }
