@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokenJson = await handleXeroCallback(code)
+    const rawTokenJson = await handleXeroCallback(code)
+    const tokenData = JSON.parse(rawTokenJson)
+    tokenData.expires_at = Date.now() + ((tokenData.expires_in || 1800) * 1000)
+    const tokenJson = JSON.stringify(tokenData)
     const response = NextResponse.redirect(
       new URL('/settings?xero_connected=true', process.env.NEXTAUTH_URL || 'http://localhost:3000')
     )

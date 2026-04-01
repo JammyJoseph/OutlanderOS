@@ -24,7 +24,20 @@ export async function GET() {
   }
 
   if (xeroToken) {
-    results.xero = await fetchAllXeroData(xeroToken)
+    const xeroResult = await fetchAllXeroData(xeroToken)
+    results.xero = xeroResult.data
+
+    if (xeroResult.updatedTokenJson) {
+      const response = NextResponse.json(results)
+      response.cookies.set('xero_token', xeroResult.updatedTokenJson, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 365,
+        path: '/',
+      })
+      return response
+    }
   }
 
   return NextResponse.json(results)

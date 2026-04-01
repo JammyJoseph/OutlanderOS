@@ -6,7 +6,40 @@ interface XeroTokens {
   id_token?: string
   token_type: string
   expires_in: number
+  expires_at?: number
   [key: string]: any
+}
+
+async function refreshXeroTokens(tokens: XeroTokens): Promise<XeroTokens | null> {
+  if (!tokens.refresh_token) return null
+
+  const res = await fetch('https://identity.xero.com/connect/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + Buffer.from(
+        `${process.env.XERO_CLIENT_ID}:${process.env.XERO_CLIENT_SECRET}`
+      ).toString('base64'),
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: tokens.refresh_token,
+    }),
+  })
+
+  if (!res.ok) {
+    console.error('Xero token refresh failed:', res.status, await res.text())
+    return null
+  }
+
+  const newTokens = await res.json()
+  return {
+    ...tokens,
+    access_token: newTokens.access_token,
+    refresh_token: newTokens.refresh_token || tokens.refresh_token,
+    id_token: newTokens.id_token || tokens.id_token,
+    expires_at: Date.now() + (newTokens.expires_in * 1000),
+  }
 }
 
 async function xeroFetch(endpoint: string, tokens: XeroTokens, tenantId: string) {
@@ -65,11 +98,23 @@ export async function getXeroBalanceSheet(tokens: XeroTokens, tenantId: string) 
   } catch (e) { console.error('Xero balance sheet error:', e); return null }
 }
 
-export async function fetchAllXeroData(tokenJson: string) {
+export async function fetchAllXeroData(tokenJson: string): Promise<{ data: any; updatedTokenJson?: string }> {
   try {
-    const tokens = JSON.parse(tokenJson) as XeroTokens
+    let tokens = JSON.parse(tokenJson) as XeroTokens
+    let updatedTokenJson: string | undefined
+
+    const needsRefresh = !tokens.expires_at || Date.now() > (tokens.expires_at - 60000)
+    if (needsRefresh && tokens.refresh_token) {
+      const refreshed = await refreshXeroTokens(tokens)
+      if (!refreshed) {
+        return { data: { connected: false, error: 'Token expired — please reconnect Xero in Settings' } }
+      }
+      tokens = refreshed
+      updatedTokenJson = JSON.stringify(tokens)
+    }
+
     const connections = await getXeroConnections(tokens.access_token)
-    if (!connections.length) return { error: 'No Xero organisations connected' }
+    if (!connections.length) return { data: { connected: false, error: 'No Xero organisations connected' } }
     const tenantId = connections[0].tenantId
 
     const [profitAndLoss, bankSummary, invoices, balanceSheet] = await Promise.all([
@@ -114,18 +159,21 @@ export async function fetchAllXeroData(tokenJson: string) {
     void balanceSheet
 
     return {
-      connected: true,
-      organisation: connections[0].tenantName,
-      totalIncome,
-      totalExpenses,
-      netProfit,
-      bankBalance,
-      invoices,
-      profitAndLossRaw: profitAndLoss,
-      bankSummaryRaw: bankSummary,
+      data: {
+        connected: true,
+        organisation: connections[0].tenantName,
+        totalIncome,
+        totalExpenses,
+        netProfit,
+        bankBalance,
+        invoices,
+        profitAndLossRaw: profitAndLoss,
+        bankSummaryRaw: bankSummary,
+      },
+      updatedTokenJson,
     }
   } catch (error) {
     console.error('Failed to fetch Xero data:', error)
-    return { connected: false, error: String(error) }
+    return { data: { connected: false, error: String(error) } }
   }
 }
