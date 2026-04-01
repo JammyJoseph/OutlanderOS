@@ -64,9 +64,10 @@ function OAuthHandler({
 interface SettingsClientProps {
   initialPrimary: boolean;
   initialBilling: boolean;
+  initialXeroConnected?: boolean;
 }
 
-export default function SettingsClient({ initialPrimary, initialBilling }: SettingsClientProps) {
+export default function SettingsClient({ initialPrimary, initialBilling, initialXeroConnected = false }: SettingsClientProps) {
   const router = useRouter();
 
   useEffect(() => {
@@ -80,7 +81,7 @@ export default function SettingsClient({ initialPrimary, initialBilling }: Setti
     primary: initialPrimary,
     billing: initialBilling,
   });
-  const [xeroConnected, setXeroConnected] = useState(false);
+  const [xeroConnected, setXeroConnected] = useState(initialXeroConnected);
   const [slackToken, setSlackToken] = useState("");
   const [slackStatus, setSlackStatus] = useState<"idle" | "connecting" | "connected" | "error">("idle");
   const [slackWorkspace, setSlackWorkspace] = useState<string | null>(null);

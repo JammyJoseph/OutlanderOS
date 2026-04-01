@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FileText, PenLine, CheckSquare, ArrowRight } from 'lucide-react'
+import { FileText, PenLine, CheckSquare, ArrowRight, RefreshCw } from 'lucide-react'
 import {
   BarChart,
   Bar,
@@ -129,17 +129,17 @@ function KpiCard({
   sub?: string
 }) {
   return (
-    <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl p-6 min-w-0">
-      <p className="text-zinc-500 text-xs uppercase tracking-widest mb-3">{label}</p>
-      <p className={`font-mono text-3xl font-bold truncate ${valueClass}`}>{value}</p>
-      {sub && <p className="text-xs text-zinc-600 mt-1.5">{sub}</p>}
+    <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl p-4 sm:p-6 min-w-0">
+      <p className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-widest mb-2 sm:mb-3 truncate">{label}</p>
+      <p className={`font-mono text-xl sm:text-2xl lg:text-3xl font-bold truncate ${valueClass}`}>{value}</p>
+      {sub && <p className="text-xs text-zinc-600 mt-1.5 truncate">{sub}</p>}
     </div>
   )
 }
 
 function KpiSkeleton() {
   return (
-    <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl p-6 min-w-0">
+    <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl p-4 sm:p-6 min-w-0">
       <Skeleton className="h-3 w-24 mb-4" />
       <Skeleton className="h-9 w-32" />
     </div>
@@ -163,9 +163,9 @@ function InsightCard({
 }) {
   return (
     <div className={`flex-1 min-w-0 bg-zinc-900 border rounded-xl p-4 ${warn ? 'border-amber-700/60' : 'border-zinc-800'}`}>
-      <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-2">{label}</p>
+      <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-2 truncate">{label}</p>
       <p className={`font-mono text-base font-bold truncate ${valueClass}`}>{value}</p>
-      {sub && <p className="text-[10px] text-zinc-600 mt-1 leading-tight">{sub}</p>}
+      {sub && <p className="text-[10px] text-zinc-600 mt-1 leading-tight truncate">{sub}</p>}
     </div>
   )
 }
@@ -188,46 +188,41 @@ function ProjectCard({ deal, index, onAction }: { deal: Deal; index: number; ale
   return (
     <Link
       href={`/projects/${dealId}`}
-      className={`relative block bg-zinc-900 border rounded-lg p-4 transition-all cursor-pointer group ${
+      className={`relative block bg-zinc-900 border rounded-lg p-4 transition-all cursor-pointer group min-w-0 overflow-hidden ${
         hovered ? 'border-amber-500/60 shadow-[0_0_12px_rgba(212,168,83,0.15)]' : 'border-zinc-800'
       }`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Task count badge */}
       {taskCount > 0 && (
-        <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-bold flex items-center justify-center">
+        <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-bold flex items-center justify-center shrink-0">
           {taskCount}
         </span>
       )}
 
-      {/* Client + campaign */}
-      <div className="pr-6 mb-3">
-        <p className="font-semibold text-base text-zinc-100 leading-tight">{deal.client}</p>
+      <div className="pr-6 mb-3 min-w-0">
+        <p className="font-semibold text-base text-zinc-100 leading-tight truncate">{deal.client}</p>
         {deal.campaign && (
           <p className="text-xs text-zinc-500 mt-0.5 truncate">{deal.campaign}</p>
         )}
       </div>
 
-      {/* Budget */}
-      <p className="font-mono text-lg font-bold text-zinc-200 mb-3">
+      <p className="font-mono text-lg font-bold text-zinc-200 mb-3 truncate">
         {amount > 0 ? fmt(amount) : deal.annualTotal || '—'}
       </p>
 
-      {/* Margin + status */}
       <div className="flex items-center gap-2 flex-wrap">
         {deal.margin && (
-          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${marginColor(deal.margin)}`}>
+          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${marginColor(deal.margin)}`}>
             {deal.margin}
           </span>
         )}
         <span className="flex items-center gap-1 text-[10px] text-zinc-500">
-          <span className={`w-1.5 h-1.5 rounded-full ${statusDot[status]}`} />
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot[status]}`} />
           {status}
         </span>
       </div>
 
-      {/* Action buttons on hover */}
       {hovered && (
         <div
           className="absolute bottom-3 right-3 flex items-center gap-1.5"
@@ -268,22 +263,48 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [showAllReminders, setShowAllReminders] = useState(false)
   const [doneReminders, setDoneReminders] = useState<Set<number>>(new Set())
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [secondsAgo, setSecondsAgo] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const fetchData = useCallback(async (isManual = false) => {
+    if (isManual) setRefreshing(true)
+    try {
+      const r = await fetch('/api/dashboard')
+      const d = await r.json()
+      setData(d)
+      setLastUpdated(new Date())
+      setSecondsAgo(0)
+      setError(null)
+    } catch (e: unknown) {
+      setError((e as Error).message)
+    } finally {
+      setLoading(false)
+      if (isManual) setRefreshing(false)
+    }
+  }, [])
 
   useEffect(() => {
-    fetch('/api/dashboard')
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false) })
-      .catch((e) => { setError(e.message); setLoading(false) })
-  }, [])
+    fetchData()
+    const interval = setInterval(() => fetchData(), 30000)
+    return () => clearInterval(interval)
+  }, [fetchData])
+
+  // Tick seconds-ago counter
+  useEffect(() => {
+    if (!lastUpdated) return
+    const tick = setInterval(() => {
+      setSecondsAgo(Math.floor((Date.now() - lastUpdated.getTime()) / 1000))
+    }, 1000)
+    return () => clearInterval(tick)
+  }, [lastUpdated])
 
   const bt = data?.billingTracker
   const deals: Deal[] = bt?.allDeals ?? bt?.deals ?? []
 
-  // Categorise deals for reminders
   const pendingInvoiceDeals = deals.filter((d) => d.signed && !d.invoiceSent)
   const pipelineDeals = deals.filter((d) => !d.signed)
 
-  // KPI calculations
   const bookedRevenue = bt?.bookedRevenue ?? '£0'
   const gapToTarget = bt?.gapToTarget ?? '£0'
   const signedCount = deals.filter((d) => d.signed).length
@@ -297,7 +318,6 @@ export default function DashboardPage() {
       ? (margins.reduce((a, b) => a + b, 0) / margins.length).toFixed(1) + '%'
       : '—'
 
-  // Quarterly chart data
   const qt = bt?.quarterlyTotals ?? { q1: 0, q2: 0, q3: 0, q4: 0 }
   const chartData = [
     { q: 'Q1', value: qt.q1, color: '#D4A853' },
@@ -306,11 +326,9 @@ export default function DashboardPage() {
     { q: 'Q4', value: qt.q4, color: '#A78BFA' },
   ]
 
-  // ---- Insights ----
   const totalRevenue = deals.reduce((sum, d) => sum + parseAmount(d.annualTotal), 0)
   const avgDealSize = deals.length > 0 ? totalRevenue / deals.length : 0
 
-  // Top client
   const clientTotals: Record<string, number> = {}
   for (const d of deals) {
     clientTotals[d.client] = (clientTotals[d.client] ?? 0) + parseAmount(d.annualTotal)
@@ -325,7 +343,6 @@ export default function DashboardPage() {
   const invoicesSent = bt?.invoiceSummary?.invoicesSent ?? 0
   const invoicesTotal = (bt?.invoiceSummary?.invoicesSent ?? 0) + (bt?.invoiceSummary?.invoicesNotSent ?? 0)
 
-  // Currency split
   const currencyCount: Record<string, number> = {}
   for (const d of deals) {
     const raw = d.annualTotal ?? ''
@@ -338,7 +355,6 @@ export default function DashboardPage() {
     .map(([k, v]) => `${v} ${k}`)
     .join(' · ')
 
-  // Priority reminders
   const reminders: Array<{ label: string; priority: 'red' | 'amber'; dealId?: number }> = []
   for (const d of pendingInvoiceDeals) {
     reminders.push({ label: `Send invoice to ${d.client}`, priority: 'amber', dealId: d.id })
@@ -369,10 +385,31 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-zinc-950 min-h-screen">
+    <div className="p-4 sm:p-6 space-y-6 bg-zinc-950 min-h-screen">
+
+      {/* Last updated bar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-xs text-zinc-600">
+          {lastUpdated
+            ? secondsAgo < 5
+              ? 'Updated just now'
+              : `Last updated: ${secondsAgo}s ago`
+            : loading
+            ? 'Loading…'
+            : ''}
+        </div>
+        <button
+          onClick={() => fetchData(true)}
+          disabled={refreshing || loading}
+          className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors disabled:opacity-40"
+        >
+          <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
 
       {/* ---- KPI Cards ---- */}
-      <div className="flex gap-4">
+      <div className="flex gap-3 flex-wrap">
         {loading ? (
           <>
             <KpiSkeleton /><KpiSkeleton /><KpiSkeleton /><KpiSkeleton />
@@ -413,7 +450,7 @@ export default function DashboardPage() {
           <Skeleton className="h-48 w-full" />
         ) : (
           <>
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={180} minHeight={200}>
               <BarChart data={chartData} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
                 <XAxis
                   dataKey="q"
@@ -450,11 +487,11 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">Insights</h2>
         {loading ? (
-          <div className="flex gap-3">
-            {[...Array(6)].map((_, i) => <Skeleton key={i} className="flex-1 h-16" />)}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16" />)}
           </div>
         ) : (
-          <div className="flex gap-3 flex-wrap">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <InsightCard
               label="Avg Deal Size"
               value={avgDealSize > 0 ? fmt(Math.round(avgDealSize)) : '—'}
@@ -520,7 +557,7 @@ export default function DashboardPage() {
             {visibleReminders.map((r, i) => {
               const originalIndex = reminders.indexOf(r)
               return (
-                <div key={i} className="flex items-center gap-3">
+                <div key={i} className="flex items-center gap-3 flex-wrap">
                   <span
                     className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
                       r.priority === 'red'
@@ -530,7 +567,7 @@ export default function DashboardPage() {
                   >
                     {r.priority === 'red' ? 'Urgent' : 'Action'}
                   </span>
-                  <span className="text-sm text-zinc-300 flex-1">{r.label}</span>
+                  <span className="text-sm text-zinc-300 flex-1 min-w-0 truncate">{r.label}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     {r.dealId != null && (
                       <button
