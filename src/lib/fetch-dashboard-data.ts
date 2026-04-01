@@ -10,54 +10,6 @@ function createAuthClient(tokenJson: string) {
   return client
 }
 
-export async function fetchBillingEmails(billingToken: string) {
-  try {
-    const auth = createAuthClient(billingToken)
-    const gmail = google.gmail({ version: 'v1', auth })
-
-    // Get unread count
-    const unreadRes = await gmail.users.messages.list({
-      userId: 'me',
-      q: 'is:unread',
-      maxResults: 1,
-    })
-
-    // Get recent emails
-    const recentRes = await gmail.users.messages.list({
-      userId: 'me',
-      maxResults: 10,
-    })
-
-    // Get details of recent emails
-    const emails = []
-    for (const msg of (recentRes.data.messages || []).slice(0, 5)) {
-      const detail = await gmail.users.messages.get({
-        userId: 'me',
-        id: msg.id!,
-        format: 'metadata',
-        metadataHeaders: ['From', 'Subject', 'Date'],
-      })
-      const headers = detail.data.payload?.headers || []
-      emails.push({
-        id: msg.id,
-        from: headers.find(h => h.name === 'From')?.value || '',
-        subject: headers.find(h => h.name === 'Subject')?.value || '',
-        date: headers.find(h => h.name === 'Date')?.value || '',
-        snippet: detail.data.snippet || '',
-        unread: (detail.data.labelIds || []).includes('UNREAD'),
-      })
-    }
-
-    return {
-      unreadCount: unreadRes.data.resultSizeEstimate || 0,
-      recentEmails: emails,
-    }
-  } catch (error) {
-    console.error('Failed to fetch billing emails:', error)
-    return { unreadCount: 0, recentEmails: [], error: String(error) }
-  }
-}
-
 export async function fetchCalendarEvents(primaryToken: string) {
   try {
     const auth = createAuthClient(primaryToken)

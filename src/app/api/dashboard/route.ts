@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { fetchBillingEmails, fetchCalendarEvents, fetchBillingTracker } from '@/lib/fetch-dashboard-data'
+import { fetchCalendarEvents, fetchBillingTracker } from '@/lib/fetch-dashboard-data'
+import { scanBillingInbox } from '@/lib/billing-engine'
 
 export async function GET() {
   const cookieStore = await cookies()
@@ -12,7 +13,7 @@ export async function GET() {
   }
 
   if (billingToken) {
-    results.emails = await fetchBillingEmails(billingToken)
+    results.billingAlerts = await scanBillingInbox(billingToken)
   }
 
   if (primaryToken) {

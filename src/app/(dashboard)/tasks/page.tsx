@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   LayoutGrid,
   List,
+  Loader2,
+  Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,9 +20,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import type { BillingAlert } from "@/lib/billing-engine";
 
 type Priority = "URGENT" | "HIGH" | "MEDIUM" | "LOW";
 type Status = "TODO" | "IN_PROGRESS" | "DONE";
+type TaskSource = "manual" | "auto";
 
 type Task = {
   id: number;
@@ -33,6 +37,7 @@ type Task = {
   assigneeColor: string;
   due: string;
   project: string;
+  source: TaskSource;
 };
 
 const TEAM = ["Joe", "Quinn", "Shreeya", "Callum", "Patricia"];
@@ -65,10 +70,105 @@ const ASSIGNEE_COLORS: Record<string, string> = {
   Patricia: "bg-pink-500",
 };
 
+interface DashboardData {
+  connected: { billing: boolean; primary: boolean };
+  billingAlerts?: BillingAlert[];
+  billingTracker?: {
+    allDeals?: Array<{ client: string; ioNumber: string; campaign: string }>;
+    deals?: Array<{ client: string; ioNumber: string; campaign: string }>;
+    invoiceSummary?: {
+      signed: number;
+      unsigned: number;
+      invoicesSent: number;
+      invoicesNotSent: number;
+    };
+  };
+}
+
+function senderName(from: string) {
+  const match = from.match(/^"?([^"<]+)"?\s*</);
+  return match ? match[1].trim() : from.replace(/<[^>]+>/, "").trim();
+}
+
+function generateAutoTasks(data: DashboardData): Task[] {
+  const tasks: Task[] = [];
+  let id = -1; // negative IDs for auto tasks
+
+  const bt = data.billingTracker;
+  const alerts = data.billingAlerts || [];
+
+  // From billing tracker: unsigned deals
+  if (bt) {
+    const allDeals = bt.allDeals?.length ? bt.allDeals : bt.deals ?? [];
+    const invoiceSummary = bt.invoiceSummary;
+
+    // Unsigned deals → follow up task
+    allDeals.forEach(deal => {
+      tasks.push({
+        id: id--,
+        title: `Follow up with ${deal.client} on IO signing`,
+        description: `IO ${deal.ioNumber || "?"} — ${deal.campaign || "campaign"} is unsigned.`,
+        priority: "HIGH",
+        status: "TODO",
+        assignee: "Joe",
+        assigneeInitials: "JO",
+        assigneeColor: ASSIGNEE_COLORS["Joe"],
+        due: "TBD",
+        project: "Finance",
+        source: "auto",
+      });
+    });
+  }
+
+  // From billing alerts: overdue → chase tasks
+  alerts
+    .filter(a => a.type === "payment_overdue")
+    .forEach(a => {
+      tasks.push({
+        id: id--,
+        title: `Chase ${a.client !== "Unknown" ? a.client : senderName(a.from)} for overdue payment`,
+        description: a.subject,
+        priority: "URGENT",
+        status: "TODO",
+        assignee: "Joe",
+        assigneeInitials: "JO",
+        assigneeColor: ASSIGNEE_COLORS["Joe"],
+        due: "ASAP",
+        project: "Finance",
+        source: "auto",
+      });
+    });
+
+  // Unread urgent billing emails
+  alerts
+    .filter(a => (a.priority === "urgent" || a.priority === "high") && a.type !== "payment_overdue")
+    .slice(0, 3)
+    .forEach(a => {
+      tasks.push({
+        id: id--,
+        title: `Review ${a.type === "invoice_received" ? "invoice" : "billing email"} from ${senderName(a.from)}`,
+        description: a.subject,
+        priority: a.priority === "urgent" ? "URGENT" : "HIGH",
+        status: "TODO",
+        assignee: "Joe",
+        assigneeInitials: "JO",
+        assigneeColor: ASSIGNEE_COLORS["Joe"],
+        due: "TBD",
+        project: "Finance",
+        source: "auto",
+      });
+    });
+
+  return tasks;
+}
+
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [manualTasks, setManualTasks] = useState<Task[]>([]);
+  const [autoTasks, setAutoTasks] = useState<Task[]>([]);
+  const [loadingAuto, setLoadingAuto] = useState(true);
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [showAuto, setShowAuto] = useState(true);
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -79,14 +179,37 @@ export default function TasksPage() {
     project: "Operations",
   });
 
+  useEffect(() => {
+    async function loadAutoTasks() {
+      try {
+        const res = await fetch("/api/dashboard");
+        if (!res.ok) return;
+        const data: DashboardData = await res.json();
+        setAutoTasks(generateAutoTasks(data));
+      } catch {
+        // silent — auto tasks just won't show
+      } finally {
+        setLoadingAuto(false);
+      }
+    }
+    loadAutoTasks();
+  }, []);
+
+  const allTasks = [
+    ...(showAuto ? autoTasks : []),
+    ...manualTasks,
+  ];
+
   const toggleDone = (id: number) => {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? { ...t, status: t.status === "DONE" ? "TODO" : "DONE" }
-          : t
-      )
-    );
+    if (id < 0) {
+      setAutoTasks(prev =>
+        prev.map(t => t.id === id ? { ...t, status: t.status === "DONE" ? "TODO" : "DONE" } : t)
+      );
+    } else {
+      setManualTasks(prev =>
+        prev.map(t => t.id === id ? { ...t, status: t.status === "DONE" ? "TODO" : "DONE" } : t)
+      );
+    }
   };
 
   const addTask = () => {
@@ -102,8 +225,9 @@ export default function TasksPage() {
       assigneeColor: ASSIGNEE_COLORS[newTask.assignee] ?? "bg-neutral-600",
       due: newTask.due || "TBD",
       project: newTask.project,
+      source: "manual",
     };
-    setTasks((prev) => [task, ...prev]);
+    setManualTasks(prev => [task, ...prev]);
     setNewTask({ title: "", description: "", priority: "MEDIUM", due: "", assignee: "Joe", project: "Operations" });
     setIsAddOpen(false);
   };
@@ -112,9 +236,25 @@ export default function TasksPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-100">Tasks</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold text-neutral-100">Tasks</h1>
+          {!loadingAuto && autoTasks.length > 0 && (
+            <button
+              onClick={() => setShowAuto(!showAuto)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors",
+                showAuto
+                  ? "border-[#D4A853]/40 bg-[#D4A853]/10 text-[#D4A853]"
+                  : "border-neutral-700 text-neutral-500 hover:text-neutral-300"
+              )}
+            >
+              <Zap className="h-3 w-3" />
+              {autoTasks.length} auto-generated
+            </button>
+          )}
+          {loadingAuto && <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-600" />}
+        </div>
         <div className="flex items-center gap-2">
-          {/* View toggle */}
           <div className="flex overflow-hidden rounded-md border border-neutral-800">
             <button
               onClick={() => setViewMode("kanban")}
@@ -135,7 +275,6 @@ export default function TasksPage() {
               <List className="h-4 w-4" />
             </button>
           </div>
-
           <Button
             onClick={() => setIsAddOpen(true)}
             size="sm"
@@ -150,8 +289,8 @@ export default function TasksPage() {
       {/* Kanban View */}
       {viewMode === "kanban" && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {STATUS_GROUPS.map((group) => {
-            const groupTasks = tasks.filter((t) => t.status === group);
+          {STATUS_GROUPS.map(group => {
+            const groupTasks = allTasks.filter(t => t.status === group);
             return (
               <div key={group} className="space-y-2">
                 <div className={cn("rounded-t-md border-t-2 pb-1 pt-2", STATUS_COLORS[group])}>
@@ -165,7 +304,7 @@ export default function TasksPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {groupTasks.map((task) => (
+                  {groupTasks.map(task => (
                     <TaskCard key={task.id} task={task} onToggle={toggleDone} />
                   ))}
                   {groupTasks.length === 0 && (
@@ -193,19 +332,16 @@ export default function TasksPage() {
       {/* List View */}
       {viewMode === "list" && (
         <div className="space-y-1">
-          {tasks.length === 0 ? (
+          {allTasks.length === 0 ? (
             <div className="rounded-lg border border-dashed border-neutral-800 py-12 text-center">
               <p className="text-sm text-neutral-600">No tasks yet</p>
-              <button
-                onClick={() => setIsAddOpen(true)}
-                className="mt-2 text-xs text-[#D4A853] hover:underline"
-              >
+              <button onClick={() => setIsAddOpen(true)} className="mt-2 text-xs text-[#D4A853] hover:underline">
                 Add your first task
               </button>
             </div>
           ) : (
-            STATUS_GROUPS.map((group) => {
-              const groupTasks = tasks.filter((t) => t.status === group);
+            STATUS_GROUPS.map(group => {
+              const groupTasks = allTasks.filter(t => t.status === group);
               if (groupTasks.length === 0) return null;
               return (
                 <div key={group} className="space-y-0.5">
@@ -215,10 +351,13 @@ export default function TasksPage() {
                     </span>
                     <span className="text-[10px] text-neutral-700">({groupTasks.length})</span>
                   </div>
-                  {groupTasks.map((task) => (
+                  {groupTasks.map(task => (
                     <div
                       key={task.id}
-                      className="flex items-center gap-3 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2.5 hover:border-neutral-700"
+                      className={cn(
+                        "flex items-center gap-3 rounded-md border bg-neutral-900 px-3 py-2.5 hover:border-neutral-700",
+                        task.source === "auto" ? "border-[#D4A853]/20" : "border-neutral-800"
+                      )}
                     >
                       <button
                         onClick={() => toggleDone(task.id)}
@@ -235,6 +374,7 @@ export default function TasksPage() {
                           </svg>
                         )}
                       </button>
+                      {task.source === "auto" && <Zap className="h-3 w-3 shrink-0 text-[#D4A853]/60" />}
                       <p className={cn("flex-1 text-sm", task.status === "DONE" ? "text-neutral-600 line-through" : "text-neutral-200")}>
                         {task.title}
                       </p>
@@ -242,12 +382,7 @@ export default function TasksPage() {
                         {task.priority.toLowerCase()}
                       </Badge>
                       <span className="text-xs text-neutral-500">{task.project}</span>
-                      <div
-                        className={cn(
-                          "flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold text-white",
-                          task.assigneeColor
-                        )}
-                      >
+                      <div className={cn("flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold text-white", task.assigneeColor)}>
                         {task.assigneeInitials}
                       </div>
                       <span className="font-mono text-xs text-neutral-500">{task.due}</span>
@@ -272,7 +407,7 @@ export default function TasksPage() {
               <Input
                 placeholder="Task title..."
                 value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                onChange={e => setNewTask({ ...newTask, title: e.target.value })}
                 className="border-neutral-700 bg-neutral-800 text-sm text-neutral-200"
               />
             </div>
@@ -281,7 +416,7 @@ export default function TasksPage() {
               <textarea
                 placeholder="Add details..."
                 value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                onChange={e => setNewTask({ ...newTask, description: e.target.value })}
                 className="w-full resize-none rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-neutral-600 focus:outline-none"
                 rows={3}
               />
@@ -291,7 +426,7 @@ export default function TasksPage() {
                 <label className="mb-1 block text-xs text-neutral-400">Priority</label>
                 <select
                   value={newTask.priority}
-                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as Priority })}
+                  onChange={e => setNewTask({ ...newTask, priority: e.target.value as Priority })}
                   className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 focus:outline-none"
                 >
                   <option value="URGENT">Urgent</option>
@@ -305,7 +440,7 @@ export default function TasksPage() {
                 <Input
                   type="date"
                   value={newTask.due}
-                  onChange={(e) => setNewTask({ ...newTask, due: e.target.value })}
+                  onChange={e => setNewTask({ ...newTask, due: e.target.value })}
                   className="border-neutral-700 bg-neutral-800 text-sm text-neutral-200"
                 />
               </div>
@@ -315,24 +450,20 @@ export default function TasksPage() {
                 <label className="mb-1 block text-xs text-neutral-400">Assignee</label>
                 <select
                   value={newTask.assignee}
-                  onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
+                  onChange={e => setNewTask({ ...newTask, assignee: e.target.value })}
                   className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 focus:outline-none"
                 >
-                  {TEAM.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
+                  {TEAM.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
               <div>
                 <label className="mb-1 block text-xs text-neutral-400">Project</label>
                 <select
                   value={newTask.project}
-                  onChange={(e) => setNewTask({ ...newTask, project: e.target.value })}
+                  onChange={e => setNewTask({ ...newTask, project: e.target.value })}
                   className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-200 focus:outline-none"
                 >
-                  {PROJECTS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
+                  {PROJECTS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
             </div>
@@ -344,11 +475,7 @@ export default function TasksPage() {
             >
               Cancel
             </button>
-            <Button
-              onClick={addTask}
-              className="bg-[#D4A853] text-black hover:bg-[#c49a47]"
-              size="sm"
-            >
+            <Button onClick={addTask} className="bg-[#D4A853] text-black hover:bg-[#c49a47]" size="sm">
               Create Task
             </Button>
           </DialogFooter>
@@ -361,16 +488,17 @@ export default function TasksPage() {
 function TaskCard({ task, onToggle }: { task: Task; onToggle: (id: number) => void }) {
   const isDone = task.status === "DONE";
   return (
-    <Card className="cursor-pointer border-neutral-800 bg-neutral-900 transition-colors hover:border-neutral-700">
+    <Card className={cn(
+      "cursor-pointer border-neutral-800 bg-neutral-900 transition-colors hover:border-neutral-700",
+      task.source === "auto" && "border-[#D4A853]/20"
+    )}>
       <CardContent className="space-y-2.5 p-3">
         <div className="flex items-start gap-2">
           <button
             onClick={() => onToggle(task.id)}
             className={cn(
               "mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors",
-              isDone
-                ? "border-[#D4A853] bg-[#D4A853]"
-                : "border-neutral-600 hover:border-neutral-400"
+              isDone ? "border-[#D4A853] bg-[#D4A853]" : "border-neutral-600 hover:border-neutral-400"
             )}
           >
             {isDone && (
@@ -379,18 +507,14 @@ function TaskCard({ task, onToggle }: { task: Task; onToggle: (id: number) => vo
               </svg>
             )}
           </button>
-          <p className={cn(
-            "text-xs font-medium leading-snug",
-            isDone ? "text-neutral-600 line-through" : "text-neutral-200"
-          )}>
+          {task.source === "auto" && <Zap className="mt-0.5 h-3 w-3 shrink-0 text-[#D4A853]/60" />}
+          <p className={cn("text-xs font-medium leading-snug", isDone ? "text-neutral-600 line-through" : "text-neutral-200")}>
             {task.title}
           </p>
         </div>
 
         {task.description && !isDone && (
-          <p className="text-[10px] leading-relaxed text-neutral-600 line-clamp-2">
-            {task.description}
-          </p>
+          <p className="text-[10px] leading-relaxed text-neutral-600 line-clamp-2">{task.description}</p>
         )}
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -405,12 +529,7 @@ function TaskCard({ task, onToggle }: { task: Task; onToggle: (id: number) => vo
         </div>
 
         <div className="flex items-center justify-between">
-          <div
-            className={cn(
-              "flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white",
-              task.assigneeColor
-            )}
-          >
+          <div className={cn("flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white", task.assigneeColor)}>
             {task.assigneeInitials}
           </div>
           <span className="font-mono text-[10px] text-neutral-600">{task.due}</span>

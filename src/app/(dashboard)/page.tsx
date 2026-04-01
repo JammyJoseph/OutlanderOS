@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  Mail,
   Calendar,
   FileText,
   TrendingUp,
@@ -13,18 +12,12 @@ import {
   ArrowRight,
   Loader2,
   RefreshCw,
+  AlertTriangle,
+  Mail,
 } from 'lucide-react'
+import type { BillingAlert } from '@/lib/billing-engine'
 
 // ---- Types ----
-
-interface Email {
-  id: string | null | undefined
-  from: string
-  subject: string
-  date: string
-  snippet: string
-  unread: boolean
-}
 
 interface CalendarEvent {
   id: string | null | undefined
@@ -52,11 +45,7 @@ interface InvoiceSummary {
 
 interface DashboardData {
   connected: { billing: boolean; primary: boolean }
-  emails?: {
-    unreadCount: number
-    recentEmails: Email[]
-    error?: string
-  }
+  billingAlerts?: BillingAlert[]
   calendar?: {
     todayEvents: CalendarEvent[]
     error?: string
@@ -99,7 +88,7 @@ function formatTime(iso: string) {
   }
 }
 
-function formatEmailDate(raw: string) {
+function formatAlertDate(raw: string) {
   if (!raw) return ''
   try {
     return new Date(raw).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
@@ -111,6 +100,29 @@ function formatEmailDate(raw: string) {
 function senderName(from: string) {
   const match = from.match(/^"?([^"<]+)"?\s*</)
   return match ? match[1].trim() : from.replace(/<[^>]+>/, '').trim()
+}
+
+const ALERT_TYPE_LABELS: Record<BillingAlert['type'], string> = {
+  invoice_received: 'Invoice',
+  payment_overdue: 'Overdue',
+  follow_up_needed: 'Follow Up',
+  payment_confirmed: 'Paid',
+  new_inquiry: 'Inquiry',
+}
+
+const ALERT_TYPE_COLORS: Record<BillingAlert['type'], string> = {
+  invoice_received: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  payment_overdue: 'bg-red-500/20 text-red-400 border-red-500/30',
+  follow_up_needed: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  payment_confirmed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  new_inquiry: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+}
+
+const PRIORITY_DOT: Record<BillingAlert['priority'], string> = {
+  urgent: 'bg-red-500',
+  high: 'bg-amber-500',
+  medium: 'bg-blue-400',
+  low: 'bg-zinc-500',
 }
 
 // ---- Sub-components ----
@@ -140,10 +152,7 @@ function KpiCard({
       </div>
       <div className="flex items-end gap-2">
         {loading ? (
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-16 animate-pulse rounded bg-zinc-800" />
-            <span className="text-[10px] text-zinc-600">Loading…</span>
-          </div>
+          <div className="h-7 w-16 animate-pulse rounded bg-zinc-800" />
         ) : error ? (
           <span className="text-sm text-red-400">Error</span>
         ) : (
@@ -181,7 +190,7 @@ function SetupWizard({ billing, primary }: { billing: boolean; primary: boolean 
     {
       id: 'primary',
       label: 'Connect primary Google account',
-      description: 'q@outlandermag.com — Gmail, Calendar, Drive',
+      description: 'operations@outlandermag.com — Gmail, Calendar, Drive',
       done: primary,
       connectLabel: 'primary',
     },
@@ -201,9 +210,7 @@ function SetupWizard({ billing, primary }: { billing: boolean; primary: boolean 
           <h1 className="text-3xl font-bold text-white">
             Welcome to <span className="text-[#D4A853]">OutlanderOS</span>
           </h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Connect your accounts to activate the dashboard.
-          </p>
+          <p className="mt-2 text-sm text-zinc-400">Connect your accounts to activate the dashboard.</p>
         </div>
         <div className="space-y-3">
           {steps.map((step, i) => (
@@ -223,9 +230,7 @@ function SetupWizard({ billing, primary }: { billing: boolean; primary: boolean 
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${step.done ? 'text-emerald-300' : 'text-zinc-100'}`}>
-                  {step.label}
-                </p>
+                <p className={`text-sm font-medium ${step.done ? 'text-emerald-300' : 'text-zinc-100'}`}>{step.label}</p>
                 <p className="text-xs text-zinc-500 mt-0.5">{step.description}</p>
               </div>
               <div className="shrink-0">
@@ -251,23 +256,17 @@ function SetupWizard({ billing, primary }: { billing: boolean; primary: boolean 
 // ---- Connected dashboard ----
 
 function ConnectedDashboard({ data }: { data: DashboardData }) {
-  const { emails, calendar, billingTracker } = data
-  const loading = !emails && !calendar && !billingTracker
+  const { billingAlerts, calendar, billingTracker } = data
+  const loading = !billingAlerts && !calendar && !billingTracker
 
-  const outstandingInvoices =
-    billingTracker
-      ? billingTracker.invoiceSummary.unsigned + billingTracker.invoiceSummary.invoicesNotSent
-      : undefined
-
-  const priorityActions: string[] = []
-  if (billingTracker && !billingTracker.error) {
-    if (billingTracker.invoiceSummary.unsigned > 0)
-      priorityActions.push(`${billingTracker.invoiceSummary.unsigned} deal(s) unsigned — chase signatures`)
-    if (billingTracker.invoiceSummary.invoicesNotSent > 0)
-      priorityActions.push(`${billingTracker.invoiceSummary.invoicesNotSent} invoice(s) not yet sent`)
-  }
-  if (emails && !emails.error && emails.unreadCount > 0)
-    priorityActions.push(`${emails.unreadCount} unread email(s) in billing@`)
+  const urgentHighAlerts = (billingAlerts || []).filter(
+    a => a.priority === 'urgent' || a.priority === 'high'
+  )
+  const outstandingInvoices = billingTracker
+    ? billingTracker.invoiceSummary.unsigned + billingTracker.invoiceSummary.invoicesNotSent
+    : undefined
+  const priorityActions = urgentHighAlerts.slice(0, 5)
+  const lastScanTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 
   return (
     <div className="flex min-h-full flex-col py-8 px-4 sm:px-6">
@@ -294,11 +293,11 @@ function ConnectedDashboard({ data }: { data: DashboardData }) {
               accent
             />
             <KpiCard
-              label="Unread Emails"
-              icon={Mail}
-              value={emails?.unreadCount}
+              label="Billing Alerts"
+              icon={AlertTriangle}
+              value={urgentHighAlerts.length}
+              sub="urgent + high"
               loading={loading}
-              error={!!emails?.error}
             />
             <KpiCard
               label="Today's Events"
@@ -318,80 +317,71 @@ function ConnectedDashboard({ data }: { data: DashboardData }) {
           </div>
         </section>
 
-        {/* Finance overview */}
-        {billingTracker && (
-          <section>
-            <SectionHeader>Finance Overview</SectionHeader>
-            {billingTracker.error ? (
-              <ErrorBanner message={`Failed to load billing tracker: ${billingTracker.error}`} />
-            ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-                  <p className="text-xs text-zinc-500 mb-1">Gap to Target</p>
-                  <p className="text-xl font-bold text-white">{billingTracker.gapToTarget}</p>
-                </div>
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-                  <p className="text-xs text-zinc-500 mb-2">Deal Signatures</p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                      <span className="text-sm text-zinc-300">{billingTracker.invoiceSummary.signed} signed</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-amber-500" />
-                      <span className="text-sm text-zinc-300">{billingTracker.invoiceSummary.unsigned} unsigned</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-                  <p className="text-xs text-zinc-500 mb-2">Invoice Status</p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                      <span className="text-sm text-zinc-300">{billingTracker.invoiceSummary.invoicesSent} sent</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-red-500" />
-                      <span className="text-sm text-zinc-300">{billingTracker.invoiceSummary.invoicesNotSent} not sent</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-        )}
+        {/* Billing Monitor Status */}
+        <section>
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+              <span className="text-xs font-medium text-zinc-300">Finance Agent monitoring billing@outlandermag.com</span>
+            </div>
+            <div className="ml-auto flex items-center gap-4 text-xs text-zinc-500">
+              <span>Last scan: {lastScanTime}</span>
+              <span className="rounded-full border border-zinc-700 px-2 py-0.5">
+                {billingAlerts?.length ?? 0} items detected
+              </span>
+            </div>
+          </div>
+        </section>
 
-        {/* Priority actions */}
+        {/* Priority Actions */}
         <section>
           <SectionHeader>Priority Actions</SectionHeader>
           {loading ? (
             <div className="space-y-2">
-              {[1, 2].map(i => (
-                <div key={i} className="h-10 animate-pulse rounded-lg bg-zinc-800" />
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-12 animate-pulse rounded-lg bg-zinc-800" />
               ))}
             </div>
           ) : priorityActions.length === 0 ? (
             <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-6 text-center">
               <CheckCircle2 className="mx-auto mb-2 h-5 w-5 text-emerald-500" />
-              <p className="text-sm text-zinc-400">All clear — no outstanding actions</p>
+              <p className="text-sm text-zinc-400">All clear — no urgent or high priority items</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {priorityActions.map((action, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-lg border border-amber-900/30 bg-amber-900/10 px-4 py-3">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-                  <span className="text-sm text-zinc-200">{action}</span>
+              {priorityActions.map(alert => (
+                <div
+                  key={alert.id}
+                  className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${
+                    alert.priority === 'urgent'
+                      ? 'border-red-900/30 bg-red-900/10'
+                      : 'border-amber-900/30 bg-amber-900/10'
+                  }`}
+                >
+                  <div className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${PRIORITY_DOT[alert.priority]}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-zinc-200 truncate">{alert.subject || '(no subject)'}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {senderName(alert.from)}{alert.client !== 'Unknown' ? ` · ${alert.client}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className={`rounded-full border px-1.5 py-0.5 text-[10px] ${ALERT_TYPE_COLORS[alert.type]}`}>
+                      {ALERT_TYPE_LABELS[alert.type]}
+                    </span>
+                    <span className="text-[10px] text-zinc-600">{formatAlertDate(alert.date)}</span>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </section>
 
-        {/* Recent emails */}
+        {/* Recent Billing Activity */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <SectionHeader>Recent Emails — billing@</SectionHeader>
-            <Link href="/email" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-[#D4A853] transition-colors">
+            <SectionHeader>Recent Billing Activity</SectionHeader>
+            <Link href="/finance?tab=billing" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-[#D4A853] transition-colors">
               View all <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
@@ -401,29 +391,29 @@ function ConnectedDashboard({ data }: { data: DashboardData }) {
                 <div key={i} className="h-14 animate-pulse rounded-lg bg-zinc-800" />
               ))}
             </div>
-          ) : emails?.error ? (
-            <ErrorBanner message={`Failed to load emails: ${emails.error}`} />
-          ) : !emails?.recentEmails?.length ? (
-            <p className="text-sm text-zinc-500">No emails found.</p>
+          ) : !billingAlerts?.length ? (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-6 text-center">
+              <Mail className="mx-auto mb-2 h-5 w-5 text-zinc-700" />
+              <p className="text-sm text-zinc-500">No billing activity in the last 7 days.</p>
+            </div>
           ) : (
             <div className="divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
-              {emails.recentEmails.map(email => (
-                <div key={email.id} className={`flex items-start gap-3 px-4 py-3 ${email.unread ? 'bg-zinc-800/50' : ''}`}>
+              {billingAlerts.slice(0, 6).map(alert => (
+                <div key={alert.id} className="flex items-start gap-3 px-4 py-3">
+                  <div className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${PRIORITY_DOT[alert.priority]}`} />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`text-sm truncate ${email.unread ? 'font-semibold text-white' : 'text-zinc-300'}`}>
-                        {senderName(email.from)}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-zinc-200 truncate">
+                        {alert.client !== 'Unknown' ? alert.client : senderName(alert.from)}
                       </span>
-                      <span className="shrink-0 text-xs text-zinc-500">{formatEmailDate(email.date)}</span>
+                      <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] ${ALERT_TYPE_COLORS[alert.type]}`}>
+                        {ALERT_TYPE_LABELS[alert.type]}
+                      </span>
                     </div>
-                    <p className={`text-xs truncate mt-0.5 ${email.unread ? 'text-zinc-300' : 'text-zinc-500'}`}>
-                      {email.subject || '(no subject)'}
-                    </p>
-                    <p className="text-xs text-zinc-600 truncate mt-0.5">{email.snippet}</p>
+                    <p className="text-xs text-zinc-500 truncate mt-0.5">{alert.subject}</p>
+                    {alert.amount && <p className="text-xs text-[#D4A853] mt-0.5">{alert.amount}</p>}
                   </div>
-                  {email.unread && (
-                    <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#D4A853]" />
-                  )}
+                  <span className="shrink-0 text-[10px] text-zinc-600">{formatAlertDate(alert.date)}</span>
                 </div>
               ))}
             </div>
@@ -433,7 +423,7 @@ function ConnectedDashboard({ data }: { data: DashboardData }) {
         {/* Today's schedule */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <SectionHeader>Today's Schedule — q@</SectionHeader>
+            <SectionHeader>Today's Schedule — operations@</SectionHeader>
             <Link href="/calendar" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-[#D4A853] transition-colors">
               View all <ArrowRight className="h-3 w-3" />
             </Link>
@@ -457,9 +447,7 @@ function ConnectedDashboard({ data }: { data: DashboardData }) {
                   <Clock className="h-4 w-4 shrink-0 text-zinc-600" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-zinc-100 truncate">{event.summary}</p>
-                    {event.location && (
-                      <p className="text-xs text-zinc-500 truncate">{event.location}</p>
-                    )}
+                    {event.location && <p className="text-xs text-zinc-500 truncate">{event.location}</p>}
                   </div>
                   <span className="shrink-0 text-xs text-zinc-400">{formatTime(event.start)}</span>
                 </div>
@@ -468,7 +456,7 @@ function ConnectedDashboard({ data }: { data: DashboardData }) {
           )}
         </section>
 
-        {/* Active deals table */}
+        {/* Active Deals */}
         {billingTracker && !billingTracker.error && billingTracker.deals.length > 0 && (
           <section>
             <div className="mb-3 flex items-center justify-between">

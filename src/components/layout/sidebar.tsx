@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
-  Mail,
   Calendar,
   DollarSign,
   FolderKanban,
@@ -22,11 +21,10 @@ import { useState } from "react";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/office", label: "Agent Office", icon: Building2 },
-  { href: "/email", label: "Email", icon: Mail },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/finance", label: "Finance", icon: DollarSign },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/reminders", label: "Reminders", icon: Bell },
   { href: "/team", label: "Team", icon: Users },
 ];
