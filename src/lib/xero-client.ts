@@ -3,7 +3,7 @@ import { XeroClient } from 'xero-node'
 const XERO_CLIENT_ID = process.env.XERO_CLIENT_ID!
 const XERO_CLIENT_SECRET = process.env.XERO_CLIENT_SECRET!
 const REDIRECT_URI = 'http://localhost:3000/api/xero/callback'
-const SCOPES = 'openid profile email accounting.transactions accounting.contacts accounting.settings'
+const SCOPES = 'openid profile email offline_access accounting.invoices.read accounting.payments.read accounting.banktransactions.read accounting.contacts.read accounting.settings.read accounting.reports.profitandloss.read accounting.reports.balancesheet.read accounting.reports.banksummary.read accounting.reports.aged.read'
 
 export function createXeroClient() {
   return new XeroClient({

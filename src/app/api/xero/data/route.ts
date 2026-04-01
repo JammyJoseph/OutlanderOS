@@ -10,6 +10,14 @@ export async function GET() {
     return NextResponse.json({ connected: false })
   }
 
-  const data = await fetchAllXeroData(tokenJson)
-  return NextResponse.json(data)
+  const result = await fetchAllXeroData(tokenJson)
+  const response = NextResponse.json(result.data)
+  if (result.updatedTokenJson) {
+    response.cookies.set('xero_token', result.updatedTokenJson, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 365,
+    })
+  }
+  return response
 }
