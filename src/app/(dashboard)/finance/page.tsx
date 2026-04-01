@@ -1,15 +1,17 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { AlertCircle, Loader2, RefreshCw, TrendingUp, FileText, CheckSquare, Send, Flag } from 'lucide-react'
-import type { BillingAlert } from '@/lib/billing-engine'
+import { Loader2, RefreshCw, AlertCircle, TrendingUp } from 'lucide-react'
 
 interface Deal {
   ioNumber: string
   client: string
   campaign: string
   dateBooked: string
+  q1: string
+  q2: string
+  q3: string
+  q4: string
   annualTotal: string
   margin: string
 }
@@ -28,289 +30,352 @@ interface BillingTracker {
   deals: Deal[]
   allDeals: Deal[]
   invoiceSummary: InvoiceSummary
+  billingRows?: string[][]
   invoicingRows?: string[][]
   error?: string
 }
 
 interface DashboardData {
   connected: { billing: boolean; primary: boolean }
-  billingAlerts?: BillingAlert[]
   billingTracker?: BillingTracker
 }
 
-type Tab = 'overview' | 'billing' | 'revenue' | 'expenses'
+type Tab = 'deals' | 'billing' | 'invoicing' | 'summary'
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
+  { id: 'deals', label: 'Deals' },
   { id: 'billing', label: 'Billing' },
-  { id: 'revenue', label: 'Revenue' },
-  { id: 'expenses', label: 'Expenses' },
+  { id: 'invoicing', label: 'Invoicing' },
+  { id: 'summary', label: 'Summary' },
 ]
 
-const ALERT_TYPE_LABELS: Record<BillingAlert['type'], string> = {
-  invoice_received: 'Invoice',
-  payment_overdue: 'Overdue',
-  follow_up_needed: 'Follow Up',
-  payment_confirmed: 'Paid',
-  new_inquiry: 'Inquiry',
+function parseNum(s: string): number {
+  if (!s) return 0
+  const cleaned = s.replace(/[£€$,\s]/g, '').replace('%', '')
+  return parseFloat(cleaned) || 0
 }
 
-const ALERT_TYPE_COLORS: Record<BillingAlert['type'], string> = {
-  invoice_received: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  payment_overdue: 'bg-red-500/20 text-red-400 border-red-500/30',
-  follow_up_needed: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  payment_confirmed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  new_inquiry: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+function marginColor(margin: string): string {
+  const pct = parseNum(margin)
+  if (pct > 20) return 'text-emerald-400'
+  if (pct >= 10) return 'text-amber-400'
+  return 'text-red-400'
 }
 
-const PRIORITY_COLORS: Record<BillingAlert['priority'], string> = {
-  urgent: 'text-red-400 bg-red-500/10 border-red-500/30',
-  high: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-  medium: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-  low: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/30',
+function isZeroTotal(annualTotal: string): boolean {
+  return parseNum(annualTotal) === 0
 }
 
-function senderName(from: string) {
-  const match = from.match(/^"?([^"<]+)"?\s*</)
-  return match ? match[1].trim() : from.replace(/<[^>]+>/, '').trim()
-}
+// ---- Stats Bar ----
 
-function formatAlertDate(raw: string) {
-  if (!raw) return ''
-  try {
-    return new Date(raw).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-  } catch {
-    return raw
-  }
-}
-
-function StatTile({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent?: boolean }) {
+function StatsBar({ bt }: { bt: BillingTracker }) {
   return (
-    <div className={`rounded-xl border p-4 ${accent ? 'border-[#D4A853]/30 bg-[#D4A853]/5' : 'border-zinc-800 bg-zinc-900'}`}>
-      <p className="text-xs text-zinc-500 mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${accent ? 'text-[#D4A853]' : 'text-white'}`}>{value}</p>
-      {sub && <p className="text-xs text-zinc-500 mt-0.5">{sub}</p>}
+    <div className="flex flex-wrap gap-3">
+      <div className="flex-1 min-w-[140px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+        <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Booked Revenue YTD</p>
+        <p className="font-mono text-2xl font-bold text-emerald-400">{bt.bookedRevenue}</p>
+      </div>
+      <div className="flex-1 min-w-[120px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+        <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Gap to Target</p>
+        <p className="font-mono text-2xl font-bold text-red-400">{bt.gapToTarget}</p>
+      </div>
+      <div className="flex-1 min-w-[100px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+        <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Deals</p>
+        <p className="font-mono text-2xl font-bold text-white">{bt.totalDeals}</p>
+      </div>
+      <div className="flex-1 min-w-[130px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+        <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Signed / Unsigned</p>
+        <p className="font-mono text-2xl font-bold">
+          <span className="text-emerald-400">{bt.invoiceSummary.signed}</span>
+          <span className="text-zinc-600 mx-1">/</span>
+          <span className="text-amber-400">{bt.invoiceSummary.unsigned}</span>
+        </p>
+      </div>
+      <div className="flex-1 min-w-[140px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+        <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Invoices Sent / Pending</p>
+        <p className="font-mono text-2xl font-bold">
+          <span className="text-emerald-400">{bt.invoiceSummary.invoicesSent}</span>
+          <span className="text-zinc-600 mx-1">/</span>
+          <span className="text-red-400">{bt.invoiceSummary.invoicesNotSent}</span>
+        </p>
+      </div>
     </div>
   )
 }
 
-// ---- Tabs ----
+// ---- Deals Tab ----
 
-function OverviewTab({ bt }: { bt: BillingTracker }) {
-  if (bt.error) {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-900/10 px-4 py-3 text-sm text-red-400">
-        <AlertCircle className="h-4 w-4 shrink-0" />
-        Failed to load billing tracker: {bt.error}
-      </div>
-    )
-  }
+function DealsTab({ bt }: { bt: BillingTracker }) {
+  const deals = bt.allDeals?.length ? bt.allDeals : bt.deals ?? []
 
-  return (
-    <div className="space-y-8">
-      <section>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">Revenue Summary</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatTile label="Booked Revenue YTD" value={bt.bookedRevenue} accent />
-          <StatTile label="Gap to Target" value={bt.gapToTarget} />
-          <StatTile label="Total Deals" value={bt.totalDeals} />
-          <StatTile
-            label="Outstanding Invoices"
-            value={bt.invoiceSummary.unsigned + bt.invoiceSummary.invoicesNotSent}
-            sub="unsigned + unsent"
-          />
-        </div>
-      </section>
+  // Compute column totals
+  const totals = deals.reduce((acc, d) => ({
+    q1: acc.q1 + parseNum(d.q1),
+    q2: acc.q2 + parseNum(d.q2),
+    q3: acc.q3 + parseNum(d.q3),
+    q4: acc.q4 + parseNum(d.q4),
+    annual: acc.annual + parseNum(d.annualTotal),
+  }), { q1: 0, q2: 0, q3: 0, q4: 0, annual: 0 })
 
-      <section>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">Invoice Status</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-emerald-800/30 bg-emerald-900/10 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-xs text-zinc-500">Signed</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{bt.invoiceSummary.signed}</p>
-          </div>
-          <div className="rounded-xl border border-amber-800/30 bg-amber-900/10 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-2 w-2 rounded-full bg-amber-500" />
-              <span className="text-xs text-zinc-500">Unsigned</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{bt.invoiceSummary.unsigned}</p>
-          </div>
-          <div className="rounded-xl border border-emerald-800/30 bg-emerald-900/10 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-xs text-zinc-500">Invoices Sent</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{bt.invoiceSummary.invoicesSent}</p>
-          </div>
-          <div className="rounded-xl border border-red-800/30 bg-red-900/10 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-2 w-2 rounded-full bg-red-500" />
-              <span className="text-xs text-zinc-500">Not Sent</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{bt.invoiceSummary.invoicesNotSent}</p>
-          </div>
-        </div>
-      </section>
-
-      {bt.deals.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">Top Deals</h2>
-          <div className="overflow-x-auto rounded-xl border border-zinc-800">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900">
-                  <th className="px-4 py-2.5 text-left font-medium text-zinc-500">IO #</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-zinc-500">Client</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-zinc-500 hidden md:table-cell">Campaign</th>
-                  <th className="px-4 py-2.5 text-right font-medium text-zinc-500">Annual Total</th>
-                  <th className="px-4 py-2.5 text-right font-medium text-zinc-500 hidden sm:table-cell">Margin</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800 bg-zinc-900/50">
-                {bt.deals.map((deal, i) => (
-                  <tr key={i} className="hover:bg-zinc-800/50 transition-colors">
-                    <td className="px-4 py-2.5 text-zinc-400 font-mono">{deal.ioNumber || '—'}</td>
-                    <td className="px-4 py-2.5 font-medium text-zinc-100">{deal.client}</td>
-                    <td className="px-4 py-2.5 text-zinc-400 hidden md:table-cell">{deal.campaign}</td>
-                    <td className="px-4 py-2.5 text-right text-zinc-100">{deal.annualTotal}</td>
-                    <td className="px-4 py-2.5 text-right text-zinc-400 hidden sm:table-cell">{deal.margin}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-    </div>
-  )
-}
-
-function BillingTab({ alerts }: { alerts: BillingAlert[] }) {
-  if (!alerts.length) {
-    return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center">
-        <FileText className="mx-auto mb-3 h-6 w-6 text-zinc-700" />
-        <p className="text-sm text-zinc-500">No billing emails found in the last 7 days.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      {alerts.map(alert => (
-        <div
-          key={alert.id}
-          className={`rounded-xl border p-4 ${
-            alert.priority === 'urgent'
-              ? 'border-red-900/30 bg-red-900/5'
-              : alert.priority === 'high'
-              ? 'border-amber-900/30 bg-amber-900/5'
-              : 'border-zinc-800 bg-zinc-900'
-          }`}
-        >
-          <div className="flex items-start gap-3">
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-zinc-100 truncate">
-                  {alert.client !== 'Unknown' ? alert.client : senderName(alert.from)}
-                </span>
-                <span className={`rounded-full border px-1.5 py-0.5 text-[10px] ${ALERT_TYPE_COLORS[alert.type]}`}>
-                  {ALERT_TYPE_LABELS[alert.type]}
-                </span>
-                <span className={`rounded-full border px-1.5 py-0.5 text-[10px] capitalize ${PRIORITY_COLORS[alert.priority]}`}>
-                  {alert.priority}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400 truncate">{alert.subject}</p>
-              <p className="text-xs text-zinc-600 line-clamp-2">{alert.snippet}</p>
-              <div className="flex items-center gap-3 text-[10px] text-zinc-600">
-                <span>{senderName(alert.from)}</span>
-                <span>·</span>
-                <span>{formatAlertDate(alert.date)}</span>
-                {alert.amount && <span className="text-[#D4A853]">{alert.amount}</span>}
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5 mt-0.5">
-              <button className="flex items-center gap-1 rounded border border-zinc-700 px-2 py-1 text-[10px] text-zinc-400 hover:border-emerald-700 hover:text-emerald-400 transition-colors">
-                <CheckSquare className="h-3 w-3" />
-                Approve
-              </button>
-              <button className="flex items-center gap-1 rounded border border-zinc-700 px-2 py-1 text-[10px] text-zinc-400 hover:border-amber-700 hover:text-amber-400 transition-colors">
-                <Send className="h-3 w-3" />
-                Chase
-              </button>
-              <button className="flex items-center gap-1 rounded border border-zinc-700 px-2 py-1 text-[10px] text-zinc-400 hover:border-red-700 hover:text-red-400 transition-colors">
-                <Flag className="h-3 w-3" />
-                Flag
-              </button>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function RevenueTab({ bt }: { bt: BillingTracker }) {
-  const allDeals = bt.allDeals?.length ? bt.allDeals : bt.deals ?? []
-
-  if (allDeals.length === 0) {
-    return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center">
-        <FileText className="mx-auto mb-2 h-5 w-5 text-zinc-700" />
-        <p className="text-sm text-zinc-500">No deals found in tracker.</p>
-      </div>
-    )
-  }
+  const fmt = (n: number) => n > 0 ? `£${n.toLocaleString('en-GB')}` : '—'
 
   return (
     <div className="overflow-x-auto rounded-xl border border-zinc-800">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-zinc-800 bg-zinc-900">
-            <th className="px-4 py-2.5 text-left font-medium text-zinc-500">IO #</th>
-            <th className="px-4 py-2.5 text-left font-medium text-zinc-500">Client</th>
-            <th className="px-4 py-2.5 text-left font-medium text-zinc-500 hidden md:table-cell">Campaign</th>
-            <th className="px-4 py-2.5 text-left font-medium text-zinc-500 hidden lg:table-cell">Date Booked</th>
-            <th className="px-4 py-2.5 text-right font-medium text-zinc-500">Annual Total</th>
-            <th className="px-4 py-2.5 text-right font-medium text-zinc-500 hidden sm:table-cell">Margin</th>
+          <tr className="bg-zinc-950 border-b border-zinc-800">
+            <th className="px-3 py-2.5 text-left font-medium text-zinc-500">IO#</th>
+            <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Client</th>
+            <th className="px-3 py-2.5 text-left font-medium text-zinc-500 hidden lg:table-cell">Campaign</th>
+            <th className="px-3 py-2.5 text-left font-medium text-zinc-500 hidden xl:table-cell">Date Booked</th>
+            <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Q1</th>
+            <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Q2</th>
+            <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Q3</th>
+            <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Q4</th>
+            <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Annual Total</th>
+            <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Margin%</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-800 bg-zinc-900/50">
-          {allDeals.map((deal, i) => (
-            <tr key={i} className="hover:bg-zinc-800/50 transition-colors">
-              <td className="px-4 py-2.5 text-zinc-400 font-mono">{deal.ioNumber || '—'}</td>
-              <td className="px-4 py-2.5 font-medium text-zinc-100">{deal.client}</td>
-              <td className="px-4 py-2.5 text-zinc-400 hidden md:table-cell">{deal.campaign}</td>
-              <td className="px-4 py-2.5 text-zinc-500 hidden lg:table-cell">{deal.dateBooked}</td>
-              <td className="px-4 py-2.5 text-right text-zinc-100">{deal.annualTotal}</td>
-              <td className="px-4 py-2.5 text-right text-zinc-400 hidden sm:table-cell">{deal.margin}</td>
+        <tbody className="divide-y divide-zinc-800 bg-zinc-900">
+          {deals.map((deal, i) => {
+            const zero = isZeroTotal(deal.annualTotal)
+            return (
+              <tr key={i} className={`hover:bg-zinc-800/60 transition-colors ${zero ? 'opacity-35' : ''}`}>
+                <td className="px-3 py-2.5 font-mono text-zinc-400">{deal.ioNumber || '—'}</td>
+                <td className="px-3 py-2.5 font-medium text-zinc-100">{deal.client}</td>
+                <td className="px-3 py-2.5 text-zinc-400 hidden lg:table-cell">{deal.campaign}</td>
+                <td className="px-3 py-2.5 text-zinc-500 hidden xl:table-cell">{deal.dateBooked}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-zinc-300">{deal.q1 || '—'}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-zinc-300">{deal.q2 || '—'}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-zinc-300">{deal.q3 || '—'}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-zinc-300">{deal.q4 || '—'}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-zinc-100 font-semibold">{deal.annualTotal || '—'}</td>
+                <td className={`px-3 py-2.5 text-right font-mono font-semibold ${marginColor(deal.margin)}`}>{deal.margin || '—'}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="bg-zinc-950 border-t-2 border-zinc-700">
+            <td className="px-3 py-2.5 text-zinc-500 font-semibold" colSpan={4}>Totals</td>
+            <td className="px-3 py-2.5 text-right font-mono text-zinc-200 font-semibold">{fmt(totals.q1)}</td>
+            <td className="px-3 py-2.5 text-right font-mono text-zinc-200 font-semibold">{fmt(totals.q2)}</td>
+            <td className="px-3 py-2.5 text-right font-mono text-zinc-200 font-semibold">{fmt(totals.q3)}</td>
+            <td className="px-3 py-2.5 text-right font-mono text-zinc-200 font-semibold">{fmt(totals.q4)}</td>
+            <td className="px-3 py-2.5 text-right font-mono text-[#D4A853] font-bold">{fmt(totals.annual)}</td>
+            <td className="px-3 py-2.5" />
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  )
+}
+
+// ---- Billing Tab ----
+
+function BillingTab({ bt }: { bt: BillingTracker }) {
+  const rows = bt.billingRows ?? []
+  const { signed, unsigned, invoicesSent, invoicesNotSent } = bt.invoiceSummary
+
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center">
+        <p className="text-sm text-zinc-500">No billing tracker rows available.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-zinc-500">
+        <span className="text-emerald-400 font-semibold">{signed} signed</span>
+        <span className="text-zinc-600">, </span>
+        <span className="text-amber-400 font-semibold">{unsigned} unsigned</span>
+        <span className="text-zinc-600"> — </span>
+        <span className="text-emerald-400 font-semibold">{invoicesSent} invoices sent</span>
+        <span className="text-zinc-600">, </span>
+        <span className="text-red-400 font-semibold">{invoicesNotSent} pending</span>
+      </p>
+
+      <div className="overflow-x-auto rounded-xl border border-zinc-800">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-zinc-950 border-b border-zinc-800">
+              <th className="px-3 py-2.5 text-center font-medium text-zinc-500 w-12">Signed</th>
+              <th className="px-3 py-2.5 text-left font-medium text-zinc-500">IO#</th>
+              <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Brand</th>
+              <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Total</th>
+              <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Currency</th>
+              <th className="px-3 py-2.5 text-right font-medium text-zinc-500">In GBP</th>
+              <th className="px-3 py-2.5 text-center font-medium text-zinc-500 w-16">Invoice Sent</th>
             </tr>
-          ))}
+          </thead>
+          <tbody className="divide-y divide-zinc-800">
+            {rows.map((row, i) => {
+              const isSigned = row[0] === 'TRUE'
+              const isInvoiced = row[7] === 'TRUE'
+              const rowBg = isSigned && isInvoiced
+                ? 'bg-emerald-950/30'
+                : isSigned
+                ? 'bg-amber-950/20'
+                : 'bg-zinc-900'
+              return (
+                <tr key={i} className={`${rowBg} hover:brightness-110 transition-all`}>
+                  <td className="px-3 py-2.5 text-center">
+                    {isSigned
+                      ? <span className="text-emerald-400 font-bold">✓</span>
+                      : <span className="text-zinc-600">✗</span>}
+                  </td>
+                  <td className="px-3 py-2.5 font-mono text-zinc-400">{row[1] || '—'}</td>
+                  <td className="px-3 py-2.5 font-medium text-zinc-100">{row[2] || '—'}</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-zinc-200">{row[3] || '—'}</td>
+                  <td className="px-3 py-2.5 text-zinc-400">{row[4] || '—'}</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-zinc-200">{row[5] || '—'}</td>
+                  <td className="px-3 py-2.5 text-center">
+                    {isInvoiced
+                      ? <span className="text-emerald-400 font-bold">✓</span>
+                      : <span className="text-red-400">✗</span>}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ---- Invoicing Tab ----
+
+function InvoicingTab({ bt }: { bt: BillingTracker }) {
+  const rows = bt.invoicingRows ?? []
+
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center">
+        <p className="text-sm text-zinc-500">No invoicing data available.</p>
+      </div>
+    )
+  }
+
+  const headers = rows[0] ?? []
+  const dataRows = rows.slice(1)
+
+  // Find "Paid" column index
+  const paidColIdx = headers.findIndex(h =>
+    typeof h === 'string' && h.toLowerCase().includes('paid')
+  )
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-zinc-800">
+      <table className="w-full text-xs" style={{ minWidth: `${Math.max(headers.length * 100, 600)}px` }}>
+        <thead>
+          <tr className="bg-zinc-950 border-b border-zinc-800">
+            {headers.map((h, i) => (
+              <th key={i} className="px-3 py-2.5 text-left font-medium text-zinc-500 whitespace-nowrap">
+                {h || `Col ${i + 1}`}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-800 bg-zinc-900">
+          {dataRows.map((row, ri) => {
+            const isPaid = paidColIdx >= 0 && row[paidColIdx] &&
+              String(row[paidColIdx]).trim().length > 0 &&
+              String(row[paidColIdx]).toLowerCase() !== 'false'
+            return (
+              <tr key={ri} className="hover:bg-zinc-800/60 transition-colors">
+                {headers.map((_, ci) => (
+                  <td
+                    key={ci}
+                    className={`px-3 py-2.5 whitespace-nowrap font-mono ${
+                      ci === paidColIdx && isPaid
+                        ? 'bg-emerald-900/40 text-emerald-300'
+                        : 'text-zinc-300'
+                    }`}
+                  >
+                    {row[ci] ?? ''}
+                  </td>
+                ))}
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
   )
 }
 
-function ExpensesTab() {
+// ---- Summary Tab ----
+
+function SummaryTab({ bt }: { bt: BillingTracker }) {
+  const deals = bt.allDeals?.length ? bt.allDeals : bt.deals ?? []
+
+  const qtotals = deals.reduce((acc, d) => ({
+    q1: acc.q1 + parseNum(d.q1),
+    q2: acc.q2 + parseNum(d.q2),
+    q3: acc.q3 + parseNum(d.q3),
+    q4: acc.q4 + parseNum(d.q4),
+  }), { q1: 0, q2: 0, q3: 0, q4: 0 })
+
+  const fmt = (n: number) => n > 0 ? `£${n.toLocaleString('en-GB')}` : '£0'
+
+  // Currency breakdown from billing rows
+  const currencyCounts: Record<string, number> = {}
+  for (const row of bt.billingRows ?? []) {
+    const currency = (row[4] || 'GBP').trim().toUpperCase()
+    if (currency) currencyCounts[currency] = (currencyCounts[currency] || 0) + 1
+  }
+
+  // Average margin from deals with a parseable margin
+  const marginsWithValue = deals.map(d => parseNum(d.margin)).filter(m => m > 0)
+  const avgMargin = marginsWithValue.length > 0
+    ? marginsWithValue.reduce((a, b) => a + b, 0) / marginsWithValue.length
+    : 0
+
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-6 py-12 text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800">
-        <TrendingUp className="h-5 w-5 text-zinc-600" />
-      </div>
-      <p className="text-sm font-medium text-zinc-400">Connect Xero for expense tracking</p>
-      <p className="mt-1 text-xs text-zinc-600">Expense data will appear here once your accounting integration is set up.</p>
-      <button
-        disabled
-        className="mt-4 rounded-lg border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-500 cursor-not-allowed"
-      >
-        Coming soon
-      </button>
+    <div className="space-y-6">
+      <section>
+        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Revenue by Quarter</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map((q) => {
+            const key = q.toLowerCase() as 'q1' | 'q2' | 'q3' | 'q4'
+            return (
+              <div key={q} className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">{q}</p>
+                <p className="font-mono text-xl font-bold text-[#D4A853]">{fmt(qtotals[key])}</p>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Currency Breakdown</h2>
+        <div className="flex flex-wrap gap-3">
+          {Object.entries(currencyCounts).length === 0 ? (
+            <p className="text-xs text-zinc-600">No billing data</p>
+          ) : (
+            Object.entries(currencyCounts).sort((a, b) => b[1] - a[1]).map(([currency, count]) => (
+              <div key={currency} className="rounded-lg border border-zinc-800 bg-zinc-900 px-5 py-3 text-center">
+                <p className="font-mono text-lg font-bold text-zinc-100">{count}</p>
+                <p className="text-[10px] text-zinc-500 mt-0.5">{currency} deals</p>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Average Margin</h2>
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 inline-block px-6 py-4">
+          <p className={`font-mono text-3xl font-bold ${marginColor(avgMargin.toFixed(1))}`}>
+            {avgMargin > 0 ? `${avgMargin.toFixed(1)}%` : '—'}
+          </p>
+          <p className="text-[10px] text-zinc-500 mt-1">across {marginsWithValue.length} deals with margin data</p>
+        </div>
+      </section>
     </div>
   )
 }
@@ -318,11 +383,7 @@ function ExpensesTab() {
 // ---- Page ----
 
 function FinancePageInner() {
-  const searchParams = useSearchParams()
-  const initialTab = (searchParams.get('tab') as Tab) || 'overview'
-  const [activeTab, setActiveTab] = useState<Tab>(
-    TABS.some(t => t.id === initialTab) ? initialTab : 'overview'
-  )
+  const [activeTab, setActiveTab] = useState<Tab>('deals')
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -387,9 +448,11 @@ function FinancePageInner() {
     )
   }
 
+  const bt = data?.billingTracker
+
   return (
-    <div className="flex flex-col gap-6 py-6 px-4 sm:px-6">
-      <div className="mx-auto w-full max-w-4xl space-y-6">
+    <div className="flex flex-col gap-5 py-6 px-4 sm:px-6">
+      <div className="mx-auto w-full max-w-6xl space-y-5">
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -406,6 +469,9 @@ function FinancePageInner() {
             {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
+
+        {/* Stats bar */}
+        {bt && !bt.error && <StatsBar bt={bt} />}
 
         {/* Tabs */}
         <div className="flex border-b border-zinc-800">
@@ -425,19 +491,20 @@ function FinancePageInner() {
         </div>
 
         {/* Tab content */}
-        {activeTab === 'overview' && data?.billingTracker && (
-          <OverviewTab bt={data.billingTracker} />
-        )}
-        {activeTab === 'billing' && (
-          <BillingTab alerts={data?.billingAlerts || []} />
-        )}
-        {activeTab === 'revenue' && data?.billingTracker && (
-          <RevenueTab bt={data.billingTracker} />
-        )}
-        {activeTab === 'expenses' && <ExpensesTab />}
-
-        {!data?.billingTracker && activeTab !== 'billing' && activeTab !== 'expenses' && (
+        {!bt ? (
           <p className="text-sm text-zinc-500">No billing data available.</p>
+        ) : bt.error ? (
+          <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-900/10 px-4 py-3 text-sm text-red-400">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            Failed to load billing tracker: {bt.error}
+          </div>
+        ) : (
+          <>
+            {activeTab === 'deals' && <DealsTab bt={bt} />}
+            {activeTab === 'billing' && <BillingTab bt={bt} />}
+            {activeTab === 'invoicing' && <InvoicingTab bt={bt} />}
+            {activeTab === 'summary' && <SummaryTab bt={bt} />}
+          </>
         )}
 
       </div>

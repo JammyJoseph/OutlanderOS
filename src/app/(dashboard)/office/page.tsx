@@ -33,7 +33,7 @@ export default function OfficePage() {
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-neutral-800 bg-neutral-950 px-5">
         <div className="flex items-center gap-3">
           <Building2 className="h-4 w-4 text-[#D4A853]" />
-          <h1 className="text-sm font-semibold text-white">Agent Office</h1>
+          <h1 className="text-sm font-semibold text-white">Outlander HQ</h1>
           <span className="text-neutral-700">·</span>
           <span className="text-xs text-neutral-500">{agents.length} agents deployed</span>
         </div>
@@ -75,7 +75,7 @@ export default function OfficePage() {
         </div>
 
         {/* RIGHT: Group Chat (38%) */}
-        <div className="flex-1 border-l border-neutral-800">
+        <div className="flex-1" style={{ borderLeft: '1px solid #333' }}>
           <GroupChat selectedAgentId={selectedAgentId} />
         </div>
       </div>

@@ -73,6 +73,10 @@ export async function fetchBillingTracker(primaryToken: string) {
       client: string
       campaign: string
       dateBooked: string
+      q1: string
+      q2: string
+      q3: string
+      q4: string
       annualTotal: string
       margin: string
     }> = []
@@ -84,6 +88,10 @@ export async function fetchBillingTracker(primaryToken: string) {
         client: row[2] || '',
         campaign: row[3] || '',
         dateBooked: row[4] || '',
+        q1: row[7] || '',
+        q2: row[8] || '',
+        q3: row[9] || '',
+        q4: row[10] || '',
         annualTotal: row[11] || '£0',
         margin: row[12] || '',
       })
@@ -91,15 +99,17 @@ export async function fetchBillingTracker(primaryToken: string) {
 
     // Also fetch Billing Tracker tab for invoice status
     let invoiceSummary = { signed: 0, unsigned: 0, invoicesSent: 0, invoicesNotSent: 0 }
+    let billingRows: string[][] = []
     try {
       const billingRes = await sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
         range: 'Billing Tracker!A1:I50',
       })
-      const billingRows = billingRes.data.values || []
-      for (let i = 3; i < billingRows.length; i++) {
-        const row = billingRows[i]
+      const rawBilling = billingRes.data.values || []
+      for (let i = 3; i < rawBilling.length; i++) {
+        const row = rawBilling[i]
         if (!row || !row[2]) continue
+        billingRows.push(row as string[])
         if (row[0] === 'TRUE') invoiceSummary.signed++
         else invoiceSummary.unsigned++
         if (row[7] === 'TRUE') invoiceSummary.invoicesSent++
@@ -128,6 +138,7 @@ export async function fetchBillingTracker(primaryToken: string) {
       deals: deals.slice(0, 10), // Top 10 for dashboard
       allDeals: deals,
       invoiceSummary,
+      billingRows,
       invoicingRows,
     }
   } catch (error) {
@@ -139,6 +150,7 @@ export async function fetchBillingTracker(primaryToken: string) {
       deals: [],
       allDeals: [],
       invoiceSummary: { signed: 0, unsigned: 0, invoicesSent: 0, invoicesNotSent: 0 },
+      billingRows: [],
       invoicingRows: [],
       error: String(error),
     }

@@ -100,10 +100,10 @@ function AgentStation({
         scale={0.85}
       />
 
-      {/* Colored monitor screen in agent color */}
+      {/* Colored monitor screen in agent color (emissive) */}
       <mesh position={[0, 0.78, -0.22]}>
         <boxGeometry args={[0.55, 0.35, 0.01]} />
-        <meshLambertMaterial color={agent.color} />
+        <meshStandardMaterial color={agent.color} emissive={agent.color} emissiveIntensity={0.5} roughness={0.05} metalness={0.05} />
       </mesh>
 
       {/* Status strip at front desk edge */}
@@ -112,23 +112,31 @@ function AgentStation({
         <meshLambertMaterial color={statusColor} />
       </mesh>
 
-      {/* Agent avatar */}
-      <AgentAvatar
-        agentId={agent.id}
-        color={agent.color}
-        status={isActive ? 'active' : agent.status}
-        selected={isSelected || isActive}
-        position={[0, 0.95, 0.1]}
-      />
+      {/* Shadow disc on floor under avatar */}
+      <mesh position={[0, 0.01, 0.1]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.55, 32]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.22} />
+      </mesh>
+
+      {/* Agent avatar — scaled 1.2x */}
+      <group scale={[1.2, 1.2, 1.2]}>
+        <AgentAvatar
+          agentId={agent.id}
+          color={agent.color}
+          status={isActive ? 'active' : agent.status}
+          selected={isSelected || isActive}
+          position={[0, 0.95, 0.1]}
+        />
+      </group>
 
       {/* Name label */}
-      <Html position={[0, 2.15, 0.1]} center>
+      <Html position={[0, 2.25, 0.1]} center>
         <div style={{
-          background: 'rgba(0,0,0,0.72)',
+          background: 'rgba(0,0,0,0.78)',
           color: '#fff',
-          padding: '2px 8px',
+          padding: '4px 10px',
           borderRadius: '4px',
-          fontSize: '11px',
+          fontSize: '13px',
           fontWeight: 600,
           whiteSpace: 'nowrap',
           pointerEvents: 'none',
@@ -163,7 +171,7 @@ function OfficeLighting() {
   return (
     <>
       {/* Warm ambient — main source of the cozy tone */}
-      <ambientLight color="#FFF5E6" intensity={0.75} />
+      <ambientLight color="#FFF5E6" intensity={0.8} />
       {/* Main directional from upper-left, soft shadows */}
       <directionalLight
         position={[-10, 14, 6]}
@@ -201,7 +209,7 @@ function OfficeFloor() {
           receiveShadow
         >
           <planeGeometry args={[2, 2]} />
-          <meshLambertMaterial color={isAlt ? '#D4B896' : '#C8AC84'} />
+          <meshLambertMaterial color={isAlt ? '#D4B896' : '#CEAF8C'} />
         </mesh>
       )
     }
@@ -377,7 +385,7 @@ export default function OfficeScene(_props: OfficeSceneProps) {
     >
       <OrthographicCamera
         makeDefault
-        zoom={52}
+        zoom={40}
         position={[15, 15, 15]}
         near={0.1}
         far={200}
