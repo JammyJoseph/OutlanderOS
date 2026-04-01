@@ -7,13 +7,10 @@ import {
   LayoutDashboard,
   Calendar,
   DollarSign,
-  FolderKanban,
-  CheckSquare,
   Users,
   Settings,
   ChevronLeft,
   ChevronRight,
-  Bell,
   Building2,
 } from "lucide-react";
 import { useState } from "react";
@@ -22,10 +19,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/office", label: "Agent Office", icon: Building2 },
   { href: "/finance", label: "Finance", icon: DollarSign },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/reminders", label: "Reminders", icon: Bell },
   { href: "/team", label: "Team", icon: Users },
 ];
 

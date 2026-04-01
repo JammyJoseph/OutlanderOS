@@ -79,10 +79,57 @@ export async function fetchBillingTracker(primaryToken: string) {
       q4: string
       annualTotal: string
       margin: string
+      signed: boolean
+      invoiceSent: boolean
     }> = []
+
+    // Also fetch Billing Tracker tab for invoice status first so we can map per-deal
+    let invoiceSummary = { signed: 0, unsigned: 0, invoicesSent: 0, invoicesNotSent: 0 }
+    let billingRows: string[][] = []
+    // Build a map from client name → {signed, invoiceSent} for deal enrichment
+    const billingByClient: Record<string, { signed: boolean; invoiceSent: boolean }> = {}
+    try {
+      const billingRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: 'Billing Tracker!A1:I50',
+      })
+      const rawBilling = billingRes.data.values || []
+      for (let i = 3; i < rawBilling.length; i++) {
+        const row = rawBilling[i]
+        if (!row || !row[2]) continue
+        billingRows.push(row as string[])
+        const signed = row[0] === 'TRUE'
+        const invoiceSent = row[7] === 'TRUE'
+        if (signed) invoiceSummary.signed++
+        else invoiceSummary.unsigned++
+        if (invoiceSent) invoiceSummary.invoicesSent++
+        else invoiceSummary.invoicesNotSent++
+        // row[2] = client name in billing tracker
+        const clientKey = (row[2] as string).trim().toLowerCase()
+        billingByClient[clientKey] = { signed, invoiceSent }
+      }
+    } catch (e) {
+      console.error('Failed to fetch billing tracker tab:', e)
+    }
+
+    // Parse quarterly totals accumulators
+    let q1Total = 0, q2Total = 0, q3Total = 0, q4Total = 0
+
     for (let i = 6; i < rows.length; i++) {
       const row = rows[i]
       if (!row || !row[2]) continue // skip if no client name
+      const clientKey = (row[2] as string).trim().toLowerCase()
+      const billingInfo = billingByClient[clientKey] ?? { signed: false, invoiceSent: false }
+
+      const parseAmt = (v: string) => {
+        if (!v) return 0
+        return parseFloat(v.replace(/[£,\s]/g, '')) || 0
+      }
+      q1Total += parseAmt(row[7])
+      q2Total += parseAmt(row[8])
+      q3Total += parseAmt(row[9])
+      q4Total += parseAmt(row[10])
+
       deals.push({
         ioNumber: row[1] || '',
         client: row[2] || '',
@@ -94,30 +141,12 @@ export async function fetchBillingTracker(primaryToken: string) {
         q4: row[10] || '',
         annualTotal: row[11] || '£0',
         margin: row[12] || '',
+        signed: billingInfo.signed,
+        invoiceSent: billingInfo.invoiceSent,
       })
     }
 
-    // Also fetch Billing Tracker tab for invoice status
-    let invoiceSummary = { signed: 0, unsigned: 0, invoicesSent: 0, invoicesNotSent: 0 }
-    let billingRows: string[][] = []
-    try {
-      const billingRes = await sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: 'Billing Tracker!A1:I50',
-      })
-      const rawBilling = billingRes.data.values || []
-      for (let i = 3; i < rawBilling.length; i++) {
-        const row = rawBilling[i]
-        if (!row || !row[2]) continue
-        billingRows.push(row as string[])
-        if (row[0] === 'TRUE') invoiceSummary.signed++
-        else invoiceSummary.unsigned++
-        if (row[7] === 'TRUE') invoiceSummary.invoicesSent++
-        else invoiceSummary.invoicesNotSent++
-      }
-    } catch (e) {
-      console.error('Failed to fetch billing tracker tab:', e)
-    }
+    const quarterlyTotals = { q1: q1Total, q2: q2Total, q3: q3Total, q4: q4Total }
 
     // Fetch INVOICING 2026 tab for detailed invoice data
     let invoicingRows: string[][] = []
@@ -140,6 +169,7 @@ export async function fetchBillingTracker(primaryToken: string) {
       invoiceSummary,
       billingRows,
       invoicingRows,
+      quarterlyTotals,
     }
   } catch (error) {
     console.error('Failed to fetch billing tracker:', error)
@@ -152,6 +182,7 @@ export async function fetchBillingTracker(primaryToken: string) {
       invoiceSummary: { signed: 0, unsigned: 0, invoicesSent: 0, invoicesNotSent: 0 },
       billingRows: [],
       invoicingRows: [],
+      quarterlyTotals: { q1: 0, q2: 0, q3: 0, q4: 0 },
       error: String(error),
     }
   }
