@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Text } from '@react-three/drei'
+import { Html } from '@react-three/drei'
 import * as THREE from 'three'
 import { AgentAvatar } from './AgentAvatar'
 import type { Agent } from '@/lib/agents'
@@ -136,43 +136,20 @@ export function AgentDesk({ agent, selected, active, onSelect }: AgentDeskProps)
       />
 
       {/* Agent name label */}
-      <Text
-        position={[0, 1.45, 0.1]}
-        fontSize={0.14}
-        color={selected || active ? agent.color : '#e5e7eb'}
-        anchorX="center"
-        anchorY="middle"
-        font="/fonts/inter-medium.woff"
-        renderOrder={1}
-      >
-        {agent.name}
-      </Text>
+      <Html position={[0, 1.45, 0.1]} center>
+        <span style={{ color: selected || active ? agent.color : '#e5e7eb', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'none' }}>{agent.name}</span>
+      </Html>
 
       {/* Role label */}
-      <Text
-        position={[0, 1.28, 0.1]}
-        fontSize={0.09}
-        color="#6b7280"
-        anchorX="center"
-        anchorY="middle"
-        renderOrder={1}
-      >
-        {agent.role}
-      </Text>
+      <Html position={[0, 1.28, 0.1]} center>
+        <span style={{ color: '#6b7280', fontSize: '9px', whiteSpace: 'nowrap', pointerEvents: 'none' }}>{agent.role}</span>
+      </Html>
 
       {/* Current task label */}
       {agent.currentTask && (
-        <Text
-          position={[0, 1.12, 0.1]}
-          fontSize={0.075}
-          color={agent.color}
-          anchorX="center"
-          anchorY="middle"
-          maxWidth={1.3}
-          renderOrder={1}
-        >
-          {agent.currentTask}
-        </Text>
+        <Html position={[0, 1.12, 0.1]} center>
+          <span style={{ color: agent.color, fontSize: '8px', whiteSpace: 'nowrap', maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', pointerEvents: 'none' }}>{agent.currentTask}</span>
+        </Html>
       )}
     </group>
   )

@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Text } from '@react-three/drei'
+import { Html } from '@react-three/drei'
 import * as THREE from 'three'
 
 const TASKS = {
@@ -28,16 +28,9 @@ function TaskCard3D({ text, position, color }: TaskCard3DProps) {
         <boxGeometry args={[0.06, 0.22, 0.004]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.8} />
       </mesh>
-      <Text
-        position={[0.06, 0, 0.015]}
-        fontSize={0.07}
-        color="#d1d5db"
-        anchorX="center"
-        anchorY="middle"
-        maxWidth={0.72}
-      >
-        {text}
-      </Text>
+      <Html position={[0.06, 0, 0.015]} center>
+        <span style={{ color: '#d1d5db', fontSize: '7px', maxWidth: '72px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', pointerEvents: 'none' }}>{text}</span>
+      </Html>
     </group>
   )
 }
@@ -74,16 +67,9 @@ export function TaskBoard3D() {
       </mesh>
 
       {/* Title */}
-      <Text
-        position={[0, 0.82, 0.04]}
-        fontSize={0.13}
-        color="#D4A853"
-        anchorX="center"
-        anchorY="middle"
-        font="/fonts/inter-medium.woff"
-      >
-        TASK BOARD
-      </Text>
+      <Html position={[0, 0.82, 0.04]} center>
+        <span style={{ color: '#D4A853', fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', whiteSpace: 'nowrap', pointerEvents: 'none' }}>TASK BOARD</span>
+      </Html>
 
       {/* Columns */}
       {columns.map((col) => (
@@ -93,15 +79,9 @@ export function TaskBoard3D() {
             <boxGeometry args={[0.92, 0.18, 0.01]} />
             <meshStandardMaterial color={col.color} emissive={col.color} emissiveIntensity={0.2} roughness={0.8} />
           </mesh>
-          <Text
-            position={[0, 0.62, 0.01]}
-            fontSize={0.09}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-          >
-            {col.label}
-          </Text>
+          <Html position={[0, 0.62, 0.01]} center>
+            <span style={{ color: '#ffffff', fontSize: '9px', fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'none' }}>{col.label}</span>
+          </Html>
 
           {/* Task cards */}
           {col.tasks.map((task, i) => (
