@@ -57,7 +57,7 @@ interface XeroData {
   organisation?: string | null
   error?: string
   pnl?: { totalIncome: number; totalExpenses: number; netProfit: number } | null
-  banks?: Array<{ name?: string; code?: string; balance?: string | null }>
+  banks?: Array<{ name: string; balance: number }>
   invoices?: Array<{
     invoiceNumber?: string
     contact?: string
@@ -66,6 +66,14 @@ interface XeroData {
     dueDate?: string
     status?: string
     currency?: string
+  }>
+  agedReceivables?: Array<{
+    contact: string
+    total: number
+    current: number
+    overdue30: number
+    overdue60: number
+    overdue90: number
   }>
 }
 
@@ -112,9 +120,15 @@ function ExpensesTab() {
 
   if (xero.error) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-900/10 px-4 py-3 text-sm text-red-400">
-        <AlertCircle className="h-4 w-4 shrink-0" />
-        Xero error: {xero.error}
+      <div className="rounded-xl border border-red-900/40 bg-red-900/10 px-6 py-8 text-center">
+        <AlertCircle className="mx-auto mb-3 h-6 w-6 text-red-400" />
+        <p className="text-sm text-red-400 mb-4">Xero error: {xero.error}</p>
+        <a
+          href="/api/xero/connect"
+          className="inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-semibold text-zinc-900 hover:bg-[#C49843] transition-colors"
+        >
+          Reconnect Xero
+        </a>
       </div>
     )
   }
@@ -167,10 +181,46 @@ function ExpensesTab() {
           <div className="flex flex-wrap gap-3">
             {xero.banks.map((b, i) => (
               <div key={i} className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 min-w-[160px]">
-                <p className="text-[10px] text-zinc-500 mb-1">{b.name ?? 'Account'}</p>
-                <p className="font-mono text-lg font-bold text-zinc-100">{b.code ?? '—'}</p>
+                <p className="text-[10px] text-zinc-500 mb-1">{b.name}</p>
+                <p className={"font-mono text-lg font-bold " + (b.balance >= 0 ? 'text-zinc-100' : 'text-red-400')}>
+                  {fmt(b.balance)}
+                </p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+
+      {/* Aged Receivables */}
+      {xero.agedReceivables && xero.agedReceivables.length > 0 && (
+        <div>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Aged Receivables</p>
+          <div className="overflow-x-auto rounded-xl border border-zinc-800">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-zinc-950 border-b border-zinc-800">
+                  <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Contact</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Current</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-zinc-500">1-30 days</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-zinc-500">31-60 days</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-zinc-500">60+ days</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800 bg-zinc-900">
+                {xero.agedReceivables.map((ar, i) => (
+                  <tr key={i} className="hover:bg-zinc-800/60 transition-colors">
+                    <td className="px-3 py-2.5 font-medium text-zinc-100">{ar.contact}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-zinc-400">{ar.current > 0 ? fmt(ar.current) : '—'}</td>
+                    <td className={"px-3 py-2.5 text-right font-mono " + (ar.overdue30 > 0 ? 'text-amber-400' : 'text-zinc-600')}>{ar.overdue30 > 0 ? fmt(ar.overdue30) : '—'}</td>
+                    <td className={"px-3 py-2.5 text-right font-mono " + (ar.overdue60 > 0 ? 'text-orange-400' : 'text-zinc-600')}>{ar.overdue60 > 0 ? fmt(ar.overdue60) : '—'}</td>
+                    <td className={"px-3 py-2.5 text-right font-mono " + (ar.overdue90 > 0 ? 'text-red-400' : 'text-zinc-600')}>{ar.overdue90 > 0 ? fmt(ar.overdue90) : '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-zinc-200">{fmt(ar.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

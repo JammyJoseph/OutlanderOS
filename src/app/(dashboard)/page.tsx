@@ -35,7 +35,8 @@ interface Deal {
 }
 
 interface DashboardData {
-  connected: { billing: boolean; primary: boolean }
+  connected: { billing: boolean; primary: boolean; xero?: boolean }
+  xero?: { pnl?: { totalIncome: number; totalExpenses: number; netProfit: number } | null; totalBankBalance?: number; error?: string }
   billingAlerts?: BillingAlert[]
   calendar?: {
     todayEvents: Array<{
@@ -479,6 +480,22 @@ export default function DashboardPage() {
               value={currencySplit || '—'}
               valueClass="text-zinc-300"
             />
+            {data?.xero?.totalBankBalance != null && !data.xero.error && (
+              <InsightCard
+                label="Bank Balance"
+                value={'£' + Math.round(data.xero.totalBankBalance).toLocaleString('en-GB')}
+                valueClass={data.xero.totalBankBalance >= 0 ? 'text-cyan-400' : 'text-red-400'}
+                sub="Xero total"
+              />
+            )}
+            {data?.xero?.pnl?.netProfit != null && !data.xero.error && (
+              <InsightCard
+                label="Net Profit YTD"
+                value={'£' + Math.round(Math.abs(data.xero.pnl.netProfit)).toLocaleString('en-GB')}
+                valueClass={data.xero.pnl.netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                sub="Xero P&L"
+              />
+            )}
           </div>
         )}
       </div>

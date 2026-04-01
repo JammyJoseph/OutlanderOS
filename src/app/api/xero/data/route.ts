@@ -5,6 +5,7 @@ import {
   getXeroBankSummary,
   getXeroInvoices,
   getXeroOrganisation,
+  getXeroAgedReceivables,
 } from '@/lib/xero-client'
 
 export async function GET() {
@@ -16,11 +17,12 @@ export async function GET() {
   }
 
   try {
-    const [org, pnl, banks, invoices] = await Promise.all([
+    const [org, pnl, banks, invoices, agedReceivables] = await Promise.all([
       getXeroOrganisation(tokenJson),
       getXeroProfitAndLoss(tokenJson),
       getXeroBankSummary(tokenJson),
-      getXeroInvoices(tokenJson, 'ACCPAY'),
+      getXeroInvoices(tokenJson, 'ACCREC'),
+      getXeroAgedReceivables(tokenJson),
     ])
 
     return NextResponse.json({
@@ -29,6 +31,7 @@ export async function GET() {
       pnl,
       banks,
       invoices,
+      agedReceivables,
     })
   } catch (err) {
     console.error('Xero data error:', err)
