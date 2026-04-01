@@ -514,9 +514,9 @@ export default function DashboardPage() {
                 {ongoingDeals.length === 0 ? (
                   <p className="text-xs text-zinc-600 py-2">No ongoing deals</p>
                 ) : (
-                  ongoingDeals.map((d) => (
+                  ongoingDeals.map((d, i) => (
                     <DealCard
-                      key={d.ioNumber || d.client}
+                      key={d.ioNumber || d.client || i}
                       deal={d}
                       onClick={() =>
                         setSelectedDeal(selectedDeal?.client === d.client ? null : d)
@@ -540,9 +540,9 @@ export default function DashboardPage() {
                 {pendingInvoiceDeals.length === 0 ? (
                   <p className="text-xs text-zinc-600 py-2">No pending invoices</p>
                 ) : (
-                  pendingInvoiceDeals.map((d) => (
+                  pendingInvoiceDeals.map((d, i) => (
                     <DealCard
-                      key={d.ioNumber || d.client}
+                      key={d.ioNumber || d.client || i}
                       deal={d}
                       onClick={() =>
                         setSelectedDeal(selectedDeal?.client === d.client ? null : d)
@@ -567,9 +567,9 @@ export default function DashboardPage() {
                 {pipelineDeals.length === 0 ? (
                   <p className="text-xs text-zinc-600 py-2">No pipeline deals</p>
                 ) : (
-                  pipelineDeals.map((d) => (
+                  pipelineDeals.map((d, i) => (
                     <DealCard
-                      key={d.ioNumber || d.client}
+                      key={d.ioNumber || d.client || i}
                       deal={d}
                       onClick={() =>
                         setSelectedDeal(selectedDeal?.client === d.client ? null : d)
