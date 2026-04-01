@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import {
   BarChart,
   Bar,
@@ -23,6 +24,7 @@ interface SlackMember {
 }
 
 interface Deal {
+  id: number
   ioNumber: string
   client: string
   campaign: string
@@ -35,6 +37,7 @@ interface Deal {
   margin: string
   signed: boolean
   invoiceSent: boolean
+  billingInfo?: string[]
 }
 
 interface DashboardData {
@@ -55,6 +58,7 @@ interface DashboardData {
     gapToTarget: string
     totalDeals: number
     deals: Deal[]
+    allDeals?: Deal[]
     invoiceSummary: {
       signed: number
       unsigned: number
@@ -121,135 +125,133 @@ function KpiSkeleton() {
   )
 }
 
-// ---- Deal Card ----
+// ---- Project Row ----
 
-function DealCard({
+function dealStatus(deal: Deal): 'Active' | 'Pending' | 'Pipeline' {
+  if (!deal.signed) return 'Pipeline'
+  if (!deal.invoiceSent) return 'Pending'
+  return 'Active'
+}
+
+const STATUS_PILL: Record<string, string> = {
+  Active: 'bg-green-900 text-green-300',
+  Pending: 'bg-amber-900 text-amber-300',
+  Pipeline: 'bg-zinc-800 text-zinc-400',
+}
+
+const STATUS_BORDER: Record<string, string> = {
+  Active: 'border-l-green-500',
+  Pending: 'border-l-amber-500',
+  Pipeline: 'border-l-zinc-600',
+}
+
+function buildTasks(
+  deal: Deal,
+  alerts: BillingAlert[]
+): Array<{ label: string; priority: 'red' | 'amber' }> {
+  const tasks: Array<{ label: string; priority: 'red' | 'amber' }> = []
+  if (!deal.signed) tasks.push({ label: 'Chase IO signature', priority: 'red' })
+  if (deal.signed && !deal.invoiceSent) tasks.push({ label: 'Send invoice', priority: 'amber' })
+  for (const alert of alerts) {
+    const clientLower = deal.client.toLowerCase()
+    const alertClient = (alert.client ?? '').toLowerCase()
+    if (alertClient && (alertClient.includes(clientLower) || clientLower.includes(alertClient))) {
+      tasks.push({
+        label: alert.subject || 'Billing alert',
+        priority: alert.priority === 'urgent' || alert.priority === 'high' ? 'red' : 'amber',
+      })
+    }
+  }
+  return tasks
+}
+
+function ProjectRow({
   deal,
-  onClick,
-  selected,
-  notificationBadge,
-  dimmed,
+  index,
+  alerts,
+  isLast,
 }: {
   deal: Deal
-  onClick: () => void
-  selected: boolean
-  notificationBadge?: string
-  dimmed?: boolean
+  index: number
+  alerts: BillingAlert[]
+  isLast: boolean
 }) {
+  const [expanded, setExpanded] = useState(false)
+  const status = dealStatus(deal)
+  const tasks = buildTasks(deal, alerts)
   const amount = parseAmount(deal.annualTotal)
+  const dealId = deal.id ?? index
+
   return (
-    <div
-      onClick={onClick}
-      className={`cursor-pointer rounded-lg border p-3 mb-2 transition-all ${
-        selected
-          ? 'border-amber-500 bg-zinc-800'
-          : dimmed
-          ? 'border-zinc-800 bg-zinc-900/50 opacity-60 hover:opacity-80'
-          : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-semibold text-sm text-zinc-100 truncate">{deal.client}</p>
-          <p className="text-xs text-zinc-500 truncate">{deal.campaign || '—'}</p>
+    <div className={isLast ? '' : 'border-b border-zinc-800'}>
+      <div
+        onClick={() => setExpanded((p) => !p)}
+        className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800 cursor-pointer transition-colors"
+      >
+        {/* Left */}
+        <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
+          <span className="font-semibold text-sm text-zinc-100">{deal.client}</span>
+          {deal.campaign && (
+            <span className="text-xs text-zinc-500 truncate max-w-[200px]">{deal.campaign}</span>
+          )}
+          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${STATUS_PILL[status]}`}>
+            {status}
+          </span>
         </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className="font-mono text-xs text-zinc-300">{amount > 0 ? fmt(amount) : deal.annualTotal}</span>
+
+        {/* Right */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="font-mono text-sm text-zinc-300">
+            {amount > 0 ? fmt(amount) : deal.annualTotal || '—'}
+          </span>
           {deal.margin && (
             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${marginColor(deal.margin)}`}>
               {deal.margin}
             </span>
           )}
+          {tasks.length > 0 && (
+            <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-bold flex items-center justify-center shrink-0">
+              {tasks.length}
+            </span>
+          )}
+          <Link
+            href={`/projects/${dealId}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-zinc-600 hover:text-zinc-200 transition-colors text-sm leading-none px-1"
+          >
+            →
+          </Link>
         </div>
       </div>
-      {notificationBadge && (
-        <div className="mt-1.5">
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-900 text-amber-300">
-            {notificationBadge}
-          </span>
+
+      {/* Sub-lines */}
+      {expanded && (
+        <div className={`border-l-2 ${STATUS_BORDER[status]} ml-4 bg-zinc-950`}>
+          {tasks.length === 0 ? (
+            <div className="px-4 py-2">
+              <span className="text-xs text-zinc-600">No outstanding tasks</span>
+            </div>
+          ) : (
+            <>
+              {tasks.slice(0, 3).map((task, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-2">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      task.priority === 'red' ? 'bg-red-400' : 'bg-amber-400'
+                    }`}
+                  />
+                  <span className="text-xs text-zinc-400">{task.label}</span>
+                </div>
+              ))}
+              {tasks.length > 3 && (
+                <div className="px-4 py-2">
+                  <span className="text-xs text-zinc-600">+ {tasks.length - 3} more</span>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
-    </div>
-  )
-}
-
-// ---- Expanded Deal Panel ----
-
-function ExpandedDeal({ deal }: { deal: Deal }) {
-  const q1 = parseAmount(deal.q1)
-  const q2 = parseAmount(deal.q2)
-  const q3 = parseAmount(deal.q3)
-  const q4 = parseAmount(deal.q4)
-  const total = parseAmount(deal.annualTotal)
-
-  return (
-    <div className="mt-4 bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-bold text-zinc-100">{deal.client}</h3>
-          <p className="text-sm text-zinc-400">{deal.campaign}</p>
-        </div>
-        <div className="flex gap-2 text-xs">
-          {deal.signed ? (
-            <span className="px-2 py-1 rounded-full bg-green-900 text-green-300">Signed</span>
-          ) : (
-            <span className="px-2 py-1 rounded-full bg-red-900 text-red-300">Unsigned</span>
-          )}
-          {deal.invoiceSent ? (
-            <span className="px-2 py-1 rounded-full bg-blue-900 text-blue-300">Invoice Sent</span>
-          ) : (
-            <span className="px-2 py-1 rounded-full bg-amber-900 text-amber-300">Invoice Pending</span>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-zinc-800 rounded-lg p-3">
-          <p className="text-xs text-zinc-500 mb-1">IO Number</p>
-          <p className="font-mono text-sm text-zinc-200">{deal.ioNumber || '—'}</p>
-        </div>
-        <div className="bg-zinc-800 rounded-lg p-3">
-          <p className="text-xs text-zinc-500 mb-1">Date Booked</p>
-          <p className="font-mono text-sm text-zinc-200">{deal.dateBooked || '—'}</p>
-        </div>
-        <div className="bg-zinc-800 rounded-lg p-3">
-          <p className="text-xs text-zinc-500 mb-1">Annual Total</p>
-          <p className="font-mono text-sm text-zinc-200">{total > 0 ? fmt(total) : deal.annualTotal}</p>
-        </div>
-        <div className="bg-zinc-800 rounded-lg p-3">
-          <p className="text-xs text-zinc-500 mb-1">Margin</p>
-          <p className={`font-mono text-sm ${deal.margin ? '' : 'text-zinc-500'}`}>{deal.margin || '—'}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        {[
-          { label: 'Q1', value: q1, raw: deal.q1 },
-          { label: 'Q2', value: q2, raw: deal.q2 },
-          { label: 'Q3', value: q3, raw: deal.q3 },
-          { label: 'Q4', value: q4, raw: deal.q4 },
-        ].map(({ label, value, raw }) => (
-          <div key={label} className="bg-zinc-800 rounded-lg p-2 text-center">
-            <p className="text-xs text-zinc-500 mb-0.5">{label}</p>
-            <p className="font-mono text-xs text-zinc-300">{value > 0 ? fmt(value) : (raw || '—')}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          className="flex-1 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-700 transition-colors"
-          onClick={(e) => e.stopPropagation()}
-        >
-          Mark as Paid
-        </button>
-        <button
-          className="flex-1 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-700 transition-colors"
-          onClick={(e) => e.stopPropagation()}
-        >
-          Chase Signature
-        </button>
-      </div>
     </div>
   )
 }
@@ -261,7 +263,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [teamStatus, setTeamStatus] = useState<SlackMember[]>([])
-  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
   const [showAllReminders, setShowAllReminders] = useState(false)
 
   useEffect(() => {
@@ -277,10 +278,9 @@ export default function DashboardPage() {
   }, [])
 
   const bt = data?.billingTracker
-  const deals: Deal[] = bt?.deals ?? []
+  const deals: Deal[] = bt?.allDeals ?? bt?.deals ?? []
 
-  // Categorise deals
-  const ongoingDeals = deals.filter((d) => d.signed && d.invoiceSent)
+  // Categorise deals for reminders
   const pendingInvoiceDeals = deals.filter((d) => d.signed && !d.invoiceSent)
   const pipelineDeals = deals.filter((d) => !d.signed)
 
@@ -486,106 +486,42 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ---- Project Board ---- */}
+      {/* ---- Projects ---- */}
       <div>
-        <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest mb-4">
-          Project Board
-        </h2>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest">Projects</h2>
+          {!loading && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
+              {deals.length}
+            </span>
+          )}
+        </div>
+
         {loading ? (
-          <div className="grid grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
-                <Skeleton className="h-4 w-24 mb-3" />
-                {[...Array(3)].map((_, j) => <Skeleton key={j} className="h-16 w-full" />)}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden divide-y divide-zinc-800">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="px-4 py-3">
+                <Skeleton className="h-5 w-3/4" />
               </div>
             ))}
           </div>
+        ) : deals.length === 0 ? (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+            <p className="text-xs text-zinc-600">No projects</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-3 gap-4">
-            {/* Ongoing */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-              <div className="px-4 pt-4 pb-2 border-b-2 border-blue-500">
-                <h3 className="text-xs font-semibold text-blue-400 uppercase tracking-widest">
-                  Ongoing{' '}
-                  <span className="text-zinc-500 font-normal">({ongoingDeals.length})</span>
-                </h3>
-              </div>
-              <div className="p-3">
-                {ongoingDeals.length === 0 ? (
-                  <p className="text-xs text-zinc-600 py-2">No ongoing deals</p>
-                ) : (
-                  ongoingDeals.map((d, i) => (
-                    <DealCard
-                      key={d.ioNumber || d.client || i}
-                      deal={d}
-                      onClick={() =>
-                        setSelectedDeal(selectedDeal?.client === d.client ? null : d)
-                      }
-                      selected={selectedDeal?.client === d.client}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Pending Invoice */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-              <div className="px-4 pt-4 pb-2 border-b-2 border-amber-500">
-                <h3 className="text-xs font-semibold text-amber-400 uppercase tracking-widest">
-                  Pending Invoice{' '}
-                  <span className="text-zinc-500 font-normal">({pendingInvoiceDeals.length})</span>
-                </h3>
-              </div>
-              <div className="p-3">
-                {pendingInvoiceDeals.length === 0 ? (
-                  <p className="text-xs text-zinc-600 py-2">No pending invoices</p>
-                ) : (
-                  pendingInvoiceDeals.map((d, i) => (
-                    <DealCard
-                      key={d.ioNumber || d.client || i}
-                      deal={d}
-                      onClick={() =>
-                        setSelectedDeal(selectedDeal?.client === d.client ? null : d)
-                      }
-                      selected={selectedDeal?.client === d.client}
-                      notificationBadge="Invoice needed"
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Pipeline */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-              <div className="px-4 pt-4 pb-2 border-b-2 border-zinc-600">
-                <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
-                  Pipeline{' '}
-                  <span className="text-zinc-500 font-normal">({pipelineDeals.length})</span>
-                </h3>
-              </div>
-              <div className="p-3">
-                {pipelineDeals.length === 0 ? (
-                  <p className="text-xs text-zinc-600 py-2">No pipeline deals</p>
-                ) : (
-                  pipelineDeals.map((d, i) => (
-                    <DealCard
-                      key={d.ioNumber || d.client || i}
-                      deal={d}
-                      onClick={() =>
-                        setSelectedDeal(selectedDeal?.client === d.client ? null : d)
-                      }
-                      selected={selectedDeal?.client === d.client}
-                      dimmed
-                    />
-                  ))
-                )}
-              </div>
-            </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+            {deals.map((deal, i) => (
+              <ProjectRow
+                key={deal.id ?? i}
+                deal={deal}
+                index={i}
+                alerts={data?.billingAlerts ?? []}
+                isLast={i === deals.length - 1}
+              />
+            ))}
           </div>
         )}
-
-        {/* Expanded Deal Panel */}
-        {selectedDeal && <ExpandedDeal deal={selectedDeal} />}
       </div>
     </div>
   )

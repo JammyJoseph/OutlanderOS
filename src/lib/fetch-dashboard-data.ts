@@ -69,6 +69,7 @@ export async function fetchBillingTracker(primaryToken: string) {
     // Parse deals: starts at row 7 (index 6), columns: A=row, B=IO, C=Client, D=Campaign, ...
     // H=Q1, I=Q2, J=Q3, K=Q4, L=Annual Total, M=Margin%
     const deals: Array<{
+      id: number
       ioNumber: string
       client: string
       campaign: string
@@ -81,13 +82,14 @@ export async function fetchBillingTracker(primaryToken: string) {
       margin: string
       signed: boolean
       invoiceSent: boolean
+      billingInfo: string[]
     }> = []
 
     // Also fetch Billing Tracker tab for invoice status first so we can map per-deal
     let invoiceSummary = { signed: 0, unsigned: 0, invoicesSent: 0, invoicesNotSent: 0 }
     let billingRows: string[][] = []
-    // Build a map from client name → {signed, invoiceSent} for deal enrichment
-    const billingByClient: Record<string, { signed: boolean; invoiceSent: boolean }> = {}
+    // Build a map from client name → {signed, invoiceSent, row} for deal enrichment
+    const billingByClient: Record<string, { signed: boolean; invoiceSent: boolean; row: string[] }> = {}
     try {
       const billingRes = await sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
@@ -106,7 +108,7 @@ export async function fetchBillingTracker(primaryToken: string) {
         else invoiceSummary.invoicesNotSent++
         // row[2] = client name in billing tracker
         const clientKey = (row[2] as string).trim().toLowerCase()
-        billingByClient[clientKey] = { signed, invoiceSent }
+        billingByClient[clientKey] = { signed, invoiceSent, row: row as string[] }
       }
     } catch (e) {
       console.error('Failed to fetch billing tracker tab:', e)
@@ -119,7 +121,7 @@ export async function fetchBillingTracker(primaryToken: string) {
       const row = rows[i]
       if (!row || !row[2]) continue // skip if no client name
       const clientKey = (row[2] as string).trim().toLowerCase()
-      const billingInfo = billingByClient[clientKey] ?? { signed: false, invoiceSent: false }
+      const billing = billingByClient[clientKey] ?? { signed: false, invoiceSent: false, row: [] }
 
       const parseAmt = (v: string) => {
         if (!v) return 0
@@ -131,6 +133,7 @@ export async function fetchBillingTracker(primaryToken: string) {
       q4Total += parseAmt(row[10])
 
       deals.push({
+        id: deals.length,
         ioNumber: row[1] || '',
         client: row[2] || '',
         campaign: row[3] || '',
@@ -141,8 +144,9 @@ export async function fetchBillingTracker(primaryToken: string) {
         q4: row[10] || '',
         annualTotal: row[11] || '£0',
         margin: row[12] || '',
-        signed: billingInfo.signed,
-        invoiceSent: billingInfo.invoiceSent,
+        signed: billing.signed,
+        invoiceSent: billing.invoiceSent,
+        billingInfo: billing.row,
       })
     }
 
