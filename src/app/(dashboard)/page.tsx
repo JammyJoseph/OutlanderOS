@@ -1,19 +1,6 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
-import { CheckCircle2, Circle, Mail, Calendar, TableProperties, ArrowRight, Zap } from 'lucide-react'
-
-const ACCOUNT_META: Record<string, { label: string; email: string; description: string }> = {
-  primary: {
-    label: 'Primary Account',
-    email: 'q@outlandermag.com',
-    description: 'Gmail · Calendar · Drive',
-  },
-  billing: {
-    label: 'Billing Account',
-    email: 'billing@outlandermag.com',
-    description: 'Gmail · Invoices · Finance emails',
-  },
-}
+import { CheckCircle2, Mail, Calendar, TableProperties, ArrowRight, Zap, Clock, FolderOpen, FileText, Activity } from 'lucide-react'
 
 const steps = [
   {
@@ -39,6 +26,65 @@ const steps = [
   },
 ]
 
+function SkeletonPulse() {
+  return (
+    <div className="h-7 w-16 animate-pulse rounded bg-zinc-800" />
+  )
+}
+
+function StatCard({
+  label,
+  icon: Icon,
+  syncing = true,
+  value,
+  sub,
+}: {
+  label: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: React.ComponentType<any>
+  syncing?: boolean
+  value?: string
+  sub?: string
+}) {
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+      <div className="flex items-center gap-2 text-zinc-500">
+        <Icon className="h-3.5 w-3.5" />
+        <span className="text-xs font-medium">{label}</span>
+      </div>
+      <div className="flex items-end gap-2">
+        {syncing ? (
+          <div className="flex items-center gap-2">
+            <SkeletonPulse />
+            <span className="text-[10px] text-zinc-600">Syncing…</span>
+          </div>
+        ) : (
+          <>
+            <span className="text-2xl font-bold text-white">{value}</span>
+            {sub && <span className="mb-0.5 text-xs text-zinc-500">{sub}</span>}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+function formatDate() {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 export default async function DashboardPage() {
   const cookieStore = await cookies()
   const primaryConnected = cookieStore.has('google_primary_token')
@@ -46,100 +92,80 @@ export default async function DashboardPage() {
   const bothConnected = primaryConnected && billingConnected
   const anyConnected = primaryConnected || billingConnected
 
-  const primaryToken = cookieStore.get('google_primary_token')
-  const billingToken = cookieStore.get('google_billing_token')
-
-  // Try to get emails from token cookies (they may be JSON-encoded with email info)
-  // Fall back to known emails
-  const primaryEmail = 'q@outlandermag.com'
-  const billingEmail = 'billing@outlandermag.com'
-
   if (bothConnected) {
     return (
-      <div className="flex min-h-full flex-col py-10 px-4 sm:px-6">
-        <div className="mx-auto w-full max-w-2xl space-y-6">
-          {/* Connected banner */}
-          <div className="flex items-start gap-4 rounded-xl border border-emerald-800/40 bg-emerald-900/10 p-5">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
-              <Zap className="h-4 w-4 text-emerald-400" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-emerald-300">OutlanderOS is connected</h1>
-              <p className="mt-0.5 text-sm text-emerald-600">
-                Both Google accounts are linked. Your agents are ready.
-              </p>
-            </div>
+      <div className="flex min-h-full flex-col py-8 px-4 sm:px-6">
+        <div className="mx-auto w-full max-w-3xl space-y-8">
+
+          {/* Greeting */}
+          <div>
+            <h1 className="text-2xl font-bold text-white">
+              {getGreeting()}, <span className="text-[#D4A853]">Joe</span>
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">{formatDate()}</p>
           </div>
 
-          {/* Connected accounts */}
+          {/* Quick stats */}
           <section>
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Connected Accounts
+              Live Overview
             </h2>
-            <div className="space-y-2">
-              {[
-                { id: 'primary', label: ACCOUNT_META.primary.label, email: primaryEmail, description: ACCOUNT_META.primary.description },
-                { id: 'billing', label: ACCOUNT_META.billing.label, email: billingEmail, description: ACCOUNT_META.billing.description },
-              ].map((account) => (
-                <div
-                  key={account.id}
-                  className="flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-sm font-bold text-emerald-400">
-                    G
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-zinc-100">{account.label}</p>
-                    <p className="text-xs text-zinc-500">{account.email} · {account.description}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 rounded-full border border-emerald-800/50 bg-emerald-900/20 px-2.5 py-1">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                    <span className="text-[11px] font-medium text-emerald-400">Connected</span>
-                  </div>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <StatCard label="Unread emails" icon={Mail} syncing />
+              <StatCard label="Today's events" icon={Calendar} syncing />
+              <StatCard label="Outstanding invoices" icon={FileText} syncing />
+              <StatCard label="Active projects" icon={FolderOpen} syncing />
+            </div>
+            <p className="mt-2 text-[11px] text-zinc-600">
+              Data will populate once your agents finish their first sync.
+            </p>
+          </section>
+
+          {/* Priority actions */}
+          <section>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Priority Actions
+            </h2>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-8 text-center">
+              <Zap className="mx-auto mb-3 h-6 w-6 text-zinc-700" />
+              <p className="text-sm font-medium text-zinc-400">No actions yet</p>
+              <p className="mt-1 text-xs text-zinc-600">
+                Your agents will surface priorities here once fully connected and synced.
+              </p>
             </div>
           </section>
 
-          {/* Setup checklist — all green */}
+          {/* Recent activity */}
           <section>
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Setup Complete
+              Recent Activity
             </h2>
-            <div className="space-y-2">
-              {steps.map((step) => {
-                const Icon = step.icon
-                return (
-                  <div
-                    key={step.id}
-                    className="flex items-center gap-3 rounded-xl border border-zinc-800/50 bg-zinc-900/60 px-4 py-3"
-                  >
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-zinc-300">{step.label}</p>
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-8 text-center">
+              <Activity className="mx-auto mb-3 h-6 w-6 text-zinc-700" />
+              <p className="text-sm font-medium text-zinc-400">No activity yet</p>
+              <p className="mt-1 text-xs text-zinc-600">
+                Activity will appear here as your agent team works.
+              </p>
             </div>
           </section>
 
-          {/* Quick actions */}
+          {/* Quick nav */}
           <section>
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Quick Actions
+              Quick Links
             </h2>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'View Emails', href: '/email', description: 'Read & manage' },
-                { label: 'Open Finance', href: '/finance', description: 'Invoices & cash flow' },
-                { label: 'Agent Office', href: '/office', description: 'Your AI team' },
+                { label: 'Email', href: '/email', description: 'billing@outlandermag.com', icon: Mail },
+                { label: 'Calendar', href: '/calendar', description: 'Schedule & events', icon: Calendar },
+                { label: 'Agent Office', href: '/office', description: 'Your AI team', icon: Clock },
               ].map((action) => (
                 <Link
                   key={action.href}
                   href={action.href}
                   className="group flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition-colors hover:border-[#D4A853]/40 hover:bg-zinc-800"
                 >
+                  <action.icon className="mb-1 h-4 w-4 text-zinc-600 group-hover:text-[#D4A853] transition-colors" />
                   <span className="text-sm font-medium text-zinc-100 group-hover:text-[#D4A853] transition-colors">
                     {action.label}
                   </span>
@@ -149,12 +175,13 @@ export default async function DashboardPage() {
               ))}
             </div>
           </section>
+
         </div>
       </div>
     )
   }
 
-  // Partial or no connection — setup wizard with progress
+  // Setup wizard — partial or no connection
   const stepStatus = {
     primary: primaryConnected,
     billing: billingConnected,
@@ -164,7 +191,6 @@ export default async function DashboardPage() {
   return (
     <div className="flex min-h-full flex-col items-center justify-center py-16 px-4">
       <div className="w-full max-w-xl">
-        {/* Heading */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-white">
             Welcome to <span className="text-[#D4A853]">OutlanderOS</span>
@@ -176,7 +202,6 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* Setup steps */}
         <div className="space-y-3">
           {steps.map((step, i) => {
             const Icon = step.icon
@@ -231,7 +256,6 @@ export default async function DashboardPage() {
           })}
         </div>
 
-        {/* Helper link */}
         <div className="mt-8 flex items-center justify-center gap-6 text-xs text-zinc-600">
           <Link href="/settings" className="hover:text-zinc-400 transition-colors">
             Settings
