@@ -26,6 +26,7 @@ interface BillingTracker {
   deals: Deal[]
   allDeals: Deal[]
   invoiceSummary: InvoiceSummary
+  invoicingRows?: string[][]
   error?: string
 }
 
@@ -224,6 +225,34 @@ export default function FinancePage() {
                 </div>
               )}
             </section>
+            {/* INVOICING 2026 raw data */}
+            {bt.invoicingRows && bt.invoicingRows.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  INVOICING 2026
+                </h2>
+                <div className="overflow-x-auto rounded-xl border border-zinc-800">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-zinc-800 bg-zinc-900">
+                        {bt.invoicingRows[0].map((header, i) => (
+                          <th key={i} className="px-3 py-2.5 text-left font-medium text-zinc-500 whitespace-nowrap">{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800 bg-zinc-900/50">
+                      {bt.invoicingRows.slice(1).filter(r => r.some(c => c)).map((row, i) => (
+                        <tr key={i} className="hover:bg-zinc-800/50 transition-colors">
+                          {bt.invoicingRows![0].map((_, j) => (
+                            <td key={j} className="px-3 py-2 text-zinc-300 whitespace-nowrap">{row[j] ?? ''}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
           </>
         ) : (
           <p className="text-sm text-zinc-500">No billing data available.</p>

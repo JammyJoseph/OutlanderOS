@@ -142,7 +142,7 @@ export async function fetchBillingTracker(primaryToken: string) {
     try {
       const billingRes = await sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: "'Billing Tracker'!A1:I50",
+        range: 'Billing Tracker!A1:I50',
       })
       const billingRows = billingRes.data.values || []
       for (let i = 3; i < billingRows.length; i++) {
@@ -157,6 +157,18 @@ export async function fetchBillingTracker(primaryToken: string) {
       console.error('Failed to fetch billing tracker tab:', e)
     }
 
+    // Fetch INVOICING 2026 tab for detailed invoice data
+    let invoicingRows: string[][] = []
+    try {
+      const invoicingRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: 'INVOICING 2026!A1:AK50',
+      })
+      invoicingRows = (invoicingRes.data.values || []) as string[][]
+    } catch (e) {
+      console.error('Failed to fetch INVOICING 2026 tab:', e)
+    }
+
     return {
       bookedRevenue,
       gapToTarget,
@@ -164,6 +176,7 @@ export async function fetchBillingTracker(primaryToken: string) {
       deals: deals.slice(0, 10), // Top 10 for dashboard
       allDeals: deals,
       invoiceSummary,
+      invoicingRows,
     }
   } catch (error) {
     console.error('Failed to fetch billing tracker:', error)
@@ -174,6 +187,7 @@ export async function fetchBillingTracker(primaryToken: string) {
       deals: [],
       allDeals: [],
       invoiceSummary: { signed: 0, unsigned: 0, invoicesSent: 0, invoicesNotSent: 0 },
+      invoicingRows: [],
       error: String(error),
     }
   }
