@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, Mail } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -39,6 +39,13 @@ export function Topbar() {
 
       {/* Right side */}
       <div className="flex items-center gap-3">
+        {/* Billing monitor pill */}
+        <div className="flex items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-1 text-xs text-neutral-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+          <Mail className="h-3 w-3" />
+          <span className="font-mono text-neutral-300">billing@</span>
+        </div>
+
         {/* Notifications */}
         <button className="relative flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-800 hover:text-white">
           <Bell className="h-4 w-4" />
