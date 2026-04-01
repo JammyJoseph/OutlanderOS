@@ -15,11 +15,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
+  Bot,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/agent", label: "Agent", icon: Bot },
   { href: "/email", label: "Email", icon: Mail },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/finance", label: "Finance", icon: DollarSign },
