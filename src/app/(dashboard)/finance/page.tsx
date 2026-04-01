@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { Loader2, RefreshCw, AlertCircle, TrendingUp } from 'lucide-react'
+import { Loader2, RefreshCw, AlertCircle, TrendingUp, Link2 } from 'lucide-react'
 
 interface Deal {
   ioNumber: string
@@ -40,14 +40,176 @@ interface DashboardData {
   billingTracker?: BillingTracker
 }
 
-type Tab = 'deals' | 'billing' | 'invoicing' | 'summary'
+type Tab = 'deals' | 'billing' | 'invoicing' | 'summary' | 'expenses'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'deals', label: 'Deals' },
   { id: 'billing', label: 'Billing' },
   { id: 'invoicing', label: 'Invoicing' },
   { id: 'summary', label: 'Summary' },
+  { id: 'expenses', label: 'Expenses' },
 ]
+
+// ---- Xero types ----
+
+interface XeroData {
+  connected: boolean
+  organisation?: string | null
+  error?: string
+  pnl?: { totalIncome: number; totalExpenses: number; netProfit: number } | null
+  banks?: Array<{ name?: string; code?: string; balance?: string | null }>
+  invoices?: Array<{
+    invoiceNumber?: string
+    contact?: string
+    total?: number
+    amountDue?: number
+    dueDate?: string
+    status?: string
+    currency?: string
+  }>
+}
+
+// ---- Expenses Tab ----
+
+function ExpensesTab() {
+  const [xero, setXero] = useState<XeroData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/xero/data')
+      .then(r => r.json())
+      .then(setXero)
+      .catch(() => setXero({ connected: false }))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+      </div>
+    )
+  }
+
+  if (!xero?.connected) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-6 py-12 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-800 text-sm font-bold text-zinc-400">
+          X
+        </div>
+        <h3 className="mb-1 text-sm font-semibold text-zinc-200">Connect Xero</h3>
+        <p className="mb-5 text-xs text-zinc-500">Connect your Xero account to see P&amp;L, bank balances, and recent invoices.</p>
+        <a
+          href="/api/xero/connect"
+          className="inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-semibold text-zinc-900 hover:bg-[#C49843] transition-colors"
+        >
+          <Link2 className="mr-1.5 inline h-3.5 w-3.5" />
+          Connect Xero
+        </a>
+      </div>
+    )
+  }
+
+  if (xero.error) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-900/10 px-4 py-3 text-sm text-red-400">
+        <AlertCircle className="h-4 w-4 shrink-0" />
+        Xero error: {xero.error}
+      </div>
+    )
+  }
+
+  const fmt = (n?: number | null) =>
+    typeof n === 'number' ? `£${Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'
+
+  const statusColor = (s?: string) => {
+    switch (s) {
+      case 'PAID': return 'text-emerald-400'
+      case 'AUTHORISED': return 'text-amber-400'
+      case 'VOIDED': return 'text-zinc-600'
+      default: return 'text-zinc-400'
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Organisation */}
+      {xero.organisation && (
+        <p className="text-xs text-zinc-500">
+          Connected to <span className="font-semibold text-zinc-300">{xero.organisation}</span>
+        </p>
+      )}
+
+      {/* P&L KPIs */}
+      {xero.pnl && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Income YTD</p>
+            <p className="font-mono text-2xl font-bold text-emerald-400">{fmt(xero.pnl.totalIncome)}</p>
+          </div>
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Expenses YTD</p>
+            <p className="font-mono text-2xl font-bold text-red-400">{fmt(xero.pnl.totalExpenses)}</p>
+          </div>
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Net Profit YTD</p>
+            <p className={`font-mono text-2xl font-bold ${(xero.pnl.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-400'}`}>
+              {fmt(xero.pnl.netProfit)}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Bank Summary */}
+      {xero.banks && xero.banks.length > 0 && (
+        <div>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Bank Accounts</p>
+          <div className="flex flex-wrap gap-3">
+            {xero.banks.map((b, i) => (
+              <div key={i} className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 min-w-[160px]">
+                <p className="text-[10px] text-zinc-500 mb-1">{b.name ?? 'Account'}</p>
+                <p className="font-mono text-lg font-bold text-zinc-100">{b.code ?? '—'}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Invoices */}
+      {xero.invoices && xero.invoices.length > 0 && (
+        <div>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Recent Outgoing Invoices</p>
+          <div className="overflow-x-auto rounded-xl border border-zinc-800">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-zinc-950 border-b border-zinc-800">
+                  <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Invoice #</th>
+                  <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Contact</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Total</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Amount Due</th>
+                  <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Due Date</th>
+                  <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800 bg-zinc-900">
+                {xero.invoices.map((inv, i) => (
+                  <tr key={i} className="hover:bg-zinc-800/60 transition-colors">
+                    <td className="px-3 py-2.5 font-mono text-zinc-400">{inv.invoiceNumber ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-zinc-100">{inv.contact ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-zinc-200">{fmt(inv.total)}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-zinc-200">{fmt(inv.amountDue)}</td>
+                    <td className="px-3 py-2.5 text-zinc-400">{inv.dueDate ?? '—'}</td>
+                    <td className={`px-3 py-2.5 font-semibold ${statusColor(inv.status)}`}>{inv.status ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function parseNum(s: string): number {
   if (!s) return 0
@@ -491,7 +653,9 @@ function FinancePageInner() {
         </div>
 
         {/* Tab content */}
-        {!bt ? (
+        {activeTab === 'expenses' ? (
+          <ExpensesTab />
+        ) : !bt ? (
           <p className="text-sm text-zinc-500">No billing data available.</p>
         ) : bt.error ? (
           <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-900/10 px-4 py-3 text-sm text-red-400">

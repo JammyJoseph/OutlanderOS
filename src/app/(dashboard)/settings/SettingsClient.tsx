@@ -12,6 +12,7 @@ import {
   Plug,
   X,
   Hash,
+  ExternalLink,
 } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -35,9 +36,14 @@ function OAuthHandler({
 
   useEffect(() => {
     const connected = searchParams.get("connected");
+    const xeroConnected = searchParams.get("xero_connected");
     const error = searchParams.get("error");
+    const xeroError = searchParams.get("xero_error");
     if (connected) {
       onConnected(connected);
+      router.replace("/settings");
+    } else if (xeroConnected) {
+      onConnected("xero");
       router.replace("/settings");
     } else if (error) {
       onError(
@@ -45,6 +51,9 @@ function OAuthHandler({
           ? "Authorization cancelled."
           : "Connection failed. Please try again."
       );
+      router.replace("/settings");
+    } else if (xeroError) {
+      onError("Xero connection failed. Please try again.");
       router.replace("/settings");
     }
   }, [searchParams, router, onConnected, onError]);
@@ -60,10 +69,18 @@ interface SettingsClientProps {
 export default function SettingsClient({ initialPrimary, initialBilling }: SettingsClientProps) {
   const router = useRouter();
 
+  useEffect(() => {
+    fetch('/api/xero/data')
+      .then(r => r.json())
+      .then(d => setXeroConnected(d.connected === true))
+      .catch(() => {})
+  }, []);
+
   const [connectedAccounts, setConnectedAccounts] = useState<Record<string, boolean>>({
     primary: initialPrimary,
     billing: initialBilling,
   });
+  const [xeroConnected, setXeroConnected] = useState(false);
   const [slackToken, setSlackToken] = useState("");
   const [slackStatus, setSlackStatus] = useState<"idle" | "connecting" | "connected" | "error">("idle");
   const [slackWorkspace, setSlackWorkspace] = useState<string | null>(null);
@@ -153,8 +170,13 @@ export default function SettingsClient({ initialPrimary, initialBilling }: Setti
       <Suspense fallback={null}>
         <OAuthHandler
           onConnected={(label) => {
-            setConnectedAccounts((prev) => ({ ...prev, [label]: true }));
-            setBanner({ type: "success", message: `${label} account connected successfully.` });
+            if (label === "xero") {
+              setXeroConnected(true);
+              setBanner({ type: "success", message: "Xero connected successfully." });
+            } else {
+              setConnectedAccounts((prev) => ({ ...prev, [label]: true }));
+              setBanner({ type: "success", message: `${label} account connected successfully.` });
+            }
           }}
           onError={(msg) => setBanner({ type: "error", message: msg })}
         />
@@ -428,30 +450,63 @@ export default function SettingsClient({ initialPrimary, initialBilling }: Setti
           <h2 className="text-sm font-semibold text-zinc-200">Integrations</h2>
         </div>
         <div className="space-y-2">
-          {[
-            { icon: "X", name: "Xero", description: "Accounting & P&L — coming soon" },
-            {
-              icon: "IG",
-              name: "Instagram",
-              description: "@outlandermagazine analytics — coming soon",
-            },
-          ].map((int) => (
-            <div
-              key={int.name}
-              className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900 p-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-zinc-800 text-xs font-bold text-zinc-400">
-                  {int.icon}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-300">{int.name}</p>
-                  <p className="text-xs text-zinc-600">{int.description}</p>
-                </div>
+          {/* Xero */}
+          <div
+            className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
+              xeroConnected ? "border-emerald-800/40 bg-emerald-900/10" : "border-zinc-800 bg-zinc-900"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-md text-xs font-bold ${
+                xeroConnected ? "bg-emerald-500/20 text-emerald-400" : "bg-zinc-800 text-zinc-400"
+              }`}>
+                X
               </div>
-              <Badge className="bg-zinc-800 text-[10px] text-zinc-500">Coming soon</Badge>
+              <div>
+                <p className="text-sm font-medium text-zinc-300">Xero</p>
+                <p className="text-xs text-zinc-600">Accounting, P&amp;L &amp; invoices</p>
+              </div>
             </div>
-          ))}
+            <div className="flex items-center gap-3">
+              {xeroConnected ? (
+                <>
+                  <div className="flex items-center gap-1.5 rounded-full border border-emerald-800/50 bg-emerald-900/20 px-2.5 py-1">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="text-[11px] font-medium text-emerald-400">Connected</span>
+                  </div>
+                  <button
+                    onClick={() => setXeroConnected(false)}
+                    className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
+                  >
+                    Disconnect
+                  </button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => router.push('/api/xero/connect')}
+                  className="bg-[#D4A853] text-zinc-900 hover:bg-[#C49843]"
+                >
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                  Connect
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Instagram */}
+          <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900 p-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-zinc-800 text-xs font-bold text-zinc-400">
+                IG
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-300">Instagram</p>
+                <p className="text-xs text-zinc-600">@outlandermagazine analytics — coming soon</p>
+              </div>
+            </div>
+            <Badge className="bg-zinc-800 text-[10px] text-zinc-500">Coming soon</Badge>
+          </div>
         </div>
       </section>
     </div>
