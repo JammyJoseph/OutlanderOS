@@ -15,14 +15,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
-  Bot,
   Building2,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/agent", label: "Agent", icon: Bot },
   { href: "/office", label: "Agent Office", icon: Building2 },
   { href: "/email", label: "Email", icon: Mail },
   { href: "/calendar", label: "Calendar", icon: Calendar },

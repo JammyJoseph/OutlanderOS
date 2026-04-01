@@ -1,12 +1,11 @@
 "use client"
 
-import { useRef, useState } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Canvas } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera, Grid, Stars } from '@react-three/drei'
 import * as THREE from 'three'
 import { AgentDesk } from './AgentDesk'
 import { TaskBoard3D } from './TaskBoard3D'
-import { AGENT_FLEET, type Agent } from '@/lib/agents'
+import { useAgentStore } from '@/lib/agent-store'
 
 // Ambient office lighting
 function OfficeLighting() {
@@ -146,12 +145,9 @@ function OfficeDecor() {
   )
 }
 
-interface SceneContentProps {
-  selectedAgentId: string | null
-  onSelectAgent: (id: string | null) => void
-}
+function SceneContent() {
+  const { agents, selectedAgentId, activeAgentId, setSelectedAgent } = useAgentStore()
 
-function SceneContent({ selectedAgentId, onSelectAgent }: SceneContentProps) {
   return (
     <>
       <OfficeLighting />
@@ -161,12 +157,13 @@ function SceneContent({ selectedAgentId, onSelectAgent }: SceneContentProps) {
       <TaskBoard3D />
       <Stars radius={80} depth={50} count={800} factor={3} saturation={0} fade speed={0.3} />
 
-      {AGENT_FLEET.map((agent) => (
+      {agents.map((agent) => (
         <AgentDesk
           key={agent.id}
           agent={agent}
           selected={selectedAgentId === agent.id}
-          onSelect={() => onSelectAgent(selectedAgentId === agent.id ? null : agent.id)}
+          active={activeAgentId === agent.id}
+          onSelect={() => setSelectedAgent(selectedAgentId === agent.id ? null : agent.id)}
         />
       ))}
 
@@ -174,7 +171,7 @@ function SceneContent({ selectedAgentId, onSelectAgent }: SceneContentProps) {
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, -0.02, 0]}
-        onClick={() => onSelectAgent(null)}
+        onClick={() => setSelectedAgent(null)}
         visible={false}
       >
         <planeGeometry args={[28, 22]} />
@@ -211,7 +208,7 @@ export default function OfficeScene({ selectedAgentId, onSelectAgent }: OfficeSc
         dampingFactor={0.08}
         enableDamping
       />
-      <SceneContent selectedAgentId={selectedAgentId} onSelectAgent={onSelectAgent} />
+      <SceneContent />
     </Canvas>
   )
 }

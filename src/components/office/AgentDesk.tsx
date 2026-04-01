@@ -10,10 +10,11 @@ import type { Agent } from '@/lib/agents'
 interface AgentDeskProps {
   agent: Agent
   selected: boolean
+  active: boolean
   onSelect: () => void
 }
 
-export function AgentDesk({ agent, selected, onSelect }: AgentDeskProps) {
+export function AgentDesk({ agent, selected, active, onSelect }: AgentDeskProps) {
   const monitorGlowRef = useRef<THREE.Mesh>(null)
   const deskRef = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
@@ -26,7 +27,10 @@ export function AgentDesk({ agent, selected, onSelect }: AgentDeskProps) {
     time.current += delta
     if (monitorGlowRef.current) {
       const mat = monitorGlowRef.current.material as THREE.MeshStandardMaterial
-      if (agent.status === 'active') {
+      if (active) {
+        // Pulse brighter when active in chat
+        mat.emissiveIntensity = 0.6 + Math.sin(time.current * 3) * 0.3
+      } else if (agent.status === 'active') {
         mat.emissiveIntensity = 0.4 + Math.sin(time.current * 2) * 0.2
       } else if (agent.status === 'thinking') {
         mat.emissiveIntensity = 0.3 + Math.sin(time.current * 4) * 0.15
@@ -36,10 +40,18 @@ export function AgentDesk({ agent, selected, onSelect }: AgentDeskProps) {
     }
   })
 
+  // Active in chat overrides idle status color
   const statusColor =
+    active ? '#4ADE80' :
     agent.status === 'active' ? '#4ADE80' :
     agent.status === 'thinking' ? '#D4A853' :
     '#4B5563'
+
+  const statusIntensity =
+    active ? 1.2 :
+    agent.status === 'active' ? 0.8 :
+    agent.status === 'thinking' ? 0.5 :
+    0.1
 
   return (
     <group
@@ -56,8 +68,8 @@ export function AgentDesk({ agent, selected, onSelect }: AgentDeskProps) {
           color={selected || hovered ? '#2a2218' : '#1a1510'}
           roughness={0.4}
           metalness={0.3}
-          emissive={selected ? agent.color : '#000000'}
-          emissiveIntensity={selected ? 0.04 : 0}
+          emissive={selected ? agent.color : active ? agent.color : '#000000'}
+          emissiveIntensity={selected ? 0.04 : active ? 0.06 : 0}
         />
       </mesh>
 
@@ -111,15 +123,15 @@ export function AgentDesk({ agent, selected, onSelect }: AgentDeskProps) {
         <meshStandardMaterial
           color={statusColor}
           emissive={statusColor}
-          emissiveIntensity={agent.status === 'active' ? 0.8 : agent.status === 'thinking' ? 0.5 : 0.1}
+          emissiveIntensity={statusIntensity}
         />
       </mesh>
 
       {/* Agent avatar floating above desk */}
       <AgentAvatar
         color={agent.color}
-        status={agent.status}
-        selected={selected}
+        status={active ? 'active' : agent.status}
+        selected={selected || active}
         position={[0, 0.95, 0.1]}
       />
 
@@ -127,7 +139,7 @@ export function AgentDesk({ agent, selected, onSelect }: AgentDeskProps) {
       <Text
         position={[0, 1.45, 0.1]}
         fontSize={0.14}
-        color={selected ? agent.color : '#e5e7eb'}
+        color={selected || active ? agent.color : '#e5e7eb'}
         anchorX="center"
         anchorY="middle"
         font="/fonts/inter-medium.woff"
