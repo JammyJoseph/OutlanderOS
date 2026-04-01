@@ -15,6 +15,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Bell,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/finance", label: "Finance", icon: DollarSign },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/reminders", label: "Reminders", icon: Bell },
   { href: "/team", label: "Team", icon: Users },
   { href: "/agents", label: "AI Agents", icon: Bot },
 ];
