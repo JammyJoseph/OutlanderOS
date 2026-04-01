@@ -20,7 +20,7 @@ export const AGENT_FLEET: Agent[] = [
     status: 'active',
     currentTask: 'Monitoring all systems',
     capabilities: ['Task delegation', 'Email monitoring', 'Calendar management', 'Team coordination', 'Decision making'],
-    position: { x: 0, y: 0, z: 0 }
+    position: { x: 0, y: 0, z: 3 }
   },
   {
     id: 'finance',
@@ -31,7 +31,7 @@ export const AGENT_FLEET: Agent[] = [
     status: 'idle',
     currentTask: null,
     capabilities: ['Invoice tracking', 'Cash flow analysis', 'Revenue reporting', 'Payment reminders', 'Margin calculation'],
-    position: { x: -3, y: 0, z: -2 }
+    position: { x: -3.5, y: 0, z: 0.5 }
   },
   {
     id: 'email',
@@ -42,7 +42,7 @@ export const AGENT_FLEET: Agent[] = [
     status: 'idle',
     currentTask: null,
     capabilities: ['Email monitoring', 'Message categorization', 'Follow-up drafting', 'Attachment processing', 'Priority flagging'],
-    position: { x: 3, y: 0, z: -2 }
+    position: { x: 3.5, y: 0, z: 0.5 }
   },
   {
     id: 'production',
@@ -53,7 +53,7 @@ export const AGENT_FLEET: Agent[] = [
     status: 'idle',
     currentTask: null,
     capabilities: ['Schedule tracking', 'Crew management', 'Call sheet generation', 'Deadline monitoring', 'Vendor coordination'],
-    position: { x: -3, y: 0, z: 2 }
+    position: { x: -3.5, y: 0, z: -2.5 }
   },
   {
     id: 'sales',
@@ -64,7 +64,7 @@ export const AGENT_FLEET: Agent[] = [
     status: 'idle',
     currentTask: null,
     capabilities: ['Pipeline tracking', 'Renewal alerts', 'Client scoring', 'Deal analysis', 'Pitch preparation'],
-    position: { x: 3, y: 0, z: 2 }
+    position: { x: 3.5, y: 0, z: -2.5 }
   },
   {
     id: 'content',
@@ -75,7 +75,7 @@ export const AGENT_FLEET: Agent[] = [
     status: 'idle',
     currentTask: null,
     capabilities: ['Instagram analytics', 'Content scheduling', 'Performance tracking', 'Trend analysis', 'Engagement monitoring'],
-    position: { x: 0, y: 0, z: 3 }
+    position: { x: 0, y: 0, z: -5 }
   }
 ]
 
