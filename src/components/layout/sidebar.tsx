@@ -15,9 +15,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Camera,
   Bell,
-  TrendingUp,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -28,10 +26,8 @@ const navItems = [
   { href: "/finance", label: "Finance", icon: DollarSign },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/team", label: "Team", icon: Users },
-  { href: "/instagram", label: "Instagram", icon: Camera },
-  { href: "/cashflow", label: "Cash Flow", icon: TrendingUp },
   { href: "/reminders", label: "Reminders", icon: Bell },
+  { href: "/team", label: "Team", icon: Users },
   { href: "/agents", label: "AI Agents", icon: Bot },
 ];
 
