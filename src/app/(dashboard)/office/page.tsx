@@ -69,7 +69,7 @@ export default function OfficePage() {
 
           {!selectedAgentId && (
             <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-neutral-800 bg-neutral-950/80 px-4 py-1.5 backdrop-blur-sm">
-              <span className="text-xs text-neutral-500">Click a desk to inspect · Drag to orbit · Scroll to zoom</span>
+              <span className="text-xs text-neutral-500">Click a desk to inspect · Drag to pan · Scroll to zoom</span>
             </div>
           )}
         </div>

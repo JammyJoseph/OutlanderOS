@@ -12,8 +12,8 @@ interface AgentAvatarProps {
   position: [number, number, number]
 }
 
-// Humanoid body parts built from geometric primitives
-function HumanoidBody({
+// Blocky Minecraft/pixel-art character built entirely from boxes
+function BlockyCharacter({
   color,
   status,
   bodyRef,
@@ -22,133 +22,74 @@ function HumanoidBody({
   status: 'active' | 'thinking' | 'idle' | 'offline'
   bodyRef: RefObject<THREE.Group | null>
 }) {
-  const skinColor = '#f5c5a3'
-  const pantsColor = '#1a1a2e'
-  const shoeColor = '#111111'
+  const skinColor = '#E8C39E'
+  const pantsColor = '#2D2D4E'
+  const shoeColor = '#1A1A1A'
 
   return (
     <group ref={bodyRef}>
-      {/* HEAD */}
+      {/* HEAD — blocky box */}
       <mesh position={[0, 0.72, 0]} castShadow>
-        <sphereGeometry args={[0.135, 12, 12]} />
-        <meshStandardMaterial color={skinColor} roughness={0.7} metalness={0.0} />
+        <boxGeometry args={[0.4, 0.4, 0.4]} />
+        <meshLambertMaterial color={skinColor} />
       </mesh>
 
-      {/* Eyes */}
-      <mesh position={[-0.045, 0.75, 0.125]}>
-        <sphereGeometry args={[0.022, 6, 6]} />
-        <meshStandardMaterial color="#1a1a1a" />
+      {/* Left eye */}
+      <mesh position={[-0.1, 0.76, 0.21]}>
+        <boxGeometry args={[0.08, 0.07, 0.01]} />
+        <meshLambertMaterial color="#2D1A0E" />
       </mesh>
-      <mesh position={[0.045, 0.75, 0.125]}>
-        <sphereGeometry args={[0.022, 6, 6]} />
-        <meshStandardMaterial color="#1a1a1a" />
+      {/* Right eye */}
+      <mesh position={[0.1, 0.76, 0.21]}>
+        <boxGeometry args={[0.08, 0.07, 0.01]} />
+        <meshLambertMaterial color="#2D1A0E" />
       </mesh>
-
       {/* Mouth */}
-      <mesh position={[0, 0.695, 0.128]} rotation={[0, 0, 0]}>
-        <boxGeometry args={[0.055, 0.012, 0.01]} />
-        <meshStandardMaterial color="#c0826a" />
+      <mesh position={[0, 0.63, 0.21]}>
+        <boxGeometry args={[0.1, 0.03, 0.01]} />
+        <meshLambertMaterial color="#A0664E" />
       </mesh>
 
-      {/* NECK */}
-      <mesh position={[0, 0.565, 0]} castShadow>
-        <cylinderGeometry args={[0.045, 0.05, 0.08, 8]} />
-        <meshStandardMaterial color={skinColor} roughness={0.7} />
-      </mesh>
-
-      {/* TORSO (t-shirt in agent color) */}
-      <mesh position={[0, 0.38, 0]} castShadow>
-        <boxGeometry args={[0.28, 0.3, 0.16]} />
-        <meshStandardMaterial color={color} roughness={0.6} metalness={0.1} />
-      </mesh>
-
-      {/* Collar */}
-      <mesh position={[0, 0.525, 0.06]}>
-        <boxGeometry args={[0.12, 0.04, 0.04]} />
-        <meshStandardMaterial color={color} roughness={0.5} />
+      {/* TORSO — agent color (like a t-shirt) */}
+      <mesh position={[0, 0.375, 0]} castShadow>
+        <boxGeometry args={[0.4, 0.5, 0.25]} />
+        <meshLambertMaterial color={color} />
       </mesh>
 
       {/* LEFT ARM */}
-      <group position={[-0.175, 0.44, 0]} rotation={[0, 0, 0.18]}>
-        {/* Upper arm */}
-        <mesh position={[0, -0.1, 0]} castShadow>
-          <cylinderGeometry args={[0.045, 0.04, 0.2, 8]} />
-          <meshStandardMaterial color={color} roughness={0.6} />
-        </mesh>
-        {/* Forearm (slight bend) */}
-        <mesh position={[-0.02, -0.28, 0.02]} rotation={[0.25, 0, -0.1]} castShadow>
-          <cylinderGeometry args={[0.038, 0.034, 0.18, 8]} />
-          <meshStandardMaterial color={skinColor} roughness={0.7} />
-        </mesh>
-        {/* Hand */}
-        <mesh position={[-0.04, -0.4, 0.04]}>
-          <sphereGeometry args={[0.038, 6, 6]} />
-          <meshStandardMaterial color={skinColor} roughness={0.7} />
-        </mesh>
-      </group>
+      <mesh position={[-0.265, 0.375, 0]} castShadow>
+        <boxGeometry args={[0.12, 0.45, 0.12]} />
+        <meshLambertMaterial color={skinColor} />
+      </mesh>
 
       {/* RIGHT ARM */}
-      <group position={[0.175, 0.44, 0]} rotation={[0, 0, -0.18]}>
-        {/* Upper arm */}
-        <mesh position={[0, -0.1, 0]} castShadow>
-          <cylinderGeometry args={[0.045, 0.04, 0.2, 8]} />
-          <meshStandardMaterial color={color} roughness={0.6} />
-        </mesh>
-        {/* Forearm */}
-        <mesh position={[0.02, -0.28, 0.02]} rotation={[0.25, 0, 0.1]} castShadow>
-          <cylinderGeometry args={[0.038, 0.034, 0.18, 8]} />
-          <meshStandardMaterial color={skinColor} roughness={0.7} />
-        </mesh>
-        {/* Hand */}
-        <mesh position={[0.04, -0.4, 0.04]}>
-          <sphereGeometry args={[0.038, 6, 6]} />
-          <meshStandardMaterial color={skinColor} roughness={0.7} />
-        </mesh>
-      </group>
-
-      {/* WAIST */}
-      <mesh position={[0, 0.215, 0]}>
-        <boxGeometry args={[0.265, 0.06, 0.15]} />
-        <meshStandardMaterial color={pantsColor} roughness={0.8} />
+      <mesh position={[0.265, 0.375, 0]} castShadow>
+        <boxGeometry args={[0.12, 0.45, 0.12]} />
+        <meshLambertMaterial color={skinColor} />
       </mesh>
 
       {/* LEFT LEG */}
-      <group position={[-0.075, 0, 0]}>
-        {/* Thigh */}
-        <mesh position={[0, 0.1, 0]} castShadow>
-          <cylinderGeometry args={[0.058, 0.052, 0.2, 8]} />
-          <meshStandardMaterial color={pantsColor} roughness={0.8} />
-        </mesh>
-        {/* Shin */}
-        <mesh position={[0, -0.08, 0.01]} castShadow>
-          <cylinderGeometry args={[0.048, 0.042, 0.2, 8]} />
-          <meshStandardMaterial color={pantsColor} roughness={0.8} />
-        </mesh>
-        {/* Shoe */}
-        <mesh position={[0, -0.21, 0.03]}>
-          <boxGeometry args={[0.07, 0.06, 0.12]} />
-          <meshStandardMaterial color={shoeColor} roughness={0.6} metalness={0.2} />
-        </mesh>
-      </group>
+      <mesh position={[-0.1, 0.07, 0]} castShadow>
+        <boxGeometry args={[0.14, 0.4, 0.14]} />
+        <meshLambertMaterial color={pantsColor} />
+      </mesh>
 
       {/* RIGHT LEG */}
-      <group position={[0.075, 0, 0]}>
-        {/* Thigh */}
-        <mesh position={[0, 0.1, 0]} castShadow>
-          <cylinderGeometry args={[0.058, 0.052, 0.2, 8]} />
-          <meshStandardMaterial color={pantsColor} roughness={0.8} />
-        </mesh>
-        {/* Shin */}
-        <mesh position={[0, -0.08, 0.01]} castShadow>
-          <cylinderGeometry args={[0.048, 0.042, 0.2, 8]} />
-          <meshStandardMaterial color={pantsColor} roughness={0.8} />
-        </mesh>
-        {/* Shoe */}
-        <mesh position={[0, -0.21, 0.03]}>
-          <boxGeometry args={[0.07, 0.06, 0.12]} />
-          <meshStandardMaterial color={shoeColor} roughness={0.6} metalness={0.2} />
-        </mesh>
-      </group>
+      <mesh position={[0.1, 0.07, 0]} castShadow>
+        <boxGeometry args={[0.14, 0.4, 0.14]} />
+        <meshLambertMaterial color={pantsColor} />
+      </mesh>
+
+      {/* LEFT SHOE */}
+      <mesh position={[-0.1, -0.15, 0.02]}>
+        <boxGeometry args={[0.16, 0.1, 0.18]} />
+        <meshLambertMaterial color={shoeColor} />
+      </mesh>
+      {/* RIGHT SHOE */}
+      <mesh position={[0.1, -0.15, 0.02]}>
+        <boxGeometry args={[0.16, 0.1, 0.18]} />
+        <meshLambertMaterial color={shoeColor} />
+      </mesh>
     </group>
   )
 }
@@ -163,9 +104,6 @@ export function AgentAvatar({ agentId, color, status, selected, position }: Agen
     if (!groupRef.current) return
     time.current += delta
 
-    // Idle: gentle breathing bob
-    // Active: slightly faster + subtle sway
-    // Thinking: gentle nod
     if (status === 'active') {
       groupRef.current.position.y = Math.sin(time.current * 2.2) * 0.03
       if (bodyRef.current) {
@@ -177,7 +115,6 @@ export function AgentAvatar({ agentId, color, status, selected, position }: Agen
         bodyRef.current.rotation.x = Math.sin(time.current * 2) * 0.05
       }
     } else {
-      // Idle breathing
       groupRef.current.position.y = Math.sin(time.current * 1.2) * 0.01
       if (bodyRef.current) {
         bodyRef.current.rotation.y = 0
@@ -185,26 +122,19 @@ export function AgentAvatar({ agentId, color, status, selected, position }: Agen
       }
     }
 
-    // Status ring pulse
     if (ringRef.current) {
+      const mat = ringRef.current.material as THREE.MeshBasicMaterial
       if (selected) {
         const s = 1.0 + Math.sin(time.current * 2.5) * 0.12
         ringRef.current.scale.setScalar(s)
-        const mat = ringRef.current.material as THREE.MeshBasicMaterial
         mat.opacity = 0.6 + Math.sin(time.current * 2.5) * 0.2
       } else if (status === 'active') {
         const s = 1.0 + Math.sin(time.current * 1.8) * 0.06
         ringRef.current.scale.setScalar(s)
-        const mat = ringRef.current.material as THREE.MeshBasicMaterial
-        mat.opacity = 0.25 + Math.sin(time.current * 1.8) * 0.1
-      } else if (status === 'thinking') {
-        ringRef.current.scale.setScalar(1.0)
-        const mat = ringRef.current.material as THREE.MeshBasicMaterial
-        mat.opacity = 0.15 + Math.sin(time.current * 3) * 0.08
+        mat.opacity = 0.3 + Math.sin(time.current * 1.8) * 0.1
       } else {
         ringRef.current.scale.setScalar(1.0)
-        const mat = ringRef.current.material as THREE.MeshBasicMaterial
-        mat.opacity = 0.06
+        mat.opacity = 0.08
       }
     }
   })
@@ -223,21 +153,17 @@ export function AgentAvatar({ agentId, color, status, selected, position }: Agen
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, -0.94, 0]}
       >
-        <ringGeometry args={[0.28, 0.36, 32]} />
+        <ringGeometry args={[0.28, 0.38, 32]} />
         <meshBasicMaterial color={selected ? color : statusColor} transparent opacity={0.15} />
       </mesh>
 
-      {/* Humanoid body */}
-      <HumanoidBody color={color} status={status} bodyRef={bodyRef} />
+      {/* Blocky character */}
+      <BlockyCharacter color={color} status={status} bodyRef={bodyRef} />
 
-      {/* Status pip above head */}
-      <mesh position={[0, 0.92, 0]}>
-        <sphereGeometry args={[0.04, 8, 8]} />
-        <meshStandardMaterial
-          color={statusColor}
-          emissive={statusColor}
-          emissiveIntensity={status === 'active' || status === 'thinking' ? 1.2 : 0.2}
-        />
+      {/* Status pip above head — small box for pixel-art feel */}
+      <mesh position={[0, 1.02, 0]}>
+        <boxGeometry args={[0.07, 0.07, 0.07]} />
+        <meshLambertMaterial color={statusColor} />
       </mesh>
     </group>
   )
