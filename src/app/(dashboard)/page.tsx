@@ -1,73 +1,77 @@
-import { cookies } from 'next/headers'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { CheckCircle2, Mail, Calendar, TableProperties, ArrowRight, Zap, Clock, FolderOpen, FileText, Activity } from 'lucide-react'
+import {
+  Mail,
+  Calendar,
+  FileText,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react'
 
-const steps = [
-  {
-    id: 'primary',
-    label: 'Connect primary Google account',
-    description: 'q@outlandermag.com — Gmail, Calendar, Drive',
-    icon: Mail,
-    connectLabel: 'primary',
-  },
-  {
-    id: 'billing',
-    label: 'Connect billing Google account',
-    description: 'billing@outlandermag.com — Gmail, invoices, finance emails',
-    icon: Calendar,
-    connectLabel: 'billing',
-  },
-  {
-    id: 'sheets',
-    label: 'Link billing tracker spreadsheet',
-    description: 'Connect your 2026 Master Billing Tracker Google Sheet',
-    icon: TableProperties,
-    connectLabel: null,
-  },
-]
+// ---- Types ----
 
-function SkeletonPulse() {
-  return (
-    <div className="h-7 w-16 animate-pulse rounded bg-zinc-800" />
-  )
+interface Email {
+  id: string | null | undefined
+  from: string
+  subject: string
+  date: string
+  snippet: string
+  unread: boolean
 }
 
-function StatCard({
-  label,
-  icon: Icon,
-  syncing = true,
-  value,
-  sub,
-}: {
-  label: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon: React.ComponentType<any>
-  syncing?: boolean
-  value?: string
-  sub?: string
-}) {
-  return (
-    <div className="flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-      <div className="flex items-center gap-2 text-zinc-500">
-        <Icon className="h-3.5 w-3.5" />
-        <span className="text-xs font-medium">{label}</span>
-      </div>
-      <div className="flex items-end gap-2">
-        {syncing ? (
-          <div className="flex items-center gap-2">
-            <SkeletonPulse />
-            <span className="text-[10px] text-zinc-600">Syncing…</span>
-          </div>
-        ) : (
-          <>
-            <span className="text-2xl font-bold text-white">{value}</span>
-            {sub && <span className="mb-0.5 text-xs text-zinc-500">{sub}</span>}
-          </>
-        )}
-      </div>
-    </div>
-  )
+interface CalendarEvent {
+  id: string | null | undefined
+  summary: string
+  start: string
+  end: string
+  location: string
 }
+
+interface Deal {
+  ioNumber: string
+  client: string
+  campaign: string
+  dateBooked: string
+  annualTotal: string
+  margin: string
+}
+
+interface InvoiceSummary {
+  signed: number
+  unsigned: number
+  invoicesSent: number
+  invoicesNotSent: number
+}
+
+interface DashboardData {
+  connected: { billing: boolean; primary: boolean }
+  emails?: {
+    unreadCount: number
+    recentEmails: Email[]
+    error?: string
+  }
+  calendar?: {
+    todayEvents: CalendarEvent[]
+    error?: string
+  }
+  billingTracker?: {
+    bookedRevenue: string
+    gapToTarget: string
+    totalDeals: number
+    deals: Deal[]
+    invoiceSummary: InvoiceSummary
+    error?: string
+  }
+}
+
+// ---- Helpers ----
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -77,7 +81,7 @@ function getGreeting() {
 }
 
 function formatDate() {
-  return new Date().toLocaleDateString('en-US', {
+  return new Date().toLocaleDateString('en-GB', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -85,108 +89,110 @@ function formatDate() {
   })
 }
 
-export default async function DashboardPage() {
-  const cookieStore = await cookies()
-  const primaryConnected = cookieStore.has('google_primary_token')
-  const billingConnected = cookieStore.has('google_billing_token')
-  const bothConnected = primaryConnected && billingConnected
-  const anyConnected = primaryConnected || billingConnected
+function formatTime(iso: string) {
+  if (!iso) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return 'All day'
+  try {
+    return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
+}
 
-  if (bothConnected) {
-    return (
-      <div className="flex min-h-full flex-col py-8 px-4 sm:px-6">
-        <div className="mx-auto w-full max-w-3xl space-y-8">
+function formatEmailDate(raw: string) {
+  if (!raw) return ''
+  try {
+    return new Date(raw).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  } catch {
+    return raw
+  }
+}
 
-          {/* Greeting */}
-          <div>
-            <h1 className="text-2xl font-bold text-white">
-              {getGreeting()}, <span className="text-[#D4A853]">Joe</span>
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">{formatDate()}</p>
-          </div>
+function senderName(from: string) {
+  const match = from.match(/^"?([^"<]+)"?\s*</)
+  return match ? match[1].trim() : from.replace(/<[^>]+>/, '').trim()
+}
 
-          {/* Quick stats */}
-          <section>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Live Overview
-            </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Unread emails" icon={Mail} syncing />
-              <StatCard label="Today's events" icon={Calendar} syncing />
-              <StatCard label="Outstanding invoices" icon={FileText} syncing />
-              <StatCard label="Active projects" icon={FolderOpen} syncing />
-            </div>
-            <p className="mt-2 text-[11px] text-zinc-600">
-              Data will populate once your agents finish their first sync.
-            </p>
-          </section>
+// ---- Sub-components ----
 
-          {/* Priority actions */}
-          <section>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Priority Actions
-            </h2>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-8 text-center">
-              <Zap className="mx-auto mb-3 h-6 w-6 text-zinc-700" />
-              <p className="text-sm font-medium text-zinc-400">No actions yet</p>
-              <p className="mt-1 text-xs text-zinc-600">
-                Your agents will surface priorities here once fully connected and synced.
-              </p>
-            </div>
-          </section>
-
-          {/* Recent activity */}
-          <section>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Recent Activity
-            </h2>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-8 text-center">
-              <Activity className="mx-auto mb-3 h-6 w-6 text-zinc-700" />
-              <p className="text-sm font-medium text-zinc-400">No activity yet</p>
-              <p className="mt-1 text-xs text-zinc-600">
-                Activity will appear here as your agent team works.
-              </p>
-            </div>
-          </section>
-
-          {/* Quick nav */}
-          <section>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Quick Links
-            </h2>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'Email', href: '/email', description: 'billing@outlandermag.com', icon: Mail },
-                { label: 'Calendar', href: '/calendar', description: 'Schedule & events', icon: Calendar },
-                { label: 'Agent Office', href: '/office', description: 'Your AI team', icon: Clock },
-              ].map((action) => (
-                <Link
-                  key={action.href}
-                  href={action.href}
-                  className="group flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition-colors hover:border-[#D4A853]/40 hover:bg-zinc-800"
-                >
-                  <action.icon className="mb-1 h-4 w-4 text-zinc-600 group-hover:text-[#D4A853] transition-colors" />
-                  <span className="text-sm font-medium text-zinc-100 group-hover:text-[#D4A853] transition-colors">
-                    {action.label}
-                  </span>
-                  <span className="text-xs text-zinc-600">{action.description}</span>
-                  <ArrowRight className="mt-auto h-3.5 w-3.5 text-zinc-600 group-hover:text-[#D4A853] transition-colors" />
-                </Link>
-              ))}
-            </div>
-          </section>
-
-        </div>
+function KpiCard({
+  label,
+  icon: Icon,
+  value,
+  sub,
+  loading,
+  error,
+  accent,
+}: {
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  value?: string | number
+  sub?: string
+  loading?: boolean
+  error?: boolean
+  accent?: boolean
+}) {
+  return (
+    <div className={`flex flex-col gap-2 rounded-xl border p-4 ${accent ? 'border-[#D4A853]/30 bg-[#D4A853]/5' : 'border-zinc-800 bg-zinc-900'}`}>
+      <div className="flex items-center gap-2 text-zinc-500">
+        <Icon className="h-3.5 w-3.5" />
+        <span className="text-xs font-medium">{label}</span>
       </div>
-    )
-  }
+      <div className="flex items-end gap-2">
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-16 animate-pulse rounded bg-zinc-800" />
+            <span className="text-[10px] text-zinc-600">Loading…</span>
+          </div>
+        ) : error ? (
+          <span className="text-sm text-red-400">Error</span>
+        ) : (
+          <>
+            <span className={`text-2xl font-bold ${accent ? 'text-[#D4A853]' : 'text-white'}`}>{value ?? '—'}</span>
+            {sub && <span className="mb-0.5 text-xs text-zinc-500">{sub}</span>}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
-  // Setup wizard — partial or no connection
-  const stepStatus = {
-    primary: primaryConnected,
-    billing: billingConnected,
-    sheets: false,
-  }
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+      {children}
+    </h2>
+  )
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-900/10 px-3 py-2 text-xs text-red-400">
+      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+      {message}
+    </div>
+  )
+}
+
+// ---- Setup wizard ----
+
+function SetupWizard({ billing, primary }: { billing: boolean; primary: boolean }) {
+  const steps = [
+    {
+      id: 'primary',
+      label: 'Connect primary Google account',
+      description: 'q@outlandermag.com — Gmail, Calendar, Drive',
+      done: primary,
+      connectLabel: 'primary',
+    },
+    {
+      id: 'billing',
+      label: 'Connect billing Google account',
+      description: 'billing@outlandermag.com — Gmail, invoices, finance emails',
+      done: billing,
+      connectLabel: 'billing',
+    },
+  ]
 
   return (
     <div className="flex min-h-full flex-col items-center justify-center py-16 px-4">
@@ -196,74 +202,382 @@ export default async function DashboardPage() {
             Welcome to <span className="text-[#D4A853]">OutlanderOS</span>
           </h1>
           <p className="mt-2 text-sm text-zinc-400">
-            {anyConnected
-              ? 'Almost there — complete setup to activate your dashboard.'
-              : 'Connect your accounts to get started. Once set up, your dashboard will show live data.'}
+            Connect your accounts to activate the dashboard.
           </p>
         </div>
-
         <div className="space-y-3">
-          {steps.map((step, i) => {
-            const Icon = step.icon
-            const done = stepStatus[step.id as keyof typeof stepStatus]
-            return (
-              <div
-                key={step.id}
-                className={`flex items-center gap-4 rounded-xl border p-4 transition-colors ${
-                  done
-                    ? 'border-emerald-800/40 bg-emerald-900/10'
-                    : 'border-zinc-800 bg-zinc-900'
-                }`}
-              >
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${
-                  done
-                    ? 'border-emerald-700/40 bg-emerald-900/20'
-                    : 'border-zinc-700 bg-zinc-800'
-                }`}>
-                  {done ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                  ) : (
-                    <span className="text-sm font-bold text-zinc-400">{i + 1}</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${done ? 'text-emerald-300' : 'text-zinc-100'}`}>
-                    {step.label}
-                  </p>
-                  <p className="text-xs text-zinc-500 mt-0.5">{step.description}</p>
-                </div>
-                <div className="shrink-0">
-                  {done ? (
-                    <span className="text-xs text-emerald-500 font-medium">Done</span>
-                  ) : step.connectLabel ? (
-                    <a
-                      href={`/api/google/connect?label=${step.connectLabel}`}
-                      className="rounded-lg bg-[#D4A853] px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-[#C49843] transition-colors"
-                    >
-                      Connect
-                    </a>
-                  ) : (
-                    <Link
-                      href="/settings"
-                      className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
-                    >
-                      Go to Settings
-                    </Link>
-                  )}
-                </div>
+          {steps.map((step, i) => (
+            <div
+              key={step.id}
+              className={`flex items-center gap-4 rounded-xl border p-4 transition-colors ${
+                step.done ? 'border-emerald-800/40 bg-emerald-900/10' : 'border-zinc-800 bg-zinc-900'
+              }`}
+            >
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${
+                step.done ? 'border-emerald-700/40 bg-emerald-900/20' : 'border-zinc-700 bg-zinc-800'
+              }`}>
+                {step.done ? (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                ) : (
+                  <span className="text-sm font-bold text-zinc-400">{i + 1}</span>
+                )}
               </div>
-            )
-          })}
-        </div>
-
-        <div className="mt-8 flex items-center justify-center gap-6 text-xs text-zinc-600">
-          <Link href="/settings" className="hover:text-zinc-400 transition-colors">
-            Settings
-          </Link>
-          <span>·</span>
-          <span>All data is read-only — OutlanderOS never modifies your accounts</span>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium ${step.done ? 'text-emerald-300' : 'text-zinc-100'}`}>
+                  {step.label}
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">{step.description}</p>
+              </div>
+              <div className="shrink-0">
+                {step.done ? (
+                  <span className="text-xs text-emerald-500 font-medium">Done</span>
+                ) : (
+                  <a
+                    href={`/api/google/connect?label=${step.connectLabel}`}
+                    className="rounded-lg bg-[#D4A853] px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-[#C49843] transition-colors"
+                  >
+                    Connect
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ---- Connected dashboard ----
+
+function ConnectedDashboard({ data }: { data: DashboardData }) {
+  const { emails, calendar, billingTracker } = data
+  const loading = !emails && !calendar && !billingTracker
+
+  const outstandingInvoices =
+    billingTracker
+      ? billingTracker.invoiceSummary.unsigned + billingTracker.invoiceSummary.invoicesNotSent
+      : undefined
+
+  const priorityActions: string[] = []
+  if (billingTracker && !billingTracker.error) {
+    if (billingTracker.invoiceSummary.unsigned > 0)
+      priorityActions.push(`${billingTracker.invoiceSummary.unsigned} deal(s) unsigned — chase signatures`)
+    if (billingTracker.invoiceSummary.invoicesNotSent > 0)
+      priorityActions.push(`${billingTracker.invoiceSummary.invoicesNotSent} invoice(s) not yet sent`)
+  }
+  if (emails && !emails.error && emails.unreadCount > 0)
+    priorityActions.push(`${emails.unreadCount} unread email(s) in billing@`)
+
+  return (
+    <div className="flex min-h-full flex-col py-8 px-4 sm:px-6">
+      <div className="mx-auto w-full max-w-3xl space-y-8">
+
+        {/* Greeting */}
+        <div>
+          <h1 className="text-2xl font-bold text-white">
+            {getGreeting()}, <span className="text-[#D4A853]">Joe</span>
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500">{formatDate()}</p>
+        </div>
+
+        {/* KPI row */}
+        <section>
+          <SectionHeader>Live Overview</SectionHeader>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <KpiCard
+              label="Booked Revenue YTD"
+              icon={TrendingUp}
+              value={billingTracker?.bookedRevenue}
+              loading={loading}
+              error={!!billingTracker?.error}
+              accent
+            />
+            <KpiCard
+              label="Unread Emails"
+              icon={Mail}
+              value={emails?.unreadCount}
+              loading={loading}
+              error={!!emails?.error}
+            />
+            <KpiCard
+              label="Today's Events"
+              icon={Calendar}
+              value={calendar?.todayEvents?.length}
+              loading={loading}
+              error={!!calendar?.error}
+            />
+            <KpiCard
+              label="Outstanding Invoices"
+              icon={FileText}
+              value={outstandingInvoices}
+              sub="unsigned + unsent"
+              loading={loading}
+              error={!!billingTracker?.error}
+            />
+          </div>
+        </section>
+
+        {/* Finance overview */}
+        {billingTracker && (
+          <section>
+            <SectionHeader>Finance Overview</SectionHeader>
+            {billingTracker.error ? (
+              <ErrorBanner message={`Failed to load billing tracker: ${billingTracker.error}`} />
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                  <p className="text-xs text-zinc-500 mb-1">Gap to Target</p>
+                  <p className="text-xl font-bold text-white">{billingTracker.gapToTarget}</p>
+                </div>
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                  <p className="text-xs text-zinc-500 mb-2">Deal Signatures</p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span className="text-sm text-zinc-300">{billingTracker.invoiceSummary.signed} signed</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-amber-500" />
+                      <span className="text-sm text-zinc-300">{billingTracker.invoiceSummary.unsigned} unsigned</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                  <p className="text-xs text-zinc-500 mb-2">Invoice Status</p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span className="text-sm text-zinc-300">{billingTracker.invoiceSummary.invoicesSent} sent</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-red-500" />
+                      <span className="text-sm text-zinc-300">{billingTracker.invoiceSummary.invoicesNotSent} not sent</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Priority actions */}
+        <section>
+          <SectionHeader>Priority Actions</SectionHeader>
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2].map(i => (
+                <div key={i} className="h-10 animate-pulse rounded-lg bg-zinc-800" />
+              ))}
+            </div>
+          ) : priorityActions.length === 0 ? (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-6 text-center">
+              <CheckCircle2 className="mx-auto mb-2 h-5 w-5 text-emerald-500" />
+              <p className="text-sm text-zinc-400">All clear — no outstanding actions</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {priorityActions.map((action, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg border border-amber-900/30 bg-amber-900/10 px-4 py-3">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+                  <span className="text-sm text-zinc-200">{action}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Recent emails */}
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <SectionHeader>Recent Emails — billing@</SectionHeader>
+            <Link href="/email" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-[#D4A853] transition-colors">
+              View all <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-14 animate-pulse rounded-lg bg-zinc-800" />
+              ))}
+            </div>
+          ) : emails?.error ? (
+            <ErrorBanner message={`Failed to load emails: ${emails.error}`} />
+          ) : !emails?.recentEmails?.length ? (
+            <p className="text-sm text-zinc-500">No emails found.</p>
+          ) : (
+            <div className="divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
+              {emails.recentEmails.map(email => (
+                <div key={email.id} className={`flex items-start gap-3 px-4 py-3 ${email.unread ? 'bg-zinc-800/50' : ''}`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-sm truncate ${email.unread ? 'font-semibold text-white' : 'text-zinc-300'}`}>
+                        {senderName(email.from)}
+                      </span>
+                      <span className="shrink-0 text-xs text-zinc-500">{formatEmailDate(email.date)}</span>
+                    </div>
+                    <p className={`text-xs truncate mt-0.5 ${email.unread ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                      {email.subject || '(no subject)'}
+                    </p>
+                    <p className="text-xs text-zinc-600 truncate mt-0.5">{email.snippet}</p>
+                  </div>
+                  {email.unread && (
+                    <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#D4A853]" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Today's schedule */}
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <SectionHeader>Today's Schedule — q@</SectionHeader>
+            <Link href="/calendar" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-[#D4A853] transition-colors">
+              View all <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2].map(i => (
+                <div key={i} className="h-12 animate-pulse rounded-lg bg-zinc-800" />
+              ))}
+            </div>
+          ) : calendar?.error ? (
+            <ErrorBanner message={`Failed to load calendar: ${calendar.error}`} />
+          ) : !calendar?.todayEvents?.length ? (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-6 text-center">
+              <p className="text-sm text-zinc-500">No events scheduled for today.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {calendar.todayEvents.map(event => (
+                <div key={event.id} className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+                  <Clock className="h-4 w-4 shrink-0 text-zinc-600" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-zinc-100 truncate">{event.summary}</p>
+                    {event.location && (
+                      <p className="text-xs text-zinc-500 truncate">{event.location}</p>
+                    )}
+                  </div>
+                  <span className="shrink-0 text-xs text-zinc-400">{formatTime(event.start)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Active deals table */}
+        {billingTracker && !billingTracker.error && billingTracker.deals.length > 0 && (
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <SectionHeader>Active Deals</SectionHeader>
+              <Link href="/finance" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-[#D4A853] transition-colors">
+                View all <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-zinc-800">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-zinc-800 bg-zinc-900">
+                    <th className="px-4 py-2.5 text-left font-medium text-zinc-500">IO #</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-zinc-500">Client</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-zinc-500 hidden sm:table-cell">Campaign</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-zinc-500">Annual Total</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-zinc-500 hidden sm:table-cell">Margin</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800 bg-zinc-900/50">
+                  {billingTracker.deals.map((deal, i) => (
+                    <tr key={i} className="hover:bg-zinc-800/50 transition-colors">
+                      <td className="px-4 py-2.5 text-zinc-400 font-mono">{deal.ioNumber || '—'}</td>
+                      <td className="px-4 py-2.5 font-medium text-zinc-100">{deal.client}</td>
+                      <td className="px-4 py-2.5 text-zinc-400 hidden sm:table-cell">{deal.campaign}</td>
+                      <td className="px-4 py-2.5 text-right text-zinc-100">{deal.annualTotal}</td>
+                      <td className="px-4 py-2.5 text-right text-zinc-400 hidden sm:table-cell">{deal.margin}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+      </div>
+    </div>
+  )
+}
+
+// ---- Page ----
+
+export default function DashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  async function load(isRefresh = false) {
+    if (isRefresh) setRefreshing(true)
+    try {
+      const res = await fetch('/api/dashboard')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setData(json)
+      setFetchError(null)
+    } catch (err) {
+      setFetchError(String(err))
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  useEffect(() => { load() }, [])
+
+  if (!data) {
+    return (
+      <div className="flex min-h-full items-center justify-center">
+        <div className="flex items-center gap-2 text-zinc-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm">Loading dashboard…</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="flex min-h-full items-center justify-center px-4">
+        <div className="text-center">
+          <AlertCircle className="mx-auto mb-3 h-6 w-6 text-red-400" />
+          <p className="text-sm font-medium text-zinc-300">Failed to load dashboard</p>
+          <p className="mt-1 text-xs text-zinc-500">{fetchError}</p>
+          <button
+            onClick={() => load()}
+            className="mt-4 rounded-lg bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const { connected } = data
+  if (!connected.billing || !connected.primary) {
+    return <SetupWizard billing={connected.billing} primary={connected.primary} />
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => load(true)}
+        disabled={refreshing}
+        className="fixed bottom-6 right-6 z-10 flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400 shadow-lg hover:bg-zinc-800 transition-colors disabled:opacity-50"
+      >
+        <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
+        {refreshing ? 'Refreshing…' : 'Refresh'}
+      </button>
+      <ConnectedDashboard data={data} />
     </div>
   )
 }
