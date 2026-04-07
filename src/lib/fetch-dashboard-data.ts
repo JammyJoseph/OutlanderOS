@@ -1,18 +1,27 @@
 import { google } from 'googleapis'
+import { setToken } from '@/lib/token-store'
 
-function createAuthClient(tokenJson: string) {
+function createAuthClient(tokenJson: string, storeKey?: string) {
   const tokens = JSON.parse(tokenJson)
   const client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET
   )
   client.setCredentials(tokens)
+
+  if (storeKey) {
+    client.on('tokens', (newTokens) => {
+      const updated = { ...tokens, ...newTokens }
+      setToken(storeKey, updated)
+    })
+  }
+
   return client
 }
 
 export async function fetchCalendarEvents(primaryToken: string) {
   try {
-    const auth = createAuthClient(primaryToken)
+    const auth = createAuthClient(primaryToken, 'google_primary')
     const calendar = google.calendar({ version: 'v3', auth })
 
     const now = new Date()
@@ -45,7 +54,7 @@ export async function fetchCalendarEvents(primaryToken: string) {
 
 export async function fetchBillingTracker(primaryToken: string) {
   try {
-    const auth = createAuthClient(primaryToken)
+    const auth = createAuthClient(primaryToken, 'google_primary')
     const sheets = google.sheets({ version: 'v4', auth })
 
     const SHEET_ID = '19v0t5A2Of3_-Pho1tuaWMgHAHzm-30ejrK88SNqaYHs'

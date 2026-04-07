@@ -1,11 +1,10 @@
-import { cookies } from 'next/headers'
+import { hasToken } from '@/lib/token-store'
 import SettingsClient from './SettingsClient'
 
 export default async function SettingsPage() {
-  const cookieStore = await cookies()
-  const primaryConnected = cookieStore.has('google_primary_token')
-  const billingConnected = cookieStore.has('google_billing_token')
-  const xeroConnected = cookieStore.has('xero_token')
+  const primaryConnected = hasToken('google_primary')
+  const billingConnected = hasToken('google_billing')
+  const xeroConnected = hasToken('xero')
 
   return (
     <SettingsClient

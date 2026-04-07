@@ -1,42 +1,32 @@
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { getToken, setToken } from '@/lib/token-store'
 import { fetchCalendarEvents, fetchBillingTracker } from '@/lib/fetch-dashboard-data'
 import { scanBillingInbox } from '@/lib/billing-engine'
 import { fetchAllXeroData } from '@/lib/xero-api'
 
 export async function GET() {
-  const cookieStore = await cookies()
-  const billingToken = cookieStore.get('google_billing_token')?.value
-  const primaryToken = cookieStore.get('google_primary_token')?.value
-  const xeroToken = cookieStore.get('xero_token')?.value
+  const billingTokenData = getToken('google_billing')
+  const primaryTokenData = getToken('google_primary')
 
   const results: Record<string, unknown> = {
-    connected: { billing: !!billingToken, primary: !!primaryToken },
+    connected: { billing: !!billingTokenData, primary: !!primaryTokenData },
   }
 
-  if (billingToken) {
-    results.billingAlerts = await scanBillingInbox(billingToken)
+  if (billingTokenData) {
+    results.billingAlerts = await scanBillingInbox(JSON.stringify(billingTokenData))
   }
 
-  if (primaryToken) {
-    results.calendar = await fetchCalendarEvents(primaryToken)
-    results.billingTracker = await fetchBillingTracker(primaryToken)
+  if (primaryTokenData) {
+    results.calendar = await fetchCalendarEvents(JSON.stringify(primaryTokenData))
+    results.billingTracker = await fetchBillingTracker(JSON.stringify(primaryTokenData))
   }
 
-  if (xeroToken) {
-    const xeroResult = await fetchAllXeroData(xeroToken)
+  const xeroTokenData = getToken('xero')
+  if (xeroTokenData) {
+    const xeroResult = await fetchAllXeroData(JSON.stringify(xeroTokenData))
     results.xero = xeroResult.data
-
     if (xeroResult.updatedTokenJson) {
-      const response = NextResponse.json(results)
-      response.cookies.set('xero_token', xeroResult.updatedTokenJson, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-        path: '/',
-      })
-      return response
+      setToken('xero', JSON.parse(xeroResult.updatedTokenJson))
     }
   }
 
