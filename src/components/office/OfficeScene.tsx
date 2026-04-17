@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useMemo } from 'react'
+import { Suspense, useMemo, Component, type ReactNode } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrthographicCamera, MapControls, useGLTF, Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -8,6 +8,18 @@ import { AgentAvatar } from './AgentAvatar'
 import { TaskBoard3D } from './TaskBoard3D'
 import { useAgentStore } from '@/lib/agent-store'
 import type { Agent } from '@/lib/agents'
+
+class ModelErrorBoundary extends Component<{ children: ReactNode }, { error: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { error: false }
+  }
+  static getDerivedStateFromError() { return { error: true } }
+  render() {
+    if (this.state.error) return null
+    return this.props.children
+  }
+}
 
 // ToonModel: load a GLB and replace all materials with flat MeshLambertMaterial
 function ToonModel({
@@ -83,22 +95,34 @@ function AgentStation({
       />
 
       {/* Desk from GLB with toon material */}
-      <ToonModel path="/office-assets/models/furniture/desk.glb" position={[0, 0, 0]} scale={1} />
+      <Suspense fallback={null}>
+        <ModelErrorBoundary>
+          <ToonModel path="/office-assets/models/furniture/desk.glb" position={[0, 0, 0]} scale={1} />
+        </ModelErrorBoundary>
+      </Suspense>
 
       {/* Chair */}
-      <ToonModel
-        path="/office-assets/models/furniture/chairDesk.glb"
-        position={[0, 0, 0.9]}
-        rotation={[0, Math.PI, 0]}
-        scale={1}
-      />
+      <Suspense fallback={null}>
+        <ModelErrorBoundary>
+          <ToonModel
+            path="/office-assets/models/furniture/chairDesk.glb"
+            position={[0, 0, 0.9]}
+            rotation={[0, Math.PI, 0]}
+            scale={1}
+          />
+        </ModelErrorBoundary>
+      </Suspense>
 
       {/* Computer screen */}
-      <ToonModel
-        path="/office-assets/models/furniture/computerScreen.glb"
-        position={[0, 0.75, -0.25]}
-        scale={0.85}
-      />
+      <Suspense fallback={null}>
+        <ModelErrorBoundary>
+          <ToonModel
+            path="/office-assets/models/furniture/computerScreen.glb"
+            position={[0, 0.75, -0.25]}
+            scale={0.85}
+          />
+        </ModelErrorBoundary>
+      </Suspense>
 
       {/* Colored monitor screen in agent color (emissive) */}
       <mesh position={[0, 0.78, -0.22]}>
@@ -340,7 +364,9 @@ function SceneContent() {
       <OfficeLighting />
       <OfficeFloor />
       <OfficeWalls />
-      <DecorFurniture />
+      <ModelErrorBoundary>
+        <DecorFurniture />
+      </ModelErrorBoundary>
 
       {/* Task board repositioned on back wall */}
       <group position={[6, 0, 5.5]}>
@@ -385,7 +411,7 @@ export default function OfficeScene(_props: OfficeSceneProps) {
     >
       <OrthographicCamera
         makeDefault
-        zoom={40}
+        zoom={36}
         position={[15, 15, 15]}
         near={0.1}
         far={200}

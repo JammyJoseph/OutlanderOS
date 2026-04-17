@@ -155,7 +155,7 @@ function ExpensesTab({ xero }: { xero?: XeroData }) {
         <p className="mb-5 text-xs text-gray-500">Connect your Xero account to see P&amp;L, bank balances, and recent invoices.</p>
         <a
           href="/api/xero/connect"
-          className="inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-semibold text-zinc-900 hover:bg-[#C49843] transition-colors"
+          className="inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-[#C49843] transition-colors"
         >
           <Link2 className="mr-1.5 inline h-3.5 w-3.5" />
           Connect Xero
@@ -756,7 +756,7 @@ function FinancePageInner() {
           <TrendingUp className="mx-auto mb-3 h-6 w-6 text-gray-400" />
           <p className="text-sm font-medium text-gray-600">Primary account not connected</p>
           <p className="mt-1 text-xs text-gray-400">Connect operations@outlandermag.com to access the billing tracker.</p>
-          <a href="/api/google/connect?label=primary" className="mt-4 inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-medium text-zinc-900 hover:bg-[#C49843] transition-colors">
+          <a href="/api/google/connect?label=primary" className="mt-4 inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-medium text-gray-900 hover:bg-[#C49843] transition-colors">
             Connect
           </a>
         </div>

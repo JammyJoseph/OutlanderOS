@@ -507,7 +507,7 @@ export default function ActivityPage() {
                               setTimeout(() => setToast(null), 4000)
                             }
                           }}
-                          className="rounded px-2.5 py-1 text-[10px] font-medium bg-[#D4A853] text-zinc-900 hover:bg-amber-600 disabled:opacity-60 transition-colors"
+                          className="rounded px-2.5 py-1 text-[10px] font-medium bg-[#D4A853] text-gray-900 hover:bg-amber-600 disabled:opacity-60 transition-colors"
                         >
                           {sending ? 'Sending…' : 'Send Draft to Quinn'}
                         </button>

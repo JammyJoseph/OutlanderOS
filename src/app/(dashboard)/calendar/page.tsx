@@ -185,7 +185,7 @@ export default function CalendarPage() {
           <p className="text-sm font-medium text-gray-600">Connect operations@ to view calendar</p>
           <a
             href="/api/google/connect?label=primary"
-            className="mt-4 inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-medium text-zinc-900 hover:bg-[#C49843] transition-colors"
+            className="mt-4 inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-medium text-gray-900 hover:bg-[#C49843] transition-colors"
           >
             Connect Google Calendar
           </a>
@@ -310,7 +310,7 @@ export default function CalendarPage() {
                       <span
                         className={cn(
                           'mb-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
-                          isToday(day) ? 'bg-[#D4A853] font-bold text-zinc-900' : 'text-gray-500'
+                          isToday(day) ? 'bg-[#D4A853] font-bold text-gray-900' : 'text-gray-500'
                         )}
                       >
                         {day}

@@ -13,7 +13,7 @@ const OfficeScene = dynamic(
       <div className="flex h-full items-center justify-center bg-neutral-950">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-700 border-t-[#D4A853]" />
-          <span className="text-xs text-neutral-500">Loading Agent Office…</span>
+          <span className="text-xs text-neutral-400">Loading Outlander HQ…</span>
         </div>
       </div>
     ),

@@ -250,7 +250,7 @@ export default function ReportsPage() {
               disabled={loading || (card.type === 'client' && !selectedClient)}
               className={cn(
                 'w-full rounded-lg py-1.5 text-xs font-medium transition-colors',
-                'bg-[#D4A853] text-zinc-900 hover:bg-[#c49a47]',
+                'bg-[#D4A853] text-gray-900 hover:bg-[#c49a47]',
                 'disabled:opacity-40 disabled:cursor-not-allowed'
               )}
             >
