@@ -13,11 +13,13 @@ import {
   ChevronRight,
   Building2,
   FileText,
+  Activity,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/activity", label: "Activity Log", icon: Activity },
   { href: "/office", label: "Agent Office", icon: Building2 },
   { href: "/finance", label: "Finance", icon: DollarSign },
   { href: "/calendar", label: "Calendar", icon: Calendar },
