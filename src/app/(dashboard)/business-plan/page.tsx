@@ -2,11 +2,26 @@
 
 import { ExternalLink, FileText } from 'lucide-react'
 
-const GOOGLE_DOC_ID = '1T9u6Cbr-3vSbWbyGVfv1yNJakV6RK0Bo'
-const GOOGLE_DOC_URL = 'https://docs.google.com/document/d/1T9u6Cbr-3vSbWbyGVfv1yNJakV6RK0Bo/edit?usp=sharing&ouid=112799059606301820333&rtpof=true&sd=true'
-const EMBED_URL = `https://docs.google.com/document/d/${GOOGLE_DOC_ID}/preview`
+const DOCS = [
+  {
+    label: 'Business Plan (Current)',
+    id: '1Z9-_sra4xR2XWGNlsSkPnTVQ8cm-RFawNE7aI_V00Ps',
+    url: 'https://docs.google.com/document/d/1Z9-_sra4xR2XWGNlsSkPnTVQ8cm-RFawNE7aI_V00Ps/edit?usp=sharing',
+  },
+  {
+    label: 'Business Plan (Original)',
+    id: '1T9u6Cbr-3vSbWbyGVfv1yNJakV6RK0Bo',
+    url: 'https://docs.google.com/document/d/1T9u6Cbr-3vSbWbyGVfv1yNJakV6RK0Bo/edit?usp=sharing&ouid=112799059606301820333&rtpof=true&sd=true',
+  },
+]
+
+import { useState } from 'react'
 
 export default function BusinessPlanPage() {
+  const [activeDoc, setActiveDoc] = useState(0)
+  const doc = DOCS[activeDoc]
+  const embedUrl = `https://docs.google.com/document/d/${doc.id}/preview`
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -18,23 +33,39 @@ export default function BusinessPlanPage() {
             <p className="text-xs text-gray-500">Outlander Magazine — Strategic Plan</p>
           </div>
         </div>
-        <a
-          href={GOOGLE_DOC_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 bg-[#D4A853] text-zinc-900 text-sm font-medium hover:bg-[#C49843] transition-colors"
-        >
-          <ExternalLink size={14} />
-          Open in Google Docs
-        </a>
+        <div className="flex items-center gap-2">
+          {/* Doc switcher */}
+          {DOCS.map((d, i) => (
+            <button
+              key={d.id}
+              onClick={() => setActiveDoc(i)}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                activeDoc === i
+                  ? 'bg-[#D4A853] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
+          <a
+            href={doc.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors ml-2"
+          >
+            <ExternalLink size={12} />
+            Open in Google Docs
+          </a>
+        </div>
       </div>
 
       {/* Embedded Document */}
       <div className="flex-1 bg-gray-50">
         <iframe
-          src={EMBED_URL}
+          src={embedUrl}
           className="w-full h-full border-0"
-          title="Outlander Business Plan"
+          title={doc.label}
           allow="autoplay"
         />
       </div>
