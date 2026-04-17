@@ -266,6 +266,8 @@ export default function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [secondsAgo, setSecondsAgo] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+  const [sendingBriefing, setSendingBriefing] = useState(false)
+  const [briefingToast, setBriefingToast] = useState<string | null>(null)
 
   const fetchData = useCallback(async (isManual = false) => {
     if (isManual) setRefreshing(true)
@@ -375,6 +377,20 @@ export default function DashboardPage() {
     setDoneReminders((prev) => new Set([...prev, originalIndex]))
   }
 
+  async function sendBriefing() {
+    setSendingBriefing(true)
+    try {
+      const res = await fetch('/api/briefing')
+      const d = await res.json()
+      setBriefingToast(d.sent ? 'Briefing sent to Quinn ✓' : 'Failed to send briefing')
+    } catch {
+      setBriefingToast('Network error — could not send briefing')
+    } finally {
+      setSendingBriefing(false)
+      setTimeout(() => setBriefingToast(null), 4000)
+    }
+  }
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-64 text-red-500">
@@ -385,6 +401,13 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 bg-gray-50 min-h-screen">
+
+      {/* Briefing toast */}
+      {briefingToast && (
+        <div className="fixed bottom-6 right-6 z-50 rounded-lg bg-gray-900 px-4 py-3 text-sm text-white shadow-xl">
+          {briefingToast}
+        </div>
+      )}
 
       {/* Last updated bar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -397,14 +420,23 @@ export default function DashboardPage() {
             ? 'Loading…'
             : ''}
         </div>
-        <button
-          onClick={() => fetchData(true)}
-          disabled={refreshing || loading}
-          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-40"
-        >
-          <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={sendBriefing}
+            disabled={sendingBriefing}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-40"
+          >
+            {sendingBriefing ? 'Sending…' : 'Send Briefing to Quinn'}
+          </button>
+          <button
+            onClick={() => fetchData(true)}
+            disabled={refreshing || loading}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* ---- KPI Cards ---- */}

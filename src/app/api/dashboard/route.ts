@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getToken, setToken } from '@/lib/token-store'
 import { fetchCalendarEvents, fetchBillingTracker } from '@/lib/fetch-dashboard-data'
 import { scanBillingInbox } from '@/lib/billing-engine'
 import { fetchAllXeroData } from '@/lib/xero-api'
+import { crossReferenceDeals } from '@/lib/email-cross-ref'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const billingTokenData = getToken('google_billing')
   const primaryTokenData = getToken('google_primary')
 
@@ -27,6 +28,19 @@ export async function GET() {
     results.xero = xeroResult.data
     if (xeroResult.updatedTokenJson) {
       setToken('xero', JSON.parse(xeroResult.updatedTokenJson))
+    }
+  }
+
+  const url = new URL(request.url)
+  if (url.searchParams.get('crossref') === 'true' && (results.billingTracker as any)?.deals) {
+    try {
+      results.crossReference = await crossReferenceDeals(
+        (results.billingTracker as any).deals,
+        (results.xero as any)?.invoices || [],
+        (results.billingAlerts as any[]) || []
+      )
+    } catch {
+      // Non-fatal
     }
   }
 

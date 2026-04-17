@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react'
 
 interface LogEntry {
   timestamp: string
-  type: 'PAYMENT' | 'SIGNED' | 'OVERDUE' | 'INVOICE' | 'REMINDER' | 'SYSTEM'
+  type: 'PAYMENT' | 'SIGNED' | 'OVERDUE' | 'INVOICE' | 'REMINDER' | 'SYSTEM' | 'CROSSREF'
   client: string
   message: string
   amount?: number
   expanded?: boolean
+  flags?: string[]
 }
 
 interface Reminder {
@@ -27,6 +28,7 @@ const TYPE_COLORS: Record<LogEntry['type'], string> = {
   INVOICE: 'text-amber-400',
   REMINDER: 'text-gray-400',
   SYSTEM: 'text-white',
+  CROSSREF: 'text-purple-400',
 }
 
 const PRIORITY_COLORS: Record<Reminder['priority'], string> = {
@@ -188,6 +190,8 @@ export default function ActivityPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const [sendingBriefing, setSendingBriefing] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [blink, setBlink] = useState(true)
 
@@ -253,6 +257,49 @@ export default function ActivityPage() {
     }
   }
 
+  async function runCrossRef() {
+    setScanning(true)
+    setToast('Running cross-reference scan…')
+    try {
+      const res = await fetch('/api/dashboard?crossref=true')
+      const data = await res.json()
+      if (data.crossReference?.length) {
+        const crossEntries: LogEntry[] = data.crossReference.map((status: any) => ({
+          timestamp: new Date().toISOString(),
+          type: 'CROSSREF' as const,
+          client: status.client,
+          message: status.flags?.length
+            ? status.flags[0]
+            : `No discrepancies found`,
+          flags: status.flags,
+        }))
+        setLogEntries((prev) => [...crossEntries, ...prev])
+        setToast(`Cross-ref complete — ${data.crossReference.length} clients scanned`)
+      } else {
+        setToast('Cross-ref complete — no deals found')
+      }
+    } catch {
+      setToast('Cross-reference scan failed')
+    } finally {
+      setScanning(false)
+      setTimeout(() => setToast(null), 5000)
+    }
+  }
+
+  async function sendBriefing() {
+    setSendingBriefing(true)
+    try {
+      const res = await fetch('/api/briefing')
+      const data = await res.json()
+      setToast(data.sent ? 'Morning briefing sent to Quinn via Telegram ✓' : 'Failed to send briefing')
+    } catch {
+      setToast('Network error — could not send briefing')
+    } finally {
+      setSendingBriefing(false)
+      setTimeout(() => setToast(null), 4000)
+    }
+  }
+
   return (
     <div className="flex h-full min-h-0 gap-0 overflow-hidden">
       {/* Toast */}
@@ -269,10 +316,17 @@ export default function ActivityPage() {
           <div className="h-3 w-3 rounded-full bg-red-500" />
           <div className="h-3 w-3 rounded-full bg-yellow-500" />
           <div className="h-3 w-3 rounded-full bg-green-500" />
-          <span className="ml-4 text-xs uppercase tracking-widest text-gray-400">
+          <span className="ml-4 text-xs uppercase tracking-widest text-gray-400 flex-1">
             ACTIVITY LOG
             <span className={blink ? 'opacity-100' : 'opacity-0'}>{' █'}</span>
           </span>
+          <button
+            onClick={runCrossRef}
+            disabled={scanning || loading}
+            className="rounded px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-purple-300 border border-purple-700 hover:bg-purple-900/40 disabled:opacity-40 transition-colors"
+          >
+            {scanning ? 'Scanning…' : 'Cross-Reference Scan'}
+          </button>
         </div>
 
         {/* Log lines */}
@@ -309,6 +363,16 @@ export default function ActivityPage() {
                       {entry.amount != null && (
                         <div><span className="text-gray-500">amount:</span> £{entry.amount.toLocaleString()}</div>
                       )}
+                      {entry.flags && entry.flags.length > 1 && (
+                        <div className="mt-1 space-y-0.5">
+                          <span className="text-gray-500">all flags:</span>
+                          {entry.flags.map((flag, fi) => (
+                            <div key={fi} className="ml-2 text-purple-300">
+                              {flag.includes('✓') ? '✓' : '⚠'} {flag}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -325,13 +389,22 @@ export default function ActivityPage() {
             <h2 className="text-sm font-semibold text-gray-900">Reminders</h2>
             <p className="text-xs text-gray-500">{reminders.filter((r) => !r.done).length} active</p>
           </div>
-          <button
-            onClick={sendToQuinn}
-            disabled={sending}
-            className="rounded-md bg-[#D4A853] px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
-          >
-            {sending ? 'Sending…' : 'Send to Quinn'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={sendBriefing}
+              disabled={sendingBriefing}
+              className="rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-900 disabled:opacity-60 transition-colors"
+            >
+              {sendingBriefing ? 'Sending…' : 'Send Briefing'}
+            </button>
+            <button
+              onClick={sendToQuinn}
+              disabled={sending}
+              className="rounded-md bg-[#D4A853] px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
+            >
+              {sending ? 'Sending…' : 'Send to Quinn'}
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
