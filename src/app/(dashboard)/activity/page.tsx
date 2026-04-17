@@ -236,10 +236,41 @@ function generateReminders(data: any): Reminder[] {
   })
 }
 
+function extractChaseAmount(entry: LogEntry): string {
+  if (entry.amount) return `£${entry.amount.toLocaleString('en-GB')}`
+  const match = entry.message.match(/£[\d,]+/)
+  return match ? match[0] : 'the outstanding amount'
+}
+
+function formatChaseDate(iso: string): string {
+  try {
+    const d = new Date(iso)
+    if (!isNaN(d.getTime())) return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  } catch {}
+  return iso
+}
+
+function buildChaseEmail(entry: LogEntry): string {
+  const amount = extractChaseAmount(entry)
+  const dueDate = formatChaseDate(entry.timestamp)
+  return `Subject: Outlander Magazine — Outstanding Invoice
+
+Dear ${entry.client},
+
+I hope this message finds you well. I'm writing to follow up on an outstanding invoice for ${amount}, which was due on ${dueDate}.
+
+Could you kindly confirm the status of this payment?
+
+Best regards,
+Outlander Magazine
+billing@outlandermag.com`
+}
+
 export default function ActivityPage() {
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [chaseDraftKey, setChaseDraftKey] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [scanning, setScanning] = useState(false)
@@ -393,20 +424,31 @@ export default function ActivityPage() {
             logEntries.map((entry, i) => {
               const key = `${entry.timestamp}-${i}`
               const isExpanded = expandedId === key
+              const isChaseOpen = chaseDraftKey === key
               return (
                 <div key={key}>
-                  <button
-                    className="w-full text-left hover:bg-gray-800 rounded px-1 py-0.5 transition-colors"
-                    onClick={() => setExpandedId(isExpanded ? null : key)}
-                  >
-                    <span className="text-gray-500">[{formatTimestamp(entry.timestamp)}]</span>{' '}
-                    <span className={`font-bold ${TYPE_COLORS[entry.type]}`}>
-                      [{entry.type}]
-                    </span>{' '}
-                    <span className="text-gray-300">{entry.client}</span>
-                    <span className="text-gray-500"> — </span>
-                    <span className="text-gray-200">{entry.message}</span>
-                  </button>
+                  <div className="flex items-start gap-1">
+                    <button
+                      className="flex-1 text-left hover:bg-gray-800 rounded px-1 py-0.5 transition-colors"
+                      onClick={() => setExpandedId(isExpanded ? null : key)}
+                    >
+                      <span className="text-gray-500">[{formatTimestamp(entry.timestamp)}]</span>{' '}
+                      <span className={`font-bold ${TYPE_COLORS[entry.type]}`}>
+                        [{entry.type}]
+                      </span>{' '}
+                      <span className="text-gray-300">{entry.client}</span>
+                      <span className="text-gray-500"> — </span>
+                      <span className="text-gray-200">{entry.message}</span>
+                    </button>
+                    {entry.type === 'OVERDUE' && (
+                      <button
+                        onClick={() => setChaseDraftKey(isChaseOpen ? null : key)}
+                        className="shrink-0 rounded px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-red-300 border border-red-700 hover:bg-red-900/40 transition-colors mt-0.5"
+                      >
+                        Draft Chase
+                      </button>
+                    )}
+                  </div>
                   {isExpanded && (
                     <div className="ml-4 mt-1 mb-2 rounded bg-gray-800 px-3 py-2 text-xs text-gray-300 space-y-1">
                       <div><span className="text-gray-500">timestamp:</span> {entry.timestamp}</div>
@@ -426,6 +468,50 @@ export default function ActivityPage() {
                           ))}
                         </div>
                       )}
+                    </div>
+                  )}
+                  {isChaseOpen && entry.type === 'OVERDUE' && (
+                    <div className="ml-4 mt-1 mb-2 rounded bg-gray-800 border border-red-800/50 px-3 py-3 text-xs text-gray-300 space-y-3">
+                      <pre className="whitespace-pre-wrap font-mono text-xs text-gray-200 leading-relaxed">
+                        {buildChaseEmail(entry)}
+                      </pre>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(buildChaseEmail(entry))
+                            setToast('Copied to clipboard ✓')
+                            setTimeout(() => setToast(null), 3000)
+                          }}
+                          className="rounded px-2.5 py-1 text-[10px] font-medium bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors"
+                        >
+                          Copy to Clipboard
+                        </button>
+                        <button
+                          disabled={sending}
+                          onClick={async () => {
+                            const draft = buildChaseEmail(entry)
+                            const telegramMsg = `📧 <b>Chase Email Draft</b> — ${entry.client}\n\n${draft}\n\n— OutlanderOS`
+                            setSending(true)
+                            try {
+                              const res = await fetch('/api/telegram/send', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ message: telegramMsg }),
+                              })
+                              const d = await res.json()
+                              setToast(d.ok ? 'Draft sent to Quinn via Telegram ✓' : 'Failed to send draft')
+                            } catch {
+                              setToast('Network error — could not send draft')
+                            } finally {
+                              setSending(false)
+                              setTimeout(() => setToast(null), 4000)
+                            }
+                          }}
+                          className="rounded px-2.5 py-1 text-[10px] font-medium bg-[#D4A853] text-zinc-900 hover:bg-amber-600 disabled:opacity-60 transition-colors"
+                        >
+                          {sending ? 'Sending…' : 'Send Draft to Quinn'}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

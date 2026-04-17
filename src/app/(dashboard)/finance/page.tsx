@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { Loader2, RefreshCw, AlertCircle, TrendingUp, Link2 } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface Deal {
   ioNumber: string
@@ -77,12 +78,13 @@ interface DashboardData {
   xero?: XeroData
 }
 
-type Tab = 'deals' | 'billing' | 'expenses'
+type Tab = 'deals' | 'billing' | 'expenses' | 'cashflow'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'deals', label: 'Deals' },
   { id: 'billing', label: 'Billing' },
   { id: 'expenses', label: 'Expenses' },
+  { id: 'cashflow', label: 'Cash Flow' },
 ]
 
 // ---- Helpers ----
@@ -577,6 +579,107 @@ function BillingTab({ bt }: { bt: BillingTracker }) {
   )
 }
 
+// ---- Cash Flow Tab ----
+
+function CashFlowTab({ xero, bt }: { xero?: XeroData; bt?: BillingTracker }) {
+  const today = new Date()
+
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() + i, 1)
+    return {
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      label: d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }),
+    }
+  })
+
+  const monthMap: Record<string, { confirmed: number; projected: number }> = {}
+  for (const m of months) monthMap[m.key] = { confirmed: 0, projected: 0 }
+
+  if (xero?.invoices) {
+    for (const inv of xero.invoices) {
+      if (!inv.dueDate || !inv.amountDue || inv.status === 'PAID') continue
+      const d = new Date(inv.dueDate)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      if (monthMap[key]) monthMap[key].confirmed += inv.amountDue
+    }
+  }
+
+  const deals = bt?.allDeals ?? bt?.deals ?? []
+  const xeroContacts = new Set((xero?.invoices ?? []).map(i => (i.contact || '').toLowerCase()))
+
+  for (const deal of deals) {
+    if (!(deal as unknown as { signed?: boolean }).signed) continue
+    const clientLower = deal.client.toLowerCase()
+    const hasXero = [...xeroContacts].some(c => c.includes(clientLower) || clientLower.includes(c))
+    if (hasXero) continue
+
+    const qValues: Record<string, string> = { q1: deal.q1, q2: deal.q2, q3: deal.q3, q4: deal.q4 }
+    const qMonthNums: Record<string, string[]> = {
+      q1: ['01', '02', '03'], q2: ['04', '05', '06'],
+      q3: ['07', '08', '09'], q4: ['10', '11', '12'],
+    }
+    for (const [q, mNums] of Object.entries(qMonthNums)) {
+      const monthly = parseNum(qValues[q]) / 3
+      if (!monthly) continue
+      for (const mn of mNums) {
+        const key = `${today.getFullYear()}-${mn}`
+        if (monthMap[key]) monthMap[key].projected += monthly
+      }
+    }
+  }
+
+  const chartData = months.map(m => ({
+    month: m.label,
+    confirmed: Math.round(monthMap[m.key].confirmed),
+    projected: Math.round(monthMap[m.key].projected),
+  }))
+
+  const totalConfirmed = Object.values(monthMap).reduce((s, m) => s + m.confirmed, 0)
+  const totalProjected = Object.values(monthMap).reduce((s, m) => s + m.projected, 0)
+  const total = totalConfirmed + totalProjected
+  const fmtCash = (n: number) => `£${Math.round(n).toLocaleString('en-GB')}`
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Total Expected (6mo)</p>
+          <p className="font-mono text-xl font-bold text-gray-900 truncate">{fmtCash(total)}</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Confirmed</p>
+          <p className="font-mono text-xl font-bold text-blue-600 truncate">{fmtCash(totalConfirmed)}</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Projected</p>
+          <p className="font-mono text-xl font-bold text-amber-500 truncate">{fmtCash(totalProjected)}</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Current Bank Balance</p>
+          <p className={`font-mono text-xl font-bold truncate ${(xero?.bankBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+            {xero?.bankBalance != null ? fmtCash(xero.bankBalance) : '—'}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <p className="mb-4 text-[10px] font-semibold uppercase tracking-wider text-gray-500">6-Month Cash Flow Projection</p>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280' }} />
+            <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`} />
+            <Tooltip formatter={(v) => [`£${Number(v ?? 0).toLocaleString('en-GB')}`, '']} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar dataKey="confirmed" name="Confirmed (Xero)" fill="#3b82f6" stackId="a" />
+            <Bar dataKey="projected" name="Projected (Pipeline)" fill="#f59e0b" stackId="a" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
 // ---- Page ----
 
 function FinancePageInner() {
@@ -713,6 +816,8 @@ function FinancePageInner() {
         {/* Tab content */}
         {activeTab === 'expenses' ? (
           <ExpensesTab xero={data?.xero} />
+        ) : activeTab === 'cashflow' ? (
+          <CashFlowTab xero={data?.xero} bt={data?.billingTracker} />
         ) : !bt ? (
           <p className="text-sm text-gray-500">No billing data available.</p>
         ) : bt.error ? (

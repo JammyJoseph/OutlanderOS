@@ -219,6 +219,41 @@ function formatDate(d: string): string {
   }
 }
 
+// ---- Performance Card ----
+
+function PerformanceCard({ deal, xeroInvoices }: { deal: Deal; xeroInvoices?: XeroInvoice[] }) {
+  const clientLower = deal.client.toLowerCase()
+  const hasXeroData = xeroInvoices?.some(inv => {
+    const contact = (inv.contact || '').toLowerCase()
+    return contact.includes(clientLower) || clientLower.includes(contact)
+  })
+
+  if (!hasXeroData) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl p-5">
+        <p className="text-xs text-gray-400">Performance score available when invoiced</p>
+      </div>
+    )
+  }
+
+  const marginPct = parseFloat((deal.margin || '0').replace('%', ''))
+  const grade = marginPct > 20 ? 'A' : marginPct >= 10 ? 'B' : 'C'
+  const gradeColor = grade === 'A' ? 'text-emerald-600' : grade === 'B' ? 'text-amber-600' : 'text-red-500'
+  const gradeLabel = grade === 'A' ? 'Strong' : grade === 'B' ? 'Moderate' : 'Low'
+  const gradeRange = grade === 'A' ? '>20% margin' : grade === 'B' ? '10–20% margin' : '<10% margin'
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-5">
+      <div className={`text-5xl font-bold font-mono leading-none ${gradeColor}`}>{grade}</div>
+      <div>
+        <p className="text-sm font-semibold text-gray-800">{gradeLabel} Performance</p>
+        <p className="text-xs text-gray-500 mt-1">Margin: {deal.margin || '—'}</p>
+        <p className="text-xs text-gray-500">Grade threshold: {gradeRange}</p>
+      </div>
+    </div>
+  )
+}
+
 // ---- Task generation ----
 
 function buildAllTasks(
@@ -546,6 +581,12 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Performance */}
+      <div>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Performance</h2>
+        <PerformanceCard deal={deal} xeroInvoices={data?.xero?.invoices} />
+      </div>
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3 pt-2">
