@@ -14,6 +14,7 @@ import {
   Building2,
   FileText,
   Activity,
+  FileBarChart,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/team", label: "Team", icon: Users },
   { href: "/business-plan", label: "Business Plan", icon: FileText },
+  { href: "/reports", label: "Reports", icon: FileBarChart },
 ];
 
 export function Sidebar() {

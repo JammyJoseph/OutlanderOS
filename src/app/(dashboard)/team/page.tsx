@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Users, Mail, Calendar, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, Mail, Calendar, Plus, ChevronLeft, ChevronRight, Hash, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ---- Team data ----
@@ -22,6 +22,13 @@ interface SlackMember {
   presence: string
   statusText: string
   statusEmoji: string
+}
+
+interface SlackMessage {
+  channel: string
+  text: string
+  user: string
+  timestamp: string
 }
 
 // ---- Helpers ----
@@ -64,9 +71,21 @@ const DOW_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 // ---- Page ----
 
+function relativeTime(iso: string) {
+  if (!iso) return ''
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
 export default function TeamPage() {
   const [slackData, setSlackData] = useState<SlackMember[] | null>(null)
   const [slackError, setSlackError] = useState(false)
+  const [recentMessages, setRecentMessages] = useState<SlackMessage[] | null>(null)
   const [calMonth, setCalMonth] = useState({ year: 2026, month: 3 })
   const [holidayMsg, setHolidayMsg] = useState<string | null>(null)
 
@@ -75,6 +94,11 @@ export default function TeamPage() {
       .then(r => r.json())
       .then(d => setSlackData(d.members ?? []))
       .catch(() => setSlackError(true))
+
+    fetch('/api/slack/recent')
+      .then(r => r.json())
+      .then(d => setRecentMessages(d.messages ?? []))
+      .catch(() => setRecentMessages([]))
   }, [])
 
   function getSlack(name: string): SlackMember | undefined {
@@ -160,6 +184,40 @@ export default function TeamPage() {
             </div>
           )
         })}
+      </div>
+
+      {/* Recent Team Activity */}
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3">
+          <MessageSquare className="h-4 w-4 text-[#D4A853]" />
+          <h2 className="text-sm font-semibold text-gray-800">Recent Team Activity</h2>
+          <span className="ml-auto text-xs text-gray-400">Slack</span>
+        </div>
+
+        {recentMessages === null ? (
+          <div className="px-4 py-6 text-center text-xs text-gray-400">Loading…</div>
+        ) : recentMessages.length === 0 ? (
+          <div className="px-4 py-6 text-center text-xs text-gray-400">No recent Slack messages found.</div>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {recentMessages.map((msg, i) => (
+              <li key={i} className="flex items-start gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                <div className="mt-0.5 shrink-0">
+                  <Hash className="h-3 w-3 text-gray-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] font-medium text-[#D4A853] bg-amber-50 px-1 py-0.5 rounded">
+                      {msg.channel}
+                    </span>
+                    <span className="text-[10px] text-gray-400 ml-auto shrink-0">{relativeTime(msg.timestamp)}</span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-gray-700 leading-relaxed line-clamp-2">{msg.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Holiday Calendar */}
