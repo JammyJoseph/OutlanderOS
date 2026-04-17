@@ -165,9 +165,8 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl font-semibold text-zinc-100">Settings</h1>
+      <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
 
-      {/* Handles OAuth return params — wrapped in Suspense to satisfy Next.js build */}
       <Suspense fallback={null}>
         <OAuthHandler
           onConnected={(label) => {
@@ -188,8 +187,8 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
         <div
           className={`flex items-center justify-between rounded-lg border px-4 py-3 text-sm ${
             banner.type === "success"
-              ? "border-emerald-800/40 bg-emerald-900/10 text-emerald-400"
-              : "border-red-800/40 bg-red-900/10 text-red-400"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border-red-200 bg-red-50 text-red-600"
           }`}
         >
           <span>{banner.message}</span>
@@ -203,7 +202,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       <section>
         <div className="mb-3 flex items-center gap-2">
           <Link2 className="h-4 w-4 text-[#D4A853]" />
-          <h2 className="text-sm font-semibold text-zinc-200">Connected Accounts</h2>
+          <h2 className="text-sm font-semibold text-gray-800">Connected Accounts</h2>
         </div>
         <div className="space-y-3">
           {accountCards.map((account) => {
@@ -213,19 +212,19 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                 key={account.id}
                 className={`flex items-center justify-between rounded-lg border p-4 transition-colors ${
                   connected
-                    ? "border-emerald-800/40 bg-emerald-900/10"
-                    : "border-zinc-800 bg-zinc-900"
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-gray-200 bg-gray-50"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`flex h-9 w-9 items-center justify-center rounded-md text-sm font-bold ${
-                    connected ? "bg-emerald-500/20 text-emerald-400" : "bg-zinc-800 text-white"
+                    connected ? "bg-emerald-100 text-emerald-600" : "bg-gray-100 text-gray-700"
                   }`}>
                     G
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-zinc-100">{account.label}</p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-sm font-medium text-gray-900">{account.label}</p>
+                    <p className="text-xs text-gray-500">
                       {account.email} · {account.description}
                     </p>
                   </div>
@@ -233,15 +232,15 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                 <div className="flex items-center gap-3">
                   {connected ? (
                     <>
-                      <div className="flex items-center gap-1.5 rounded-full border border-emerald-800/50 bg-emerald-900/20 px-2.5 py-1">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="text-[11px] font-medium text-emerald-400">Connected</span>
+                      <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="text-[11px] font-medium text-emerald-600">Connected</span>
                       </div>
                       <button
                         onClick={() =>
                           setConnectedAccounts((prev) => ({ ...prev, [account.id]: false }))
                         }
-                        className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
+                        className="text-xs text-gray-400 hover:text-red-500 transition-colors"
                       >
                         Disconnect
                       </button>
@@ -268,7 +267,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       <section>
         <div className="mb-3 flex items-center gap-2">
           <TableProperties className="h-4 w-4 text-[#D4A853]" />
-          <h2 className="text-sm font-semibold text-zinc-200">Google Sheets</h2>
+          <h2 className="text-sm font-semibold text-gray-800">Google Sheets</h2>
         </div>
 
         {connectedSheets.length > 0 && (
@@ -276,20 +275,20 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             {connectedSheets.map((sheet) => (
               <div
                 key={sheet.id}
-                className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950 p-3"
+                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-zinc-200">{sheet.name}</p>
-                    <p className="truncate text-[11px] text-zinc-600">{sheet.url}</p>
+                    <p className="text-sm font-medium text-gray-800">{sheet.name}</p>
+                    <p className="truncate text-[11px] text-gray-400">{sheet.url}</p>
                   </div>
                 </div>
                 <button
                   onClick={() =>
                     setConnectedSheets((prev) => prev.filter((s) => s.id !== sheet.id))
                   }
-                  className="ml-4 shrink-0 text-xs text-zinc-600 hover:text-red-400 transition-colors"
+                  className="ml-4 shrink-0 text-xs text-gray-400 hover:text-red-500 transition-colors"
                 >
                   Remove
                 </button>
@@ -298,21 +297,21 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
           </div>
         )}
 
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-3">
-          <p className="text-xs text-zinc-500">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+          <p className="text-xs text-gray-500">
             Paste a Google Sheets URL to link your billing tracker or other spreadsheets.
           </p>
           <div className="space-y-1.5">
-            <label className="text-xs text-zinc-400">Sheet label</label>
+            <label className="text-xs text-gray-600">Sheet label</label>
             <Input
               placeholder="e.g. 2026 MASTER BILLING TRACKER"
               value={sheetLabel}
               onChange={(e) => setSheetLabel(e.target.value)}
-              className="border-zinc-700 bg-zinc-800 text-sm font-mono"
+              className="border-gray-200 bg-white text-sm font-mono"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-zinc-400">Google Sheets URL</label>
+            <label className="text-xs text-gray-600">Google Sheets URL</label>
             <Input
               placeholder="https://docs.google.com/spreadsheets/d/..."
               value={sheetUrl}
@@ -320,7 +319,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                 setSheetUrl(e.target.value);
                 setTestStatus("idle");
               }}
-              className="border-zinc-700 bg-zinc-800 text-sm font-mono"
+              className="border-gray-200 bg-white text-sm font-mono"
             />
           </div>
 
@@ -328,10 +327,10 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             <div
               className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs ${
                 testStatus === "testing"
-                  ? "bg-zinc-800 text-zinc-400"
+                  ? "bg-gray-100 text-gray-500"
                   : testStatus === "ok"
-                  ? "bg-emerald-500/10 text-emerald-400"
-                  : "bg-red-500/10 text-red-400"
+                  ? "bg-emerald-50 text-emerald-600"
+                  : "bg-red-50 text-red-600"
               }`}
             >
               {testStatus === "testing" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -345,7 +344,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             <Button
               size="sm"
               variant="outline"
-              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              className="border-gray-200 text-gray-700 hover:bg-gray-100"
               onClick={handleTestConnection}
               disabled={!sheetUrl || testStatus === "testing"}
             >
@@ -370,15 +369,15 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       <section>
         <div className="mb-3 flex items-center gap-2">
           <Hash className="h-4 w-4 text-[#D4A853]" />
-          <h2 className="text-sm font-semibold text-zinc-200">Slack</h2>
+          <h2 className="text-sm font-semibold text-gray-800">Slack</h2>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-3">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
           {slackStatus === "connected" ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  <span className="text-sm text-zinc-200 font-medium">{slackWorkspace}</span>
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="text-sm text-gray-800 font-medium">{slackWorkspace}</span>
                 </div>
                 <button
                   onClick={() => {
@@ -387,18 +386,18 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                     setSlackWorkspace(null);
                     setSlackChannels([]);
                   }}
-                  className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
                 >
                   Disconnect
                 </button>
               </div>
               {slackChannels.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-[11px] text-zinc-500">Bot is in {slackChannels.length} channel{slackChannels.length !== 1 ? "s" : ""}:</p>
+                  <p className="text-[11px] text-gray-500">Bot is in {slackChannels.length} channel{slackChannels.length !== 1 ? "s" : ""}:</p>
                   <ul className="space-y-1">
                     {slackChannels.map((ch) => (
-                      <li key={ch.id} className="flex items-center gap-1.5 text-xs text-zinc-400">
-                        <Hash className="h-3 w-3 text-zinc-600" />
+                      <li key={ch.id} className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <Hash className="h-3 w-3 text-gray-400" />
                         {ch.name}
                       </li>
                     ))}
@@ -408,11 +407,11 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             </div>
           ) : (
             <>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-gray-500">
                 Connect your Slack workspace so the OutlanderOS Agent can read channels and send messages.
               </p>
               <div className="space-y-1.5">
-                <label className="text-xs text-zinc-400">Slack Bot Token</label>
+                <label className="text-xs text-gray-600">Slack Bot Token</label>
                 <Input
                   type="password"
                   placeholder="xoxb-…"
@@ -421,11 +420,11 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                     setSlackToken(e.target.value);
                     setSlackStatus("idle");
                   }}
-                  className="border-zinc-700 bg-zinc-800 text-sm font-mono"
+                  className="border-gray-200 bg-white text-sm font-mono"
                 />
               </div>
               {slackStatus === "error" && (
-                <div className="flex items-center gap-2 rounded-md bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                <div className="flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
                   <AlertCircle className="h-3.5 w-3.5" />
                   <span>Connection failed. Check your token and try again.</span>
                 </div>
@@ -448,36 +447,36 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       <section>
         <div className="mb-3 flex items-center gap-2">
           <Plug className="h-4 w-4 text-[#D4A853]" />
-          <h2 className="text-sm font-semibold text-zinc-200">Integrations</h2>
+          <h2 className="text-sm font-semibold text-gray-800">Integrations</h2>
         </div>
         <div className="space-y-2">
           {/* Xero */}
           <div
             className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
-              xeroConnected ? "border-emerald-800/40 bg-emerald-900/10" : "border-zinc-800 bg-zinc-900"
+              xeroConnected ? "border-emerald-200 bg-emerald-50" : "border-gray-200 bg-gray-50"
             }`}
           >
             <div className="flex items-center gap-3">
               <div className={`flex h-9 w-9 items-center justify-center rounded-md text-xs font-bold ${
-                xeroConnected ? "bg-emerald-500/20 text-emerald-400" : "bg-zinc-800 text-zinc-400"
+                xeroConnected ? "bg-emerald-100 text-emerald-600" : "bg-gray-100 text-gray-500"
               }`}>
                 X
               </div>
               <div>
-                <p className="text-sm font-medium text-zinc-300">Xero</p>
-                <p className="text-xs text-zinc-600">Accounting, P&amp;L &amp; invoices</p>
+                <p className="text-sm font-medium text-gray-800">Xero</p>
+                <p className="text-xs text-gray-500">Accounting, P&amp;L &amp; invoices</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               {xeroConnected ? (
                 <>
-                  <div className="flex items-center gap-1.5 rounded-full border border-emerald-800/50 bg-emerald-900/20 px-2.5 py-1">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                    <span className="text-[11px] font-medium text-emerald-400">Connected</span>
+                  <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    <span className="text-[11px] font-medium text-emerald-600">Connected</span>
                   </div>
                   <button
                     onClick={() => setXeroConnected(false)}
-                    className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
+                    className="text-xs text-gray-400 hover:text-red-500 transition-colors"
                   >
                     Disconnect
                   </button>
@@ -496,17 +495,17 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
           </div>
 
           {/* Instagram */}
-          <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900 p-3">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-zinc-800 text-xs font-bold text-zinc-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gray-100 text-xs font-bold text-gray-500">
                 IG
               </div>
               <div>
-                <p className="text-sm font-medium text-zinc-300">Instagram</p>
-                <p className="text-xs text-zinc-600">@outlandermagazine analytics — coming soon</p>
+                <p className="text-sm font-medium text-gray-800">Instagram</p>
+                <p className="text-xs text-gray-500">@outlandermagazine analytics — coming soon</p>
               </div>
             </div>
-            <Badge className="bg-zinc-800 text-[10px] text-zinc-500">Coming soon</Badge>
+            <Badge className="bg-gray-100 text-[10px] text-gray-500">Coming soon</Badge>
           </div>
         </div>
       </section>

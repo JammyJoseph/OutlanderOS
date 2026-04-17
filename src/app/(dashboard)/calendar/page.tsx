@@ -30,7 +30,7 @@ function generateCalendarDays(year: number, month: number) {
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
   const startDow = firstDay.getDay()
-  const offset = (startDow + 6) % 7 // Mon=0
+  const offset = (startDow + 6) % 7
   const days: (number | null)[] = []
   for (let i = 0; i < offset; i++) days.push(null)
   for (let d = 1; d <= lastDay.getDate(); d++) days.push(d)
@@ -99,7 +99,7 @@ export default function CalendarPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
       </div>
     )
   }
@@ -108,8 +108,8 @@ export default function CalendarPage() {
     return (
       <div className="flex h-full items-center justify-center px-4">
         <div className="text-center">
-          <AlertCircle className="mx-auto mb-2 h-5 w-5 text-red-400" />
-          <p className="text-sm text-zinc-400">{error}</p>
+          <AlertCircle className="mx-auto mb-2 h-5 w-5 text-red-500" />
+          <p className="text-sm text-gray-600">{error}</p>
           <button onClick={load} className="mt-3 text-xs text-[#D4A853] hover:underline">Retry</button>
         </div>
       </div>
@@ -120,7 +120,7 @@ export default function CalendarPage() {
     return (
       <div className="flex h-full items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-sm font-medium text-zinc-400">Connect operations@ to view calendar</p>
+          <p className="text-sm font-medium text-gray-600">Connect operations@ to view calendar</p>
           <a
             href="/api/google/connect?label=primary"
             className="mt-4 inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-medium text-zinc-900 hover:bg-[#C49843] transition-colors"
@@ -163,41 +163,41 @@ export default function CalendarPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">Calendar</h1>
-          <p className="text-xs text-zinc-500">operations@outlandermag.com</p>
+          <h1 className="text-xl font-bold text-gray-900">Calendar</h1>
+          <p className="text-xs text-gray-500">operations@outlandermag.com</p>
         </div>
 
         {data?.calendar?.error && (
-          <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-900/10 px-3 py-2 text-xs text-red-400">
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             {data.calendar.error}
           </div>
         )}
 
         {/* Month navigation */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
-          <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
             <button
               onClick={prevMonth}
-              className="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 transition-colors"
+              className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="text-sm font-semibold text-zinc-200">
+            <span className="text-sm font-semibold text-gray-800">
               {MONTH_NAMES[calMonth.month]} {calMonth.year}
             </span>
             <button
               onClick={nextMonth}
-              className="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 transition-colors"
+              className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
           {/* Day headers */}
-          <div className="grid grid-cols-7 border-b border-zinc-800">
+          <div className="grid grid-cols-7 border-b border-gray-200">
             {DOW_LABELS.map(d => (
-              <div key={d} className="py-2 text-center text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+              <div key={d} className="py-2 text-center text-[10px] font-medium uppercase tracking-wider text-gray-400">
                 {d}
               </div>
             ))}
@@ -211,8 +211,8 @@ export default function CalendarPage() {
                 <div
                   key={i}
                   className={cn(
-                    'min-h-[72px] border-b border-r border-zinc-800 p-1.5',
-                    !day && 'bg-zinc-950/50',
+                    'min-h-[72px] border-b border-r border-gray-200 p-1.5',
+                    !day && 'bg-gray-50',
                     i % 7 === 6 && 'border-r-0'
                   )}
                 >
@@ -223,7 +223,7 @@ export default function CalendarPage() {
                           'mb-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
                           isToday(day)
                             ? 'bg-[#D4A853] font-bold text-zinc-900'
-                            : 'text-zinc-500'
+                            : 'text-gray-500'
                         )}
                       >
                         {day}
@@ -232,7 +232,7 @@ export default function CalendarPage() {
                         {dayEvents.slice(0, 2).map(e => (
                           <div
                             key={e.id}
-                            className="truncate rounded bg-blue-500/20 px-1 py-0.5 text-[9px] font-medium text-blue-400"
+                            className="truncate rounded bg-blue-100 px-1 py-0.5 text-[9px] font-medium text-blue-700"
                             title={`${e.summary} — ${formatTime(e.start)}`}
                           >
                             {formatTime(e.start) !== 'All day' && (
@@ -242,7 +242,7 @@ export default function CalendarPage() {
                           </div>
                         ))}
                         {dayEvents.length > 2 && (
-                          <div className="text-[9px] text-zinc-600 pl-1">+{dayEvents.length - 2} more</div>
+                          <div className="text-[9px] text-gray-400 pl-1">+{dayEvents.length - 2} more</div>
                         )}
                       </div>
                     </>
@@ -256,21 +256,21 @@ export default function CalendarPage() {
         {/* Today's events list */}
         {events.length > 0 && (
           <section>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Today's Events
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Today&apos;s Events
             </h2>
             <div className="space-y-2">
               {events.map(event => (
                 <div
                   key={event.id}
-                  className="flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
+                  className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3"
                 >
-                  <Clock className="mt-0.5 h-4 w-4 shrink-0 text-zinc-600" />
+                  <Clock className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-zinc-100">{event.summary}</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">{formatTimeFull(event.start)}</p>
+                    <p className="text-sm font-medium text-gray-900">{event.summary}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{formatTimeFull(event.start)}</p>
                     {event.location && (
-                      <div className="mt-1 flex items-center gap-1 text-xs text-zinc-600">
+                      <div className="mt-1 flex items-center gap-1 text-xs text-gray-400">
                         <MapPin className="h-3 w-3" />
                         {event.location}
                       </div>
@@ -283,9 +283,9 @@ export default function CalendarPage() {
         )}
 
         {events.length === 0 && !data?.calendar?.error && (
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-8 text-center">
-            <p className="text-sm text-zinc-500">No events found for today.</p>
-            <p className="mt-1 text-xs text-zinc-600">Navigate the calendar above to see upcoming events.</p>
+          <div className="rounded-xl border border-gray-200 bg-white px-5 py-8 text-center">
+            <p className="text-sm text-gray-500">No events found for today.</p>
+            <p className="mt-1 text-xs text-gray-400">Navigate the calendar above to see upcoming events.</p>
           </div>
         )}
 

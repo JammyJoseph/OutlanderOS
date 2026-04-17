@@ -29,7 +29,7 @@ interface SlackMember {
 function getPresenceDot(presence: string) {
   if (presence === 'active') return 'bg-emerald-500'
   if (presence === 'away') return 'bg-amber-500'
-  return 'bg-neutral-600'
+  return 'bg-gray-300'
 }
 
 function getPresenceLabel(presence: string) {
@@ -39,9 +39,9 @@ function getPresenceLabel(presence: string) {
 }
 
 function getPresenceTextColor(presence: string) {
-  if (presence === 'active') return 'text-emerald-400'
-  if (presence === 'away') return 'text-amber-400'
-  return 'text-neutral-500'
+  if (presence === 'active') return 'text-emerald-600'
+  if (presence === 'away') return 'text-amber-600'
+  return 'text-gray-400'
 }
 
 function generateCalendar(year: number, month: number) {
@@ -93,8 +93,8 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-100">Team</h1>
-          <p className="text-sm text-neutral-500">{TEAM.length} members</p>
+          <h1 className="text-xl font-semibold text-gray-900">Team</h1>
+          <p className="text-sm text-gray-500">{TEAM.length} members</p>
         </div>
         <button className="flex items-center gap-1.5 rounded-lg bg-[#D4A853] px-3 py-1.5 text-xs font-medium text-black hover:bg-[#c49a47] transition-colors">
           <Plus className="h-3.5 w-3.5" />
@@ -103,7 +103,7 @@ export default function TeamPage() {
       </div>
 
       {slackError && (
-        <div className="rounded-lg border border-amber-900/30 bg-amber-900/10 px-3 py-2 text-xs text-amber-400">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
           Could not load Slack presence — showing offline for all members.
         </div>
       )}
@@ -116,7 +116,7 @@ export default function TeamPage() {
           return (
             <div
               key={member.name}
-              className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 space-y-4 hover:border-neutral-700 transition-colors"
+              className="rounded-xl border border-gray-200 bg-white p-4 space-y-4 hover:border-gray-300 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="relative shrink-0">
@@ -125,20 +125,20 @@ export default function TeamPage() {
                   </div>
                   <span
                     className={cn(
-                      'absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-neutral-900',
+                      'absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white',
                       getPresenceDot(presence)
                     )}
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-neutral-100">{member.name}</p>
-                  <p className="text-xs text-neutral-500">{member.role}</p>
+                  <p className="text-sm font-semibold text-gray-900">{member.name}</p>
+                  <p className="text-xs text-gray-500">{member.role}</p>
                 </div>
               </div>
 
               <div className="space-y-2">
                 {member.email && (
-                  <div className="flex items-center gap-2 text-xs text-neutral-500">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
                     <Mail className="h-3 w-3 shrink-0" />
                     <span className="truncate">{member.email}</span>
                   </div>
@@ -147,7 +147,7 @@ export default function TeamPage() {
                 <div className="flex items-center gap-2 text-xs">
                   <span className={cn('inline-block h-2 w-2 rounded-full shrink-0', getPresenceDot(presence))} />
                   {slackData === null && !slackError ? (
-                    <span className="text-neutral-600">Loading…</span>
+                    <span className="text-gray-400">Loading…</span>
                   ) : (
                     <span className={getPresenceTextColor(presence)}>
                       {getPresenceLabel(presence)}
@@ -163,36 +163,36 @@ export default function TeamPage() {
       </div>
 
       {/* Holiday Calendar */}
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden">
-        <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-[#D4A853]" />
-            <h2 className="text-sm font-semibold text-neutral-200">Holiday Calendar</h2>
+            <h2 className="text-sm font-semibold text-gray-800">Holiday Calendar</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={prevMonth}
-              className="rounded p-1 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200 transition-colors"
+              className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="min-w-[130px] text-center text-sm text-neutral-300">
+            <span className="min-w-[130px] text-center text-sm text-gray-700">
               {MONTH_NAMES[calMonth.month]} {calMonth.year}
             </span>
             <button
               onClick={nextMonth}
-              className="rounded p-1 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200 transition-colors"
+              className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-7 border-b border-neutral-800">
+        <div className="grid grid-cols-7 border-b border-gray-200">
           {DOW_LABELS.map(d => (
             <div
               key={d}
-              className="py-2 text-center text-[10px] font-medium uppercase tracking-wider text-neutral-600"
+              className="py-2 text-center text-[10px] font-medium uppercase tracking-wider text-gray-400"
             >
               {d}
             </div>
@@ -206,35 +206,35 @@ export default function TeamPage() {
               <div
                 key={i}
                 className={cn(
-                  'min-h-[56px] border-b border-r border-neutral-800 p-1.5',
-                  !day && 'bg-neutral-950/40',
-                  isWeekend && day && 'bg-neutral-950/20',
+                  'min-h-[56px] border-b border-r border-gray-200 p-1.5',
+                  !day && 'bg-gray-50',
+                  isWeekend && day && 'bg-gray-50/60',
                   i % 7 === 6 && 'border-r-0'
                 )}
               >
                 {day && (
-                  <span className="text-xs text-neutral-600">{day}</span>
+                  <span className="text-xs text-gray-400">{day}</span>
                 )}
               </div>
             )
           })}
         </div>
 
-        <div className="border-t border-neutral-800 px-4 py-3 text-center text-xs text-neutral-600">
+        <div className="border-t border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
           No holidays booked for {MONTH_NAMES[calMonth.month]} {calMonth.year}
         </div>
       </div>
 
       {/* Holiday Allowance */}
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden">
-        <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-[#D4A853]" />
-            <h2 className="text-sm font-semibold text-neutral-200">Holiday Allowance 2026</h2>
+            <h2 className="text-sm font-semibold text-gray-800">Holiday Allowance 2026</h2>
           </div>
           <button
             onClick={() => setHolidayMsg('Holiday booking coming soon.')}
-            className="flex items-center gap-1.5 rounded-lg border border-neutral-700 px-3 py-1 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
           >
             <Plus className="h-3 w-3" />
             Book Holiday
@@ -242,34 +242,34 @@ export default function TeamPage() {
         </div>
 
         {holidayMsg && (
-          <div className="border-b border-neutral-800 bg-[#D4A853]/10 px-4 py-2 text-xs text-[#D4A853]">
+          <div className="border-b border-gray-200 bg-[#D4A853]/10 px-4 py-2 text-xs text-[#D4A853]">
             {holidayMsg}
           </div>
         )}
 
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-neutral-800">
-              <th className="px-4 py-2.5 text-left font-medium text-neutral-500">Name</th>
-              <th className="px-4 py-2.5 text-center font-medium text-neutral-500">Total Days</th>
-              <th className="px-4 py-2.5 text-center font-medium text-neutral-500">Used</th>
-              <th className="px-4 py-2.5 text-center font-medium text-neutral-500">Remaining</th>
+            <tr className="border-b border-gray-200">
+              <th className="px-4 py-2.5 text-left font-medium text-gray-500">Name</th>
+              <th className="px-4 py-2.5 text-center font-medium text-gray-500">Total Days</th>
+              <th className="px-4 py-2.5 text-center font-medium text-gray-500">Used</th>
+              <th className="px-4 py-2.5 text-center font-medium text-gray-500">Remaining</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-800">
+          <tbody className="divide-y divide-gray-200">
             {TEAM.map(member => (
-              <tr key={member.name} className="hover:bg-neutral-800/40 transition-colors">
+              <tr key={member.name} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className={cn('flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-black', member.color)}>
                       {member.initials}
                     </div>
-                    <span className="text-neutral-200">{member.name}</span>
+                    <span className="text-gray-800">{member.name}</span>
                   </div>
                 </td>
-                <td className="px-4 py-2.5 text-center text-neutral-400">25</td>
-                <td className="px-4 py-2.5 text-center text-neutral-400">0</td>
-                <td className="px-4 py-2.5 text-center font-medium text-emerald-400">25</td>
+                <td className="px-4 py-2.5 text-center text-gray-500">25</td>
+                <td className="px-4 py-2.5 text-center text-gray-500">0</td>
+                <td className="px-4 py-2.5 text-center font-medium text-emerald-600">25</td>
               </tr>
             ))}
           </tbody>

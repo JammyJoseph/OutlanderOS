@@ -28,31 +28,31 @@ export default function OfficePage() {
   const idleCount = agents.filter((a) => a.status === 'idle').length
 
   return (
-    <div className="flex h-screen flex-col bg-neutral-950">
-      {/* Top bar */}
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-neutral-800 bg-neutral-950 px-5">
+    <div className="flex h-screen flex-col bg-gray-50">
+      {/* Top bar — light theme */}
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-5">
         <div className="flex items-center gap-3">
           <Building2 className="h-4 w-4 text-[#D4A853]" />
-          <h1 className="text-sm font-semibold text-white">Outlander HQ</h1>
-          <span className="text-neutral-700">·</span>
-          <span className="text-xs text-neutral-500">{agents.length} agents deployed</span>
+          <h1 className="text-sm font-semibold text-gray-900">Outlander HQ</h1>
+          <span className="text-gray-300">·</span>
+          <span className="text-xs text-gray-500">{agents.length} agents deployed</span>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <Circle className="h-2 w-2 fill-green-400 text-green-400" />
-              <span className="text-xs text-neutral-400">{activeCount} active</span>
+              <Circle className="h-2 w-2 fill-green-500 text-green-500" />
+              <span className="text-xs text-gray-600">{activeCount} active</span>
             </div>
             {thinkingCount > 0 && (
               <div className="flex items-center gap-1.5">
                 <Circle className="h-2 w-2 fill-[#D4A853] text-[#D4A853]" />
-                <span className="text-xs text-neutral-400">{thinkingCount} thinking</span>
+                <span className="text-xs text-gray-600">{thinkingCount} thinking</span>
               </div>
             )}
             <div className="flex items-center gap-1.5">
-              <Circle className="h-2 w-2 fill-neutral-600 text-neutral-600" />
-              <span className="text-xs text-neutral-400">{idleCount} idle</span>
+              <Circle className="h-2 w-2 fill-gray-400 text-gray-400" />
+              <span className="text-xs text-gray-600">{idleCount} idle</span>
             </div>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function OfficePage() {
 
       {/* Main content — split layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: 3D Scene (60%) */}
+        {/* LEFT: 3D Scene (60%) — stays dark */}
         <div className="relative" style={{ flex: '0 0 62%' }}>
           <OfficeScene
             selectedAgentId={selectedAgentId}
@@ -68,14 +68,14 @@ export default function OfficePage() {
           />
 
           {!selectedAgentId && (
-            <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-neutral-800 bg-neutral-950/80 px-4 py-1.5 backdrop-blur-sm">
-              <span className="text-xs text-neutral-500">Click a desk to inspect · Drag to pan · Scroll to zoom</span>
+            <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-gray-200 bg-white/80 px-4 py-1.5 backdrop-blur-sm">
+              <span className="text-xs text-gray-500">Click a desk to inspect · Drag to pan · Scroll to zoom</span>
             </div>
           )}
         </div>
 
         {/* RIGHT: Group Chat (38%) */}
-        <div className="flex-1" style={{ borderLeft: '1px solid #333' }}>
+        <div className="flex-1" style={{ borderLeft: '1px solid #e5e7eb' }}>
           <GroupChat selectedAgentId={selectedAgentId} />
         </div>
       </div>

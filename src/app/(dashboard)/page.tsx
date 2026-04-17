@@ -90,10 +90,10 @@ function fmt(n: number): string {
 
 function marginColor(marginStr: string): string {
   const n = parseFloat(marginStr.replace('%', ''))
-  if (isNaN(n)) return 'bg-zinc-700 text-zinc-300'
-  if (n >= 50) return 'bg-green-900 text-green-300'
-  if (n >= 30) return 'bg-amber-900 text-amber-300'
-  return 'bg-red-900 text-red-300'
+  if (isNaN(n)) return 'bg-gray-100 text-gray-600'
+  if (n >= 50) return 'bg-green-100 text-green-700'
+  if (n >= 30) return 'bg-amber-100 text-amber-700'
+  return 'bg-red-100 text-red-700'
 }
 
 function dealStatus(deal: Deal): 'Active' | 'Pending' | 'Pipeline' {
@@ -112,7 +112,7 @@ function buildTaskCount(deal: Deal): number {
 // ---- Skeleton ----
 
 function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse bg-zinc-800 rounded ${className}`} />
+  return <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
 }
 
 // ---- KPI Card ----
@@ -129,17 +129,17 @@ function KpiCard({
   sub?: string
 }) {
   return (
-    <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl p-4 sm:p-6 min-w-0">
-      <p className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-widest mb-2 sm:mb-3 truncate">{label}</p>
+    <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 sm:p-6 min-w-0">
+      <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-widest mb-2 sm:mb-3 truncate">{label}</p>
       <p className={`font-mono text-xl sm:text-2xl lg:text-3xl font-bold truncate ${valueClass}`}>{value}</p>
-      {sub && <p className="text-xs text-zinc-600 mt-1.5 truncate">{sub}</p>}
+      {sub && <p className="text-xs text-gray-400 mt-1.5 truncate">{sub}</p>}
     </div>
   )
 }
 
 function KpiSkeleton() {
   return (
-    <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl p-4 sm:p-6 min-w-0">
+    <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 sm:p-6 min-w-0">
       <Skeleton className="h-3 w-24 mb-4" />
       <Skeleton className="h-9 w-32" />
     </div>
@@ -151,7 +151,7 @@ function KpiSkeleton() {
 function InsightCard({
   label,
   value,
-  valueClass = 'text-zinc-100',
+  valueClass = 'text-gray-900',
   warn,
   sub,
 }: {
@@ -162,10 +162,10 @@ function InsightCard({
   sub?: string
 }) {
   return (
-    <div className={`flex-1 min-w-0 bg-zinc-900 border rounded-xl p-4 ${warn ? 'border-amber-700/60' : 'border-zinc-800'}`}>
-      <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-2 truncate">{label}</p>
+    <div className={`flex-1 min-w-0 bg-white border rounded-xl p-4 ${warn ? 'border-amber-400/60' : 'border-gray-200'}`}>
+      <p className="text-gray-400 text-[10px] uppercase tracking-widest mb-2 truncate">{label}</p>
       <p className={`font-mono text-base font-bold truncate ${valueClass}`}>{value}</p>
-      {sub && <p className="text-[10px] text-zinc-600 mt-1 leading-tight truncate">{sub}</p>}
+      {sub && <p className="text-[10px] text-gray-400 mt-1 leading-tight truncate">{sub}</p>}
     </div>
   )
 }
@@ -180,34 +180,34 @@ function ProjectCard({ deal, index, onAction }: { deal: Deal; index: number; ale
   const dealId = deal.id ?? index
 
   const statusDot: Record<string, string> = {
-    Active: 'bg-green-400',
+    Active: 'bg-green-500',
     Pending: 'bg-amber-400',
-    Pipeline: 'bg-zinc-500',
+    Pipeline: 'bg-gray-400',
   }
 
   return (
     <Link
       href={`/projects/${dealId}`}
-      className={`relative block bg-zinc-900 border rounded-lg p-4 transition-all cursor-pointer group min-w-0 overflow-hidden ${
-        hovered ? 'border-amber-500/60 shadow-[0_0_12px_rgba(212,168,83,0.15)]' : 'border-zinc-800'
+      className={`relative block bg-white border rounded-lg p-4 transition-all cursor-pointer group min-w-0 overflow-hidden ${
+        hovered ? 'border-amber-400/60 shadow-[0_0_12px_rgba(212,168,83,0.12)]' : 'border-gray-200'
       }`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {taskCount > 0 && (
-        <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-bold flex items-center justify-center shrink-0">
+        <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
           {taskCount}
         </span>
       )}
 
       <div className="pr-6 mb-3 min-w-0">
-        <p className="font-semibold text-base text-zinc-100 leading-tight truncate">{deal.client}</p>
+        <p className="font-semibold text-base text-gray-900 leading-tight truncate">{deal.client}</p>
         {deal.campaign && (
-          <p className="text-xs text-zinc-500 mt-0.5 truncate">{deal.campaign}</p>
+          <p className="text-xs text-gray-500 mt-0.5 truncate">{deal.campaign}</p>
         )}
       </div>
 
-      <p className="font-mono text-lg font-bold text-zinc-200 mb-3 truncate">
+      <p className="font-mono text-lg font-bold text-gray-800 mb-3 truncate">
         {amount > 0 ? fmt(amount) : deal.annualTotal || '—'}
       </p>
 
@@ -217,7 +217,7 @@ function ProjectCard({ deal, index, onAction }: { deal: Deal; index: number; ale
             {deal.margin}
           </span>
         )}
-        <span className="flex items-center gap-1 text-[10px] text-zinc-500">
+        <span className="flex items-center gap-1 text-[10px] text-gray-500">
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot[status]}`} />
           {status}
         </span>
@@ -230,7 +230,7 @@ function ProjectCard({ deal, index, onAction }: { deal: Deal; index: number; ale
         >
           {!deal.invoiceSent && deal.signed && (
             <button
-              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-amber-900/80 text-amber-300 hover:bg-amber-800 transition-colors"
+              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
               onClick={(e) => { e.preventDefault(); onAction?.(dealId, 'invoice') }}
               title="Send Invoice"
             >
@@ -240,7 +240,7 @@ function ProjectCard({ deal, index, onAction }: { deal: Deal; index: number; ale
           )}
           {!deal.signed && (
             <button
-              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-red-900/80 text-red-300 hover:bg-red-800 transition-colors"
+              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
               onClick={(e) => { e.preventDefault(); onAction?.(dealId, 'signature') }}
               title="Chase Signature"
             >
@@ -290,7 +290,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval)
   }, [fetchData])
 
-  // Tick seconds-ago counter
   useEffect(() => {
     if (!lastUpdated) return
     const tick = setInterval(() => {
@@ -378,18 +377,18 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64 text-red-400">
+      <div className="flex items-center justify-center h-64 text-red-500">
         <p>Failed to load dashboard: {error}</p>
       </div>
     )
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 bg-zinc-950 min-h-screen">
+    <div className="p-4 sm:p-6 space-y-6 bg-gray-50 min-h-screen">
 
       {/* Last updated bar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="text-xs text-zinc-600">
+        <div className="text-xs text-gray-400">
           {lastUpdated
             ? secondsAgo < 5
               ? 'Updated just now'
@@ -401,7 +400,7 @@ export default function DashboardPage() {
         <button
           onClick={() => fetchData(true)}
           disabled={refreshing || loading}
-          className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-40"
         >
           <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
@@ -419,22 +418,22 @@ export default function DashboardPage() {
             <KpiCard
               label="Booked Revenue YTD"
               value={bookedRevenue}
-              valueClass="text-green-400"
+              valueClass="text-green-600"
             />
             <KpiCard
               label="Gap to Target"
               value={gapToTarget}
-              valueClass="text-red-400"
+              valueClass="text-red-500"
             />
             <KpiCard
               label="Avg Margin"
               value={avgMargin}
-              valueClass="text-amber-400"
+              valueClass="text-amber-600"
             />
             <KpiCard
               label="Deals Closed / Total"
               value={`${signedCount}/${totalDeals}`}
-              valueClass="text-white"
+              valueClass="text-gray-900"
               sub={`${totalDeals - signedCount} unsigned`}
             />
           </>
@@ -442,8 +441,8 @@ export default function DashboardPage() {
       </div>
 
       {/* ---- Revenue Chart ---- */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest mb-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-5">
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-widest mb-4">
           Quarterly Revenue 2026
         </h2>
         {loading ? (
@@ -454,22 +453,22 @@ export default function DashboardPage() {
               <BarChart data={chartData} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
                 <XAxis
                   dataKey="q"
-                  tick={{ fill: '#71717a', fontSize: 12 }}
+                  tick={{ fill: '#9ca3af', fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={(v: number) => '£' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v)}
-                  tick={{ fill: '#71717a', fontSize: 11 }}
+                  tick={{ fill: '#9ca3af', fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   width={52}
                 />
                 <Tooltip
                   formatter={(value) => [fmt(Number(value ?? 0)), 'Revenue']}
-                  contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }}
-                  labelStyle={{ color: '#a1a1aa' }}
-                  itemStyle={{ color: '#e4e4e7' }}
+                  contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                  labelStyle={{ color: '#6b7280' }}
+                  itemStyle={{ color: '#111827' }}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry) => (
@@ -478,14 +477,14 @@ export default function DashboardPage() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <p className="text-xs text-zinc-600 mt-2 text-center">2025 comparison coming soon</p>
+            <p className="text-xs text-gray-400 mt-2 text-center">2025 comparison coming soon</p>
           </>
         )}
       </div>
 
       {/* ---- Insights ---- */}
       <div>
-        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">Insights</h2>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Insights</h2>
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16" />)}
@@ -495,50 +494,50 @@ export default function DashboardPage() {
             <InsightCard
               label="Avg Deal Size"
               value={avgDealSize > 0 ? fmt(Math.round(avgDealSize)) : '—'}
-              valueClass="text-zinc-100"
+              valueClass="text-gray-900"
             />
             <InsightCard
               label="Top Client"
               value={topClient ? topClient[0] : '—'}
-              valueClass="text-amber-300"
+              valueClass="text-amber-600"
               sub={topClient ? fmt(topClient[1]) : undefined}
             />
             <InsightCard
               label="Client Concentration"
               value={`${clientConcentration}%`}
-              valueClass={clientConcentration > 60 ? 'text-amber-400' : 'text-zinc-100'}
+              valueClass={clientConcentration > 60 ? 'text-amber-600' : 'text-gray-900'}
               warn={clientConcentration > 60}
               sub="top 3 clients"
             />
             <InsightCard
               label="Pipeline Value"
               value={pipelineValue > 0 ? fmt(pipelineValue) : '£0'}
-              valueClass="text-blue-400"
+              valueClass="text-blue-600"
               sub={`${pipelineDeals.length} unsigned deal${pipelineDeals.length !== 1 ? 's' : ''}`}
             />
             <InsightCard
               label="Payment Health"
               value={invoicesTotal > 0 ? `${invoicesSent}/${invoicesTotal}` : '—'}
-              valueClass="text-green-400"
+              valueClass="text-green-600"
               sub="invoices sent"
             />
             <InsightCard
               label="Currency Split"
               value={currencySplit || '—'}
-              valueClass="text-zinc-300"
+              valueClass="text-gray-700"
             />
             {data?.xero?.connected && (
               <>
                 <InsightCard
                   label="Bank Balance"
                   value={typeof data.xero.bankBalance === 'number' ? `£${Math.abs(data.xero.bankBalance).toLocaleString('en-GB', { minimumFractionDigits: 0 })}` : '—'}
-                  valueClass={(data.xero.bankBalance ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                  valueClass={(data.xero.bankBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}
                   sub={data.xero.organisation ?? undefined}
                 />
                 <InsightCard
                   label="Net Profit YTD"
                   value={typeof data.xero.netProfit === 'number' ? `£${Math.abs(data.xero.netProfit).toLocaleString('en-GB', { minimumFractionDigits: 0 })}` : '—'}
-                  valueClass={(data.xero.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-400'}
+                  valueClass={(data.xero.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-500'}
                   sub="from Xero"
                 />
               </>
@@ -549,8 +548,8 @@ export default function DashboardPage() {
 
       {/* ---- Priority Reminders ---- */}
       {!loading && activeReminders.length > 0 && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest mb-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-widest mb-3">
             Priority Reminders
           </h2>
           <div className="space-y-2">
@@ -561,18 +560,18 @@ export default function DashboardPage() {
                   <span
                     className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
                       r.priority === 'red'
-                        ? 'bg-red-900 text-red-300'
-                        : 'bg-amber-900 text-amber-300'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-amber-100 text-amber-700'
                     }`}
                   >
                     {r.priority === 'red' ? 'Urgent' : 'Action'}
                   </span>
-                  <span className="text-sm text-zinc-300 flex-1 min-w-0 truncate">{r.label}</span>
+                  <span className="text-sm text-gray-700 flex-1 min-w-0 truncate">{r.label}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     {r.dealId != null && (
                       <button
                         onClick={() => router.push(`/projects/${r.dealId}`)}
-                        className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 transition-colors"
+                        className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors"
                       >
                         <ArrowRight className="h-3 w-3" />
                         Action
@@ -580,7 +579,7 @@ export default function DashboardPage() {
                     )}
                     <button
                       onClick={() => markDone(originalIndex)}
-                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-zinc-800 text-zinc-500 hover:bg-green-900/50 hover:text-green-400 transition-colors"
+                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-gray-100 text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
                     >
                       <CheckSquare className="h-3 w-3" />
                       Done
@@ -593,7 +592,7 @@ export default function DashboardPage() {
           {activeReminders.length > 5 && (
             <button
               onClick={() => setShowAllReminders(!showAllReminders)}
-              className="mt-3 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="mt-3 text-xs text-gray-400 hover:text-gray-700 transition-colors"
             >
               {showAllReminders ? 'Show less' : `Show all ${activeReminders.length}`}
             </button>
@@ -604,9 +603,9 @@ export default function DashboardPage() {
       {/* ---- Projects Grid ---- */}
       <div>
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest">Projects</h2>
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-widest">Projects</h2>
           {!loading && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
               {deals.length}
             </span>
           )}
@@ -615,7 +614,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 h-32">
+              <div key={i} className="bg-white border border-gray-200 rounded-lg p-4 h-32">
                 <Skeleton className="h-4 w-2/3 mb-2" />
                 <Skeleton className="h-3 w-1/2 mb-4" />
                 <Skeleton className="h-6 w-1/3" />
@@ -623,8 +622,8 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : deals.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-            <p className="text-xs text-zinc-600">No projects</p>
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <p className="text-xs text-gray-400">No projects</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">

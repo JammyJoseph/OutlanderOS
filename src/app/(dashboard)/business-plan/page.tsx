@@ -10,12 +10,12 @@ export default function BusinessPlanPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <FileText size={20} className="text-[#D4A853]" />
           <div>
-            <h1 className="text-lg font-semibold text-zinc-100">Business Plan</h1>
-            <p className="text-xs text-zinc-500">Outlander Magazine — Strategic Plan</p>
+            <h1 className="text-lg font-semibold text-gray-900">Business Plan</h1>
+            <p className="text-xs text-gray-500">Outlander Magazine — Strategic Plan</p>
           </div>
         </div>
         <a
@@ -30,7 +30,7 @@ export default function BusinessPlanPage() {
       </div>
 
       {/* Embedded Document */}
-      <div className="flex-1 bg-zinc-950">
+      <div className="flex-1 bg-gray-50">
         <iframe
           src={EMBED_URL}
           className="w-full h-full border-0"

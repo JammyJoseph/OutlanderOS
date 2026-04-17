@@ -77,9 +77,9 @@ function parseNum(s: string): number {
 
 function marginColor(margin: string): string {
   const pct = parseNum(margin)
-  if (pct > 20) return 'text-emerald-400'
-  if (pct >= 10) return 'text-amber-400'
-  return 'text-red-400'
+  if (pct > 20) return 'text-emerald-600'
+  if (pct >= 10) return 'text-amber-600'
+  return 'text-red-500'
 }
 
 function isZeroTotal(annualTotal: string): boolean {
@@ -91,32 +91,32 @@ function isZeroTotal(annualTotal: string): boolean {
 function StatsBar({ bt }: { bt: BillingTracker }) {
   return (
     <div className="flex flex-wrap gap-2">
-      <div className="flex-1 min-w-0 min-w-[130px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-500 mb-1 truncate">Booked Revenue YTD</p>
-        <p className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-emerald-400 truncate">{bt.bookedRevenue}</p>
+      <div className="flex-1 min-w-0 min-w-[130px] rounded-lg border border-gray-200 bg-white px-4 py-3">
+        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-1 truncate">Booked Revenue YTD</p>
+        <p className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600 truncate">{bt.bookedRevenue}</p>
       </div>
-      <div className="flex-1 min-w-0 min-w-[110px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-500 mb-1 truncate">Gap to Target</p>
-        <p className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-red-400 truncate">{bt.gapToTarget}</p>
+      <div className="flex-1 min-w-0 min-w-[110px] rounded-lg border border-gray-200 bg-white px-4 py-3">
+        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-1 truncate">Gap to Target</p>
+        <p className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-red-500 truncate">{bt.gapToTarget}</p>
       </div>
-      <div className="flex-1 min-w-0 min-w-[90px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-500 mb-1 truncate">Total Deals</p>
-        <p className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">{bt.totalDeals}</p>
+      <div className="flex-1 min-w-0 min-w-[90px] rounded-lg border border-gray-200 bg-white px-4 py-3">
+        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-1 truncate">Total Deals</p>
+        <p className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{bt.totalDeals}</p>
       </div>
-      <div className="flex-1 min-w-0 min-w-[120px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-500 mb-1 truncate">Signed / Unsigned</p>
+      <div className="flex-1 min-w-0 min-w-[120px] rounded-lg border border-gray-200 bg-white px-4 py-3">
+        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-1 truncate">Signed / Unsigned</p>
         <p className="font-mono text-lg sm:text-xl lg:text-2xl font-bold">
-          <span className="text-emerald-400">{bt.invoiceSummary.signed}</span>
-          <span className="text-zinc-600 mx-1">/</span>
-          <span className="text-amber-400">{bt.invoiceSummary.unsigned}</span>
+          <span className="text-emerald-600">{bt.invoiceSummary.signed}</span>
+          <span className="text-gray-300 mx-1">/</span>
+          <span className="text-amber-600">{bt.invoiceSummary.unsigned}</span>
         </p>
       </div>
-      <div className="flex-1 min-w-0 min-w-[130px] rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-500 mb-1 truncate">Invoices Sent / Pending</p>
+      <div className="flex-1 min-w-0 min-w-[130px] rounded-lg border border-gray-200 bg-white px-4 py-3">
+        <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-500 mb-1 truncate">Invoices Sent / Pending</p>
         <p className="font-mono text-lg sm:text-xl lg:text-2xl font-bold">
-          <span className="text-emerald-400">{bt.invoiceSummary.invoicesSent}</span>
-          <span className="text-zinc-600 mx-1">/</span>
-          <span className="text-red-400">{bt.invoiceSummary.invoicesNotSent}</span>
+          <span className="text-emerald-600">{bt.invoiceSummary.invoicesSent}</span>
+          <span className="text-gray-300 mx-1">/</span>
+          <span className="text-red-500">{bt.invoiceSummary.invoicesNotSent}</span>
         </p>
       </div>
     </div>
@@ -128,12 +128,12 @@ function StatsBar({ bt }: { bt: BillingTracker }) {
 function ExpensesTab({ xero }: { xero?: XeroData }) {
   if (!xero?.connected) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-6 py-12 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-800 text-sm font-bold text-zinc-400">
+      <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-sm font-bold text-gray-500">
           X
         </div>
-        <h3 className="mb-1 text-sm font-semibold text-zinc-200">Connect Xero</h3>
-        <p className="mb-5 text-xs text-zinc-500">Connect your Xero account to see P&amp;L, bank balances, and recent invoices.</p>
+        <h3 className="mb-1 text-sm font-semibold text-gray-800">Connect Xero</h3>
+        <p className="mb-5 text-xs text-gray-500">Connect your Xero account to see P&amp;L, bank balances, and recent invoices.</p>
         <a
           href="/api/xero/connect"
           className="inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-semibold text-zinc-900 hover:bg-[#C49843] transition-colors"
@@ -147,7 +147,7 @@ function ExpensesTab({ xero }: { xero?: XeroData }) {
 
   if (xero.error) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-900/10 px-4 py-3 text-sm text-red-400">
+      <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
         <AlertCircle className="h-4 w-4 shrink-0" />
         Xero error: {xero.error}
       </div>
@@ -159,40 +159,40 @@ function ExpensesTab({ xero }: { xero?: XeroData }) {
 
   const statusColor = (s?: string) => {
     switch (s) {
-      case 'PAID': return 'text-emerald-400'
-      case 'AUTHORISED': return 'text-amber-400'
-      case 'OVERDUE': return 'text-red-400'
-      case 'VOIDED': return 'text-zinc-600'
-      default: return 'text-zinc-400'
+      case 'PAID': return 'text-emerald-600'
+      case 'AUTHORISED': return 'text-amber-600'
+      case 'OVERDUE': return 'text-red-500'
+      case 'VOIDED': return 'text-gray-400'
+      default: return 'text-gray-500'
     }
   }
 
   return (
     <div className="space-y-5">
       {xero.organisation && (
-        <p className="text-xs text-zinc-500">
-          Connected to <span className="font-semibold text-zinc-300">{xero.organisation}</span>
+        <p className="text-xs text-gray-500">
+          Connected to <span className="font-semibold text-gray-800">{xero.organisation}</span>
         </p>
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Income YTD</p>
-          <p className="font-mono text-xl font-bold text-emerald-400 truncate">{fmt(xero.totalIncome)}</p>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Total Income YTD</p>
+          <p className="font-mono text-xl font-bold text-emerald-600 truncate">{fmt(xero.totalIncome)}</p>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Expenses YTD</p>
-          <p className="font-mono text-xl font-bold text-red-400 truncate">{fmt(xero.totalExpenses)}</p>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Total Expenses YTD</p>
+          <p className="font-mono text-xl font-bold text-red-500 truncate">{fmt(xero.totalExpenses)}</p>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Net Profit YTD</p>
-          <p className={`font-mono text-xl font-bold truncate ${(xero.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-400'}`}>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Net Profit YTD</p>
+          <p className={`font-mono text-xl font-bold truncate ${(xero.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-500'}`}>
             {fmt(xero.netProfit)}
           </p>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-          <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Bank Balance</p>
-          <p className={`font-mono text-xl font-bold truncate ${(xero.bankBalance ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Bank Balance</p>
+          <p className={`font-mono text-xl font-bold truncate ${(xero.bankBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
             {fmt(xero.bankBalance)}
           </p>
         </div>
@@ -200,27 +200,27 @@ function ExpensesTab({ xero }: { xero?: XeroData }) {
 
       {xero.invoices && xero.invoices.length > 0 && (
         <div>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Invoices (Authorised / Overdue)</p>
-          <div className="overflow-x-auto rounded-xl border border-zinc-800">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Invoices (Authorised / Overdue)</p>
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-zinc-950 border-b border-zinc-800">
-                  <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Invoice #</th>
-                  <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Contact</th>
-                  <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Total</th>
-                  <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Amount Due</th>
-                  <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Due Date</th>
-                  <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Status</th>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-3 py-2.5 text-left font-medium text-gray-500">Invoice #</th>
+                  <th className="px-3 py-2.5 text-left font-medium text-gray-500">Contact</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-gray-500">Total</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-gray-500">Amount Due</th>
+                  <th className="px-3 py-2.5 text-left font-medium text-gray-500">Due Date</th>
+                  <th className="px-3 py-2.5 text-left font-medium text-gray-500">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800 bg-zinc-900">
+              <tbody className="divide-y divide-gray-200 bg-white">
                 {xero.invoices.map((inv, i) => (
-                  <tr key={i} className="hover:bg-zinc-800/60 transition-colors">
-                    <td className="px-3 py-2.5 font-mono text-zinc-400">{inv.invoiceNumber ?? '—'}</td>
-                    <td className="px-3 py-2.5 text-zinc-100">{inv.contact ?? '—'}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-zinc-200">{fmt(inv.total)}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-zinc-200">{fmt(inv.amountDue)}</td>
-                    <td className="px-3 py-2.5 text-zinc-400">{inv.dueDate ?? '—'}</td>
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-3 py-2.5 font-mono text-gray-500">{inv.invoiceNumber ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-gray-900">{inv.contact ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-800">{fmt(inv.total)}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-800">{fmt(inv.amountDue)}</td>
+                    <td className="px-3 py-2.5 text-gray-500">{inv.dueDate ?? '—'}</td>
                     <td className={`px-3 py-2.5 font-semibold ${statusColor(inv.status)}`}>{inv.status ?? '—'}</td>
                   </tr>
                 ))}
@@ -252,31 +252,31 @@ function DealsTab({ bt, xero }: { bt: BillingTracker; xero?: XeroData }) {
 
   return (
     <div className="space-y-5">
-      {/* Xero P&L summary — the TRUE numbers */}
+      {/* Xero P&L summary */}
       {xero?.connected && !xero.error && (
         <div>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
             Xero — Real Accounting Data
-            {xero.organisation && <span className="ml-2 text-zinc-600 normal-case">({xero.organisation})</span>}
+            {xero.organisation && <span className="ml-2 text-gray-400 normal-case">({xero.organisation})</span>}
           </p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Income YTD</p>
-              <p className="font-mono text-base font-bold text-emerald-400 truncate">{fmtXero(xero.totalIncome)}</p>
+            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Total Income YTD</p>
+              <p className="font-mono text-base font-bold text-emerald-600 truncate">{fmtXero(xero.totalIncome)}</p>
             </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total Expenses YTD</p>
-              <p className="font-mono text-base font-bold text-red-400 truncate">{fmtXero(xero.totalExpenses)}</p>
+            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Total Expenses YTD</p>
+              <p className="font-mono text-base font-bold text-red-500 truncate">{fmtXero(xero.totalExpenses)}</p>
             </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Net Profit YTD</p>
-              <p className={`font-mono text-base font-bold truncate ${(xero.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-400'}`}>
+            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Net Profit YTD</p>
+              <p className={`font-mono text-base font-bold truncate ${(xero.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-500'}`}>
                 {fmtXero(xero.netProfit)}
               </p>
             </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Bank Balance</p>
-              <p className={`font-mono text-base font-bold truncate ${(xero.bankBalance ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Bank Balance</p>
+              <p className={`font-mono text-base font-bold truncate ${(xero.bankBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                 {fmtXero(xero.bankBalance)}
               </p>
             </div>
@@ -286,49 +286,49 @@ function DealsTab({ bt, xero }: { bt: BillingTracker; xero?: XeroData }) {
 
       {/* Campaign Tracker */}
       <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Campaign Tracker — Pipeline &amp; Booked Deals</p>
-        <div className="overflow-x-auto rounded-xl border border-zinc-800">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Campaign Tracker — Pipeline &amp; Booked Deals</p>
+        <div className="overflow-x-auto rounded-xl border border-gray-200">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-zinc-950 border-b border-zinc-800">
-                <th className="px-3 py-2.5 text-left font-medium text-zinc-500">IO#</th>
-                <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Client</th>
-                <th className="px-3 py-2.5 text-left font-medium text-zinc-500 hidden lg:table-cell">Campaign</th>
-                <th className="px-3 py-2.5 text-left font-medium text-zinc-500 hidden xl:table-cell">Date Booked</th>
-                <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Q1</th>
-                <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Q2</th>
-                <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Q3</th>
-                <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Q4</th>
-                <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Annual Total</th>
-                <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Margin%</th>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-3 py-2.5 text-left font-medium text-gray-500">IO#</th>
+                <th className="px-3 py-2.5 text-left font-medium text-gray-500">Client</th>
+                <th className="px-3 py-2.5 text-left font-medium text-gray-500 hidden lg:table-cell">Campaign</th>
+                <th className="px-3 py-2.5 text-left font-medium text-gray-500 hidden xl:table-cell">Date Booked</th>
+                <th className="px-3 py-2.5 text-right font-medium text-gray-500">Q1</th>
+                <th className="px-3 py-2.5 text-right font-medium text-gray-500">Q2</th>
+                <th className="px-3 py-2.5 text-right font-medium text-gray-500">Q3</th>
+                <th className="px-3 py-2.5 text-right font-medium text-gray-500">Q4</th>
+                <th className="px-3 py-2.5 text-right font-medium text-gray-500">Annual Total</th>
+                <th className="px-3 py-2.5 text-right font-medium text-gray-500">Margin%</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800 bg-zinc-900">
+            <tbody className="divide-y divide-gray-200 bg-white">
               {deals.map((deal, i) => {
                 const zero = isZeroTotal(deal.annualTotal)
                 return (
-                  <tr key={i} className={`hover:bg-zinc-800/60 transition-colors ${zero ? 'opacity-35' : ''}`}>
-                    <td className="px-3 py-2.5 font-mono text-zinc-400">{deal.ioNumber || '—'}</td>
-                    <td className="px-3 py-2.5 font-medium text-zinc-100 truncate max-w-[120px]">{deal.client}</td>
-                    <td className="px-3 py-2.5 text-zinc-400 hidden lg:table-cell truncate max-w-[160px]">{deal.campaign}</td>
-                    <td className="px-3 py-2.5 text-zinc-500 hidden xl:table-cell">{deal.dateBooked}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-zinc-300">{deal.q1 || '—'}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-zinc-300">{deal.q2 || '—'}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-zinc-300">{deal.q3 || '—'}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-zinc-300">{deal.q4 || '—'}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-zinc-100 font-semibold">{deal.annualTotal || '—'}</td>
+                  <tr key={i} className={`hover:bg-gray-50 transition-colors ${zero ? 'opacity-35' : ''}`}>
+                    <td className="px-3 py-2.5 font-mono text-gray-500">{deal.ioNumber || '—'}</td>
+                    <td className="px-3 py-2.5 font-medium text-gray-900 truncate max-w-[120px]">{deal.client}</td>
+                    <td className="px-3 py-2.5 text-gray-500 hidden lg:table-cell truncate max-w-[160px]">{deal.campaign}</td>
+                    <td className="px-3 py-2.5 text-gray-400 hidden xl:table-cell">{deal.dateBooked}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-700">{deal.q1 || '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-700">{deal.q2 || '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-700">{deal.q3 || '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-700">{deal.q4 || '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-900 font-semibold">{deal.annualTotal || '—'}</td>
                     <td className={`px-3 py-2.5 text-right font-mono font-semibold ${marginColor(deal.margin)}`}>{deal.margin || '—'}</td>
                   </tr>
                 )
               })}
             </tbody>
             <tfoot>
-              <tr className="bg-zinc-950 border-t-2 border-zinc-700">
-                <td className="px-3 py-2.5 text-zinc-500 font-semibold" colSpan={4}>Totals</td>
-                <td className="px-3 py-2.5 text-right font-mono text-zinc-200 font-semibold">{fmt(totals.q1)}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-zinc-200 font-semibold">{fmt(totals.q2)}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-zinc-200 font-semibold">{fmt(totals.q3)}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-zinc-200 font-semibold">{fmt(totals.q4)}</td>
+              <tr className="bg-gray-50 border-t-2 border-gray-300">
+                <td className="px-3 py-2.5 text-gray-500 font-semibold" colSpan={4}>Totals</td>
+                <td className="px-3 py-2.5 text-right font-mono text-gray-800 font-semibold">{fmt(totals.q1)}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-gray-800 font-semibold">{fmt(totals.q2)}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-gray-800 font-semibold">{fmt(totals.q3)}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-gray-800 font-semibold">{fmt(totals.q4)}</td>
                 <td className="px-3 py-2.5 text-right font-mono text-[#D4A853] font-bold">{fmt(totals.annual)}</td>
                 <td className="px-3 py-2.5" />
               </tr>
@@ -353,7 +353,6 @@ interface BillingRow {
 }
 
 function deriveBillingRows(bt: BillingTracker): BillingRow[] {
-  // Build a map of IO# -> deal info from allDeals
   const dealMap: Record<string, Deal> = {}
   const deals = bt.allDeals?.length ? bt.allDeals : bt.deals ?? []
   for (const d of deals) {
@@ -362,7 +361,6 @@ function deriveBillingRows(bt: BillingTracker): BillingRow[] {
 
   const billingRows = bt.billingRows ?? []
 
-  // If no billing rows, fall back to deals
   if (billingRows.length === 0) {
     return deals.map((d) => {
       const signed = !!(d as unknown as { signed?: boolean }).signed
@@ -392,7 +390,6 @@ function deriveBillingRows(bt: BillingTracker): BillingRow[] {
     const inGbp = row[5] || total
     const invoiceSent = row[7] === 'TRUE'
 
-    // Try to match deal for paid status
     const deal = dealMap[ioNumber.trim()]
     const isPaid = deal
       ? !!(deal as unknown as { paid?: boolean }).paid
@@ -419,13 +416,13 @@ function deriveBillingRows(bt: BillingTracker): BillingRow[] {
 function statusBadge(status: BillingRow['status']) {
   switch (status) {
     case 'Paid':
-      return <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">Paid</span>
+      return <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">Paid</span>
     case 'Invoice Sent':
-      return <span className="inline-flex items-center rounded-full bg-amber-900/40 px-2 py-0.5 text-[10px] font-semibold text-amber-400">Invoice Sent</span>
+      return <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Invoice Sent</span>
     case 'Pending':
-      return <span className="inline-flex items-center rounded-full bg-red-900/40 px-2 py-0.5 text-[10px] font-semibold text-red-400">Pending</span>
+      return <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">Pending</span>
     case 'Pipeline':
-      return <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">Pipeline</span>
+      return <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Pipeline</span>
   }
 }
 
@@ -435,53 +432,53 @@ function BillingTab({ bt }: { bt: BillingTracker }) {
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center">
-        <p className="text-sm text-zinc-500">No billing data available.</p>
+      <div className="rounded-xl border border-gray-200 bg-white px-5 py-12 text-center">
+        <p className="text-sm text-gray-500">No billing data available.</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-zinc-500">
-        <span className="text-emerald-400 font-semibold">{signed} signed</span>
-        <span className="text-zinc-600">, </span>
-        <span className="text-amber-400 font-semibold">{unsigned} unsigned</span>
-        <span className="text-zinc-600"> — </span>
-        <span className="text-emerald-400 font-semibold">{invoicesSent} invoices sent</span>
-        <span className="text-zinc-600">, </span>
-        <span className="text-red-400 font-semibold">{invoicesNotSent} pending</span>
+      <p className="text-xs text-gray-500">
+        <span className="text-emerald-600 font-semibold">{signed} signed</span>
+        <span className="text-gray-300">, </span>
+        <span className="text-amber-600 font-semibold">{unsigned} unsigned</span>
+        <span className="text-gray-300"> — </span>
+        <span className="text-emerald-600 font-semibold">{invoicesSent} invoices sent</span>
+        <span className="text-gray-300">, </span>
+        <span className="text-red-500 font-semibold">{invoicesNotSent} pending</span>
       </p>
 
-      <div className="overflow-x-auto rounded-xl border border-zinc-800">
+      <div className="overflow-x-auto rounded-xl border border-gray-200">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-zinc-950 border-b border-zinc-800">
-              <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Client</th>
-              <th className="px-3 py-2.5 text-left font-medium text-zinc-500">IO#</th>
-              <th className="px-3 py-2.5 text-right font-medium text-zinc-500">Amount (£)</th>
-              <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Currency</th>
-              <th className="px-3 py-2.5 text-center font-medium text-zinc-500 w-14">Signed</th>
-              <th className="px-3 py-2.5 text-center font-medium text-zinc-500 w-20">Invoice Sent</th>
-              <th className="px-3 py-2.5 text-left font-medium text-zinc-500">Status</th>
+            <tr className="bg-gray-50 border-b border-gray-200">
+              <th className="px-3 py-2.5 text-left font-medium text-gray-500">Client</th>
+              <th className="px-3 py-2.5 text-left font-medium text-gray-500">IO#</th>
+              <th className="px-3 py-2.5 text-right font-medium text-gray-500">Amount (£)</th>
+              <th className="px-3 py-2.5 text-left font-medium text-gray-500">Currency</th>
+              <th className="px-3 py-2.5 text-center font-medium text-gray-500 w-14">Signed</th>
+              <th className="px-3 py-2.5 text-center font-medium text-gray-500 w-20">Invoice Sent</th>
+              <th className="px-3 py-2.5 text-left font-medium text-gray-500">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800 bg-zinc-900">
+          <tbody className="divide-y divide-gray-200 bg-white">
             {rows.map((row, i) => (
-              <tr key={i} className="hover:bg-zinc-800/60 transition-colors">
-                <td className="px-3 py-2.5 font-medium text-zinc-100 truncate max-w-[140px]">{row.client || '—'}</td>
-                <td className="px-3 py-2.5 font-mono text-zinc-400">{row.ioNumber || '—'}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-zinc-200">{row.amount || '—'}</td>
-                <td className="px-3 py-2.5 text-zinc-400">{row.currency || 'GBP'}</td>
+              <tr key={i} className="hover:bg-gray-50 transition-colors">
+                <td className="px-3 py-2.5 font-medium text-gray-900 truncate max-w-[140px]">{row.client || '—'}</td>
+                <td className="px-3 py-2.5 font-mono text-gray-500">{row.ioNumber || '—'}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-gray-800">{row.amount || '—'}</td>
+                <td className="px-3 py-2.5 text-gray-500">{row.currency || 'GBP'}</td>
                 <td className="px-3 py-2.5 text-center">
                   {row.signed
-                    ? <span className="text-emerald-400 font-bold">✓</span>
-                    : <span className="text-zinc-600">✗</span>}
+                    ? <span className="text-emerald-600 font-bold">✓</span>
+                    : <span className="text-gray-400">✗</span>}
                 </td>
                 <td className="px-3 py-2.5 text-center">
                   {row.invoiceSent
-                    ? <span className="text-emerald-400 font-bold">✓</span>
-                    : <span className="text-red-400">✗</span>}
+                    ? <span className="text-emerald-600 font-bold">✓</span>
+                    : <span className="text-red-500">✗</span>}
                 </td>
                 <td className="px-3 py-2.5">{statusBadge(row.status)}</td>
               </tr>
@@ -529,7 +526,6 @@ function FinancePageInner() {
     return () => clearInterval(interval)
   }, [])
 
-  // Tick seconds-ago counter
   useEffect(() => {
     if (!lastUpdated) return
     const tick = setInterval(() => {
@@ -541,7 +537,7 @@ function FinancePageInner() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="flex items-center gap-2 text-zinc-500">
+        <div className="flex items-center gap-2 text-gray-500">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span className="text-sm">Loading finance data…</span>
         </div>
@@ -553,9 +549,9 @@ function FinancePageInner() {
     return (
       <div className="flex h-full items-center justify-center px-4">
         <div className="text-center">
-          <AlertCircle className="mx-auto mb-3 h-6 w-6 text-red-400" />
-          <p className="text-sm text-zinc-300">{error}</p>
-          <button onClick={() => load()} className="mt-4 rounded-lg bg-zinc-800 px-4 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors">
+          <AlertCircle className="mx-auto mb-3 h-6 w-6 text-red-500" />
+          <p className="text-sm text-gray-700">{error}</p>
+          <button onClick={() => load()} className="mt-4 rounded-lg bg-gray-100 px-4 py-2 text-xs text-gray-700 hover:bg-gray-200 transition-colors">
             Retry
           </button>
         </div>
@@ -567,9 +563,9 @@ function FinancePageInner() {
     return (
       <div className="flex h-full items-center justify-center px-4">
         <div className="text-center">
-          <TrendingUp className="mx-auto mb-3 h-6 w-6 text-zinc-600" />
-          <p className="text-sm font-medium text-zinc-400">Primary account not connected</p>
-          <p className="mt-1 text-xs text-zinc-600">Connect operations@outlandermag.com to access the billing tracker.</p>
+          <TrendingUp className="mx-auto mb-3 h-6 w-6 text-gray-400" />
+          <p className="text-sm font-medium text-gray-600">Primary account not connected</p>
+          <p className="mt-1 text-xs text-gray-400">Connect operations@outlandermag.com to access the billing tracker.</p>
           <a href="/api/google/connect?label=primary" className="mt-4 inline-block rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-medium text-zinc-900 hover:bg-[#C49843] transition-colors">
             Connect
           </a>
@@ -587,19 +583,19 @@ function FinancePageInner() {
         {/* Header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-white">Finance</h1>
-            <p className="text-xs text-zinc-500 mt-0.5">2026 Master Billing Tracker</p>
+            <h1 className="text-xl font-bold text-gray-900">Finance</h1>
+            <p className="text-xs text-gray-500 mt-0.5">2026 Master Billing Tracker</p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {lastUpdated && (
-              <span className="text-[10px] text-zinc-600 hidden sm:block">
+              <span className="text-[10px] text-gray-400 hidden sm:block">
                 Updated {secondsAgo < 5 ? 'just now' : `${secondsAgo}s ago`}
               </span>
             )}
             <button
               onClick={() => load(true)}
               disabled={refreshing}
-              className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Refreshing…' : 'Refresh'}
@@ -611,7 +607,7 @@ function FinancePageInner() {
         {bt && !bt.error && <StatsBar bt={bt} />}
 
         {/* Tabs */}
-        <div className="flex border-b border-zinc-800">
+        <div className="flex border-b border-gray-200">
           {TABS.map(tab => (
             <button
               key={tab.id}
@@ -619,7 +615,7 @@ function FinancePageInner() {
               className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab.id
                   ? 'border-[#D4A853] text-[#D4A853]'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               {tab.label}
@@ -631,9 +627,9 @@ function FinancePageInner() {
         {activeTab === 'expenses' ? (
           <ExpensesTab xero={data?.xero} />
         ) : !bt ? (
-          <p className="text-sm text-zinc-500">No billing data available.</p>
+          <p className="text-sm text-gray-500">No billing data available.</p>
         ) : bt.error ? (
-          <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-900/10 px-4 py-3 text-sm text-red-400">
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             <AlertCircle className="h-4 w-4 shrink-0" />
             Failed to load billing tracker: {bt.error}
           </div>
@@ -653,7 +649,7 @@ export default function FinancePage() {
   return (
     <Suspense fallback={
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
       </div>
     }>
       <FinancePageInner />

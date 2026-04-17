@@ -28,10 +28,10 @@ export function AgentPanel({ agent, onClose, onAssignTask }: AgentPanelProps) {
     agent.status === 'offline' ? 'Offline' : 'Idle'
 
   const statusColor =
-    agent.status === 'active' ? 'text-green-400' :
+    agent.status === 'active' ? 'text-green-600' :
     agent.status === 'thinking' ? 'text-[#D4A853]' :
-    agent.status === 'offline' ? 'text-neutral-500' :
-    'text-neutral-500'
+    agent.status === 'offline' ? 'text-gray-400' :
+    'text-gray-400'
 
   const handleSend = () => {
     if (!input.trim()) return
@@ -45,9 +45,9 @@ export function AgentPanel({ agent, onClose, onAssignTask }: AgentPanelProps) {
   }
 
   return (
-    <div className="flex h-full w-80 flex-col border-l border-neutral-800 bg-neutral-950">
+    <div className="flex h-full w-80 flex-col border-l border-gray-200 bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
         <div className="flex items-center gap-3">
           <div
             className="flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold"
@@ -56,40 +56,40 @@ export function AgentPanel({ agent, onClose, onAssignTask }: AgentPanelProps) {
             {agent.name[0]}
           </div>
           <div>
-            <div className="text-sm font-semibold text-white">{agent.name}</div>
-            <div className="text-xs text-neutral-500">{agent.role}</div>
+            <div className="text-sm font-semibold text-gray-900">{agent.name}</div>
+            <div className="text-xs text-gray-500">{agent.role}</div>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="rounded p-1 text-neutral-500 hover:bg-neutral-800 hover:text-white"
+          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
       {/* Status + task */}
-      <div className="border-b border-neutral-800 px-4 py-3">
+      <div className="border-b border-gray-200 px-4 py-3">
         <div className="flex items-center gap-2">
           <Circle className={cn('h-2 w-2 fill-current', statusColor)} />
           <span className={cn('text-xs font-medium', statusColor)}>{statusLabel}</span>
         </div>
         {agent.currentTask && (
-          <div className="mt-2 rounded bg-neutral-900 px-3 py-2 text-xs text-neutral-300">
-            <span className="text-neutral-500">Current: </span>
+          <div className="mt-2 rounded bg-gray-50 px-3 py-2 text-xs text-gray-700">
+            <span className="text-gray-400">Current: </span>
             {agent.currentTask}
           </div>
         )}
       </div>
 
       {/* Description */}
-      <div className="border-b border-neutral-800 px-4 py-3">
-        <p className="text-xs leading-relaxed text-neutral-400">{agent.description}</p>
+      <div className="border-b border-gray-200 px-4 py-3">
+        <p className="text-xs leading-relaxed text-gray-600">{agent.description}</p>
       </div>
 
       {/* Capabilities */}
-      <div className="border-b border-neutral-800 px-4 py-3">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+      <div className="border-b border-gray-200 px-4 py-3">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
           Capabilities
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -106,7 +106,7 @@ export function AgentPanel({ agent, onClose, onAssignTask }: AgentPanelProps) {
       </div>
 
       {/* Assign task button */}
-      <div className="border-b border-neutral-800 px-4 py-3">
+      <div className="border-b border-gray-200 px-4 py-3">
         <button
           onClick={onAssignTask}
           className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors hover:opacity-90"
@@ -129,8 +129,8 @@ export function AgentPanel({ agent, onClose, onAssignTask }: AgentPanelProps) {
               className={cn(
                 'rounded-lg px-3 py-2 text-xs max-w-[85%]',
                 msg.role === 'user'
-                  ? 'ml-auto bg-neutral-800 text-white'
-                  : 'mr-auto text-neutral-300'
+                  ? 'ml-auto bg-gray-100 text-gray-900'
+                  : 'mr-auto text-gray-700'
               )}
               style={
                 msg.role === 'agent'
@@ -143,10 +143,10 @@ export function AgentPanel({ agent, onClose, onAssignTask }: AgentPanelProps) {
           ))}
         </div>
 
-        <div className="border-t border-neutral-800 p-3">
+        <div className="border-t border-gray-200 p-3">
           <div className="flex items-center gap-2">
             <input
-              className="flex-1 rounded-md bg-neutral-900 px-3 py-2 text-xs text-white outline-none placeholder:text-neutral-600 focus:ring-1 focus:ring-neutral-700"
+              className="flex-1 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-900 outline-none placeholder:text-gray-400 focus:ring-1 focus:ring-gray-200"
               placeholder={`Message ${agent.name}…`}
               value={input}
               onChange={(e) => setInput(e.target.value)}

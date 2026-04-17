@@ -27,27 +27,27 @@ export function Topbar() {
     : "?";
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-neutral-800 bg-neutral-950 px-6">
+    <header className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-6">
       {/* Search */}
       <div className="relative w-72">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <Input
           placeholder="Search..."
-          className="h-8 border-neutral-700 bg-neutral-900 pl-9 text-sm text-neutral-200 placeholder:text-neutral-500 focus-visible:ring-neutral-600"
+          className="h-8 border-gray-200 bg-gray-50 pl-9 text-sm text-gray-900 placeholder:text-gray-400 focus-visible:ring-gray-300"
         />
       </div>
 
       {/* Right side */}
       <div className="flex items-center gap-3">
         {/* Billing monitor pill */}
-        <div className="flex items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-1 text-xs text-neutral-400">
+        <div className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-500">
           <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
           <Mail className="h-3 w-3" />
-          <span className="font-mono text-neutral-300">billing@</span>
+          <span className="font-mono text-gray-700">billing@</span>
         </div>
 
         {/* Notifications */}
-        <button className="relative flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-800 hover:text-white">
+        <button className="relative flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
           <Bell className="h-4 w-4" />
           <Badge className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4A853] p-0 text-[10px] font-bold text-black">
             3
@@ -56,34 +56,34 @@ export function Topbar() {
 
         {/* User menu */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-neutral-800 outline-none">
+          <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-100 outline-none">
             <Avatar className="h-7 w-7">
               <AvatarImage src={session?.user?.image ?? undefined} />
               <AvatarFallback className="bg-[#D4A853] text-xs font-bold text-black">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm text-neutral-200">
+            <span className="text-sm text-gray-800">
               {session?.user?.name ?? "Guest"}
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-48 border-neutral-700 bg-neutral-900"
+            className="w-48 border-gray-200 bg-white"
           >
-            <DropdownMenuLabel className="text-neutral-400">
+            <DropdownMenuLabel className="text-gray-500">
               {session?.user?.email}
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-neutral-700" />
+            <DropdownMenuSeparator className="bg-gray-200" />
             <DropdownMenuItem
-              className="text-neutral-200 focus:bg-neutral-800 focus:text-white"
+              className="text-gray-700 focus:bg-gray-100 focus:text-gray-900"
               onClick={() => (window.location.href = "/settings")}
             >
               Settings
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-neutral-700" />
+            <DropdownMenuSeparator className="bg-gray-200" />
             <DropdownMenuItem
-              className="text-red-400 focus:bg-neutral-800 focus:text-red-400"
+              className="text-red-500 focus:bg-gray-100 focus:text-red-500"
               onClick={() => signOut({ callbackUrl: "/auth/signin" })}
             >
               Sign out

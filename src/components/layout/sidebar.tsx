@@ -32,17 +32,17 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "relative flex h-screen flex-col border-r border-neutral-800 bg-neutral-950 transition-all duration-300",
+        "relative flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300",
         collapsed ? "w-16" : "w-60"
       )}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center border-b border-neutral-800 px-4">
+      <div className="flex h-14 items-center border-b border-gray-200 px-4">
         {collapsed ? (
           <span className="text-lg font-bold text-[#D4A853]">O</span>
         ) : (
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-lg font-bold text-white">
+            <span className="text-lg font-bold text-gray-900">
               Outlander<span className="text-[#D4A853]">OS</span>
             </span>
           </Link>
@@ -66,8 +66,8 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                     isActive
-                      ? "bg-neutral-800 text-white"
-                      : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
+                      ? "bg-amber-50 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                   )}
                   title={collapsed ? item.label : undefined}
                 >
@@ -88,14 +88,14 @@ export function Sidebar() {
       </nav>
 
       {/* Settings */}
-      <div className="border-t border-neutral-800 p-2">
+      <div className="border-t border-gray-200 p-2">
         <Link
           href="/settings"
           className={cn(
             "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
             pathname === "/settings"
-              ? "bg-neutral-800 text-white"
-              : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
+              ? "bg-amber-50 text-gray-900"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
           )}
           title={collapsed ? "Settings" : undefined}
         >
@@ -112,7 +112,7 @@ export function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-16 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900 text-neutral-400 hover:text-white"
+        className="absolute -right-3 top-16 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:text-gray-900"
       >
         {collapsed ? (
           <ChevronRight className="h-3 w-3" />
