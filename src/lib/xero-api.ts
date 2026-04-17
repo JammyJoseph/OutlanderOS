@@ -98,6 +98,36 @@ export async function getXeroBalanceSheet(tokens: XeroTokens, tenantId: string) 
   } catch (e) { console.error('Xero balance sheet error:', e); return null }
 }
 
+export async function getXeroAgedReceivables(tokens: XeroTokens, tenantId: string) {
+  try {
+    const data = await xeroFetch('/Reports/AgedReceivablesByContact', tokens, tenantId)
+    return data.Reports?.[0] || null
+  } catch (e) { console.error('Xero aged receivables error:', e); return null }
+}
+
+export async function getXeroContacts(tokens: XeroTokens, tenantId: string) {
+  try {
+    const data = await xeroFetch('/Contacts?where=IsCustomer==true&includeArchived=false', tokens, tenantId)
+    return (data.Contacts || []).slice(0, 50).map((c: any) => ({
+      name: c.Name || '',
+      outstanding: c.Balances?.AccountsReceivable?.Outstanding ?? null,
+      overdue: c.Balances?.AccountsReceivable?.Overdue ?? null,
+    }))
+  } catch (e) { console.error('Xero contacts error:', e); return [] }
+}
+
+export async function getXeroBankTransactions(tokens: XeroTokens, tenantId: string) {
+  try {
+    const data = await xeroFetch('/BankTransactions?where=Type%3D%3D%22RECEIVE%22&order=Date+DESC', tokens, tenantId)
+    return (data.BankTransactions || []).slice(0, 20).map((tx: any) => ({
+      date: tx.DateString || tx.Date || '',
+      client: tx.Contact?.Name || '',
+      amount: tx.Total ?? tx.SubTotal ?? null,
+      reference: tx.Reference || '',
+    }))
+  } catch (e) { console.error('Xero bank transactions error:', e); return [] }
+}
+
 export async function fetchAllXeroData(tokenJson: string): Promise<{ data: any; updatedTokenJson?: string }> {
   try {
     let tokens = JSON.parse(tokenJson) as XeroTokens
@@ -117,11 +147,14 @@ export async function fetchAllXeroData(tokenJson: string): Promise<{ data: any; 
     if (!connections.length) return { data: { connected: false, error: 'No Xero organisations connected' } }
     const tenantId = connections[0].tenantId
 
-    const [profitAndLoss, bankSummary, invoices, balanceSheet] = await Promise.all([
+    const [profitAndLoss, bankSummary, invoices, balanceSheet, agedReceivablesRaw, contacts, recentPayments] = await Promise.all([
       getXeroProfitAndLoss(tokens, tenantId),
       getXeroBankSummary(tokens, tenantId),
       getXeroInvoices(tokens, tenantId),
       getXeroBalanceSheet(tokens, tenantId),
+      getXeroAgedReceivables(tokens, tenantId),
+      getXeroContacts(tokens, tenantId),
+      getXeroBankTransactions(tokens, tenantId),
     ])
 
     // Extract key numbers from P&L report
@@ -169,6 +202,9 @@ export async function fetchAllXeroData(tokenJson: string): Promise<{ data: any; 
         invoices,
         profitAndLossRaw: profitAndLoss,
         bankSummaryRaw: bankSummary,
+        agedReceivablesRaw,
+        contacts,
+        recentPayments,
       },
       updatedTokenJson,
     }

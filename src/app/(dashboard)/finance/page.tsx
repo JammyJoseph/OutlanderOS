@@ -52,6 +52,17 @@ interface XeroData {
     status?: string
     type?: string
   }>
+  recentPayments?: Array<{
+    date?: string
+    client?: string
+    amount?: number | null
+    reference?: string
+  }>
+  contacts?: Array<{
+    name?: string
+    outstanding?: number | null
+    overdue?: number | null
+  }>
 }
 
 interface DashboardData {
@@ -197,6 +208,64 @@ function ExpensesTab({ xero }: { xero?: XeroData }) {
           </p>
         </div>
       </div>
+
+      {xero.recentPayments && xero.recentPayments.length > 0 && (
+        <div>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Recent Payments Received</p>
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-3 py-2.5 text-left font-medium text-gray-500">Date</th>
+                  <th className="px-3 py-2.5 text-left font-medium text-gray-500">Client</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-gray-500">Amount</th>
+                  <th className="px-3 py-2.5 text-left font-medium text-gray-500">Reference</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {xero.recentPayments.map((p, i) => (
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-3 py-2.5 font-mono text-gray-500">{p.date ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-gray-900">{p.client || '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-emerald-600">{fmt(p.amount)}</td>
+                    <td className="px-3 py-2.5 text-gray-400">{p.reference || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {xero.contacts && xero.contacts.filter(c => (c.outstanding ?? 0) > 0 || (c.overdue ?? 0) > 0).length > 0 && (
+        <div>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Client Balances</p>
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-3 py-2.5 text-left font-medium text-gray-500">Client</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-gray-500">Outstanding</th>
+                  <th className="px-3 py-2.5 text-right font-medium text-gray-500">Overdue</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {xero.contacts
+                  .filter(c => (c.outstanding ?? 0) > 0 || (c.overdue ?? 0) > 0)
+                  .map((c, i) => (
+                    <tr key={i} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-2.5 text-gray-900">{c.name || '—'}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-amber-600">{fmt(c.outstanding)}</td>
+                      <td className={`px-3 py-2.5 text-right font-mono font-semibold ${(c.overdue ?? 0) > 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                        {fmt(c.overdue)}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {xero.invoices && xero.invoices.length > 0 && (
         <div>
