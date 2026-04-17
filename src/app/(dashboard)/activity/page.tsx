@@ -19,6 +19,8 @@ interface Reminder {
   priority: 'high' | 'medium' | 'low'
   category: string
   done: boolean
+  status?: string
+  emailActivity?: boolean
 }
 
 const TYPE_COLORS: Record<LogEntry['type'], string> = {
@@ -108,15 +110,36 @@ function generateLogEntries(data: any): LogEntry[] {
   )
 }
 
+function findCrossRef(crossReference: any[], clientName: string): any | null {
+  if (!crossReference?.length || !clientName) return null
+  const lower = clientName.toLowerCase()
+  return crossReference.find((cr: any) => {
+    const crClient = (cr.client || '').toLowerCase()
+    return crClient.includes(lower) || lower.includes(crClient)
+  }) ?? null
+}
+
 function generateReminders(data: any): Reminder[] {
   const reminders: Reminder[] = []
   const now = new Date()
+  const crossRef: any[] = data?.crossReference || []
 
   if (data?.xero?.invoices) {
     for (const inv of data.xero.invoices) {
       if (inv.status !== 'PAID' && inv.amountDue > 0 && inv.dueDate) {
         const due = new Date(inv.dueDate)
         const diffDays = Math.ceil((due.getTime() - now.getTime()) / 86400000)
+        const cr = findCrossRef(crossRef, inv.contact)
+        let status: string | undefined
+        let emailActivity: boolean | undefined
+        if (cr) {
+          emailActivity = (cr.emailEvidence?.threadCount ?? 0) > 0
+          if (cr.emailEvidence?.paymentMentioned) {
+            status = 'Payment detected in email — verify in Xero'
+          } else if (emailActivity) {
+            status = 'In Progress'
+          }
+        }
         reminders.push({
           id: `xero-${inv.invoiceNumber}`,
           title: `Payment due: ${inv.contact} — £${inv.amountDue?.toLocaleString()}`,
@@ -124,6 +147,8 @@ function generateReminders(data: any): Reminder[] {
           priority: diffDays < 0 ? 'high' : diffDays < 7 ? 'medium' : 'low',
           category: 'Invoice',
           done: false,
+          status,
+          emailActivity,
         })
       }
     }
@@ -131,7 +156,20 @@ function generateReminders(data: any): Reminder[] {
 
   if (data?.billingTracker?.deals) {
     for (const deal of data.billingTracker.deals) {
+      const cr = findCrossRef(crossRef, deal.client)
+      const hasActivity = (cr?.emailEvidence?.threadCount ?? 0) > 0
+
       if (!deal.signed) {
+        let status: string | undefined
+        let emailActivity: boolean | undefined
+        if (cr) {
+          emailActivity = hasActivity
+          if (cr.emailEvidence?.signedMentioned) {
+            status = 'Likely Complete — verify in spreadsheet'
+          } else if (hasActivity) {
+            status = 'In Progress'
+          }
+        }
         reminders.push({
           id: `deal-${deal.ioNumber || deal.client}`,
           title: `Unsigned deal: ${deal.client} — ${deal.campaign || 'Campaign'}`,
@@ -139,9 +177,21 @@ function generateReminders(data: any): Reminder[] {
           priority: 'medium',
           category: 'Deal',
           done: false,
+          status,
+          emailActivity,
         })
       }
       if (!deal.invoiceSent && deal.signed) {
+        let status: string | undefined
+        let emailActivity: boolean | undefined
+        if (cr) {
+          emailActivity = hasActivity
+          if (cr.emailEvidence?.invoiceMentioned) {
+            status = 'In Progress'
+          } else if (hasActivity) {
+            status = 'In Progress'
+          }
+        }
         reminders.push({
           id: `invoice-${deal.ioNumber || deal.client}`,
           title: `Invoice not sent: ${deal.client}`,
@@ -149,6 +199,8 @@ function generateReminders(data: any): Reminder[] {
           priority: 'high',
           category: 'Invoice',
           done: false,
+          status,
+          emailActivity,
         })
       }
     }
@@ -201,7 +253,7 @@ export default function ActivityPage() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/dashboard')
+    fetch('/api/dashboard?crossref=true')
       .then((r) => r.json())
       .then((data) => {
         setLogEntries(generateLogEntries(data))
@@ -274,6 +326,7 @@ export default function ActivityPage() {
           flags: status.flags,
         }))
         setLogEntries((prev) => [...crossEntries, ...prev])
+        setReminders(generateReminders(data))
         setToast(`Cross-ref complete — ${data.crossReference.length} clients scanned`)
       } else {
         setToast('Cross-ref complete — no deals found')
@@ -436,7 +489,7 @@ export default function ActivityPage() {
                   >
                     {r.title}
                   </p>
-                  <div className="mt-1 flex items-center gap-2">
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     <span className="text-xs text-gray-400">
                       {new Date(r.dueDate).toLocaleDateString('en-GB', {
                         day: 'numeric',
@@ -452,7 +505,20 @@ export default function ActivityPage() {
                     <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
                       {r.category}
                     </span>
+                    {r.emailActivity === true && (
+                      <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                        Activity detected
+                      </span>
+                    )}
+                    {r.emailActivity === false && (
+                      <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600">
+                        No recent contact
+                      </span>
+                    )}
                   </div>
+                  {r.status && (
+                    <p className="mt-1 text-[11px] italic text-gray-500">{r.status}</p>
+                  )}
                 </div>
               </div>
             ))

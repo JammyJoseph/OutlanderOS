@@ -24,6 +24,38 @@ interface Deal {
   billingInfo?: string[]
 }
 
+interface CrossRefStatus {
+  client: string
+  ioNumber?: string
+  emailEvidence: {
+    ioMentioned: boolean
+    signedMentioned: boolean
+    invoiceMentioned: boolean
+    paymentMentioned: boolean
+    lastEmailDate: string
+    lastEmailSubject: string
+    threadCount: number
+  }
+  xeroStatus: {
+    hasInvoice: boolean
+    invoicePaid: boolean
+    amountInvoiced: number
+    amountOutstanding: number
+  }
+  spreadsheetStatus: { signed: boolean; invoiceSent: boolean; annualTotal: string }
+  flags: string[]
+}
+
+interface XeroInvoice {
+  invoiceNumber: string
+  contact: string
+  status: string
+  total: number
+  amountDue: number
+  dueDate: string
+  fullyPaidOnDate?: string
+}
+
 interface DashboardData {
   connected: { billing: boolean; primary: boolean }
   billingAlerts?: BillingAlert[]
@@ -38,6 +70,25 @@ interface DashboardData {
     quarterlyTotals: { q1: number; q2: number; q3: number; q4: number }
     error?: string
   }
+  xero?: {
+    invoices?: XeroInvoice[]
+  }
+  crossReference?: CrossRefStatus[]
+}
+
+interface TimelineEvent {
+  date: string
+  description: string
+  source: string
+  color: string
+}
+
+interface DriveFile {
+  id: string
+  name: string
+  mimeType: string
+  webViewLink: string
+  modifiedTime: string
 }
 
 // ---- Helpers ----
@@ -75,6 +126,99 @@ function FinanceCard({ label, value }: { label: string; value: string }) {
   )
 }
 
+function driveFileIcon(mimeType: string): string {
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return '📊'
+  if (mimeType.includes('document') || mimeType.includes('word')) return '📄'
+  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return '📑'
+  if (mimeType.includes('pdf')) return '📋'
+  return '📁'
+}
+
+function buildTimeline(
+  deal: Deal,
+  xeroInvoices: XeroInvoice[] | undefined,
+  crossRef: CrossRefStatus | null
+): TimelineEvent[] {
+  const events: TimelineEvent[] = []
+  const clientLower = deal.client.toLowerCase()
+
+  if (deal.dateBooked) {
+    events.push({
+      date: deal.dateBooked,
+      description: 'Deal added to pipeline',
+      source: 'Billing Tracker',
+      color: 'bg-gray-400',
+    })
+  }
+
+  if (deal.signed) {
+    events.push({
+      date: deal.dateBooked || '',
+      description: 'IO Signed',
+      source: 'Billing Tracker',
+      color: 'bg-blue-500',
+    })
+  }
+
+  if (deal.invoiceSent) {
+    events.push({
+      date: deal.dateBooked || '',
+      description: 'Invoice Issued',
+      source: 'Billing Tracker',
+      color: 'bg-amber-400',
+    })
+  }
+
+  if (xeroInvoices) {
+    for (const inv of xeroInvoices) {
+      const contact = (inv.contact || '').toLowerCase()
+      const match = contact.includes(clientLower) || clientLower.includes(contact)
+      if (!match) continue
+      if (inv.status === 'PAID' && inv.fullyPaidOnDate) {
+        events.push({
+          date: inv.fullyPaidOnDate,
+          description: `Payment Received — £${inv.total?.toLocaleString()}`,
+          source: 'Xero',
+          color: 'bg-green-500',
+        })
+      } else if (inv.dueDate) {
+        events.push({
+          date: inv.dueDate,
+          description: `Invoice ${inv.invoiceNumber} — £${inv.amountDue?.toLocaleString()} outstanding`,
+          source: 'Xero',
+          color: 'bg-amber-500',
+        })
+      }
+    }
+  }
+
+  if (crossRef?.emailEvidence?.lastEmailDate) {
+    const subject = crossRef.emailEvidence.lastEmailSubject
+    events.push({
+      date: crossRef.emailEvidence.lastEmailDate,
+      description: `Last email activity${subject ? ` — ${subject}` : ''}`,
+      source: 'Gmail',
+      color: 'bg-purple-500',
+    })
+  }
+
+  // Sort by date descending (newest first), unknown dates go to top
+  return events.sort((a, b) => {
+    if (!a.date) return -1
+    if (!b.date) return 1
+    return new Date(b.date).getTime() - new Date(a.date).getTime()
+  })
+}
+
+function formatDate(d: string): string {
+  if (!d) return '—'
+  try {
+    return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  } catch {
+    return d
+  }
+}
+
 // ---- Task generation ----
 
 function buildAllTasks(
@@ -107,9 +251,11 @@ export default function ProjectDetailPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [completedTasks, setCompletedTasks] = useState<Set<number>>(new Set())
+  const [driveFiles, setDriveFiles] = useState<DriveFile[]>([])
+  const [driveLoading, setDriveLoading] = useState(false)
 
   useEffect(() => {
-    fetch('/api/dashboard')
+    fetch('/api/dashboard?crossref=true')
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))
@@ -118,6 +264,18 @@ export default function ProjectDetailPage() {
   const bt = data?.billingTracker
   const allDeals = bt?.allDeals ?? bt?.deals ?? []
   const deal = allDeals[id]
+
+  useEffect(() => {
+    if (!deal) return
+    setDriveLoading(true)
+    const params = new URLSearchParams({ client: deal.client })
+    if (deal.ioNumber) params.set('io', deal.ioNumber)
+    fetch(`/api/drive/search?${params}`)
+      .then((r) => r.json())
+      .then((d) => setDriveFiles(d.files || []))
+      .catch(() => setDriveFiles([]))
+      .finally(() => setDriveLoading(false))
+  }, [deal?.client, deal?.ioNumber])
 
   const SHEET_URL =
     'https://docs.google.com/spreadsheets/d/19v0t5A2Of3_-Pho1tuaWMgHAHzm-30ejrK88SNqaYHs'
@@ -160,6 +318,14 @@ export default function ProjectDetailPage() {
   const billingDetails = bRow.slice(3, 7).filter(Boolean)
   const paymentTerms = bRow[8] || ''
   const poNumber = bRow[1] || ''
+
+  const clientLower = deal.client.toLowerCase()
+  const crossRef = data?.crossReference?.find((cr) => {
+    const c = (cr.client || '').toLowerCase()
+    return c.includes(clientLower) || clientLower.includes(c)
+  }) ?? null
+
+  const timelineEvents = buildTimeline(deal, data?.xero?.invoices, crossRef)
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen max-w-4xl mx-auto">
@@ -209,6 +375,29 @@ export default function ProjectDetailPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Deal Timeline */}
+      <div>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Deal Timeline</h2>
+        {timelineEvents.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-xl px-5 py-4">
+            <p className="text-xs text-gray-400">No timeline events yet.</p>
+          </div>
+        ) : (
+          <div className="bg-white border border-gray-200 rounded-xl px-5 py-5">
+            <div className="space-y-4 border-l-2 border-gray-200 pl-4 ml-2">
+              {timelineEvents.map((event, i) => (
+                <div key={i} className="relative">
+                  <div className={`absolute -left-[21px] w-3 h-3 rounded-full ${event.color}`} />
+                  <div className="text-xs text-gray-500 font-mono">{formatDate(event.date)}</div>
+                  <div className="text-sm text-gray-800">{event.description}</div>
+                  <div className="text-xs text-gray-400">{event.source}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Billing Status */}
@@ -299,6 +488,45 @@ export default function ProjectDetailPage() {
                 >
                   {task.priority === 'red' ? 'Urgent' : 'Action'}
                 </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* IO Documents */}
+      <div>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Documents</h2>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          {driveLoading ? (
+            <div className="px-5 py-4">
+              <p className="text-xs text-gray-400">Searching Drive…</p>
+            </div>
+          ) : driveFiles.length === 0 ? (
+            <div className="px-5 py-4">
+              <p className="text-xs text-gray-400">No IO documents found in Drive</p>
+            </div>
+          ) : (
+            driveFiles.map((file, i) => (
+              <div
+                key={file.id}
+                className={`flex items-center gap-3 px-5 py-3 ${i < driveFiles.length - 1 ? 'border-b border-gray-100' : ''}`}
+              >
+                <span className="text-base shrink-0">{driveFileIcon(file.mimeType)}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-gray-800 truncate">{file.name}</p>
+                  <p className="text-xs text-gray-400">
+                    Modified {formatDate(file.modifiedTime)}
+                  </p>
+                </div>
+                <a
+                  href={file.webViewLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                >
+                  Open in Drive ↗
+                </a>
               </div>
             ))
           )}
