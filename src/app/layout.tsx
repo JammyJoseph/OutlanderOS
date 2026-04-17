@@ -4,13 +4,15 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 
 const manrope = Manrope({
-  variable: "--font-manrope",
   subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+const mono = JetBrains_Mono({
   subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -26,9 +28,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
-      <body className="h-full bg-[#0a0a0a]">
+      <body className={`${manrope.variable} ${mono.variable} font-sans h-full bg-[#0a0a0a]`}>
         <Providers>{children}</Providers>
       </body>
     </html>

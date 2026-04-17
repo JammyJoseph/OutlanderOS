@@ -105,25 +105,37 @@ export async function getXeroAgedReceivables(tokens: XeroTokens, tenantId: strin
   } catch (e) { console.error('Xero aged receivables error:', e); return null }
 }
 
+export async function getXeroAgedPayables(tokens: XeroTokens, tenantId: string) {
+  try {
+    const data = await xeroFetch('/Reports/AgedPayablesByContact', tokens, tenantId)
+    return data.Reports?.[0] || null
+  } catch (e) { console.error('Xero aged payables error:', e); return null }
+}
+
 export async function getXeroContacts(tokens: XeroTokens, tenantId: string) {
   try {
-    const data = await xeroFetch('/Contacts?where=IsCustomer==true&includeArchived=false', tokens, tenantId)
-    return (data.Contacts || []).slice(0, 50).map((c: any) => ({
-      name: c.Name || '',
-      outstanding: c.Balances?.AccountsReceivable?.Outstanding ?? null,
-      overdue: c.Balances?.AccountsReceivable?.Overdue ?? null,
+    const data = await xeroFetch('/Contacts?where=IsCustomer==true&order=Name', tokens, tenantId)
+    return (data.Contacts || []).map((c: any) => ({
+      contactId: c.ContactID,
+      name: c.Name,
+      email: c.EmailAddress || '',
+      phone: c.Phones?.[0]?.PhoneNumber || '',
+      outstandingBalance: c.Balances?.AccountsReceivable?.Outstanding || 0,
+      overdueBalance: c.Balances?.AccountsReceivable?.Overdue || 0,
     }))
   } catch (e) { console.error('Xero contacts error:', e); return [] }
 }
 
 export async function getXeroBankTransactions(tokens: XeroTokens, tenantId: string) {
   try {
-    const data = await xeroFetch('/BankTransactions?where=Type%3D%3D%22RECEIVE%22&order=Date+DESC', tokens, tenantId)
-    return (data.BankTransactions || []).slice(0, 20).map((tx: any) => ({
-      date: tx.DateString || tx.Date || '',
-      client: tx.Contact?.Name || '',
-      amount: tx.Total ?? tx.SubTotal ?? null,
-      reference: tx.Reference || '',
+    const data = await xeroFetch('/BankTransactions?where=Type=="RECEIVE"&order=Date DESC&page=1', tokens, tenantId)
+    return (data.BankTransactions || []).slice(0, 20).map((t: any) => ({
+      date: t.DateString || t.Date || '',
+      contact: t.Contact?.Name || '',
+      total: t.Total,
+      reference: t.Reference || '',
+      status: t.Status,
+      type: t.Type,
     }))
   } catch (e) { console.error('Xero bank transactions error:', e); return [] }
 }
@@ -147,7 +159,7 @@ export async function fetchAllXeroData(tokenJson: string): Promise<{ data: any; 
     if (!connections.length) return { data: { connected: false, error: 'No Xero organisations connected' } }
     const tenantId = connections[0].tenantId
 
-    const [profitAndLoss, bankSummary, invoices, balanceSheet, agedReceivablesRaw, contacts, recentPayments] = await Promise.all([
+    const [profitAndLoss, bankSummary, invoices, balanceSheet, agedReceivables, contacts, recentPayments] = await Promise.all([
       getXeroProfitAndLoss(tokens, tenantId),
       getXeroBankSummary(tokens, tenantId),
       getXeroInvoices(tokens, tenantId),
@@ -200,11 +212,11 @@ export async function fetchAllXeroData(tokenJson: string): Promise<{ data: any; 
         netProfit,
         bankBalance,
         invoices,
-        profitAndLossRaw: profitAndLoss,
-        bankSummaryRaw: bankSummary,
-        agedReceivablesRaw,
         contacts,
         recentPayments,
+        agedReceivablesRaw: agedReceivables,
+        profitAndLossRaw: profitAndLoss,
+        bankSummaryRaw: bankSummary,
       },
       updatedTokenJson,
     }
