@@ -16,54 +16,6 @@ const AGENT_COLORS: Record<string, string> = {
   content: '#F472B6',
 }
 
-// Keyword routing
-function routeMessage(text: string): string {
-  const lower = text.toLowerCase()
-  if (/invoice|payment|overdue|billing|revenue/.test(lower)) return 'finance'
-  if (/email|inbox|follow up|follow-up|reply/.test(lower)) return 'email'
-  if (/shoot|production|crew|studio|schedule/.test(lower)) return 'production'
-  if (/deal|pipeline|pitch|renewal|client/.test(lower)) return 'sales'
-  if (/post|instagram|content|engagement/.test(lower)) return 'content'
-  return 'operations'
-}
-
-const AGENT_RESPONSES: Record<string, string[]> = {
-  finance: [
-    "Pulling the numbers now. I can see 3 overdue invoices totaling $12,400. The oldest is 47 days past due — Meridian Media for $4,800. Want me to draft a follow-up?",
-    "Revenue for Q1 looks healthy at $84K but we have 5 outstanding payments. Cash flow is tight this week — $18K due in the next 10 days.",
-    "I've flagged 2 payments marked 'pending' in the billing tracker that haven't cleared. I'll need bank confirmation to reconcile.",
-  ],
-  email: [
-    "Checked billing@ — 14 new messages since yesterday. 3 are payment confirmations, 2 are invoice disputes, 1 urgent from a client about a missed delivery. Shall I draft responses?",
-    "There are 7 unread threads requiring action. I've sorted them by priority. The most urgent is from Studio Twelve about an overdue SOW.",
-    "I found 4 follow-up emails that have gone unanswered for more than 72 hours. I can draft replies if you'd like.",
-  ],
-  production: [
-    "Shoot schedule for next week looks clear except Studio B on Thursday — it's double-booked. I need to reach out to either crew to reschedule.",
-    "All crew confirmed for the Friday shoot. Call sheets are ready to send. Equipment list has one gap — we're missing a second key light. Flagging to rentals.",
-    "Delivery deadline for the Meridian shoot is April 15th. We're 3 days behind on post. I'd recommend escalating to the editor today.",
-  ],
-  sales: [
-    "Meridian Media renewal window is in 14 days. Last touchpoint was 3 weeks ago. I recommend a call this week — their contract is worth $48K annually.",
-    "Pipeline has 3 warm leads. Studio Collective is closest to close — they've reviewed the proposal twice. A follow-up nudge could move them.",
-    "The Ashford pitch went quiet after the deck was sent. Want me to draft a check-in message?",
-  ],
-  content: [
-    "Last week's Instagram performance: 3 posts, avg 2,400 reach, 4.2% engagement rate. Best performer was the behind-the-scenes reel at 5.8%.",
-    "Content calendar has a gap this Thursday and Sunday. I can suggest 2 posts based on our top-performing formats — want me to draft copy?",
-    "Follower growth is flat this month (+12). Engagement is up 8% though. The algorithm seems to favor our video content right now.",
-  ],
-  operations: [
-    "I'll handle that directly. Everything looks stable across all systems. No blockers at the moment.",
-    "Noted. I'll keep an eye on it and loop in the relevant agent if anything needs actioning.",
-    "Got it. I can coordinate across the team on this. I'll update you once I have a clearer picture.",
-  ],
-}
-
-function getAgentResponse(agentId: string): string {
-  const responses = AGENT_RESPONSES[agentId] ?? AGENT_RESPONSES.operations
-  return responses[Math.floor(Math.random() * responses.length)]
-}
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -171,69 +123,43 @@ export function GroupChat({ selectedAgentId }: GroupChatProps) {
   }, [chatMessages, isTyping])
 
   async function handleSend() {
-    const text = input.trim()
-    if (!text) return
+    const userMsg = input.trim()
+    if (!userMsg) return
     setInput('')
 
-    addMessage({ agentId: 'user', agentName: 'Joe', content: text, type: 'message' })
-
+    addMessage({ agentId: 'user', agentName: 'You', content: userMsg, type: 'message' })
     setIsTyping(true)
 
-    await new Promise((r) => setTimeout(r, 500))
-    addMessage({
-      agentId: 'operations',
-      agentName: 'Operations',
-      content: 'Got it. Let me look into this.',
-      type: 'message',
-    })
-
-    const target = routeMessage(text)
-
-    if (target !== 'operations') {
-      await new Promise((r) => setTimeout(r, 1000))
-      const targetAgent = AGENT_FLEET.find((a) => a.id === target)
-      addMessage({
-        agentId: 'operations',
-        agentName: 'Operations',
-        content: `Can you pull the numbers on this?`,
-        type: 'delegation',
-        delegateTo: target,
+    try {
+      const res = await fetch('/api/agent/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg }),
       })
+      const data = await res.json()
 
-      updateAgentStatus(target, 'thinking')
-      setActiveAgent(target)
-
-      await new Promise((r) => setTimeout(r, 1500))
       setIsTyping(false)
-      addMessage({
-        agentId: target,
-        agentName: targetAgent?.name ?? target,
-        content: getAgentResponse(target),
-        type: 'message',
-      })
-      updateAgentStatus(target, 'active')
 
-      await new Promise((r) => setTimeout(r, 1000))
-      addMessage({
-        agentId: 'operations',
-        agentName: 'Operations',
-        content: `Here's the summary from ${targetAgent?.name ?? target}. Let me know how you'd like to proceed.`,
-        type: 'message',
-      })
+      addMessage({ agentId: 'operations', agentName: 'Operations', content: data.operationsMessage, type: 'message' })
 
-      setTimeout(() => {
-        updateAgentStatus(target, 'idle')
-        setActiveAgent(null)
-      }, 4000)
-    } else {
-      await new Promise((r) => setTimeout(r, 1200))
+      if (data.delegatedTo) {
+        const agentId = data.delegatedTo.toLowerCase()
+        setTimeout(() => {
+          addMessage({
+            agentId: 'system',
+            agentName: 'System',
+            content: `Operations delegated to ${data.delegatedTo}`,
+            type: 'delegation',
+            delegateTo: agentId,
+          })
+        }, 500)
+
+        updateAgentStatus(agentId, 'active')
+        setTimeout(() => updateAgentStatus(agentId, 'idle'), 3000)
+      }
+    } catch {
       setIsTyping(false)
-      addMessage({
-        agentId: 'operations',
-        agentName: 'Operations',
-        content: getAgentResponse('operations'),
-        type: 'message',
-      })
+      addMessage({ agentId: 'operations', agentName: 'Operations', content: 'Failed to process — check API key configuration.', type: 'message' })
     }
   }
 
