@@ -11,7 +11,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Building2,
+  Bot,
   FileText,
   Activity,
   FileBarChart,
@@ -21,7 +21,7 @@ import { useState } from "react";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/activity", label: "Activity Log", icon: Activity },
-  { href: "/office", label: "Agent Office", icon: Building2 },
+  { href: "/office", label: "Ask OS", icon: Bot },
   { href: "/finance", label: "Finance", icon: DollarSign },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/team", label: "Team", icon: Users },

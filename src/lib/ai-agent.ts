@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { getChatHistory, getLearnedFacts } from './chat-memory'
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -62,6 +63,26 @@ ${dashboardData.billingAlerts.slice(0, 10).map((a: any) => `- [${a.priority.toUp
 `
   }
 
+  // Build memory context from persistent chat history
+  const history = getChatHistory(10)
+  const facts = getLearnedFacts()
+
+  let memoryContext = ''
+  if (history.length > 0) {
+    memoryContext += 'CONVERSATION HISTORY (last messages):\n'
+    memoryContext += history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
+    memoryContext += '\n\n'
+  }
+  if (facts.length > 0) {
+    memoryContext += 'LEARNED FACTS ABOUT THIS BUSINESS:\n'
+    memoryContext += facts.map(f => `- ${f}`).join('\n')
+    memoryContext += '\n\n'
+  }
+  memoryContext += `INSTRUCTIONS:
+- If the user tells you something new about the business (a decision, a preference, a fact), remember it.
+- Reference previous conversations when relevant.
+- You have persistent memory across sessions.`
+
   try {
     const response = await client.messages.create({
       model: 'claude-opus-4-7',
@@ -75,6 +96,10 @@ ${dashboardData.billingAlerts.slice(0, 10).map((a: any) => `- [${a.priority.toUp
         {
           type: 'text',
           text: dataContext,
+        },
+        {
+          type: 'text',
+          text: memoryContext,
         },
       ],
       messages: [{ role: 'user', content: userMessage }],

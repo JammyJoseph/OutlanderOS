@@ -1,19 +1,45 @@
 'use client'
-import { useState } from 'react'
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { MessageCircle, X, Send, Loader2, Trash2 } from 'lucide-react'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  timestamp?: string
 }
+
+const WELCOME = 'Hey. Ask me anything about the business — invoices, deals, revenue, team status. I have access to all your live data.'
 
 export function FloatingChat() {
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: 'Hey. Ask me anything about the business — invoices, deals, revenue, team status. I have access to all your live data.' }
-  ])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [historyLoaded, setHistoryLoaded] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (open && !historyLoaded) {
+      fetch('/api/agent/history')
+        .then(r => r.json())
+        .then(data => {
+          if (data.messages?.length) {
+            setMessages(data.messages)
+          } else {
+            setMessages([{ role: 'assistant', content: WELCOME }])
+          }
+          setHistoryLoaded(true)
+        })
+        .catch(() => {
+          setMessages([{ role: 'assistant', content: WELCOME }])
+          setHistoryLoaded(true)
+        })
+    }
+  }, [open, historyLoaded])
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, loading])
 
   async function handleSend() {
     if (!input.trim() || loading) return
@@ -36,6 +62,11 @@ export function FloatingChat() {
     setLoading(false)
   }
 
+  async function handleClear() {
+    await fetch('/api/agent/history', { method: 'DELETE' })
+    setMessages([{ role: 'assistant', content: WELCOME }])
+  }
+
   if (!open) {
     return (
       <button
@@ -56,13 +87,23 @@ export function FloatingChat() {
           <div className="w-2 h-2 rounded-full bg-green-400" />
           <span className="font-semibold text-sm">OutlanderOS Agent</span>
         </div>
-        <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white">
-          <X size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleClear} className="text-gray-400 hover:text-red-400 transition-colors" title="Clear history">
+            <Trash2 size={14} />
+          </button>
+          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white">
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {!historyLoaded && (
+          <div className="flex justify-center py-4">
+            <Loader2 size={16} className="animate-spin text-gray-300" />
+          </div>
+        )}
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] px-3 py-2 text-sm ${
@@ -81,6 +122,7 @@ export function FloatingChat() {
             </div>
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
 
       {/* Input */}

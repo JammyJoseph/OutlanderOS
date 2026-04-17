@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processAgentMessage } from '@/lib/ai-agent'
+import { addChatMessage, addLearnedFact } from '@/lib/chat-memory'
 import { getToken } from '@/lib/token-store'
 import { fetchBillingTracker, fetchCalendarEvents } from '@/lib/fetch-dashboard-data'
 import { fetchAllXeroData } from '@/lib/xero-api'
@@ -30,5 +31,17 @@ export async function POST(request: NextRequest) {
   }
 
   const response = await processAgentMessage(message, dashboardData)
+
+  // Persist conversation to memory
+  addChatMessage('user', message)
+  addChatMessage('assistant', response.operationsMessage)
+
+  // Extract any facts the agent explicitly noted
+  const learnPattern = /(?:I(?:'ll| will) (?:note|remember|keep in mind) that|Important to note:|Noted:)\s+(.+?)(?:\.|$)/gi
+  let match
+  while ((match = learnPattern.exec(response.operationsMessage)) !== null) {
+    addLearnedFact(match[1].trim())
+  }
+
   return NextResponse.json(response)
 }
