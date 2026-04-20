@@ -2,6 +2,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { MessageCircle, X, Send, Loader2, Trash2 } from 'lucide-react'
 
+declare global {
+  interface WindowEventMap {
+    openChatWithQuestion: CustomEvent<{ question: string }>
+  }
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
@@ -17,6 +23,15 @@ export function FloatingChat() {
   const [loading, setLoading] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ question: string }>) => {
+      setOpen(true)
+      setInput(e.detail.question)
+    }
+    window.addEventListener('openChatWithQuestion', handler)
+    return () => window.removeEventListener('openChatWithQuestion', handler)
+  }, [])
 
   useEffect(() => {
     if (open && !historyLoaded) {

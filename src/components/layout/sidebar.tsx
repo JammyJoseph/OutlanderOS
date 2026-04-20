@@ -15,6 +15,7 @@ import {
   FileText,
   Activity,
   FileBarChart,
+  LayoutGrid,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/team", label: "Team", icon: Users },
   { href: "/business-plan", label: "Business Plan", icon: FileText },
   { href: "/reports", label: "Reports", icon: FileBarChart },
+  { href: "/system", label: "System", icon: LayoutGrid },
 ];
 
 export function Sidebar() {
