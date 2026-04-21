@@ -42,9 +42,8 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Pipeline", href: "/commercial", icon: LayoutDashboard },
       { label: "Clients", href: "/commercial/clients", icon: Users },
       { label: "Media Plans", href: "/commercial/media-plans", icon: FileText },
-      { label: "Reports", href: "/commercial/reports", icon: BarChart2 },
-      { label: "Calendar", href: "/commercial/calendar", icon: Calendar },
       { label: "Content Tracker", href: "/commercial/content-tracker", icon: Camera },
+      { label: "Calendar", href: "/commercial/calendar", icon: Calendar },
     ],
   },
   production: {

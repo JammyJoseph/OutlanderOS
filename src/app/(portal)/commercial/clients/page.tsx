@@ -1,19 +1,37 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, ExternalLink } from "lucide-react";
+import { Building2, Plus, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
-interface Client {
+interface ClientSummary {
   id: string;
   name: string;
   industry?: string;
   brandColor?: string;
-  _count?: { campaigns: number };
+  campaignCount: number;
+  totalSpend: number;
+  currency: string;
+}
+
+function fmt(n: number, currency: string): string {
+  const symbol = currency === "USD" ? "$" : currency === "EUR" ? "€" : "£";
+  if (n >= 1_000_000) return symbol + (n / 1_000_000).toFixed(1) + "m";
+  if (n >= 1_000) return symbol + (n / 1_000).toFixed(1) + "k";
+  return symbol + n.toLocaleString("en-GB", { maximumFractionDigits: 0 });
+}
+
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0] ?? "")
+    .join("")
+    .toUpperCase();
 }
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<ClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,61 +44,97 @@ export default function ClientsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Clients</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {loading ? "Loading…" : `${clients.length} clients`}
-        </p>
-      </div>
+  const totalRevenue = clients.reduce((s, c) => s + c.totalSpend, 0);
 
-      {loading ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-24 animate-pulse rounded-xl bg-gray-100" />
-          ))}
-        </div>
-      ) : clients.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 p-12 text-center">
-          <Building2 className="mx-auto h-10 w-10 text-gray-300" />
-          <p className="mt-3 text-sm text-gray-400">No clients yet</p>
-          <p className="mt-1 text-xs text-gray-300">
-            Clients are created automatically when you add a campaign
+  return (
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+        <div>
+          <h1 className="text-base font-semibold text-gray-900">Clients</h1>
+          <p className="text-xs text-gray-500">
+            {loading
+              ? "Loading…"
+              : `${clients.length} client${clients.length !== 1 ? "s" : ""} · £${(totalRevenue / 1000).toFixed(0)}k total`}
           </p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {clients.map((client) => (
-            <Link
-              key={client.id}
-              href={`/commercial/clients/${client.id}`}
-              className="flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-[#D4A853]/40 hover:shadow-md"
-            >
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white font-bold text-sm"
-                style={{ backgroundColor: client.brandColor ?? "#D4A853" }}
+        <button
+          disabled
+          className="flex items-center gap-2 rounded-lg bg-[#D4A853] px-4 py-2 text-sm font-medium text-white hover:bg-[#C49843] transition-colors disabled:opacity-60"
+        >
+          <Plus className="h-4 w-4" />
+          Add Client
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-auto p-6">
+        {loading ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-36 animate-pulse rounded-xl bg-gray-100" />
+            ))}
+          </div>
+        ) : clients.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-gray-300 p-12 text-center">
+            <Building2 className="mx-auto h-10 w-10 text-gray-300" />
+            <p className="mt-3 text-sm text-gray-400">No clients yet</p>
+            <p className="mt-1 text-xs text-gray-300">
+              Clients are created automatically when you add a campaign
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {clients.map((client) => (
+              <Link
+                key={client.id}
+                href={`/commercial/clients/${client.id}`}
+                className="group rounded-xl border border-gray-200 bg-white p-5 transition-all hover:border-[#D4A853]/50 hover:shadow-md"
               >
-                {client.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-gray-900 truncate">{client.name}</p>
-                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-gray-300" />
+                {/* Logo + name row */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white font-bold text-sm"
+                    style={{ backgroundColor: client.brandColor ?? "#D4A853" }}
+                  >
+                    {initials(client.name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900 truncate group-hover:text-[#D4A853] transition-colors">
+                      {client.name}
+                    </p>
+                    {client.industry && (
+                      <p className="text-xs text-gray-400 truncate">{client.industry}</p>
+                    )}
+                  </div>
                 </div>
-                {client.industry && (
-                  <p className="text-xs text-gray-500">{client.industry}</p>
-                )}
-                {client._count && (
-                  <p className="mt-1 text-xs text-[#D4A853] font-medium">
-                    {client._count.campaigns} campaign{client._count.campaigns !== 1 ? "s" : ""}
-                  </p>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+
+                {/* Stats row */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-gray-50 px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                      Total Spend
+                    </p>
+                    <p className="mt-0.5 text-sm font-bold text-gray-900">
+                      {fmt(client.totalSpend, client.currency)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                      Campaigns
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-1.5">
+                      <p className="text-sm font-bold text-gray-900">{client.campaignCount}</p>
+                      {client.campaignCount > 0 && (
+                        <TrendingUp className="h-3 w-3 text-emerald-500" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

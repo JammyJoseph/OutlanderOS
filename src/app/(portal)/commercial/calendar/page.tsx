@@ -3,22 +3,38 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+type CampaignType =
+  | "SUPPLIED_ASSET"
+  | "BESPOKE_PRODUCTION"
+  | "WHITE_LABEL"
+  | "EDITORIAL_FEATURE"
+  | "PRINT_AD";
+
 interface Campaign {
   id: string;
   title: string;
   client: { name: string };
-  type: string;
-  startDate: string | null;
-  endDate: string | null;
+  type: CampaignType;
+  timelineStart: string | null;
+  timelineEnd: string | null;
+  value?: number;
+  currency: string;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  Social: "bg-blue-400",
-  Print: "bg-purple-400",
-  Digital: "bg-pink-400",
-  OOH: "bg-amber-400",
-  Events: "bg-emerald-400",
-  PR: "bg-indigo-400",
+const TYPE_COLORS: Record<CampaignType, string> = {
+  SUPPLIED_ASSET: "bg-blue-400",
+  BESPOKE_PRODUCTION: "bg-pink-400",
+  WHITE_LABEL: "bg-purple-400",
+  EDITORIAL_FEATURE: "bg-amber-400",
+  PRINT_AD: "bg-rose-400",
+};
+
+const TYPE_LABELS: Record<CampaignType, string> = {
+  SUPPLIED_ASSET: "Supplied",
+  BESPOKE_PRODUCTION: "Bespoke",
+  WHITE_LABEL: "White Label",
+  EDITORIAL_FEATURE: "Editorial",
+  PRINT_AD: "Print Ad",
 };
 
 const MONTHS = [
@@ -43,7 +59,9 @@ export default function CampaignCalendarPage() {
   useEffect(() => {
     fetch("/api/campaigns")
       .then((r) => r.json())
-      .then(setCampaigns)
+      .then((data) => {
+        if (Array.isArray(data)) setCampaigns(data);
+      })
       .catch(() => {});
   }, []);
 
@@ -58,9 +76,14 @@ export default function CampaignCalendarPage() {
 
   function campaignsForDay(day: number): Campaign[] {
     const date = new Date(year, month, day);
+    date.setHours(12, 0, 0, 0);
     return campaigns.filter((c) => {
-      if (!c.startDate || !c.endDate) return false;
-      return date >= new Date(c.startDate) && date <= new Date(c.endDate);
+      if (!c.timelineStart || !c.timelineEnd) return false;
+      const start = new Date(c.timelineStart);
+      const end = new Date(c.timelineEnd);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      return date >= start && date <= end;
     });
   }
 
@@ -72,12 +95,22 @@ export default function CampaignCalendarPage() {
     ...Array.from({ length: getDaysInMonth(year, month) }, (_, i) => i + 1),
   ];
 
+  // Count active campaigns this month
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 0);
+  const activeCampaigns = campaigns.filter((c) => {
+    if (!c.timelineStart || !c.timelineEnd) return false;
+    return new Date(c.timelineEnd) >= monthStart && new Date(c.timelineStart) <= monthEnd;
+  });
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
         <div>
           <h1 className="text-base font-semibold text-gray-900">Campaign Calendar</h1>
-          <p className="text-xs text-gray-500">Monthly overview of campaign timelines</p>
+          <p className="text-xs text-gray-500">
+            {activeCampaigns.length} active this month
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -101,7 +134,10 @@ export default function CampaignCalendarPage() {
       <div className="flex-1 overflow-auto p-6">
         <div className="grid grid-cols-7 mb-1">
           {DAYS.map((d) => (
-            <div key={d} className="py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <div
+              key={d}
+              className="py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-400"
+            >
               {d}
             </div>
           ))}
@@ -130,7 +166,7 @@ export default function CampaignCalendarPage() {
                           key={c.id}
                           title={`${c.client.name} — ${c.title}`}
                           className={`truncate rounded px-1 py-0.5 text-[10px] font-medium text-white ${
-                            TYPE_COLORS[c.type] || "bg-gray-400"
+                            TYPE_COLORS[c.type] ?? "bg-gray-400"
                           }`}
                         >
                           {c.client.name}
@@ -148,10 +184,10 @@ export default function CampaignCalendarPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-4">
-          {Object.entries(TYPE_COLORS).map(([type, color]) => (
+          {Object.entries(TYPE_LABELS).map(([type, label]) => (
             <div key={type} className="flex items-center gap-1.5">
-              <div className={`h-2.5 w-2.5 rounded-full ${color}`} />
-              <span className="text-xs text-gray-500">{type}</span>
+              <div className={`h-2.5 w-2.5 rounded-full ${TYPE_COLORS[type as CampaignType]}`} />
+              <span className="text-xs text-gray-500">{label}</span>
             </div>
           ))}
         </div>

@@ -4,10 +4,33 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const clients = await prisma.client.findMany({
-      select: { id: true, name: true, industry: true },
+      select: {
+        id: true,
+        name: true,
+        industry: true,
+        brandColor: true,
+        campaigns: {
+          where: { status: { not: "ARCHIVED" } },
+          select: { value: true, currency: true, status: true },
+        },
+      },
       orderBy: { name: "asc" },
     });
-    return NextResponse.json(clients);
+
+    const result = clients.map((c) => {
+      const totalSpend = c.campaigns.reduce((sum, camp) => sum + (camp.value ?? 0), 0);
+      return {
+        id: c.id,
+        name: c.name,
+        industry: c.industry,
+        brandColor: c.brandColor,
+        campaignCount: c.campaigns.length,
+        totalSpend,
+        currency: c.campaigns[0]?.currency ?? "GBP",
+      };
+    });
+
+    return NextResponse.json(result);
   } catch (err) {
     console.error("GET /api/clients", err);
     return NextResponse.json({ error: "Failed to fetch clients" }, { status: 500 });
