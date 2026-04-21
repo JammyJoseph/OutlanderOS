@@ -91,11 +91,12 @@ model Campaign {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  deliverables Deliverable[]
-  assets       CampaignAsset[]
-  reports      CampaignReport[]
-  production   Production?
-  mediaPlans   MediaPlan[]
+  deliverables     Deliverable[]
+  assets           CampaignAsset[]
+  reports          CampaignReport[]
+  production       Production?
+  mediaPlans       MediaPlan[]
+  intelligenceLogs IntelligenceLog[]
 }
 
 enum CampaignType {
@@ -313,6 +314,21 @@ model EventGuest {
   email      String?
   rsvpStatus String   @default("invited")
   checkedIn  Boolean  @default(false)
+}
+
+// ===== INTELLIGENCE ENGINE =====
+model IntelligenceLog {
+  id         String    @id @default(cuid())
+  runId      String
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+  type       String    // status_update | io_signed | value_update | flag | no_change | error
+  finding    String
+  action     String?
+  confidence Float     @default(0)
+  sources    String[]
+  rawData    Json?
+  createdAt  DateTime  @default(now())
 }
 
 // ===== MEDIA PLANS =====
