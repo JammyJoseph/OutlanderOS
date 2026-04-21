@@ -12,8 +12,14 @@ function createPrisma() {
   return new PrismaClient({ adapter })
 }
 
-const prisma = globalForPrisma.prisma || createPrisma()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+// Proxy defers initialization to first use — safe for Next.js build-time module analysis
+const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    if (!globalForPrisma.prisma) {
+      globalForPrisma.prisma = createPrisma()
+    }
+    return (globalForPrisma.prisma as unknown as Record<string | symbol, unknown>)[prop]
+  },
+})
 
 export default prisma

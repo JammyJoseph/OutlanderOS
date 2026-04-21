@@ -111,8 +111,7 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
 };
 
 function getPortalKey(pathname: string): string {
-  const segment = pathname.split("/")[1] ?? "";
-  return segment;
+  return pathname.split("/")[1] ?? "";
 }
 
 export function PortalSidebar() {
@@ -123,19 +122,22 @@ export function PortalSidebar() {
   if (!config) return null;
 
   return (
-    <aside className="flex w-[200px] shrink-0 flex-col border-r border-gray-200 bg-white">
-      <div className="flex h-10 items-center border-b border-gray-100 px-4">
+    <aside
+      className="flex w-[200px] shrink-0 flex-col bg-white"
+      style={{ boxShadow: "1px 0 0 rgba(0,0,0,0.05)" }}
+    >
+      <div className="flex h-10 items-center px-4">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
           {config.title}
         </span>
       </div>
-      <nav className="flex-1 overflow-y-auto py-3">
+      <nav className="flex-1 overflow-y-auto py-2">
         <ul className="space-y-0.5 px-2">
           {config.items.map((item) => {
             const Icon = item.icon;
             const isActive =
               item.href === `/${key}`
-                ? pathname === `/${key}` || (pathname === `/${key}/` && item.href === `/${key}`)
+                ? pathname === `/${key}` || pathname === `/${key}/`
                 : pathname.startsWith(item.href.split("?")[0]) && item.href !== `/${key}`;
 
             return (
@@ -143,15 +145,15 @@ export function PortalSidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-all duration-150",
                     isActive
-                      ? "bg-amber-50 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-amber-50 text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                   )}
                 >
                   <Icon
                     className={cn(
-                      "h-4 w-4 shrink-0",
+                      "h-4 w-4 shrink-0 transition-colors",
                       isActive ? "text-[#D4A853]" : "text-gray-400"
                     )}
                   />
