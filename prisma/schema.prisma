@@ -95,6 +95,7 @@ model Campaign {
   assets       CampaignAsset[]
   reports      CampaignReport[]
   production   Production?
+  mediaPlans   MediaPlan[]
 }
 
 enum CampaignType {
@@ -312,4 +313,42 @@ model EventGuest {
   email      String?
   rsvpStatus String   @default("invited")
   checkedIn  Boolean  @default(false)
+}
+
+// ===== MEDIA PLANS =====
+model MediaPlan {
+  id           String    @id @default(cuid())
+  campaignId   String?
+  campaign     Campaign? @relation(fields: [campaignId], references: [id])
+  clientName   String
+  campaignName String
+  flightStart  DateTime?
+  flightEnd    DateTime?
+  currency     String    @default("GBP")
+  contactName  String?
+  contactEmail String?
+  status       String    @default("draft")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  lineItems MediaPlanLineItem[]
+}
+
+model MediaPlanLineItem {
+  id                String    @id @default(cuid())
+  mediaPlanId       String
+  mediaPlan         MediaPlan @relation(fields: [mediaPlanId], references: [id], onDelete: Cascade)
+  site              String
+  startDate         DateTime?
+  endDate           DateTime?
+  placement         String
+  rate              Float     @default(0)
+  rateType          String    @default("Flat Fee")
+  discount          Float     @default(0)
+  units             Int       @default(1)
+  grossCost         Float     @default(0)
+  netCost           Float     @default(0)
+  projectedCreative String?
+  deliveryStatus    String    @default("planned")
+  sortOrder         Int       @default(0)
 }
