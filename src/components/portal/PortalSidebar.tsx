@@ -26,6 +26,7 @@ import {
   BookUser,
   LayoutGrid,
   Receipt,
+  Camera,
 } from "lucide-react";
 
 type NavItem = {
@@ -43,6 +44,7 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Media Plans", href: "/commercial/media-plans", icon: FileText },
       { label: "Reports", href: "/commercial/reports", icon: BarChart2 },
       { label: "Calendar", href: "/commercial/calendar", icon: Calendar },
+      { label: "Content Tracker", href: "/commercial/content-tracker", icon: Camera },
     ],
   },
   production: {
