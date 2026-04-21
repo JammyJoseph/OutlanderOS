@@ -27,7 +27,7 @@ export function Topbar() {
     : "?";
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-6">
+    <header className="glass-header flex h-14 items-center justify-between px-6">
       {/* Search */}
       <div className="relative w-72">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />

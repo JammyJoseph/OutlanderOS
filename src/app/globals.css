@@ -104,6 +104,36 @@
   font-feature-settings: "tnum";
 }
 
+/* Apple design utilities */
+.card-apple {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s ease;
+}
+.card-apple:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+}
+.glass-header {
+  backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.85);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.btn-primary {
+  background: #D4A853;
+  color: white;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(212,168,83,0.3);
+}
+.btn-primary:hover {
+  background: #C49843;
+  box-shadow: 0 2px 8px rgba(212,168,83,0.4);
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;
