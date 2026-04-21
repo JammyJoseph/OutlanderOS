@@ -16,6 +16,7 @@ import {
   Activity,
   FileBarChart,
   LayoutGrid,
+  BookUser,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/activity", label: "Activity Log", icon: Activity },
   { href: "/office", label: "Ask OS", icon: Bot },
+  { href: "/contacts", label: "Contacts", icon: BookUser },
   { href: "/finance", label: "Finance", icon: DollarSign },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/team", label: "Team", icon: Users },
