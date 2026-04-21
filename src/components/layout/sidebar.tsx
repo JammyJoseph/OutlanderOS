@@ -21,7 +21,7 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/hub", label: "Dashboard", icon: LayoutDashboard },
   { href: "/activity", label: "Activity Log", icon: Activity },
   { href: "/office", label: "Ask OS", icon: Bot },
   { href: "/contacts", label: "Contacts", icon: BookUser },
@@ -40,7 +40,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "relative flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300",
+        "relative flex h-screen flex-col border-r border-black/[0.06] bg-white transition-all duration-300",
         collapsed ? "w-16" : "w-60"
       )}
     >
