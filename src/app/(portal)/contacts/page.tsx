@@ -133,8 +133,7 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-gray-50 font-[Manrope,sans-serif]">
-      {/* Header */}
+    <div className="flex flex-col h-full min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -157,7 +156,6 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* Search */}
         <div className="relative mb-3">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -169,17 +167,12 @@ export default function ContactsPage() {
           />
         </div>
 
-        {/* Category filters */}
         <div className="flex gap-1.5 flex-wrap">
           {CATEGORIES.map(cat => (
             <button
               key={cat.value}
               onClick={() => setActiveCategory(cat.value)}
-              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
-                activeCategory === cat.value
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${activeCategory === cat.value ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
               {cat.label}
             </button>
@@ -187,7 +180,6 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* Grid */}
       <div className="flex-1 overflow-y-auto p-6">
         {loading ? (
           <div className="flex items-center justify-center py-20 text-gray-400 text-sm">Loading…</div>
@@ -210,15 +202,12 @@ export default function ContactsPage() {
         )}
       </div>
 
-      {/* Add Contact Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900">Add Contact</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X size={18} />
-              </button>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-3">
               {error && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
@@ -228,14 +217,8 @@ export default function ContactsPage() {
                 <Field label="Role / Title" value={form.role} onChange={v => setForm(f => ({ ...f, role: v }))} />
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
-                  <select
-                    value={form.category}
-                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300"
-                  >
-                    {CATEGORIES.slice(1).map(c => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
-                    ))}
+                  <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300">
+                    {CATEGORIES.slice(1).map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
                 </div>
                 <Field label="Email" value={form.email} type="email" onChange={v => setForm(f => ({ ...f, email: v }))} />
@@ -246,21 +229,12 @@ export default function ContactsPage() {
               <Field label="Tags (comma-separated)" value={form.tags} onChange={v => setForm(f => ({ ...f, tags: v }))} placeholder="fashion, luxury, tech" />
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-                <textarea
-                  value={form.notes}
-                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
-                />
+                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none" />
               </div>
             </div>
             <div className="flex justify-end gap-2 p-5 border-t border-gray-100">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
-              >
+              <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
                 {saving ? 'Saving…' : 'Save Contact'}
               </button>
             </div>
@@ -271,25 +245,11 @@ export default function ContactsPage() {
   )
 }
 
-function Field({
-  label, value, onChange, type = 'text', placeholder,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  type?: string
-  placeholder?: string
-}) {
+function Field({ label, value, onChange, type = 'text', placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300"
-      />
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300" />
     </div>
   )
 }
@@ -299,50 +259,37 @@ function ContactCard({ contact, expanded, onToggle }: { contact: Contact; expand
   const initials = contact.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div
-      className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-      onClick={onToggle}
-    >
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={onToggle}>
       <div className="p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0 text-sm font-semibold text-amber-700">
-            {initials}
-          </div>
+          <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0 text-sm font-semibold text-amber-700">{initials}</div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-900 text-sm truncate">{contact.name}</p>
             {contact.role && <p className="text-xs text-gray-500 truncate">{contact.role}</p>}
             {contact.company && (
               <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 truncate">
-                <Building2 size={10} />
-                {contact.company}
+                <Building2 size={10} />{contact.company}
               </p>
             )}
           </div>
-          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${colorClass} flex-shrink-0`}>
-            {contact.category}
-          </span>
+          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${colorClass} flex-shrink-0`}>{contact.category}</span>
         </div>
 
         {contact.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {contact.tags.slice(0, 3).map(tag => (
               <span key={tag} className="flex items-center gap-0.5 text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                <Tag size={8} />
-                {tag}
+                <Tag size={8} />{tag}
               </span>
             ))}
-            {contact.tags.length > 3 && (
-              <span className="text-[10px] text-gray-400">+{contact.tags.length - 3}</span>
-            )}
+            {contact.tags.length > 3 && <span className="text-[10px] text-gray-400">+{contact.tags.length - 3}</span>}
           </div>
         )}
 
         <div className="flex items-center justify-between mt-2">
           {contact.lastInteraction ? (
             <p className="text-[10px] text-gray-400">Last: {new Date(contact.lastInteraction).toLocaleDateString()}</p>
-          ) : (
-            <span />
-          )}
+          ) : <span />}
           {expanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
         </div>
       </div>
@@ -351,31 +298,25 @@ function ContactCard({ contact, expanded, onToggle }: { contact: Contact; expand
         <div className="border-t border-gray-100 p-4 bg-gray-50 space-y-2" onClick={e => e.stopPropagation()}>
           {contact.email && (
             <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-900">
-              <Mail size={12} className="text-gray-400" />
-              {contact.email}
+              <Mail size={12} className="text-gray-400" />{contact.email}
             </a>
           )}
           {contact.phone && (
             <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-900">
-              <Phone size={12} className="text-gray-400" />
-              {contact.phone}
+              <Phone size={12} className="text-gray-400" />{contact.phone}
             </a>
           )}
           {contact.instagram && (
             <p className="flex items-center gap-2 text-xs text-gray-600">
-              <AtSign size={12} className="text-gray-400" />
-              {contact.instagram}
+              <AtSign size={12} className="text-gray-400" />{contact.instagram}
             </p>
           )}
           {contact.website && (
             <a href={contact.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-900">
-              <Globe size={12} className="text-gray-400" />
-              {contact.website}
+              <Globe size={12} className="text-gray-400" />{contact.website}
             </a>
           )}
-          {contact.notes && (
-            <p className="text-xs text-gray-500 italic pt-1 border-t border-gray-200">{contact.notes}</p>
-          )}
+          {contact.notes && <p className="text-xs text-gray-500 italic pt-1 border-t border-gray-200">{contact.notes}</p>}
         </div>
       )}
     </div>
