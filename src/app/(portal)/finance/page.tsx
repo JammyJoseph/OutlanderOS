@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Loader2, RefreshCw, AlertCircle, TrendingUp, Link2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
@@ -101,6 +102,37 @@ function marginColor(margin: string): string {
 
 function isZeroTotal(annualTotal: string): boolean {
   return parseNum(annualTotal) === 0
+}
+
+function SkeletonBar() {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {[140, 120, 100, 130, 150].map((w, i) => (
+        <div key={i} className={`flex-1 min-w-[${w}px] rounded-lg border border-gray-200 bg-white px-4 py-3 animate-pulse`}>
+          <div className="h-2 w-20 rounded bg-gray-200 mb-2" />
+          <div className="h-6 w-24 rounded bg-gray-200" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SkeletonTable({ rows = 6 }: { rows?: number }) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-gray-200 animate-pulse">
+      <div className="bg-gray-50 border-b border-gray-200 px-3 py-2.5">
+        <div className="h-3 w-48 rounded bg-gray-200" />
+      </div>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex gap-4 px-3 py-2.5 border-b border-gray-100">
+          <div className="h-3 w-12 rounded bg-gray-100" />
+          <div className="h-3 w-24 rounded bg-gray-100" />
+          <div className="h-3 flex-1 rounded bg-gray-100" />
+          <div className="h-3 w-16 rounded bg-gray-100" />
+        </div>
+      ))}
+    </div>
+  )
 }
 
 function StatsBar({ bt }: { bt: BillingTracker }) {
@@ -301,7 +333,7 @@ function DealsTab({ bt, xero }: { bt: BillingTracker; xero?: XeroData }) {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                {['IO#', 'Client', 'Campaign', 'Date', 'Q1', 'Q2', 'Q3', 'Q4', 'Annual', 'Margin%'].map((h, i) => (
+                {['IO#', 'Client', 'Campaign', 'Date', 'Q1', 'Q2', 'Q3', 'Q4', 'Annual', 'Margin%'].map((h) => (
                   <th key={h} className={`px-3 py-2.5 font-medium text-gray-500 ${['Q1','Q2','Q3','Q4','Annual','Margin%'].includes(h) ? 'text-right' : 'text-left'} ${['Campaign','Date'].includes(h) ? 'hidden lg:table-cell' : ''}`}>{h}</th>
                 ))}
               </tr>
@@ -338,12 +370,43 @@ function DealsTab({ bt, xero }: { bt: BillingTracker; xero?: XeroData }) {
   )
 }
 
+type LineStatus = 'Paid' | 'Invoice Sent' | 'Overdue' | 'Chasing' | 'Pending'
+
 interface BillingRow {
-  client: string; ioNumber: string; amount: string; currency: string; signed: boolean; invoiceSent: boolean
-  status: 'Paid' | 'Invoice Sent' | 'Pending' | 'Pipeline'
+  client: string
+  ioNumber: string
+  amount: string
+  currency: string
+  signed: boolean
+  invoiceSent: boolean
+  status: LineStatus
 }
 
-function deriveBillingRows(bt: BillingTracker): BillingRow[] {
+function deriveLineStatus(
+  signed: boolean,
+  invoiceSent: boolean,
+  xeroInvoices?: XeroData['invoices'],
+  clientName?: string
+): LineStatus {
+  if (!signed) return 'Pending'
+
+  if (xeroInvoices && clientName) {
+    const clientLower = clientName.toLowerCase()
+    const match = xeroInvoices.find(inv =>
+      (inv.contact ?? '').toLowerCase().includes(clientLower) ||
+      clientLower.includes((inv.contact ?? '').toLowerCase())
+    )
+    if (match) {
+      if (match.status === 'PAID') return 'Paid'
+      if (match.status === 'OVERDUE') return 'Overdue'
+    }
+  }
+
+  if (invoiceSent) return 'Invoice Sent'
+  return 'Pending'
+}
+
+function deriveBillingRows(bt: BillingTracker, xero?: XeroData): BillingRow[] {
   const deals = bt.allDeals?.length ? bt.allDeals : bt.deals ?? []
   const billingRows = bt.billingRows ?? []
 
@@ -351,7 +414,7 @@ function deriveBillingRows(bt: BillingTracker): BillingRow[] {
     return deals.map((d) => {
       const signed = !!(d as unknown as { signed?: boolean }).signed
       const invoiceSent = !!(d as unknown as { invoiceSent?: boolean }).invoiceSent
-      const status: BillingRow['status'] = signed && invoiceSent ? 'Invoice Sent' : signed ? 'Pending' : 'Pipeline'
+      const status = deriveLineStatus(signed, invoiceSent, xero?.invoices, d.client)
       return { client: d.client, ioNumber: d.ioNumber, amount: d.annualTotal, currency: 'GBP', signed, invoiceSent, status }
     })
   }
@@ -364,23 +427,60 @@ function deriveBillingRows(bt: BillingTracker): BillingRow[] {
     const currency = row[4] || 'GBP'
     const inGbp = row[5] || total
     const invoiceSent = row[7] === 'TRUE'
-    const status: BillingRow['status'] = signed && invoiceSent ? 'Invoice Sent' : signed ? 'Pending' : 'Pipeline'
+    const status = deriveLineStatus(signed, invoiceSent, xero?.invoices, brand)
     return { client: brand, ioNumber, amount: inGbp || total, currency, signed, invoiceSent, status }
   })
 }
 
-function statusBadge(status: BillingRow['status']) {
-  const map: Record<BillingRow['status'], string> = {
-    Paid: 'bg-emerald-100 text-emerald-700',
-    'Invoice Sent': 'bg-amber-100 text-amber-700',
-    Pending: 'bg-red-100 text-red-700',
-    Pipeline: 'bg-gray-100 text-gray-500',
-  }
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${map[status]}`}>{status}</span>
+const STATUS_BADGE: Record<LineStatus, string> = {
+  Paid: 'bg-emerald-100 text-emerald-700',
+  'Invoice Sent': 'bg-amber-100 text-amber-700',
+  Overdue: 'bg-red-100 text-red-700',
+  Chasing: 'bg-orange-100 text-orange-700',
+  Pending: 'bg-gray-100 text-gray-500',
 }
 
-function BillingTab({ bt }: { bt: BillingTracker }) {
-  const rows = deriveBillingRows(bt)
+function StatusBadge({ status }: { status: LineStatus }) {
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_BADGE[status]}`}>
+      {status}
+    </span>
+  )
+}
+
+function RemindQuinnButton({ client, ioNumber }: { client: string; ioNumber: string }) {
+  const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+
+  async function remind() {
+    setSending(true)
+    try {
+      await fetch('/api/telegram/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `Reminder: Invoice overdue for ${client}${ioNumber ? ` (IO# ${ioNumber})` : ''}. Please chase payment.` }),
+      })
+      setSent(true)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  if (sent) return <span className="text-[10px] text-emerald-600 font-medium">Sent</span>
+
+  return (
+    <button
+      onClick={remind}
+      disabled={sending}
+      className="ml-2 inline-flex items-center rounded-md border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-medium text-orange-700 hover:bg-orange-100 transition-colors disabled:opacity-50"
+    >
+      {sending ? '…' : 'Remind Quinn'}
+    </button>
+  )
+}
+
+function BillingTab({ bt, xero }: { bt: BillingTracker; xero?: XeroData }) {
+  const rows = deriveBillingRows(bt, xero)
   const { signed, unsigned, invoicesSent, invoicesNotSent } = bt.invoiceSummary
 
   if (rows.length === 0) {
@@ -411,7 +511,14 @@ function BillingTab({ bt }: { bt: BillingTracker }) {
                 <td className="px-3 py-2.5 text-gray-500">{row.currency || 'GBP'}</td>
                 <td className="px-3 py-2.5 text-center">{row.signed ? <span className="text-emerald-600 font-bold">✓</span> : <span className="text-gray-400">✗</span>}</td>
                 <td className="px-3 py-2.5 text-center">{row.invoiceSent ? <span className="text-emerald-600 font-bold">✓</span> : <span className="text-red-500">✗</span>}</td>
-                <td className="px-3 py-2.5">{statusBadge(row.status)}</td>
+                <td className="px-3 py-2.5">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <StatusBadge status={row.status} />
+                    {row.status === 'Overdue' && (
+                      <RemindQuinnButton client={row.client} ioNumber={row.ioNumber} />
+                    )}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -500,7 +607,10 @@ function CashFlowTab({ xero, bt }: { xero?: XeroData; bt?: BillingTracker }) {
 }
 
 function FinancePageInner() {
-  const [activeTab, setActiveTab] = useState<Tab>('deals')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeTab = (searchParams.get('tab') as Tab) || 'deals'
+
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -510,7 +620,6 @@ function FinancePageInner() {
 
   async function load(isRefresh = false) {
     if (isRefresh) setRefreshing(true)
-    else setLoading(true)
     try {
       const res = await fetch('/api/dashboard')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -538,11 +647,11 @@ function FinancePageInner() {
     return () => clearInterval(tick)
   }, [lastUpdated])
 
-  if (loading) {
-    return <div className="flex h-full items-center justify-center"><div className="flex items-center gap-2 text-gray-500"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Loading…</span></div></div>
+  function switchTab(tab: Tab) {
+    router.push(`/finance?tab=${tab}`)
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="flex h-full items-center justify-center px-4">
         <div className="text-center">
@@ -554,7 +663,7 @@ function FinancePageInner() {
     )
   }
 
-  if (!data?.connected.primary) {
+  if (!loading && !data?.connected.primary) {
     return (
       <div className="flex h-full items-center justify-center px-4">
         <div className="text-center">
@@ -586,22 +695,24 @@ function FinancePageInner() {
           </div>
         </div>
 
-        {bt && !bt.error && <StatsBar bt={bt} />}
+        {loading ? <SkeletonBar /> : bt && !bt.error ? <StatsBar bt={bt} /> : null}
 
         <div className="flex border-b border-gray-200">
           {TABS.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === tab.id ? 'border-[#D4A853] text-[#D4A853]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <button key={tab.id} onClick={() => switchTab(tab.id)} className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === tab.id ? 'border-[#D4A853] text-[#D4A853]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               {tab.label}
             </button>
           ))}
         </div>
 
-        {activeTab === 'expenses' ? <ExpensesTab xero={data?.xero} />
+        {loading ? (
+          <SkeletonTable rows={8} />
+        ) : activeTab === 'expenses' ? <ExpensesTab xero={data?.xero} />
           : activeTab === 'cashflow' ? <CashFlowTab xero={data?.xero} bt={data?.billingTracker} />
           : !bt ? <p className="text-sm text-gray-500">No billing data available.</p>
           : bt.error ? <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"><AlertCircle className="h-4 w-4 shrink-0" />Failed to load billing tracker: {bt.error}</div>
           : activeTab === 'deals' ? <DealsTab bt={bt} xero={data?.xero} />
-          : <BillingTab bt={bt} />
+          : <BillingTab bt={bt} xero={data?.xero} />
         }
       </div>
     </div>

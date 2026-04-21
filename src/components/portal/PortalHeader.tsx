@@ -44,7 +44,7 @@ export function PortalHeader() {
   const breadcrumb = pathname.split("/").filter(Boolean);
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-5">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-100 bg-white/80 backdrop-blur-md px-5 sticky top-0 z-30">
       {/* Left: Logo + breadcrumb */}
       <div className="flex items-center gap-3">
         <Link

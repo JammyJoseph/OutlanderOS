@@ -12,7 +12,6 @@ import {
   DollarSign,
   CreditCard,
   TrendingUp,
-  Activity,
   Shield,
   Settings,
   Server,
@@ -27,6 +26,7 @@ import {
   LayoutGrid,
   Receipt,
   Camera,
+  Activity,
 } from "lucide-react";
 
 type NavItem = {
@@ -53,7 +53,6 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Overview", href: "/production", icon: LayoutDashboard },
       { label: "Briefs", href: "/production/briefs", icon: Clipboard },
       { label: "Call Sheets", href: "/production/call-sheets", icon: Film },
-      { label: "Crew", href: "/production/crew", icon: Users },
     ],
   },
   print: {
@@ -89,7 +88,6 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Billing", href: "/finance?tab=billing", icon: CreditCard },
       { label: "Expenses", href: "/finance?tab=expenses", icon: Receipt },
       { label: "Cash Flow", href: "/finance?tab=cashflow", icon: TrendingUp },
-      { label: "Activity Log", href: "/finance?tab=activity", icon: Activity },
       { label: "Reports", href: "/finance/reports", icon: BarChart2 },
     ],
   },
@@ -125,13 +123,13 @@ export function PortalSidebar() {
   if (!config) return null;
 
   return (
-    <aside className="flex w-[200px] shrink-0 flex-col border-r border-gray-200 bg-white">
+    <aside className="flex w-[200px] shrink-0 flex-col border-r border-gray-100 bg-white/80">
       <div className="flex h-10 items-center border-b border-gray-100 px-4">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
           {config.title}
         </span>
       </div>
-      <nav className="flex-1 overflow-y-auto py-3">
+      <nav className="flex-1 overflow-y-auto py-2">
         <ul className="space-y-0.5 px-2">
           {config.items.map((item) => {
             const Icon = item.icon;
@@ -145,19 +143,19 @@ export function PortalSidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all duration-150",
                     isActive
-                      ? "bg-amber-50 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-amber-50 text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                   )}
                 >
                   <Icon
                     className={cn(
-                      "h-4 w-4 shrink-0",
+                      "h-4 w-4 shrink-0 transition-colors",
                       isActive ? "text-[#D4A853]" : "text-gray-400"
                     )}
                   />
-                  <span className="truncate">{item.label}</span>
+                  <span className="truncate font-medium">{item.label}</span>
                 </Link>
               </li>
             );
