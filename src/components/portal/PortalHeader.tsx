@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Bell, ChevronDown, MessageCircle } from "lucide-react";
+import { Bell, ChevronDown, MessageCircle, Lock, LayoutGrid } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -20,8 +20,8 @@ const PORTALS = [
   { name: "Print", href: "/print" },
   { name: "Editorial", href: "/editorial" },
   { name: "Contacts", href: "/contacts" },
-  { name: "Finance", href: "/finance" },
-  { name: "Admin", href: "/admin" },
+  { name: "Finance", href: "/finance", restricted: true },
+  { name: "Admin", href: "/admin", restricted: true },
   { name: "Ask OS", href: "/ask-os" },
 ];
 
@@ -76,9 +76,16 @@ export function PortalHeader() {
             {portalName}
             <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48 border-gray-200 bg-white">
-            <DropdownMenuLabel className="text-xs text-gray-400">Switch Portal</DropdownMenuLabel>
+          <DropdownMenuContent align="start" className="w-52 border-gray-200 bg-white">
+            <DropdownMenuItem
+              className="text-sm cursor-pointer text-gray-500 focus:bg-gray-50"
+              onClick={() => router.push("/hub")}
+            >
+              <LayoutGrid className="h-3.5 w-3.5 mr-2 text-gray-400" />
+              ← Back to Hub
+            </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-gray-100" />
+            <DropdownMenuLabel className="text-xs text-gray-400">Switch Portal</DropdownMenuLabel>
             {PORTALS.map((p) => (
               <DropdownMenuItem
                 key={p.href}
@@ -89,7 +96,8 @@ export function PortalHeader() {
                 }`}
                 onClick={() => router.push(p.href)}
               >
-                {p.name}
+                <span className="flex-1">{p.name}</span>
+                {p.restricted && <Lock className="h-3 w-3 text-gray-400 ml-1.5" />}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
