@@ -23,7 +23,6 @@ import {
   Newspaper,
   PenTool,
   BookUser,
-  LayoutGrid,
   Receipt,
   Camera,
   Activity,
@@ -58,7 +57,6 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
     title: "Print",
     items: [
       { label: "Issues", href: "/print", icon: Newspaper },
-      { label: "Flat Plan", href: "/print/flat-plan", icon: LayoutGrid },
       { label: "Distribution", href: "/print/distribution", icon: Megaphone },
     ],
   },
