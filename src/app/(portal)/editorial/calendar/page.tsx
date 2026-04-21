@@ -3,22 +3,41 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-type PieceStatus = "pitch" | "draft" | "editing" | "published";
+type EventStatus = "confirmed" | "tentative" | "completed";
 
-interface EditorialPiece {
+interface EditorialEvent {
   id: string;
   title: string;
-  writer: string;
-  status: PieceStatus;
-  deadline: string;
+  franchise: string;
+  franchiseColor: string;
+  date: string;
+  venue?: string;
+  status: EventStatus;
 }
 
-const STATUS_STYLES: Record<PieceStatus, { bg: string; text: string; label: string }> = {
-  pitch:     { bg: "bg-gray-100",    text: "text-gray-600",    label: "Pitch" },
-  draft:     { bg: "bg-blue-100",    text: "text-blue-700",    label: "Draft" },
-  editing:   { bg: "bg-amber-100",   text: "text-amber-700",   label: "Editing" },
-  published: { bg: "bg-emerald-100", text: "text-emerald-700", label: "Published" },
+const STATUS_STYLES: Record<EventStatus, { ring: string; label: string }> = {
+  confirmed: { ring: "ring-emerald-300", label: "Confirmed" },
+  tentative: { ring: "ring-amber-300", label: "Tentative" },
+  completed: { ring: "ring-gray-200", label: "Completed" },
 };
+
+const FRANCHISE_COLORS: Record<string, { bg: string; text: string }> = {
+  "Fashion Week Coverage": { bg: "bg-amber-100", text: "text-amber-800" },
+  "Artist Spotlight Series": { bg: "bg-purple-100", text: "text-purple-800" },
+  "Cultural Commentary": { bg: "bg-blue-100", text: "text-blue-800" },
+  "Street Style": { bg: "bg-green-100", text: "text-green-800" },
+};
+
+const DEMO_EVENTS: EditorialEvent[] = [
+  { id: "1", title: "May Spotlight: Naomi Asante", franchise: "Artist Spotlight Series", franchiseColor: "purple", date: "2026-05-01", status: "confirmed" },
+  { id: "2", title: "Sustainability Essay", franchise: "Cultural Commentary", franchiseColor: "blue", date: "2026-05-15", status: "confirmed" },
+  { id: "3", title: "London Spring Streets", franchise: "Street Style", franchiseColor: "green", date: "2026-05-20", venue: "London", status: "confirmed" },
+  { id: "4", title: "June Spotlight: TBC", franchise: "Artist Spotlight Series", franchiseColor: "purple", date: "2026-06-01", status: "tentative" },
+  { id: "5", title: "Tokyo Summer Streets", franchise: "Street Style", franchiseColor: "green", date: "2026-06-10", venue: "Tokyo", status: "tentative" },
+  { id: "6", title: "LFW SS27 Coverage", franchise: "Fashion Week Coverage", franchiseColor: "amber", date: "2026-09-12", venue: "London", status: "confirmed" },
+  { id: "7", title: "PFW AW26 Coverage", franchise: "Fashion Week Coverage", franchiseColor: "amber", date: "2026-03-02", venue: "Paris", status: "completed" },
+  { id: "8", title: "April Spotlight: Marco Rossi", franchise: "Artist Spotlight Series", franchiseColor: "purple", date: "2026-04-01", status: "completed" },
+];
 
 const MONTHS = [
   "January","February","March","April","May","June",
@@ -32,13 +51,6 @@ function getDaysInMonth(year: number, month: number) {
 function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
-
-const DEMO_PIECES: EditorialPiece[] = [
-  { id: "1", title: "Summer Style Guide", writer: "Emma R.", status: "editing",   deadline: "2026-04-15" },
-  { id: "2", title: "Profile: Designer X", writer: "Tom H.", status: "draft",     deadline: "2026-04-22" },
-  { id: "3", title: "Travel: Bali",        writer: "Sara K.", status: "pitch",    deadline: "2026-04-28" },
-  { id: "4", title: "Tech in Fashion",     writer: "James L.", status: "published", deadline: "2026-04-05" },
-];
 
 export default function EditorialCalendarPage() {
   const today = new Date();
@@ -57,9 +69,9 @@ export default function EditorialCalendarPage() {
   const isToday = (day: number) =>
     day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
 
-  function piecesForDay(day: number): EditorialPiece[] {
+  function eventsForDay(day: number): EditorialEvent[] {
     const ds = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return DEMO_PIECES.filter((p) => p.deadline === ds);
+    return DEMO_EVENTS.filter((e) => e.date === ds);
   }
 
   const cells: (number | null)[] = [
@@ -67,12 +79,14 @@ export default function EditorialCalendarPage() {
     ...Array.from({ length: getDaysInMonth(year, month) }, (_, i) => i + 1),
   ];
 
+  const uniqueFranchises = Object.keys(FRANCHISE_COLORS);
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
         <div>
           <h1 className="text-base font-semibold text-gray-900">Editorial Calendar</h1>
-          <p className="text-xs text-gray-500">Deadlines, drafts, and publication schedule</p>
+          <p className="text-xs text-gray-500">Events and deadlines by franchise</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={prevMonth} className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50">
@@ -88,13 +102,16 @@ export default function EditorialCalendarPage() {
       </div>
 
       <div className="flex-1 overflow-auto p-6">
-        {/* Legend */}
-        <div className="mb-3 flex flex-wrap items-center gap-3">
-          {(Object.entries(STATUS_STYLES) as [PieceStatus, typeof STATUS_STYLES[PieceStatus]][]).map(([status, s]) => (
-            <span key={status} className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${s.bg} ${s.text}`}>
-              {s.label}
-            </span>
-          ))}
+        {/* Franchise legend */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {uniqueFranchises.map((name) => {
+            const c = FRANCHISE_COLORS[name];
+            return (
+              <span key={name} className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${c.bg} ${c.text}`}>
+                {name}
+              </span>
+            );
+          })}
         </div>
 
         <div className="grid grid-cols-7 mb-1">
@@ -107,7 +124,7 @@ export default function EditorialCalendarPage() {
 
         <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-xl overflow-hidden border border-gray-200">
           {cells.map((day, idx) => {
-            const dayPieces = day ? piecesForDay(day) : [];
+            const dayEvents = day ? eventsForDay(day) : [];
             return (
               <div key={idx} className={`min-h-[110px] p-2 ${day ? "bg-white" : "bg-gray-50"}`}>
                 {day && (
@@ -118,15 +135,15 @@ export default function EditorialCalendarPage() {
                       {day}
                     </span>
                     <div className="mt-1 space-y-0.5">
-                      {dayPieces.map((p) => {
-                        const s = STATUS_STYLES[p.status];
+                      {dayEvents.map((ev) => {
+                        const fc = FRANCHISE_COLORS[ev.franchise] ?? { bg: "bg-gray-100", text: "text-gray-700" };
                         return (
                           <div
-                            key={p.id}
-                            title={`${p.title} — ${p.writer}`}
-                            className={`truncate rounded px-1 py-0.5 text-[10px] font-medium ${s.bg} ${s.text}`}
+                            key={ev.id}
+                            title={`${ev.title} · ${ev.franchise}${ev.venue ? ` · ${ev.venue}` : ""}`}
+                            className={`truncate rounded px-1 py-0.5 text-[10px] font-medium ${fc.bg} ${fc.text} ${ev.status === "tentative" ? "opacity-60" : ""}`}
                           >
-                            {p.title}
+                            {ev.title}
                           </div>
                         );
                       })}

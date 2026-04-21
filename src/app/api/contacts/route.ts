@@ -5,6 +5,13 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search') || ''
   const category = searchParams.get('category') || ''
+  const categories = searchParams.get('categories') || ''
+
+  const categoryFilter = categories
+    ? { category: { in: categories.split(',').map((c) => c.trim()).filter(Boolean) } }
+    : category && category !== 'all'
+    ? { category }
+    : {}
 
   const contacts = await prisma.contact.findMany({
     where: {
@@ -18,7 +25,7 @@ export async function GET(request: NextRequest) {
               ],
             }
           : {},
-        category && category !== 'all' ? { category } : {},
+        categoryFilter,
       ],
     },
     orderBy: { updatedAt: 'desc' },

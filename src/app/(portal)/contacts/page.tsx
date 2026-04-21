@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Search, Plus, Upload, Mail, Phone, Globe, AtSign, Building2, Tag, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Search, Plus, Upload, Mail, Phone, Globe, AtSign, Building2, Tag, X, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 
 type Contact = {
   id: string
@@ -44,16 +45,32 @@ const CATEGORY_COLORS: Record<string, string> = {
   crew: 'bg-gray-100 text-gray-700',
 }
 
+const FROM_FILTER_MAP: Record<string, string[]> = {
+  commercial: ['brand'],
+  production: ['photographer', 'stylist', 'crew'],
+  print: ['press', 'supplier'],
+}
+
 const EMPTY_FORM = {
   name: '', email: '', phone: '', company: '', role: '',
   category: 'brand', tags: '', instagram: '', website: '', notes: '',
 }
 
-export default function ContactsPage() {
+function ContactsPageInner() {
+  const searchParams = useSearchParams()
+  const fromParam = searchParams.get('from') || ''
+  const categoryParam = searchParams.get('category') || ''
+
+  const getInitialCategories = (): string[] => {
+    if (fromParam && FROM_FILTER_MAP[fromParam]) return FROM_FILTER_MAP[fromParam]
+    if (categoryParam && categoryParam !== 'all') return [categoryParam]
+    return []
+  }
+
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [activeCategory, setActiveCategory] = useState('all')
+  const [activeCategories, setActiveCategories] = useState<string[]>(getInitialCategories)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -64,17 +81,28 @@ export default function ContactsPage() {
     setLoading(true)
     const params = new URLSearchParams()
     if (search) params.set('search', search)
-    if (activeCategory !== 'all') params.set('category', activeCategory)
+    if (activeCategories.length === 1) params.set('category', activeCategories[0])
+    else if (activeCategories.length > 1) params.set('categories', activeCategories.join(','))
     const res = await fetch(`/api/contacts?${params}`)
     const data = await res.json()
     setContacts(Array.isArray(data) ? data : [])
     setLoading(false)
-  }, [search, activeCategory])
+  }, [search, activeCategories])
 
   useEffect(() => {
     const t = setTimeout(fetchContacts, 300)
     return () => clearTimeout(t)
   }, [fetchContacts])
+
+  function toggleCategory(value: string) {
+    if (value === 'all') {
+      setActiveCategories([])
+      return
+    }
+    setActiveCategories(prev =>
+      prev.includes(value) ? prev.filter(c => c !== value) : [...prev, value]
+    )
+  }
 
   async function handleSave() {
     if (!form.name.trim()) { setError('Name is required'); return }
@@ -132,13 +160,20 @@ export default function ContactsPage() {
     e.target.value = ''
   }
 
+  const contextLabel = fromParam
+    ? { commercial: 'Commercial contacts', production: 'Production crew', print: 'Print contacts' }[fromParam]
+    : null
+
   return (
     <div className="flex flex-col h-full min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Contacts Blackbook</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{contacts.length} contact{contacts.length !== 1 ? 's' : ''}</p>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {contextLabel && <span className="mr-2 text-amber-600 font-medium">{contextLabel} ·</span>}
+              {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
@@ -168,11 +203,17 @@ export default function ContactsPage() {
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
-          {CATEGORIES.map(cat => (
+          <button
+            onClick={() => toggleCategory('all')}
+            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${activeCategories.length === 0 ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          >
+            All
+          </button>
+          {CATEGORIES.slice(1).map(cat => (
             <button
               key={cat.value}
-              onClick={() => setActiveCategory(cat.value)}
-              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${activeCategory === cat.value ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              onClick={() => toggleCategory(cat.value)}
+              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${activeCategories.includes(cat.value) ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
               {cat.label}
             </button>
@@ -242,6 +283,14 @@ export default function ContactsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ContactsPage() {
+  return (
+    <Suspense fallback={<div className="flex h-full items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-gray-400" /></div>}>
+      <ContactsPageInner />
+    </Suspense>
   )
 }
 

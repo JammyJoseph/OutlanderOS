@@ -79,9 +79,10 @@ interface DashboardData {
   xero?: XeroData
 }
 
-type Tab = 'deals' | 'billing' | 'expenses' | 'cashflow'
+type Tab = 'overview' | 'deals' | 'billing' | 'expenses' | 'cashflow'
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
   { id: 'deals', label: 'Deals' },
   { id: 'billing', label: 'Billing' },
   { id: 'expenses', label: 'Expenses' },
@@ -606,10 +607,112 @@ function CashFlowTab({ xero, bt }: { xero?: XeroData; bt?: BillingTracker }) {
   )
 }
 
+function OverviewTab({ bt, xero }: { bt?: BillingTracker; xero?: XeroData }) {
+  const fmt = (n?: number | null, prefix = '£') =>
+    typeof n === 'number'
+      ? `${prefix}${Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+      : '—'
+
+  const billingRows = bt ? deriveBillingRows(bt, xero) : []
+  const paid = billingRows.filter(r => r.status === 'Paid').length
+  const pending = billingRows.filter(r => r.status === 'Pending' || r.status === 'Invoice Sent').length
+  const overdue = billingRows.filter(r => r.status === 'Overdue' || r.status === 'Chasing').length
+
+  const outstanding = xero?.invoices
+    ?.filter(inv => inv.status !== 'PAID' && inv.status !== 'VOIDED' && typeof inv.amountDue === 'number')
+    .reduce((s, inv) => s + (inv.amountDue ?? 0), 0) ?? null
+
+  const priorityItems = billingRows
+    .filter(r => r.status === 'Overdue' || r.status === 'Chasing' || r.status === 'Invoice Sent')
+    .sort((a, b) => {
+      const order: Record<LineStatus, number> = { Overdue: 0, Chasing: 1, 'Invoice Sent': 2, Pending: 3, Paid: 4 }
+      return order[a.status] - order[b.status]
+    })
+    .slice(0, 5)
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: 'Booked Revenue', value: bt?.bookedRevenue ?? '—', cls: 'text-emerald-600' },
+          { label: 'Outstanding Invoices', value: outstanding !== null ? fmt(outstanding) : '—', cls: outstanding && outstanding > 0 ? 'text-amber-600' : 'text-gray-900' },
+          { label: 'Bank Balance (Xero)', value: xero?.connected && !xero.error ? fmt(xero.bankBalance) : '—', cls: (xero?.bankBalance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500' },
+          { label: 'Net Profit (Xero)', value: xero?.connected && !xero.error ? fmt(xero.netProfit) : '—', cls: (xero?.netProfit ?? 0) >= 0 ? 'text-[#D4A853]' : 'text-red-500' },
+        ].map(({ label, value, cls }) => (
+          <div key={label} className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1 truncate">{label}</p>
+            <p className={`font-mono text-xl font-bold truncate ${cls}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-4">
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 flex items-center gap-3">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-gray-400">Paid</p>
+            <p className="font-mono text-lg font-bold text-emerald-600">{paid}</p>
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 flex items-center gap-3">
+          <span className="h-2.5 w-2.5 rounded-full bg-amber-400 flex-shrink-0" />
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-gray-400">Pending</p>
+            <p className="font-mono text-lg font-bold text-amber-600">{pending}</p>
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 flex items-center gap-3">
+          <span className="h-2.5 w-2.5 rounded-full bg-red-500 flex-shrink-0" />
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-gray-400">Overdue</p>
+            <p className="font-mono text-lg font-bold text-red-500">{overdue}</p>
+          </div>
+        </div>
+      </div>
+
+      {priorityItems.length > 0 && (
+        <div>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Priority Items</p>
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  {['Client', 'IO#', 'Amount', 'Status', 'Action'].map(h => (
+                    <th key={h} className={`px-3 py-2.5 font-medium text-gray-500 text-left ${h === 'Amount' ? 'text-right' : ''}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {priorityItems.map((row, i) => (
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-3 py-2.5 font-medium text-gray-900 truncate max-w-[140px]">{row.client || '—'}</td>
+                    <td className="px-3 py-2.5 font-mono text-gray-500">{row.ioNumber || '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-800">{row.amount || '—'}</td>
+                    <td className="px-3 py-2.5"><StatusBadge status={row.status} /></td>
+                    <td className="px-3 py-2.5">
+                      {row.status === 'Overdue' && (
+                        <RemindQuinnButton client={row.client} ioNumber={row.ioNumber} />
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {billingRows.length === 0 && !bt && (
+        <p className="text-sm text-gray-500">Connect your billing tracker to see an overview.</p>
+      )}
+    </div>
+  )
+}
+
 function FinancePageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const activeTab = (searchParams.get('tab') as Tab) || 'deals'
+  const activeTab = (searchParams.get('tab') as Tab) || 'overview'
 
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -707,7 +810,8 @@ function FinancePageInner() {
 
         {loading ? (
           <SkeletonTable rows={8} />
-        ) : activeTab === 'expenses' ? <ExpensesTab xero={data?.xero} />
+        ) : activeTab === 'overview' ? <OverviewTab bt={data?.billingTracker} xero={data?.xero} />
+          : activeTab === 'expenses' ? <ExpensesTab xero={data?.xero} />
           : activeTab === 'cashflow' ? <CashFlowTab xero={data?.xero} bt={data?.billingTracker} />
           : !bt ? <p className="text-sm text-gray-500">No billing data available.</p>
           : bt.error ? <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"><AlertCircle className="h-4 w-4 shrink-0" />Failed to load billing tracker: {bt.error}</div>
