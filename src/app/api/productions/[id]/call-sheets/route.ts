@@ -7,11 +7,11 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const callSheets = await prisma.callSheet.findMany({
+    const sheets = await prisma.callSheet.findMany({
       where: { productionId: id },
       orderBy: { shootDate: "asc" },
     });
-    return NextResponse.json({ callSheets });
+    return NextResponse.json({ sheets });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
@@ -27,13 +27,13 @@ export async function POST(
     const sheet = await prisma.callSheet.create({
       data: {
         productionId: id,
+        status: "DRAFT",
         shootDate: new Date(body.shootDate),
         callTime: body.callTime || "08:00",
         location: body.location || {},
         schedule: body.schedule || [],
         crew: body.crew || [],
-        notes: body.notes || "",
-        status: body.status || "DRAFT",
+        notes: body.title ? JSON.stringify({ shootTitle: body.title }) : "",
       },
     });
     return NextResponse.json({ sheet });

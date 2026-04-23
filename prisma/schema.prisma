@@ -188,6 +188,7 @@ model CallSheet {
   id            String     @id @default(cuid())
   productionId  String
   production    Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  status        String     @default("DRAFT")
   shootDate     DateTime
   callTime      String
   location      Json
