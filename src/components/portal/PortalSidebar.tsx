@@ -50,7 +50,6 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
     items: [
       { label: "Overview", href: "/production", icon: LayoutDashboard },
       { label: "Briefs", href: "/production/briefs", icon: Clipboard },
-      { label: "Call Sheets", href: "/production/call-sheets", icon: Film },
     ],
   },
   print: {

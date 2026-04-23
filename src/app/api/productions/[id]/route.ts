@@ -16,6 +16,7 @@ export async function GET(
           orderBy: { shootDate: "asc" },
           select: {
             id: true,
+            status: true,
             shootDate: true,
             callTime: true,
             location: true,

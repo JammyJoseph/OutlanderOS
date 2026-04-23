@@ -40,6 +40,7 @@ export async function PUT(
   const body = await request.json();
   try {
     const updateData: Record<string, unknown> = {};
+    if (body.status !== undefined) updateData.status = body.status;
     if (body.shootDate !== undefined) updateData.shootDate = new Date(body.shootDate);
     if (body.callTime !== undefined) updateData.callTime = body.callTime;
     if (body.location !== undefined) updateData.location = body.location;
