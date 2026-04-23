@@ -20,6 +20,7 @@ export async function GET(
             callTime: true,
             location: true,
             notes: true,
+            status: true,
             distributedAt: true,
           },
         },

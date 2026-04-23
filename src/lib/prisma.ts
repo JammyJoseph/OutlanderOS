@@ -12,8 +12,25 @@ function createPrisma() {
   return new PrismaClient({ adapter })
 }
 
-const prisma = globalForPrisma.prisma || createPrisma()
+// Use a getter so the client is only instantiated when first accessed,
+// not at module load time (which would break builds without DATABASE_URL).
+let _prisma: PrismaClient | null = null
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    if (!_prisma) {
+      if (globalForPrisma.prisma) {
+        _prisma = globalForPrisma.prisma
+      } else {
+        _prisma = createPrisma()
+        if (process.env.NODE_ENV !== 'production') {
+          globalForPrisma.prisma = _prisma
+        }
+      }
+    }
+    const value = (_prisma as unknown as Record<string | symbol, unknown>)[prop]
+    return typeof value === 'function' ? value.bind(_prisma) : value
+  },
+})
 
 export default prisma

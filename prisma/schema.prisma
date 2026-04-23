@@ -184,18 +184,25 @@ enum ProductionStatus {
   ARCHIVED
 }
 
+enum CallSheetStatus {
+  DRAFT
+  SAVED
+  PUBLISHED
+}
+
 model CallSheet {
-  id            String     @id @default(cuid())
+  id            String          @id @default(cuid())
   productionId  String
-  production    Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  production    Production      @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  status        CallSheetStatus @default(DRAFT)
   shootDate     DateTime
-  callTime      String
+  callTime      String          @default("08:00")
   location      Json
   schedule      Json
   crew          Json
   notes         String?
   distributedAt DateTime?
-  createdAt     DateTime   @default(now())
+  createdAt     DateTime        @default(now())
 }
 
 model ProductionExpense {

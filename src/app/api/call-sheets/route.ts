@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
         schedule: body.schedule || [],
         crew: body.crew || [],
         notes: body.notes || "",
+        status: body.status || "DRAFT",
       },
     });
     return NextResponse.json({ sheet });
