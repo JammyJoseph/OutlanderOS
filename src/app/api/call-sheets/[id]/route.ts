@@ -46,6 +46,7 @@ export async function PUT(
     if (body.schedule !== undefined) updateData.schedule = body.schedule;
     if (body.crew !== undefined) updateData.crew = body.crew;
     if (body.notes !== undefined) updateData.notes = body.notes;
+    if (body.status !== undefined) updateData.status = body.status;
     if (body.distributedAt !== undefined) {
       updateData.distributedAt = body.distributedAt ? new Date(body.distributedAt) : null;
     }

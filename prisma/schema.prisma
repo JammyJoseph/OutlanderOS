@@ -194,6 +194,7 @@ model CallSheet {
   schedule      Json
   crew          Json
   notes         String?
+  status        String     @default("DRAFT")
   distributedAt DateTime?
   createdAt     DateTime   @default(now())
 }
