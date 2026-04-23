@@ -16,11 +16,11 @@ export async function GET(
           orderBy: { shootDate: "asc" },
           select: {
             id: true,
+            status: true,
             shootDate: true,
             callTime: true,
             location: true,
             notes: true,
-            status: true,
             distributedAt: true,
           },
         },
