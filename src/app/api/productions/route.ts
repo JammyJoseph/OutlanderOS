@@ -7,7 +7,7 @@ export async function GET() {
       include: {
         campaign: { include: { client: true } },
         crew: { include: { contact: true } },
-        callSheets: { select: { id: true, shootDate: true } },
+        _count: { select: { callSheets: true } },
       },
       orderBy: { createdAt: "desc" },
     });
