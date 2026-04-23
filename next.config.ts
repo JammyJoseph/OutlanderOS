@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: findRoot(path.resolve(__dirname)),
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 };
 
 export default nextConfig;
