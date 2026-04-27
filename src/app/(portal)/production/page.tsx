@@ -35,10 +35,13 @@ interface Production {
   callSheets: { id: string; shootDate: string }[];
 }
 
-function getNextShootDate(callSheets: { shootDate: string }[], shootDates: string[]): Date | null {
+function getNextShootDate(
+  callSheets: { shootDate: string }[] | undefined,
+  shootDates: string[] | undefined
+): Date | null {
   const allDates = [
-    ...callSheets.map((cs) => new Date(cs.shootDate)),
-    ...shootDates.map((d) => new Date(d)),
+    ...(callSheets ?? []).map((cs) => new Date(cs.shootDate)),
+    ...(shootDates ?? []).map((d) => new Date(d)),
   ].filter((d) => isFuture(d));
   if (!allDates.length) return null;
   return allDates.sort((a, b) => a.getTime() - b.getTime())[0];
@@ -53,8 +56,9 @@ export default function ProductionDashboard() {
 
   useEffect(() => {
     fetch("/api/productions")
-      .then((r) => r.json())
-      .then((d) => setProductions(d.productions || []))
+      .then((r) => (r.ok ? r.json() : { productions: [] }))
+      .then((d) => setProductions(Array.isArray(d?.productions) ? d.productions : []))
+      .catch(() => setProductions([]))
       .finally(() => setLoading(false));
   }, []);
 
@@ -209,7 +213,9 @@ export default function ProductionDashboard() {
 }
 
 function ProjectCard({ production: p }: { production: Production }) {
-  const nextShoot = getNextShootDate(p.callSheets, p.shootDates);
+  const callSheets = p.callSheets ?? [];
+  const shootDates = p.shootDates ?? [];
+  const nextShoot = getNextShootDate(callSheets, shootDates);
   const style = STATUS_STYLES[p.status] || STATUS_STYLES.DRAFT;
   const clientName = p.campaign?.client?.name ?? null;
 
@@ -240,7 +246,7 @@ function ProjectCard({ production: p }: { production: Production }) {
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span className="flex items-center gap-1.5">
             <ClipboardList size={13} />
-            {p.callSheets.length} call sheet{p.callSheets.length !== 1 ? "s" : ""}
+            {callSheets.length} call sheet{callSheets.length !== 1 ? "s" : ""}
           </span>
           {nextShoot ? (
             <span className="flex items-center gap-1.5">

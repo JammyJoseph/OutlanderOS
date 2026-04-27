@@ -7,11 +7,11 @@ export async function GET() {
       include: {
         campaign: { include: { client: true } },
         crew: { include: { contact: true } },
-        _count: { select: { callSheets: true } },
+        callSheets: { select: { id: true, shootDate: true } },
       },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json({ productions });
+    return NextResponse.json({ productions: productions ?? [] });
   } catch {
     return NextResponse.json({ productions: [] });
   }
