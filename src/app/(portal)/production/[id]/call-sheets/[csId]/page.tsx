@@ -20,6 +20,7 @@ import {
   Cloud,
   Check,
   Share2,
+  Printer,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -704,24 +705,31 @@ function FinalView({
   onCopy: () => void; productionId: string;
 }) {
   return (
-    <div className="min-h-screen bg-[#F9F9F7]">
-      <div className="max-w-4xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen bg-[#F9F9F7] print:bg-white">
+      <div className="max-w-4xl mx-auto px-6 py-10 print:px-0 print:py-0 print:max-w-none">
+        <div className="flex items-center justify-between mb-6 print:hidden">
           <Link
             href={`/production/${productionId}`}
             className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
           >
             <ArrowLeft size={15} />
-            {sheet.production.title}
+            Back to Project
           </Link>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <Printer size={13} />
+              Print
+            </button>
             <button
               onClick={onRevert}
               disabled={saving}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-60"
             >
               {saving ? <Loader2 size={13} className="animate-spin" /> : <Edit2 size={13} />}
-              Edit
+              Back to Editor
             </button>
             <button
               onClick={onCopy}
@@ -733,9 +741,12 @@ function FinalView({
           </div>
         </div>
 
-        <div className="mb-4 flex items-center gap-2">
+        <div className="mb-4 flex items-center gap-2 print:hidden">
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
             Published
+          </span>
+          <span className="text-xs text-gray-400">
+            {sheet.production.title}
           </span>
         </div>
 
@@ -775,9 +786,9 @@ function CallSheetDocument({
     : "—";
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden print:rounded-none print:border-0 print:shadow-none">
       {/* Call sheet header */}
-      <div className="bg-gray-900 text-white px-8 py-6">
+      <div className="bg-gray-900 text-white px-8 py-6 print:bg-white print:text-gray-900 print:border-b-2 print:border-gray-900">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-semibold">{shootTitle || "Call Sheet"}</h1>

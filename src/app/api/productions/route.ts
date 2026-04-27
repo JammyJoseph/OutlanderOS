@@ -7,32 +7,44 @@ export async function GET() {
       include: {
         campaign: { include: { client: true } },
         crew: { include: { contact: true } },
-        _count: { select: { callSheets: true } },
+        callSheets: {
+          select: { id: true, shootDate: true, status: true, callTime: true, location: true },
+        },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json({ productions });
-  } catch {
-    return NextResponse.json({ productions: [] });
+  } catch (e) {
+    return NextResponse.json({ productions: [], error: String(e) });
   }
 }
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
   try {
+    const data: Record<string, unknown> = {
+      title: body.title,
+      brief: body.brief || null,
+      description: body.description || null,
+      figmaUrl: body.figmaUrl || null,
+      clientName: body.clientName || body.client || null,
+      status: body.status || "DRAFT",
+      budgetTotal: body.budgetTotal != null ? Number(body.budgetTotal) : null,
+    };
+    if (Array.isArray(body.shootDates) && body.shootDates.length > 0) {
+      data.shootDates = body.shootDates
+        .filter((d: string) => d)
+        .map((d: string) => new Date(d));
+    }
+    if (body.campaignId) data.campaignId = body.campaignId;
+    if (body.leadId) data.leadId = body.leadId;
+
     const production = await prisma.production.create({
-      data: {
-        title: body.title,
-        brief: body.brief || "",
-        campaignId: body.campaignId || null,
-        budgetTotal: body.budgetTotal || null,
-        marginTarget: body.marginTarget || null,
-        leadId: body.leadId || null,
-      },
+      data: data as never,
       include: {
         campaign: { include: { client: true } },
         crew: { include: { contact: true } },
-        callSheets: { select: { id: true, shootDate: true } },
+        callSheets: { select: { id: true, shootDate: true, status: true, callTime: true, location: true } },
       },
     });
     return NextResponse.json({ production });

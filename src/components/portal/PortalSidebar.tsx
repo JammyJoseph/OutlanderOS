@@ -49,7 +49,8 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
     title: "Production",
     items: [
       { label: "Overview", href: "/production", icon: LayoutDashboard },
-      { label: "Briefs", href: "/production/briefs", icon: Clipboard },
+      { label: "All Projects", href: "/production?view=projects", icon: Film },
+      { label: "Calendar", href: "/production?view=calendar", icon: Calendar },
     ],
   },
   print: {

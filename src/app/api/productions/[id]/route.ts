@@ -44,12 +44,28 @@ export async function PUT(
     const updateData: Record<string, unknown> = {};
     if (body.title !== undefined) updateData.title = body.title;
     if (body.brief !== undefined) updateData.brief = body.brief;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.figmaUrl !== undefined) updateData.figmaUrl = body.figmaUrl || null;
+    if (body.clientName !== undefined) updateData.clientName = body.clientName || null;
+    if (body.client !== undefined && body.clientName === undefined) {
+      updateData.clientName = body.client || null;
+    }
     if (body.status !== undefined) updateData.status = body.status;
-    if (body.budgetTotal !== undefined) updateData.budgetTotal = body.budgetTotal;
-    if (body.budgetActual !== undefined) updateData.budgetActual = body.budgetActual;
+    if (body.budgetTotal !== undefined) {
+      updateData.budgetTotal = body.budgetTotal === null || body.budgetTotal === ""
+        ? null
+        : Number(body.budgetTotal);
+    }
+    if (body.budgetActual !== undefined) {
+      updateData.budgetActual = body.budgetActual === null || body.budgetActual === ""
+        ? null
+        : Number(body.budgetActual);
+    }
     if (body.marginTarget !== undefined) updateData.marginTarget = body.marginTarget;
     if (body.shootDates !== undefined) {
-      updateData.shootDates = body.shootDates.map((d: string) => new Date(d));
+      updateData.shootDates = (body.shootDates ?? [])
+        .filter((d: string) => d)
+        .map((d: string) => new Date(d));
     }
     if (body.campaignId !== undefined) updateData.campaignId = body.campaignId || null;
     if (body.leadId !== undefined) updateData.leadId = body.leadId || null;
@@ -60,7 +76,17 @@ export async function PUT(
       include: {
         campaign: { include: { client: true } },
         crew: { include: { contact: true } },
-        callSheets: { select: { id: true, shootDate: true } },
+        callSheets: {
+          orderBy: { shootDate: "asc" },
+          select: {
+            id: true,
+            status: true,
+            shootDate: true,
+            callTime: true,
+            location: true,
+            notes: true,
+          },
+        },
       },
     });
     return NextResponse.json({ production });
