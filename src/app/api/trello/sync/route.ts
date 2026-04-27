@@ -17,7 +17,7 @@ export async function POST() {
     console.error("POST /api/trello/sync", err);
     const message = err instanceof Error ? err.message : "Failed to sync Trello board";
     return NextResponse.json(
-      { error: message, stages: [], members: [], boardUrl: "", fetchedAt: null },
+      { error: message, stages: [], members: [], labels: [], boardUrl: "", fetchedAt: null },
       { status: 500 }
     );
   }
