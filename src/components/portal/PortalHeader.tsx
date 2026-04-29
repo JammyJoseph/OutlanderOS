@@ -28,6 +28,7 @@ export function PortalHeader() {
   const router = useRouter();
   const portalName = getPortalName(pathname);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -41,6 +42,13 @@ export function PortalHeader() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  useEffect(() => {
+    fetch("/api/notifications")
+      .then((r) => r.json())
+      .then((d) => setUnreadCount(d.unreadCount ?? 0))
+      .catch(() => setUnreadCount(0));
+  }, [pathname]);
+
   const breadcrumb = pathname.split("/").filter(Boolean);
 
   return (
@@ -48,10 +56,17 @@ export function PortalHeader() {
       {/* Left: Logo + breadcrumb */}
       <div className="flex items-center gap-3">
         <Link
-          href="/"
+          href="/me"
           className="text-sm font-bold text-gray-900 hover:text-[#D4A853] transition-colors"
         >
           Outlander<span className="text-[#D4A853]">OS</span>
+        </Link>
+        <span className="text-gray-300">/</span>
+        <Link
+          href="/me"
+          className="text-xs text-gray-500 hover:text-gray-800 transition-colors"
+        >
+          My Dashboard
         </Link>
         <span className="text-gray-300">/</span>
 
@@ -67,13 +82,13 @@ export function PortalHeader() {
 
           {dropdownOpen && (
             <div className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-white border border-gray-200 shadow-lg z-50 overflow-hidden">
-              {/* Back to Hub */}
+              {/* Back to My Dashboard */}
               <button
-                onClick={() => { router.push("/hub"); setDropdownOpen(false); }}
+                onClick={() => { router.push("/me"); setDropdownOpen(false); }}
                 className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 <LayoutGrid className="h-3.5 w-3.5 text-gray-400" />
-                ← Back to Hub
+                ← My Dashboard
               </button>
 
               <div className="h-px bg-gray-100" />
@@ -124,13 +139,25 @@ export function PortalHeader() {
           <MessageCircle className="h-4 w-4" />
         </Link>
 
-        <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
+        <Link
+          href="/me"
+          className="relative flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+          title="Notifications"
+        >
           <Bell className="h-4 w-4" />
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4A853] text-[10px] font-bold text-black">
-            3
-          </span>
-        </button>
+          {unreadCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#D4A853] px-1 text-[10px] font-bold text-black">
+              {unreadCount}
+            </span>
+          )}
+        </Link>
 
+        <Link
+          href="/me"
+          className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          My Dashboard
+        </Link>
         <Link
           href="/"
           className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"

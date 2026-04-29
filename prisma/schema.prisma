@@ -15,6 +15,11 @@ model User {
   name          String
   role          Role      @default(MEMBER)
   avatarUrl     String?
+  department       String?
+  avatar           String?
+  startDate        DateTime?
+  holidayAllowance Int      @default(25)
+  salary           Float?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -22,6 +27,54 @@ model User {
   campaigns       Campaign[]       @relation("CampaignCreator")
   productions     Production[]     @relation("ProductionLead")
   editorialPieces EditorialPiece[] @relation("Writer")
+  assignedTasks   Task[]           @relation("assignedTasks")
+  createdTasks    Task[]           @relation("createdTasks")
+  notifications   Notification[]
+  holidayRequests HolidayRequest[]
+}
+
+// ===== TASKS =====
+model Task {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  dueDate      DateTime?
+  status       String    @default("TODO") // TODO, IN_PROGRESS, DONE
+  priority     String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  portal       String?   // commercial, production, print, editorial, finance
+  link         String?   // deep link to related item
+  assignedTo   User      @relation("assignedTasks", fields: [assignedToId], references: [id])
+  assignedToId String
+  createdBy    User      @relation("createdTasks", fields: [createdById], references: [id])
+  createdById  String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ===== NOTIFICATIONS =====
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // task_assigned, deal_moved, deadline_approaching, callsheet_published, payment_received
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ===== HOLIDAY REQUESTS =====
+model HolidayRequest {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  startDate  DateTime
+  endDate    DateTime
+  type       String   @default("ANNUAL") // ANNUAL, SICK, PERSONAL, OTHER
+  status     String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy String?
+  notes      String?
+  createdAt  DateTime @default(now())
 }
 
 enum Role {
