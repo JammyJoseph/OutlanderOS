@@ -1,72 +1,475 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { User as UserIcon } from "lucide-react";
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Calendar, Mail, Building2, ShieldCheck, User as UserIcon, Pencil, X, Check } from 'lucide-react'
 
-interface MeUser {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  department?: string | null;
-  startDate?: string | null;
-  holidayAllowance?: number;
-  avatar?: string | null;
+type Me = {
+  id: string
+  email: string
+  name: string
+  role: 'ADMIN' | 'MEMBER'
+  avatarUrl: string | null
+  avatar: string | null
+  department: string | null
+  startDate: string | null
+  holidayAllowance: number
+  salary: number | null
+  createdAt: string
 }
 
-export default function MyProfilePage() {
-  const [me, setMe] = useState<MeUser | null>(null);
-  const [loading, setLoading] = useState(true);
+type TeamMember = {
+  id: string
+  email: string
+  name: string
+  role: 'ADMIN' | 'MEMBER'
+  avatarUrl: string | null
+  avatar: string | null
+  department: string | null
+  startDate: string | null
+  holidayAllowance: number
+  salary?: number | null
+  createdAt: string
+}
+
+const INPUT_CLS =
+  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#D4A853] focus:ring-2 focus:ring-amber-200/60'
+
+function getInitials(name: string): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/).slice(0, 2)
+  return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || '?'
+}
+
+function formatGBP(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return '—'
+  return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(amount)
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function avatarSrc(u: { avatar: string | null; avatarUrl: string | null }): string | null {
+  return u.avatar || u.avatarUrl || null
+}
+
+export default function ProfilePage() {
+  const [me, setMe] = useState<Me | null>(null)
+  const [team, setTeam] = useState<TeamMember[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editTarget, setEditTarget] = useState<TeamMember | null>(null)
+
+  const [form, setForm] = useState({
+    name: '',
+    department: '',
+    avatarUrl: '',
+    salary: '' as number | string,
+    holidayAllowance: 25 as number,
+    role: 'MEMBER' as 'ADMIN' | 'MEMBER',
+  })
 
   useEffect(() => {
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then((d) => setMe(d.user ?? null))
-      .finally(() => setLoading(false));
-  }, []);
+    void load()
+  }, [])
 
-  if (loading) return <div className="p-8 text-sm text-gray-400">Loading…</div>;
-  if (!me) return <div className="p-8 text-sm text-gray-400">Not signed in.</div>;
+  async function load() {
+    setLoading(true)
+    try {
+      const [meJson, usersJson] = await Promise.all([
+        fetch('/api/me').then((r) => (r.ok ? r.json() : { user: null })),
+        fetch('/api/users').then((r) => (r.ok ? r.json() : [])),
+      ])
+      const meUser: Me | null = meJson?.user ?? null
+      setMe(meUser)
+      setTeam(Array.isArray(usersJson) ? usersJson : [])
+      if (meUser) {
+        setForm({
+          name: meUser.name ?? '',
+          department: meUser.department ?? '',
+          avatarUrl: meUser.avatarUrl ?? meUser.avatar ?? '',
+          salary: meUser.salary ?? '',
+          holidayAllowance: meUser.holidayAllowance ?? 25,
+          role: meUser.role,
+        })
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      const payload: Record<string, unknown> = {
+        name: form.name,
+        department: form.department || null,
+        avatarUrl: form.avatarUrl || null,
+        avatar: form.avatarUrl || null,
+      }
+      if (me?.role === 'ADMIN') {
+        payload.salary = form.salary === '' ? null : Number(form.salary)
+        payload.holidayAllowance = Number(form.holidayAllowance)
+        payload.role = form.role
+      }
+      const res = await fetch('/api/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        setEditing(false)
+        await load()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-10">
+        <div className="rounded-2xl bg-white p-10 text-center text-sm text-gray-400 shadow-sm">Loading profile…</div>
+      </div>
+    )
+  }
+
+  if (!me) {
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-10">
+        <div className="rounded-2xl bg-white p-10 text-center text-sm text-gray-400 shadow-sm">
+          Could not load profile. <Link href="/login" className="text-amber-600 underline">Sign in</Link>
+        </div>
+      </div>
+    )
+  }
+
+  const isAdmin = me.role === 'ADMIN'
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
+    <div className="mx-auto max-w-5xl px-6 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-        <p className="text-sm text-gray-500 mt-1">Your details and team information</p>
+        <p className="mt-1 text-sm text-gray-500">Your details, role and team directory</p>
       </div>
 
-      <div className="card-apple p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-            <UserIcon className="h-8 w-8 text-amber-700" />
+      <div className="rounded-2xl bg-white p-8 shadow-sm border border-gray-100">
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex items-center gap-5">
+            <Avatar name={me.name} src={avatarSrc(me)} size={88} />
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-semibold text-gray-900">{me.name}</h2>
+                <RoleBadge role={me.role} />
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+                <span className="inline-flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {me.email}</span>
+                {me.department && <span className="inline-flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> {me.department}</span>}
+                {me.startDate && <span className="inline-flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> Since {formatDate(me.startDate)}</span>}
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="text-lg font-bold text-gray-900">{me.name}</div>
-            <div className="text-sm text-gray-500">{me.email}</div>
-          </div>
+          <button
+            onClick={() => setEditing((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+            {editing ? 'Cancel' : 'Edit'}
+          </button>
         </div>
 
-        <dl className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <dt className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Role</dt>
-            <dd className="text-gray-900">{me.role}</dd>
+        {editing ? (
+          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <Field label="Name">
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT_CLS} />
+            </Field>
+            <Field label="Department">
+              <input
+                value={form.department}
+                onChange={(e) => setForm({ ...form, department: e.target.value })}
+                placeholder="e.g. Editorial"
+                className={INPUT_CLS}
+              />
+            </Field>
+            <Field label="Avatar URL" wide>
+              <input
+                value={form.avatarUrl}
+                onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })}
+                placeholder="https://…"
+                className={INPUT_CLS}
+              />
+            </Field>
+            {isAdmin && (
+              <>
+                <Field label="Salary (£)">
+                  <input
+                    type="number"
+                    value={form.salary}
+                    onChange={(e) => setForm({ ...form, salary: e.target.value })}
+                    className={INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Holiday allowance (days)">
+                  <input
+                    type="number"
+                    value={form.holidayAllowance}
+                    onChange={(e) => setForm({ ...form, holidayAllowance: Number(e.target.value) })}
+                    className={INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Role">
+                  <select
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value as 'ADMIN' | 'MEMBER' })}
+                    className={INPUT_CLS}
+                  >
+                    <option value="MEMBER">Member</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </Field>
+              </>
+            )}
+            <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setEditing(false)}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={save}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#D4A853] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50"
+              >
+                <Check className="h-4 w-4" />
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
           </div>
-          <div>
-            <dt className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Department</dt>
-            <dd className="text-gray-900">{me.department ?? "—"}</dd>
+        ) : (
+          <div className="mt-8 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-3">
+            <Stat label="Email" value={me.email} icon={<Mail className="h-4 w-4" />} />
+            <Stat label="Department" value={me.department || '—'} icon={<Building2 className="h-4 w-4" />} />
+            <Stat label="Member since" value={formatDate(me.startDate ?? me.createdAt)} icon={<Calendar className="h-4 w-4" />} />
           </div>
-          <div>
-            <dt className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Start Date</dt>
-            <dd className="text-gray-900">
-              {me.startDate ? new Date(me.startDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "—"}
-            </dd>
+        )}
+
+        {isAdmin && !editing && (
+          <div className="mt-8 rounded-xl bg-amber-50/60 p-5 border border-amber-100/70">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-700">
+              <ShieldCheck className="h-3.5 w-3.5" /> Admin information
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-x-10 gap-y-3 sm:grid-cols-3">
+              <Stat label="Salary" value={formatGBP(me.salary)} />
+              <Stat label="Holiday allowance" value={`${me.holidayAllowance} days`} />
+              <Stat label="Role" value={me.role} />
+            </div>
           </div>
-          <div>
-            <dt className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Holiday Allowance</dt>
-            <dd className="text-gray-900">{me.holidayAllowance ?? 25} days</dd>
-          </div>
-        </dl>
+        )}
+      </div>
+
+      <div className="mt-10">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Team directory</h2>
+          <span className="text-xs text-gray-400">{team.length} {team.length === 1 ? 'member' : 'members'}</span>
+        </div>
+        <div className="mt-4 overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                <th className="px-5 py-3">Name</th>
+                <th className="px-5 py-3">Role</th>
+                <th className="px-5 py-3">Department</th>
+                <th className="px-5 py-3">Email</th>
+                <th className="px-5 py-3">Holiday</th>
+                {isAdmin && <th className="px-5 py-3 text-right">Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {team.length === 0 ? (
+                <tr><td colSpan={isAdmin ? 6 : 5} className="px-5 py-8 text-center text-gray-400">No team members yet.</td></tr>
+              ) : (
+                team.map((u) => (
+                  <tr key={u.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={u.name} src={avatarSrc(u)} size={32} />
+                        <span className="font-medium text-gray-900">{u.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3"><RoleBadge role={u.role} /></td>
+                    <td className="px-5 py-3 text-gray-600">{u.department || '—'}</td>
+                    <td className="px-5 py-3 text-gray-600">{u.email}</td>
+                    <td className="px-5 py-3 text-gray-600">{u.holidayAllowance} days</td>
+                    {isAdmin && (
+                      <td className="px-5 py-3 text-right">
+                        <button
+                          onClick={() => setEditTarget(u)}
+                          className="text-xs font-medium text-amber-700 hover:text-amber-900"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {editTarget && isAdmin && (
+        <EditUserModal
+          user={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={async () => {
+            setEditTarget(null)
+            await load()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function Field({ label, wide, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
+  return (
+    <div className={wide ? 'sm:col-span-2' : ''}>
+      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function Stat({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+        {icon}
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-medium text-gray-900">{value}</div>
+    </div>
+  )
+}
+
+function Avatar({ name, src, size }: { name: string; src: string | null; size: number }) {
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={name}
+        className="rounded-full object-cover ring-2 ring-white shadow-sm"
+        style={{ width: size, height: size }}
+      />
+    )
+  }
+  return (
+    <div
+      className="flex items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white font-semibold ring-2 ring-white shadow-sm"
+      style={{ width: size, height: size, fontSize: size * 0.36 }}
+    >
+      {getInitials(name)}
+    </div>
+  )
+}
+
+function RoleBadge({ role }: { role: 'ADMIN' | 'MEMBER' }) {
+  if (role === 'ADMIN') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800">
+        <ShieldCheck className="h-3 w-3" /> Admin
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-600">
+      <UserIcon className="h-3 w-3" /> Member
+    </span>
+  )
+}
+
+function EditUserModal({
+  user,
+  onClose,
+  onSaved,
+}: {
+  user: TeamMember
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [form, setForm] = useState({
+    name: user.name,
+    email: user.email,
+    department: user.department ?? '',
+    avatarUrl: user.avatarUrl ?? user.avatar ?? '',
+    salary: user.salary ?? '',
+    holidayAllowance: user.holidayAllowance,
+    role: user.role,
+    startDate: user.startDate ? user.startDate.slice(0, 10) : '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          department: form.department || null,
+          avatarUrl: form.avatarUrl || null,
+          avatar: form.avatarUrl || null,
+          salary: form.salary === '' ? null : Number(form.salary),
+          holidayAllowance: Number(form.holidayAllowance),
+          role: form.role,
+          startDate: form.startDate || null,
+        }),
+      })
+      if (res.ok) onSaved()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Edit {user.name}</h3>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Name"><input className={INPUT_CLS} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+          <Field label="Email"><input className={INPUT_CLS} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+          <Field label="Department"><input className={INPUT_CLS} value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} /></Field>
+          <Field label="Start date"><input type="date" className={INPUT_CLS} value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></Field>
+          <Field label="Avatar URL" wide><input className={INPUT_CLS} value={form.avatarUrl} onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })} /></Field>
+          <Field label="Salary (£)"><input type="number" className={INPUT_CLS} value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} /></Field>
+          <Field label="Holiday allowance"><input type="number" className={INPUT_CLS} value={form.holidayAllowance} onChange={(e) => setForm({ ...form, holidayAllowance: Number(e.target.value) })} /></Field>
+          <Field label="Role" wide>
+            <select className={INPUT_CLS} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as 'ADMIN' | 'MEMBER' })}>
+              <option value="MEMBER">Member</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </Field>
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button onClick={save} disabled={saving} className="rounded-xl bg-[#D4A853] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
       </div>
     </div>
-  );
+  )
 }
