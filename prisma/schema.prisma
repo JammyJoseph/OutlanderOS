@@ -432,3 +432,56 @@ model MediaPlanLineItem {
   deliveryStatus    String    @default("planned")
   sortOrder         Int       @default(0)
 }
+
+// ===== THINK TANK (Cultural Intelligence) =====
+model TrendSignal {
+  id          String   @id @default(cuid())
+  title       String
+  source      String
+  sourceUrl   String?
+  category    String
+  summary     String?
+  sentiment   String?
+  relevance   Int      @default(50)
+  trending    Boolean  @default(false)
+  tags        String[] @default([])
+  upvotes     Int      @default(0)
+  flagged     Boolean  @default(false)
+  aiAnalysis  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([source])
+  @@index([createdAt])
+}
+
+model BrandWatch {
+  id          String    @id @default(cuid())
+  name        String
+  category    String?
+  description String?
+  logoUrl     String?
+  keywords    String[]  @default([])
+  signalCount Int       @default(0)
+  heatScore   Int       @default(50)
+  trajectory  String    @default("stable")
+  lastChecked DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model TrendReport {
+  id          String   @id @default(cuid())
+  title       String
+  type        String
+  content     String
+  period      String?
+  brandId     String?
+  generatedBy String   @default("ai")
+  createdAt   DateTime @default(now())
+
+  @@index([type])
+  @@index([createdAt])
+}

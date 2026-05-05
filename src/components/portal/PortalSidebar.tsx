@@ -26,6 +26,9 @@ import {
   Receipt,
   Camera,
   Activity,
+  Sparkles,
+  Bookmark,
+  List,
 } from "lucide-react";
 
 type NavItem = {
@@ -70,6 +73,16 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Pipeline", href: "/editorial", icon: PenTool },
       { label: "Writers", href: "/editorial/writers", icon: Users },
       { label: "Calendar", href: "/editorial/calendar", icon: Calendar },
+    ],
+  },
+  "think-tank": {
+    title: "Think Tank",
+    items: [
+      { label: "Trend Radar", href: "/think-tank", icon: Activity },
+      { label: "Signal Log", href: "/think-tank/signals", icon: List },
+      { label: "Brand Watchlist", href: "/think-tank/brands", icon: Bookmark },
+      { label: "Reports", href: "/think-tank/reports", icon: Sparkles },
+      { label: "Settings", href: "/think-tank/settings", icon: Settings },
     ],
   },
   contacts: {

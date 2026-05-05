@@ -10,6 +10,7 @@ const PORTALS = [
   { name: "Production", href: "/production" },
   { name: "Print", href: "/print" },
   { name: "Editorial", href: "/editorial" },
+  { name: "Think Tank", href: "/think-tank" },
   { name: "Contacts", href: "/contacts" },
   { name: "Finance", href: "/finance", restricted: true },
   { name: "Admin", href: "/admin", restricted: true },
