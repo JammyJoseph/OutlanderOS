@@ -88,6 +88,41 @@ interface PrintIssue {
   printDate: string | null;
 }
 
+interface CulturalEvent {
+  id: string;
+  title: string;
+  date: string;
+  category: string;
+  location: string | null;
+  importance: number;
+}
+
+const CULTURAL_CATEGORY_STYLES: Record<string, { bg: string; text: string }> = {
+  fashion: { bg: "bg-amber-100", text: "text-amber-800" },
+  art: { bg: "bg-purple-100", text: "text-purple-800" },
+  film: { bg: "bg-blue-100", text: "text-blue-800" },
+  music: { bg: "bg-pink-100", text: "text-pink-800" },
+  design: { bg: "bg-teal-100", text: "text-teal-800" },
+  food: { bg: "bg-green-100", text: "text-green-800" },
+  awards: { bg: "bg-yellow-100", text: "text-yellow-800" },
+  culture: { bg: "bg-orange-100", text: "text-orange-800" },
+  sport: { bg: "bg-gray-100", text: "text-gray-800" },
+  brand: { bg: "bg-indigo-100", text: "text-indigo-800" },
+};
+
+function culturalRelativeDate(iso: string): string {
+  const date = new Date(iso);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+  const diff = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  if (diff > 0 && diff < 7) return `In ${diff} days`;
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 // ===== Helpers =====
 const PRIORITY_STYLES: Record<string, string> = {
   LOW: "bg-gray-100 text-gray-600",
@@ -192,6 +227,7 @@ export default function MeDashboard() {
   const [pipeline, setPipeline] = useState<PipelineSnapshot | null>(null);
   const [productions, setProductions] = useState<Production[]>([]);
   const [printIssues, setPrintIssues] = useState<PrintIssue[]>([]);
+  const [culturalEvents, setCulturalEvents] = useState<CulturalEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [taskFilter, setTaskFilter] = useState<"all" | "today" | "week" | "overdue">("all");
   const [showNewTask, setShowNewTask] = useState(false);
@@ -204,13 +240,14 @@ export default function MeDashboard() {
     let cancelled = false;
     async function load() {
       try {
-        const [meRes, tasksRes, notifRes, trelloRes, prodRes, printRes] = await Promise.all([
+        const [meRes, tasksRes, notifRes, trelloRes, prodRes, printRes, culturalRes] = await Promise.all([
           fetch("/api/me").then((r) => r.json()).catch(() => ({ user: null })),
           fetch("/api/tasks").then((r) => r.json()).catch(() => ({ tasks: [] })),
           fetch("/api/notifications").then((r) => r.json()).catch(() => ({ notifications: [] })),
           fetch("/api/trello").then((r) => r.json()).catch(() => null),
           fetch("/api/productions").then((r) => r.json()).catch(() => ({ productions: [] })),
           fetch("/api/print-issues").then((r) => r.json()).catch(() => ({ issues: [] })),
+          fetch("/api/cultural-calendar?upcoming=true&limit=5").then((r) => r.json()).catch(() => []),
         ]);
         if (cancelled) return;
         setMe(meRes?.user ?? null);
@@ -221,6 +258,7 @@ export default function MeDashboard() {
         setPipeline(trelloRes && Array.isArray(trelloRes.stages) ? trelloRes : null);
         setProductions(Array.isArray(prodRes?.productions) ? prodRes.productions : []);
         setPrintIssues(Array.isArray(printRes?.issues) ? printRes.issues : []);
+        setCulturalEvents(Array.isArray(culturalRes) ? culturalRes : []);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -734,6 +772,53 @@ export default function MeDashboard() {
                               · shoot {next.toLocaleDateString("en-GB", { month: "short", day: "numeric" })}
                             </span>
                           )}
+                        </div>
+                      </div>
+                      <ArrowRight className="h-3.5 w-3.5 text-gray-400" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </SectionCard>
+      </div>
+
+      {/* Cultural Pulse */}
+      <div className="mb-6">
+        <SectionCard
+          title="Cultural Pulse"
+          subtitle="Next 5 cultural moments to know about"
+          action={
+            <Link href="/think-tank/calendar" className="text-xs text-[#D4A853] font-semibold hover:underline">
+              See all →
+            </Link>
+          }
+        >
+          {culturalEvents.length === 0 ? (
+            <EmptyState
+              icon={<Sparkles className="h-5 w-5 text-gray-300" />}
+              title="No upcoming cultural events"
+              hint="Once seeded, fashion weeks, art fairs, and festivals will surface here."
+            />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {culturalEvents.map((ev) => {
+                const s = CULTURAL_CATEGORY_STYLES[ev.category] ?? CULTURAL_CATEGORY_STYLES.culture;
+                return (
+                  <li key={ev.id}>
+                    <Link
+                      href="/think-tank/calendar"
+                      className="flex items-center gap-3 py-2.5 px-1 hover:bg-gray-50 rounded-lg transition-colors"
+                    >
+                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize ${s.bg} ${s.text}`}>
+                        {ev.category}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-gray-900 truncate">{ev.title}</div>
+                        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-gray-500">
+                          <span className="font-medium text-gray-600">{culturalRelativeDate(ev.date)}</span>
+                          {ev.location && <span className="truncate">· {ev.location}</span>}
                         </div>
                       </div>
                       <ArrowRight className="h-3.5 w-3.5 text-gray-400" />

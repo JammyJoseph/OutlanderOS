@@ -81,6 +81,7 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Trend Radar", href: "/think-tank", icon: Activity },
       { label: "Signal Log", href: "/think-tank/signals", icon: List },
       { label: "Brand Watchlist", href: "/think-tank/brands", icon: Bookmark },
+      { label: "Cultural Calendar", href: "/think-tank/calendar", icon: Calendar },
       { label: "Reports", href: "/think-tank/reports", icon: Sparkles },
       { label: "Settings", href: "/think-tank/settings", icon: Settings },
     ],

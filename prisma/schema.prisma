@@ -484,3 +484,22 @@ model TrendReport {
   @@index([type])
   @@index([createdAt])
 }
+
+// ===== CULTURAL CALENDAR =====
+model CulturalEvent {
+  id          String    @id @default(cuid())
+  title       String
+  date        DateTime
+  endDate     DateTime?
+  category    String
+  subcategory String?
+  location    String?
+  description String?
+  source      String?
+  sourceUrl   String?
+  importance  Int       @default(50)
+  recurring   Boolean   @default(false)
+  tags        String[]  @default([])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
