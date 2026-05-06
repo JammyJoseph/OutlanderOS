@@ -1,0 +1,21 @@
+import { NextRequest, NextResponse } from "next/server";
+import { updateCheckItem } from "@/lib/trello";
+
+export const dynamic = "force-dynamic";
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string; itemId: string }> }
+) {
+  try {
+    const { id, itemId } = await params;
+    const body = await req.json();
+    const state = body?.state === "complete" ? "complete" : "incomplete";
+    const item = await updateCheckItem(id, itemId, state);
+    return NextResponse.json({ item });
+  } catch (err) {
+    console.error("PUT /api/trello/cards/[id]/checkitem/[itemId]", err);
+    const message = err instanceof Error ? err.message : "Failed to update checkitem";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

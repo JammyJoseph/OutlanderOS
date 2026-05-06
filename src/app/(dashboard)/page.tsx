@@ -127,7 +127,7 @@ export default function YearCalendarPage() {
 
       {/* Clock In CTA */}
       <div className="flex justify-center">
-        <Link href="/hub" className="btn-primary">
+        <Link href="/me" className="btn-primary">
           Clock In →
         </Link>
       </div>

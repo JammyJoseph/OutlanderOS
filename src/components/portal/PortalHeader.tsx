@@ -11,6 +11,7 @@ const PORTALS = [
   { name: "Production", href: "/production" },
   { name: "Print", href: "/print" },
   { name: "Editorial", href: "/editorial" },
+  { name: "Think Tank", href: "/think-tank" },
   { name: "Contacts", href: "/contacts" },
   { name: "Finance", href: "/finance", restricted: true },
   { name: "Admin", href: "/admin", restricted: true },
@@ -49,10 +50,17 @@ export function PortalHeader() {
       {/* Left: Logo + breadcrumb */}
       <div className="flex items-center gap-3">
         <Link
-          href="/"
+          href="/me"
           className="text-sm font-bold text-gray-900 hover:text-[#D4A853] transition-colors"
         >
           Outlander<span className="text-[#D4A853]">OS</span>
+        </Link>
+        <span className="text-gray-300">/</span>
+        <Link
+          href="/me"
+          className="text-xs text-gray-500 hover:text-gray-800 transition-colors"
+        >
+          My Dashboard
         </Link>
         <span className="text-gray-300">/</span>
 
@@ -68,13 +76,13 @@ export function PortalHeader() {
 
           {dropdownOpen && (
             <div className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-white border border-gray-200 shadow-lg z-50 overflow-hidden">
-              {/* Back to Hub */}
+              {/* Back to My Dashboard */}
               <button
-                onClick={() => { router.push("/hub"); setDropdownOpen(false); }}
+                onClick={() => { router.push("/me"); setDropdownOpen(false); }}
                 className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 <LayoutGrid className="h-3.5 w-3.5 text-gray-400" />
-                ← Back to Hub
+                ← My Dashboard
               </button>
 
               <div className="h-px bg-gray-100" />
@@ -127,6 +135,12 @@ export function PortalHeader() {
 
         <NotificationBell tone="dark" />
 
+        <Link
+          href="/me"
+          className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          My Dashboard
+        </Link>
         <Link
           href="/"
           className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"

@@ -26,6 +26,9 @@ import {
   Receipt,
   Camera,
   Activity,
+  Sparkles,
+  Bookmark,
+  List,
 } from "lucide-react";
 
 type NavItem = {
@@ -56,8 +59,12 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
   print: {
     title: "Print",
     items: [
-      { label: "Issues", href: "/print", icon: Newspaper },
-      { label: "Distribution", href: "/print/distribution", icon: Megaphone },
+      { label: "Overview", href: "/print", icon: LayoutDashboard },
+      { label: "Content Plan", href: "/print#content-plan", icon: PenTool },
+      { label: "Ad Tracker", href: "/print#ad-tracker", icon: Megaphone },
+      { label: "Flat Plan", href: "/print#flat-plan", icon: Newspaper },
+      { label: "Paid Features", href: "/print#paid-features", icon: DollarSign },
+      { label: "Distribution", href: "/print/distribution", icon: Camera },
     ],
   },
   editorial: {
@@ -66,6 +73,17 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Pipeline", href: "/editorial", icon: PenTool },
       { label: "Writers", href: "/editorial/writers", icon: Users },
       { label: "Calendar", href: "/editorial/calendar", icon: Calendar },
+    ],
+  },
+  "think-tank": {
+    title: "Think Tank",
+    items: [
+      { label: "Trend Radar", href: "/think-tank", icon: Activity },
+      { label: "Signal Log", href: "/think-tank/signals", icon: List },
+      { label: "Brand Watchlist", href: "/think-tank/brands", icon: Bookmark },
+      { label: "Cultural Calendar", href: "/think-tank/calendar", icon: Calendar },
+      { label: "Reports", href: "/think-tank/reports", icon: Sparkles },
+      { label: "Settings", href: "/think-tank/settings", icon: Settings },
     ],
   },
   contacts: {
@@ -130,10 +148,13 @@ export function PortalSidebar() {
         <ul className="space-y-0.5 px-2">
           {config.items.map((item) => {
             const Icon = item.icon;
-            const isActive =
-              item.href === `/${key}`
-                ? pathname === `/${key}` || (pathname === `/${key}/` && item.href === `/${key}`)
-                : pathname.startsWith(item.href.split("?")[0]) && item.href !== `/${key}`;
+            const cleanHref = item.href.split("?")[0].split("#")[0];
+            const hasHash = item.href.includes("#");
+            const isActive = hasHash
+              ? false
+              : cleanHref === `/${key}`
+                ? pathname === `/${key}` || pathname === `/${key}/`
+                : pathname.startsWith(cleanHref) && cleanHref !== `/${key}`;
 
             return (
               <li key={item.href}>

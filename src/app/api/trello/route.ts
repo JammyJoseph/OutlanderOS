@@ -21,7 +21,7 @@ export async function GET() {
     console.error("GET /api/trello", err);
     const message = err instanceof Error ? err.message : "Failed to fetch Trello board";
     return NextResponse.json(
-      { error: message, stages: [], members: [], boardUrl: "", fetchedAt: null },
+      { error: message, stages: [], members: [], labels: [], boardUrl: "", fetchedAt: null },
       { status: 500 }
     );
   }
