@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ===== AUTH & USERS =====
@@ -22,6 +21,7 @@ model User {
   campaigns       Campaign[]       @relation("CampaignCreator")
   productions     Production[]     @relation("ProductionLead")
   editorialPieces EditorialPiece[] @relation("Writer")
+  deadlines       Deadline[]       @relation("userDeadlines")
 }
 
 enum Role {
@@ -359,6 +359,29 @@ model MediaPlan {
   updatedAt    DateTime  @updatedAt
 
   lineItems MediaPlanLineItem[]
+}
+
+// ===== DEADLINES =====
+model Deadline {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  dueDate      DateTime
+  source       String
+  sourceRef    String?
+  sourceUrl    String?
+  type         String
+  status       String    @default("ACTIVE")
+  priority     String    @default("MEDIUM")
+  assignedTo   String
+  user         User      @relation("userDeadlines", fields: [assignedTo], references: [id])
+  createdBy    String?
+  emailFrom    String?
+  emailSnippet String?
+  completedAt  DateTime?
+  snoozedUntil DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model MediaPlanLineItem {

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { Bell, ChevronDown, MessageCircle, Lock, LayoutGrid } from "lucide-react";
+import { ChevronDown, MessageCircle, Lock, LayoutGrid } from "lucide-react";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 const PORTALS = [
   { name: "Commercial", href: "/commercial" },
@@ -124,12 +125,7 @@ export function PortalHeader() {
           <MessageCircle className="h-4 w-4" />
         </Link>
 
-        <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
-          <Bell className="h-4 w-4" />
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4A853] text-[10px] font-bold text-black">
-            3
-          </span>
-        </button>
+        <NotificationBell tone="dark" />
 
         <Link
           href="/"

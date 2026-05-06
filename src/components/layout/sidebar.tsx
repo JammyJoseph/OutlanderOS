@@ -17,11 +17,15 @@ import {
   FileBarChart,
   LayoutGrid,
   BookUser,
+  AlarmClock,
+  CheckSquare,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/hub", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/me", label: "Deadlines", icon: AlarmClock },
+  { href: "/tasks", label: "My Tasks", icon: CheckSquare },
   { href: "/activity", label: "Activity Log", icon: Activity },
   { href: "/office", label: "Ask OS", icon: Bot },
   { href: "/contacts", label: "Contacts", icon: BookUser },

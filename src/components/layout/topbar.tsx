@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, Mail } from "lucide-react";
+import { Search, Mail } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 export function Topbar() {
   const { data: session } = useSession();
@@ -47,12 +47,7 @@ export function Topbar() {
         </div>
 
         {/* Notifications */}
-        <button className="relative flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
-          <Bell className="h-4 w-4" />
-          <Badge className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4A853] p-0 text-[10px] font-bold text-black">
-            3
-          </Badge>
-        </button>
+        <NotificationBell />
 
         {/* User menu */}
         <DropdownMenu>
