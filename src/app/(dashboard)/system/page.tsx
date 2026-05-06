@@ -23,6 +23,7 @@ import {
   AlertCircle,
   ChevronRight,
 } from 'lucide-react'
+import { SyncHealthPanel } from '@/components/portal/SyncHealthPanel'
 
 interface DashboardData {
   connected?: {
@@ -429,6 +430,14 @@ export default function SystemPage() {
             </button>
           ))}
         </div>
+      </section>
+
+      {/* ── Section 4.5: Sync Engine ── */}
+      <section>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-5">
+          Sync Engine
+        </h2>
+        <SyncHealthPanel />
       </section>
 
       {/* ── Section 5: System Health ── */}

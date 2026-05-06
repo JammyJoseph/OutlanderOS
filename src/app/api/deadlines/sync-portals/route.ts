@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { fetchCards } from "@/lib/trello";
+import { getSyncEngine } from "@/lib/sync-engine";
 
 interface SyncResult {
   source: string;
@@ -242,6 +243,14 @@ export async function POST() {
         return NextResponse.json({ error: "No user found" }, { status: 500 });
       }
       userId = fallback.id;
+    }
+
+    // Also kick the engine's deadline sync so cross-references update
+    // and the auto-schedule timer is reset.
+    try {
+      await getSyncEngine().runOnce("deadlineSync");
+    } catch (err) {
+      console.warn("[sync-portals] engine deadlineSync failed:", err);
     }
 
     const results = await Promise.all([

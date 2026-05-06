@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import "@/lib/sync-engine-boot";
 
 const manrope = Manrope({
   subsets: ["latin"],

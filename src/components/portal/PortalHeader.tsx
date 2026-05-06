@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, MessageCircle, Lock, LayoutGrid } from "lucide-react";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { SyncIndicator } from "./SyncIndicator";
 
 const PORTALS = [
   { name: "Commercial", href: "/commercial" },
@@ -125,6 +126,7 @@ export function PortalHeader() {
 
       {/* Right: actions */}
       <div className="flex items-center gap-2">
+        <SyncIndicator />
         <Link
           href="/ask-os"
           className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-amber-50 hover:text-[#D4A853] transition-colors"

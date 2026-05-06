@@ -1,17 +1,26 @@
 import { NextResponse } from "next/server";
-import { buildSnapshot } from "@/lib/trello";
-import {
-  clearCachedSnapshot,
-  setCachedSnapshot,
-} from "@/lib/trello-cache";
+import { getCachedSnapshot } from "@/lib/trello-cache";
+import { getSyncEngine } from "@/lib/sync-engine";
 
 export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    clearCachedSnapshot();
-    const snapshot = await buildSnapshot();
-    setCachedSnapshot(snapshot);
+    const engine = getSyncEngine();
+    const result = await engine.runOnce("trello");
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.detail, stages: [], members: [], boardUrl: "", fetchedAt: null },
+        { status: 500 }
+      );
+    }
+    const snapshot = getCachedSnapshot();
+    if (!snapshot) {
+      return NextResponse.json(
+        { error: "no snapshot available", stages: [], members: [], boardUrl: "", fetchedAt: null },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ ...snapshot, cached: false, synced: true });
   } catch (err) {
     console.error("POST /api/trello/sync", err);

@@ -380,6 +380,51 @@ model EventGuest {
   checkedIn  Boolean  @default(false)
 }
 
+// ===== SYNC ENGINE =====
+model SyncStatus {
+  id             String    @id @default(cuid())
+  source         String    @unique
+  lastSyncAt     DateTime?
+  lastSuccessAt  DateTime?
+  nextSyncAt     DateTime?
+  intervalMs     Int
+  state          String    @default("idle") // idle | running | error | stale
+  lastError      String?
+  errorCount24h  Int       @default(0)
+  recordsSynced  Int       @default(0)
+  totalRuns      Int       @default(0)
+  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+}
+
+model SyncLog {
+  id          String   @id @default(cuid())
+  source      String
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  durationMs  Int?
+  ok          Boolean  @default(false)
+  recordCount Int      @default(0)
+  message     String?
+  meta        Json?
+
+  @@index([source, startedAt])
+}
+
+model CrossLink {
+  id        String   @id @default(cuid())
+  fromType  String
+  fromId    String
+  toType    String
+  toId      String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([fromType, fromId, toType, toId])
+  @@index([fromType, fromId])
+  @@index([toType, toId])
+}
+
 // ===== INTELLIGENCE ENGINE =====
 model IntelligenceLog {
   id         String    @id @default(cuid())
@@ -426,15 +471,24 @@ model Deadline {
   type         String
   status       String    @default("ACTIVE")
   priority     String    @default("MEDIUM")
-  assignedTo   String
-  user         User      @relation("userDeadlines", fields: [assignedTo], references: [id])
+  category     String?
+  assignedTo   String?
+  user         User?     @relation("userDeadlines", fields: [assignedTo], references: [id])
   createdBy    String?
   emailFrom    String?
   emailSnippet String?
+  threadId     String?
+  linkedType   String?
+  linkedId     String?
+  rawData      Json?
   completedAt  DateTime?
   snoozedUntil DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  @@unique([source, sourceRef])
+  @@index([dueDate])
+  @@index([status])
 }
 
 model MediaPlanLineItem {
