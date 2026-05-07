@@ -379,3 +379,35 @@ model MediaPlanLineItem {
   deliveryStatus    String    @default("planned")
   sortOrder         Int       @default(0)
 }
+
+// ===== INSTAGRAM CONTENT TRACKER =====
+model InstagramPost {
+  id             String   @id @default(cuid())
+  igId           String   @unique
+  igAccountId    String
+  caption        String?
+  mediaType      String
+  mediaUrl       String?
+  thumbnailUrl   String?
+  permalink      String?
+  timestamp      DateTime
+  likeCount      Int      @default(0)
+  commentCount   Int      @default(0)
+  reachCount     Int      @default(0)
+  savesCount     Int      @default(0)
+  sharesCount    Int      @default(0)
+  viewsCount     Int      @default(0)
+  engagementRate Float    @default(0)
+  brands         String[] @default([])
+  postType       String   @default("UNCLASSIFIED")
+  campaignId     String?
+  campaignName   String?
+  notes          String?
+  lastSynced     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([igAccountId])
+  @@index([timestamp])
+  @@index([postType])
+}
