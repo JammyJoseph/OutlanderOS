@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ===== AUTH & USERS =====
@@ -15,6 +14,11 @@ model User {
   name          String
   role          Role      @default(MEMBER)
   avatarUrl     String?
+  department       String?
+  avatar           String?
+  startDate        DateTime?
+  holidayAllowance Int      @default(25)
+  salary           Float?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -22,6 +26,55 @@ model User {
   campaigns       Campaign[]       @relation("CampaignCreator")
   productions     Production[]     @relation("ProductionLead")
   editorialPieces EditorialPiece[] @relation("Writer")
+  deadlines       Deadline[]       @relation("userDeadlines")
+  assignedTasks   Task[]           @relation("assignedTasks")
+  createdTasks    Task[]           @relation("createdTasks")
+  notifications   Notification[]
+  holidayRequests HolidayRequest[]
+}
+
+// ===== TASKS =====
+model Task {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  dueDate      DateTime?
+  status       String    @default("TODO") // TODO, IN_PROGRESS, DONE
+  priority     String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  portal       String?   // commercial, production, print, editorial, finance
+  link         String?   // deep link to related item
+  assignedTo   User      @relation("assignedTasks", fields: [assignedToId], references: [id])
+  assignedToId String
+  createdBy    User      @relation("createdTasks", fields: [createdById], references: [id])
+  createdById  String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ===== NOTIFICATIONS =====
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // task_assigned, deal_moved, deadline_approaching, callsheet_published, payment_received
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ===== HOLIDAY REQUESTS =====
+model HolidayRequest {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  startDate  DateTime
+  endDate    DateTime
+  type       String   @default("ANNUAL") // ANNUAL, SICK, PERSONAL, OTHER
+  status     String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy String?
+  notes      String?
+  createdAt  DateTime @default(now())
 }
 
 enum Role {
@@ -327,6 +380,51 @@ model EventGuest {
   checkedIn  Boolean  @default(false)
 }
 
+// ===== SYNC ENGINE =====
+model SyncStatus {
+  id             String    @id @default(cuid())
+  source         String    @unique
+  lastSyncAt     DateTime?
+  lastSuccessAt  DateTime?
+  nextSyncAt     DateTime?
+  intervalMs     Int
+  state          String    @default("idle") // idle | running | error | stale
+  lastError      String?
+  errorCount24h  Int       @default(0)
+  recordsSynced  Int       @default(0)
+  totalRuns      Int       @default(0)
+  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+}
+
+model SyncLog {
+  id          String   @id @default(cuid())
+  source      String
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  durationMs  Int?
+  ok          Boolean  @default(false)
+  recordCount Int      @default(0)
+  message     String?
+  meta        Json?
+
+  @@index([source, startedAt])
+}
+
+model CrossLink {
+  id        String   @id @default(cuid())
+  fromType  String
+  fromId    String
+  toType    String
+  toId      String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([fromType, fromId, toType, toId])
+  @@index([fromType, fromId])
+  @@index([toType, toId])
+}
+
 // ===== INTELLIGENCE ENGINE =====
 model IntelligenceLog {
   id         String    @id @default(cuid())
@@ -359,6 +457,38 @@ model MediaPlan {
   updatedAt    DateTime  @updatedAt
 
   lineItems MediaPlanLineItem[]
+}
+
+// ===== DEADLINES =====
+model Deadline {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  dueDate      DateTime
+  source       String
+  sourceRef    String?
+  sourceUrl    String?
+  type         String
+  status       String    @default("ACTIVE")
+  priority     String    @default("MEDIUM")
+  category     String?
+  assignedTo   String?
+  user         User?     @relation("userDeadlines", fields: [assignedTo], references: [id])
+  createdBy    String?
+  emailFrom    String?
+  emailSnippet String?
+  threadId     String?
+  linkedType   String?
+  linkedId     String?
+  rawData      Json?
+  completedAt  DateTime?
+  snoozedUntil DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([source, sourceRef])
+  @@index([dueDate])
+  @@index([status])
 }
 
 model MediaPlanLineItem {
@@ -410,4 +540,76 @@ model InstagramPost {
   @@index([igAccountId])
   @@index([timestamp])
   @@index([postType])
+}
+
+// ===== THINK TANK (Cultural Intelligence) =====
+model TrendSignal {
+  id          String   @id @default(cuid())
+  title       String
+  source      String
+  sourceUrl   String?
+  category    String
+  summary     String?
+  sentiment   String?
+  relevance   Int      @default(50)
+  trending    Boolean  @default(false)
+  tags        String[] @default([])
+  upvotes     Int      @default(0)
+  flagged     Boolean  @default(false)
+  aiAnalysis  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([source])
+  @@index([createdAt])
+}
+
+model BrandWatch {
+  id          String    @id @default(cuid())
+  name        String
+  category    String?
+  description String?
+  logoUrl     String?
+  keywords    String[]  @default([])
+  signalCount Int       @default(0)
+  heatScore   Int       @default(50)
+  trajectory  String    @default("stable")
+  lastChecked DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model TrendReport {
+  id          String   @id @default(cuid())
+  title       String
+  type        String
+  content     String
+  period      String?
+  brandId     String?
+  generatedBy String   @default("ai")
+  createdAt   DateTime @default(now())
+
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ===== CULTURAL CALENDAR =====
+model CulturalEvent {
+  id          String    @id @default(cuid())
+  title       String
+  date        DateTime
+  endDate     DateTime?
+  category    String
+  subcategory String?
+  location    String?
+  description String?
+  source      String?
+  sourceUrl   String?
+  importance  Int       @default(50)
+  recurring   Boolean   @default(false)
+  tags        String[]  @default([])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

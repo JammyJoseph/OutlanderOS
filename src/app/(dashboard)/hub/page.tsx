@@ -12,6 +12,7 @@ import {
   Shield,
   Bot,
   Lock,
+  Sparkles,
 } from 'lucide-react'
 
 interface PortalStats {
@@ -64,6 +65,17 @@ const PORTALS = [
     color: 'text-green-600',
     bg: 'bg-green-50',
     border: 'border-green-100',
+    statKey: null,
+    statLabel: null,
+  },
+  {
+    name: 'Think Tank',
+    description: 'Cultural intelligence & trend radar',
+    href: '/think-tank',
+    icon: Sparkles,
+    color: 'text-[#7B5BD6]',
+    bg: 'bg-[#7B5BD6]/10',
+    border: 'border-[#7B5BD6]/20',
     statKey: null,
     statLabel: null,
   },
