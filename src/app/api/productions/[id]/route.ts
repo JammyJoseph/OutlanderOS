@@ -25,6 +25,12 @@ export async function GET(
           },
         },
         expenses: { orderBy: { createdAt: "asc" } },
+        budgetItems: { orderBy: [{ category: "asc" }, { sortOrder: "asc" }] },
+        productionTasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+        teamMembers: { orderBy: [{ status: "desc" }, { createdAt: "asc" }] },
+        creativeAssets: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+        scheduleBlocks: { orderBy: [{ shootDay: "asc" }, { time: "asc" }] },
+        prodDeliverables: { orderBy: [{ status: "asc" }, { createdAt: "asc" }] },
       },
     });
     if (!production) return NextResponse.json({ error: "Not found" }, { status: 404 });

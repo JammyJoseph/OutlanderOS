@@ -8,19 +8,19 @@ datasource db {
 
 // ===== AUTH & USERS =====
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  name          String
-  role          Role      @default(MEMBER)
-  avatarUrl     String?
+  id               String    @id @default(cuid())
+  email            String    @unique
+  password         String
+  name             String
+  role             Role      @default(MEMBER)
+  avatarUrl        String?
   department       String?
   avatar           String?
   startDate        DateTime?
-  holidayAllowance Int      @default(25)
+  holidayAllowance Int       @default(25)
   salary           Float?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   contacts        Contact[]
   campaigns       Campaign[]       @relation("CampaignCreator")
@@ -41,8 +41,8 @@ model Task {
   dueDate      DateTime?
   status       String    @default("TODO") // TODO, IN_PROGRESS, DONE
   priority     String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
-  portal       String?   // commercial, production, print, editorial, finance
-  link         String?   // deep link to related item
+  portal       String? // commercial, production, print, editorial, finance
+  link         String? // deep link to related item
   assignedTo   User      @relation("assignedTasks", fields: [assignedToId], references: [id])
   assignedToId String
   createdBy    User      @relation("createdTasks", fields: [createdById], references: [id])
@@ -56,7 +56,7 @@ model Notification {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  type      String   // task_assigned, deal_moved, deadline_approaching, callsheet_published, payment_received
+  type      String // task_assigned, deal_moved, deadline_approaching, callsheet_published, payment_received
   message   String
   link      String?
   read      Boolean  @default(false)
@@ -108,13 +108,13 @@ model Contact {
 
 // ===== COMMERCIAL =====
 model Client {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   name          String
   industry      String?
   brandColor    String?
   xeroContactId String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   campaigns  Campaign[]
   printPages PrintPage[]
@@ -228,6 +228,99 @@ model Production {
   callSheets CallSheet[]
   expenses   ProductionExpense[]
   crew       ProductionCrew[]
+
+  budgetItems      BudgetLineItem[]        @relation("productionBudget")
+  productionTasks  ProductionTask[]        @relation("productionTasks")
+  teamMembers      ProductionTeamMember[]  @relation("productionTeam")
+  creativeAssets   CreativeAsset[]         @relation("productionCreative")
+  scheduleBlocks   ScheduleBlock[]         @relation("productionSchedule")
+  prodDeliverables ProductionDeliverable[] @relation("productionDeliverables")
+}
+
+model BudgetLineItem {
+  id           String     @id @default(cuid())
+  productionId String
+  production   Production @relation("productionBudget", fields: [productionId], references: [id], onDelete: Cascade)
+  category     String
+  description  String
+  budgeted     Float      @default(0)
+  actual       Float      @default(0)
+  notes        String?
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model ProductionTask {
+  id           String     @id @default(cuid())
+  productionId String
+  production   Production @relation("productionTasks", fields: [productionId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  owner        String?
+  dueDate      DateTime?
+  status       String     @default("LOCKED")
+  dependsOn    String?
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model ProductionTeamMember {
+  id           String     @id @default(cuid())
+  productionId String
+  production   Production @relation("productionTeam", fields: [productionId], references: [id], onDelete: Cascade)
+  name         String
+  role         String
+  email        String?
+  phone        String?
+  rate         Float?
+  ratePer      String?
+  status       String     @default("SUGGESTED")
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model CreativeAsset {
+  id           String     @id @default(cuid())
+  productionId String
+  production   Production @relation("productionCreative", fields: [productionId], references: [id], onDelete: Cascade)
+  type         String
+  title        String
+  url          String?
+  description  String?
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model ScheduleBlock {
+  id           String     @id @default(cuid())
+  productionId String
+  production   Production @relation("productionSchedule", fields: [productionId], references: [id], onDelete: Cascade)
+  shootDay     Int        @default(1)
+  time         String
+  activity     String
+  location     String?
+  notes        String?
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model ProductionDeliverable {
+  id           String     @id @default(cuid())
+  productionId String
+  production   Production @relation("productionDeliverables", fields: [productionId], references: [id], onDelete: Cascade)
+  type         String
+  title        String
+  status       String     @default("AWAITING")
+  dueDate      DateTime?
+  url          String?
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 enum ProductionStatus {
@@ -301,15 +394,15 @@ model PrintIssue {
 }
 
 model PrintPage {
-  id         String      @id @default(cuid())
+  id         String     @id @default(cuid())
   issueId    String
-  issue      PrintIssue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issue      PrintIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
   pageNumber Int
   type       String
   clientId   String?
-  client     Client?     @relation(fields: [clientId], references: [id])
+  client     Client?    @relation(fields: [clientId], references: [id])
   assignedTo String?
-  status     String      @default("planned")
+  status     String     @default("planned")
   contentUrl String?
 }
 
@@ -353,17 +446,17 @@ model EditorialNote {
 
 // ===== EVENTS =====
 model Event {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   title     String
   type      String
   date      DateTime
   venue     String?
   capacity  Int?
-  rsvpCount Int       @default(0)
-  status    String    @default("planning")
+  rsvpCount Int      @default(0)
+  status    String   @default("planning")
   budget    Float?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   guests EventGuest[]
 }
@@ -382,29 +475,29 @@ model EventGuest {
 
 // ===== SYNC ENGINE =====
 model SyncStatus {
-  id             String    @id @default(cuid())
-  source         String    @unique
-  lastSyncAt     DateTime?
-  lastSuccessAt  DateTime?
-  nextSyncAt     DateTime?
-  intervalMs     Int
-  state          String    @default("idle") // idle | running | error | stale
-  lastError      String?
-  errorCount24h  Int       @default(0)
-  recordsSynced  Int       @default(0)
-  totalRuns      Int       @default(0)
-  updatedAt      DateTime  @updatedAt
-  createdAt      DateTime  @default(now())
+  id            String    @id @default(cuid())
+  source        String    @unique
+  lastSyncAt    DateTime?
+  lastSuccessAt DateTime?
+  nextSyncAt    DateTime?
+  intervalMs    Int
+  state         String    @default("idle") // idle | running | error | stale
+  lastError     String?
+  errorCount24h Int       @default(0)
+  recordsSynced Int       @default(0)
+  totalRuns     Int       @default(0)
+  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
 }
 
 model SyncLog {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   source      String
-  startedAt   DateTime @default(now())
+  startedAt   DateTime  @default(now())
   finishedAt  DateTime?
   durationMs  Int?
-  ok          Boolean  @default(false)
-  recordCount Int      @default(0)
+  ok          Boolean   @default(false)
+  recordCount Int       @default(0)
   message     String?
   meta        Json?
 
@@ -431,7 +524,7 @@ model IntelligenceLog {
   runId      String
   campaignId String?
   campaign   Campaign? @relation(fields: [campaignId], references: [id])
-  type       String    // status_update | io_signed | value_update | flag | no_change | error
+  type       String // status_update | io_signed | value_update | flag | no_change | error
   finding    String
   action     String?
   confidence Float     @default(0)
@@ -544,21 +637,21 @@ model InstagramPost {
 
 // ===== THINK TANK (Cultural Intelligence) =====
 model TrendSignal {
-  id          String   @id @default(cuid())
-  title       String
-  source      String
-  sourceUrl   String?
-  category    String
-  summary     String?
-  sentiment   String?
-  relevance   Int      @default(50)
-  trending    Boolean  @default(false)
-  tags        String[] @default([])
-  upvotes     Int      @default(0)
-  flagged     Boolean  @default(false)
-  aiAnalysis  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  title      String
+  source     String
+  sourceUrl  String?
+  category   String
+  summary    String?
+  sentiment  String?
+  relevance  Int      @default(50)
+  trending   Boolean  @default(false)
+  tags       String[] @default([])
+  upvotes    Int      @default(0)
+  flagged    Boolean  @default(false)
+  aiAnalysis String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([category])
   @@index([source])
