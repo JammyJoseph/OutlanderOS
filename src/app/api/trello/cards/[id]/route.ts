@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import { archiveCard, fetchCard, getChecklists, getComments, updateCard } from "@/lib/trello";
 import { clearCachedSnapshot } from "@/lib/trello-cache";
@@ -5,7 +6,7 @@ import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export const GET = withAuth(async (
+const GET__h = withAuth(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -27,7 +28,7 @@ export const GET = withAuth(async (
   }
 });
 
-export const PUT = withAuth(async (
+const PUT__h = withAuth(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -52,7 +53,7 @@ export const PUT = withAuth(async (
   }
 });
 
-export const DELETE = withAuth(async (
+const DELETE__h = withAuth(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -67,3 +68,7 @@ export const DELETE = withAuth(async (
     return NextResponse.json({ error: message }, { status: 500 });
   }
 });
+
+export const GET = withErrorHandling(GET__h as any)
+export const PUT = withErrorHandling(PUT__h as any)
+export const DELETE = withErrorHandling(DELETE__h as any)

@@ -12,6 +12,7 @@ import {
   recordRunStart,
   recordRunFinish,
 } from "./sync-jobs";
+import { logger } from "./logger";
 
 interface RunningJob {
   timer: NodeJS.Timeout;
@@ -37,7 +38,7 @@ class SyncEngine {
     const summary = (Object.keys(SYNC_INTERVALS) as SyncSource[])
       .map((s) => `${s} (${Math.round(SYNC_INTERVALS[s] / 60000)}min)`)
       .join(", ");
-    console.log(`[sync-engine] started — ${summary}`);
+    logger.info("sync-engine", `started — ${summary}`);
   }
 
   stop(): void {
@@ -45,14 +46,14 @@ class SyncEngine {
     for (const [, job] of this.jobs) clearInterval(job.timer);
     this.jobs.clear();
     this.started = false;
-    console.log("[sync-engine] stopped");
+    logger.info("sync-engine", "stopped");
   }
 
   private scheduleSource(source: SyncSource): void {
     const interval = SYNC_INTERVALS[source];
     const tick = () => {
       this.runOnce(source).catch((err) => {
-        console.error(`[sync-engine] ${source} tick failed:`, err);
+        logger.error("sync-engine", `${source} tick failed`, err);
       });
     };
     // initial delayed kick to let the server boot finish
@@ -79,19 +80,24 @@ class SyncEngine {
     const startedAt = Date.now();
     let logId: string | null = null;
     try {
+      logger.info("sync-engine", `${source} sync started`);
       logId = await recordRunStart(source);
       const result = await SYNC_JOBS[source]();
       await recordRunFinish(source, logId, true, result, null, startedAt);
       this.resetTimer(source);
+      logger.info("sync-engine", `${source} sync finished`, {
+        records: result.records,
+        durationMs: Date.now() - startedAt,
+      });
       return { ok: true, records: result.records, detail: result.detail };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`[sync-engine] ${source} failed:`, message);
+      logger.error("sync-engine", `${source} sync failed`, message);
       if (logId) {
         try {
           await recordRunFinish(source, logId, false, null, message, startedAt);
         } catch (logErr) {
-          console.error("[sync-engine] failed to record failure:", logErr);
+          logger.error("sync-engine", "failed to record failure", logErr);
         }
       }
       return { ok: false, records: 0, detail: message };
@@ -107,7 +113,7 @@ class SyncEngine {
     const interval = SYNC_INTERVALS[source];
     const timer = setInterval(() => {
       this.runOnce(source).catch((err) => {
-        console.error(`[sync-engine] ${source} tick failed:`, err);
+        logger.error("sync-engine", `${source} tick failed`, err);
       });
     }, interval);
     (timer as unknown as { unref?: () => void }).unref?.();

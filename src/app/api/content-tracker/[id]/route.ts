@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
@@ -6,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 const ALLOWED_TYPES = ["ORGANIC", "EDITORIAL", "PAID", "COMMUNITY", "UNCLASSIFIED"];
 
-export const PUT = withAuth(async (
+const PUT__h = withAuth(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -42,7 +43,7 @@ export const PUT = withAuth(async (
   }
 });
 
-export const GET = withAuth(async (
+const GET__h = withAuth(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -59,3 +60,6 @@ export const GET = withAuth(async (
     );
   }
 });
+
+export const PUT = withErrorHandling(PUT__h as any)
+export const GET = withErrorHandling(GET__h as any)

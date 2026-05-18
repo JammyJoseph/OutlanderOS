@@ -1,9 +1,10 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import { runCampaignSync } from "@/lib/campaign-sync";
 import prisma from "@/lib/prisma";
 import { withAuth, withAdmin } from "@/lib/auth";
 
-export const POST = withAdmin(async () => {
+const POST__h = withAdmin(async () => {
   try {
     const report = await runCampaignSync();
     return NextResponse.json(report);
@@ -16,7 +17,7 @@ export const POST = withAdmin(async () => {
   }
 });
 
-export const GET = withAuth(async () => {
+const GET__h = withAuth(async () => {
   try {
     // Return summary of the most recent sync run
     const lastLog = await prisma.intelligenceLog.findFirst({
@@ -49,3 +50,6 @@ export const GET = withAuth(async () => {
     return NextResponse.json({ error: "Failed to fetch sync status" }, { status: 500 });
   }
 });
+
+export const POST = withErrorHandling(POST__h as any)
+export const GET = withErrorHandling(GET__h as any)

@@ -1,5 +1,6 @@
 import { XMLParser } from 'fast-xml-parser'
 import prisma from '@/lib/prisma'
+import { withRetry } from '@/lib/retry'
 
 export interface FeedSource {
   name: string
@@ -148,14 +149,19 @@ export async function ingestFeed(source: FeedSource): Promise<IngestResult> {
 
   let xml: string
   try {
-    const res = await fetch(source.url, {
-      headers: {
-        'User-Agent': 'OutlanderOS Think Tank/1.0 (+https://outlanderos.com)',
-        Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
-      },
-      // 20s budget per feed
-      signal: AbortSignal.timeout(20_000),
-    })
+    const res = await withRetry(
+      () =>
+        fetch(source.url, {
+          headers: {
+            'User-Agent': 'OutlanderOS Think Tank/1.0 (+https://outlanderos.com)',
+            Accept:
+              'application/rss+xml, application/atom+xml, application/xml, text/xml',
+          },
+          // 20s budget per feed
+          signal: AbortSignal.timeout(20_000),
+        }),
+      { context: 'rss' }
+    )
     if (!res.ok) {
       result.error = `HTTP ${res.status}`
       return result

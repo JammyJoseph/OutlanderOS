@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import { getCachedSnapshot } from "@/lib/trello-cache";
 import { getSyncEngine } from "@/lib/sync-engine";
@@ -5,7 +6,7 @@ import { withAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export const POST = withAdmin(async () => {
+const POST__h = withAdmin(async () => {
   try {
     const engine = getSyncEngine();
     const result = await engine.runOnce("trello");
@@ -32,3 +33,5 @@ export const POST = withAdmin(async () => {
     );
   }
 });
+
+export const POST = withErrorHandling(POST__h as any)

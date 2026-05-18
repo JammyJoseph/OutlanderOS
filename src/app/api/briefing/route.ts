@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from 'next/server'
 import { getToken } from '@/lib/token-store'
 import { fetchBillingTracker, fetchCalendarEvents } from '@/lib/fetch-dashboard-data'
@@ -6,7 +7,7 @@ import { scanBillingInbox } from '@/lib/billing-engine'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { withAuth } from '@/lib/auth'
 
-export const GET = withAuth(async () => {
+const GET__h = withAuth(async () => {
   const primaryToken = getToken('google_primary')
   const billingToken = getToken('google_billing')
   const xeroToken = getToken('xero')
@@ -132,3 +133,5 @@ export const GET = withAuth(async () => {
     },
   })
 })
+
+export const GET = withErrorHandling(GET__h as any)

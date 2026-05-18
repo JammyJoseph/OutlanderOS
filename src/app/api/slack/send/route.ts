@@ -1,9 +1,10 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import { createSlackClient, sendMessage } from '@/lib/slack-client'
 import { withAuth } from '@/lib/auth'
 import { validateRequired, sanitizeString } from '@/lib/validate'
 
-export const POST = withAuth(async (request: NextRequest) => {
+const POST__h = withAuth(async (request: NextRequest) => {
   const body = await request.json()
 
   const missing = validateRequired(body, ['channel', 'text'])
@@ -24,3 +25,5 @@ export const POST = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
   }
 })
+
+export const POST = withErrorHandling(POST__h as any)

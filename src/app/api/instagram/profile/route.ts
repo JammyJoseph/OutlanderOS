@@ -1,10 +1,11 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import { getProfile, InstagramApiError } from "@/lib/instagram";
 import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export const GET = withAuth(async () => {
+const GET__h = withAuth(async () => {
   try {
     const profile = await getProfile();
     return NextResponse.json(profile);
@@ -20,3 +21,5 @@ export const GET = withAuth(async () => {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 });
+
+export const GET = withErrorHandling(GET__h as any)

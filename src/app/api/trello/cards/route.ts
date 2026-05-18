@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import { createCard } from "@/lib/trello";
 import { clearCachedSnapshot } from "@/lib/trello-cache";
@@ -5,7 +6,7 @@ import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export const POST = withAuth(async (req: NextRequest) => {
+const POST__h = withAuth(async (req: NextRequest) => {
   try {
     const body = await req.json();
     if (!body?.idList || !body?.name) {
@@ -28,3 +29,5 @@ export const POST = withAuth(async (req: NextRequest) => {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 });
+
+export const POST = withErrorHandling(POST__h as any)

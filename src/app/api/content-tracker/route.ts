@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -5,7 +6,7 @@ import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export const GET = withAuth(async (req: NextRequest) => {
+const GET__h = withAuth(async (req: NextRequest) => {
   try {
     const sp = req.nextUrl.searchParams;
     const brand = sp.get("brand");
@@ -54,3 +55,5 @@ export const GET = withAuth(async (req: NextRequest) => {
     );
   }
 });
+
+export const GET = withErrorHandling(GET__h as any)

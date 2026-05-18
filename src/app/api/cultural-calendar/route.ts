@@ -1,8 +1,9 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
 
-export const GET = withAuth(async (request: NextRequest) => {
+const GET__h = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const month = searchParams.get('month')
   const category = searchParams.get('category')
@@ -56,7 +57,7 @@ export const GET = withAuth(async (request: NextRequest) => {
   return NextResponse.json(events)
 })
 
-export const POST = withAuth(async (request: NextRequest) => {
+const POST__h = withAuth(async (request: NextRequest) => {
   const body = await request.json()
   const { title, date, category } = body
   if (!title || !date || !category) {
@@ -85,3 +86,6 @@ export const POST = withAuth(async (request: NextRequest) => {
 
   return NextResponse.json(event, { status: 201 })
 })
+
+export const GET = withErrorHandling(GET__h as any)
+export const POST = withErrorHandling(POST__h as any)

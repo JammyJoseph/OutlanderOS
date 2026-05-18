@@ -1,3 +1,5 @@
+import { withRetry } from "@/lib/retry";
+
 const GRAPH_VERSION = "v19.0";
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
 
@@ -109,7 +111,10 @@ async function refreshLongLivedToken(): Promise<string | null> {
   url.searchParams.set("client_secret", appSecret);
   url.searchParams.set("fb_exchange_token", existing);
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const res = await withRetry(
+    () => fetch(url.toString(), { cache: "no-store" }),
+    { context: "instagram" }
+  );
   if (!res.ok) return null;
   const body = (await res.json()) as { access_token?: string };
   if (!body.access_token) return null;
@@ -133,7 +138,10 @@ async function graphGet<T>(
   }
   url.searchParams.set("access_token", token);
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const res = await withRetry(
+    () => fetch(url.toString(), { cache: "no-store" }),
+    { context: "instagram" }
+  );
   const text = await res.text();
   let data: unknown;
   try {

@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
 
@@ -20,7 +21,7 @@ interface OwmEntry {
   wind: { speed: number };
 }
 
-export const GET = withAuth(async (request: NextRequest) => {
+const GET__h = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get("lat");
   const lng = searchParams.get("lng");
@@ -109,3 +110,5 @@ export const GET = withAuth(async (request: NextRequest) => {
     );
   }
 });
+
+export const GET = withErrorHandling(GET__h as any)

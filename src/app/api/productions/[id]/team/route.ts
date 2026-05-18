@@ -1,8 +1,9 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 
-export const GET = withAuth(async (
+const GET__h = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -18,7 +19,7 @@ export const GET = withAuth(async (
   }
 });
 
-export const POST = withAuth(async (
+const POST__h = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -44,7 +45,7 @@ export const POST = withAuth(async (
   }
 });
 
-export const PUT = withAuth(async (request: NextRequest) => {
+const PUT__h = withAuth(async (request: NextRequest) => {
   const url = new URL(request.url);
   const memberId = url.searchParams.get("memberId");
   if (!memberId) return NextResponse.json({ error: "memberId required" }, { status: 400 });
@@ -68,7 +69,7 @@ export const PUT = withAuth(async (request: NextRequest) => {
   }
 });
 
-export const DELETE = withAuth(async (request: NextRequest) => {
+const DELETE__h = withAuth(async (request: NextRequest) => {
   const url = new URL(request.url);
   const memberId = url.searchParams.get("memberId");
   if (!memberId) return NextResponse.json({ error: "memberId required" }, { status: 400 });
@@ -79,3 +80,8 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 });
+
+export const GET = withErrorHandling(GET__h as any)
+export const POST = withErrorHandling(POST__h as any)
+export const PUT = withErrorHandling(PUT__h as any)
+export const DELETE = withErrorHandling(DELETE__h as any)

@@ -1,9 +1,10 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
 
-export async function PUT(request: NextRequest) {
+async function PUT__inner(request: NextRequest) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -26,3 +27,5 @@ export async function PUT(request: NextRequest) {
 
   return NextResponse.json({ ok: true })
 }
+
+export const PUT = withErrorHandling(PUT__inner as any)

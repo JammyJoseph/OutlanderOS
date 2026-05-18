@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken, setToken } from '@/lib/token-store'
 import { fetchCalendarEvents, fetchBillingTracker } from '@/lib/fetch-dashboard-data'
@@ -6,7 +7,7 @@ import { fetchAllXeroData } from '@/lib/xero-api'
 import { crossReferenceDeals } from '@/lib/email-cross-ref'
 import { withAuth } from '@/lib/auth'
 
-export const GET = withAuth(async (request: NextRequest) => {
+const GET__h = withAuth(async (request: NextRequest) => {
   const billingTokenData = getToken('google_billing')
   const primaryTokenData = getToken('google_primary')
 
@@ -47,3 +48,5 @@ export const GET = withAuth(async (request: NextRequest) => {
 
   return NextResponse.json(results)
 })
+
+export const GET = withErrorHandling(GET__h as any)

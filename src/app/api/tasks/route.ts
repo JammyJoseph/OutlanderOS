@@ -1,9 +1,10 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
 import { detectProjectFromNewItem } from '@/lib/ai-intelligence'
 
-export async function GET(request: NextRequest) {
+async function GET__inner(request: NextRequest) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ tasks: [] }, { status: 401 })
 
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function POST__inner(request: NextRequest) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -99,3 +100,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
 }
+
+export const GET = withErrorHandling(GET__inner as any)
+export const POST = withErrorHandling(POST__inner as any)

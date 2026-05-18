@@ -1,15 +1,16 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
 
-export const GET = withAuth(async () => {
+const GET__h = withAuth(async () => {
   const brands = await prisma.brandWatch.findMany({
     orderBy: [{ heatScore: 'desc' }, { updatedAt: 'desc' }],
   })
   return NextResponse.json(brands)
 })
 
-export const POST = withAuth(async (request: NextRequest) => {
+const POST__h = withAuth(async (request: NextRequest) => {
   const body = await request.json().catch(() => ({}))
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   if (!name) {
@@ -37,3 +38,6 @@ export const POST = withAuth(async (request: NextRequest) => {
 
   return NextResponse.json(brand, { status: 201 })
 })
+
+export const GET = withErrorHandling(GET__h as any)
+export const POST = withErrorHandling(POST__h as any)

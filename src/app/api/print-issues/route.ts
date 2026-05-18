@@ -1,9 +1,10 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { validateRequired, sanitizeString } from "@/lib/validate";
 
-export const GET = withAuth(async () => {
+const GET__h = withAuth(async () => {
   try {
     const issues = await prisma.printIssue.findMany({
       orderBy: [{ year: "desc" }, { createdAt: "desc" }],
@@ -14,7 +15,7 @@ export const GET = withAuth(async () => {
   }
 });
 
-export const POST = withAuth(async (request: NextRequest) => {
+const POST__h = withAuth(async (request: NextRequest) => {
   const body = await request.json();
 
   const missing = validateRequired(body, ["title"]);
@@ -36,3 +37,6 @@ export const POST = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 });
+
+export const GET = withErrorHandling(GET__h as any)
+export const POST = withErrorHandling(POST__h as any)

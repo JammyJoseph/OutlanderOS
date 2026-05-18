@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import { runInstagramSync, getAccountSummary } from "@/lib/instagram-sync";
 import { withAuth } from "@/lib/auth";
@@ -5,7 +6,7 @@ import { withAuth } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-export const POST = withAuth(async () => {
+const POST__h = withAuth(async () => {
   try {
     const report = await runInstagramSync();
     return NextResponse.json(report);
@@ -18,7 +19,7 @@ export const POST = withAuth(async () => {
   }
 });
 
-export const GET = withAuth(async () => {
+const GET__h = withAuth(async () => {
   try {
     const summary = await getAccountSummary();
     return NextResponse.json(summary);
@@ -30,3 +31,6 @@ export const GET = withAuth(async () => {
     );
   }
 });
+
+export const POST = withErrorHandling(POST__h as any)
+export const GET = withErrorHandling(GET__h as any)

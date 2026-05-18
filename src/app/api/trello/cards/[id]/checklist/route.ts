@@ -1,10 +1,11 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import { getChecklists } from "@/lib/trello";
 import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export const GET = withAuth(async (
+const GET__h = withAuth(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -18,3 +19,5 @@ export const GET = withAuth(async (
     return NextResponse.json({ error: message, checklists: [] }, { status: 500 });
   }
 });
+
+export const GET = withErrorHandling(GET__h as any)

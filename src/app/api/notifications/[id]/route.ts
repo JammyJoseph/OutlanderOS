@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
@@ -12,7 +13,7 @@ async function loadOwnedNotification(id: string, userId: string, isAdmin: boolea
   return { notification }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function PUT__inner(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
@@ -31,7 +32,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function DELETE__inner(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
@@ -46,3 +47,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
 }
+
+export const PUT = withErrorHandling(PUT__inner as any)
+export const DELETE = withErrorHandling(DELETE__inner as any)

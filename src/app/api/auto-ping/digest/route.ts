@@ -1,3 +1,4 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
@@ -18,7 +19,7 @@ async function resolveUserId(request: NextRequest): Promise<string | null> {
  * Generates (or returns today's cached) daily digest for the current user.
  * Idempotent — the AI briefing is written once per user per day.
  */
-export async function POST(request: NextRequest) {
+async function POST__inner(request: NextRequest) {
   try {
     const userId = await resolveUserId(request);
     if (!userId) {
@@ -50,3 +51,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withErrorHandling(POST__inner as any)

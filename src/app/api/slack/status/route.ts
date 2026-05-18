@@ -1,8 +1,9 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from 'next/server'
 import { createSlackClient, getTeamMembers, getUserPresence } from '@/lib/slack-client'
 import { withAuth } from '@/lib/auth'
 
-export const GET = withAuth(async () => {
+const GET__h = withAuth(async () => {
   const client = createSlackClient()
   if (!client) {
     return NextResponse.json({ error: 'Slack not configured' }, { status: 503 })
@@ -25,3 +26,5 @@ export const GET = withAuth(async () => {
     return NextResponse.json({ error: 'Failed to fetch team status' }, { status: 500 })
   }
 })
+
+export const GET = withErrorHandling(GET__h as any)

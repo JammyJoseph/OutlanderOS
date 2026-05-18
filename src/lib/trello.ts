@@ -1,3 +1,5 @@
+import { withRetry } from "@/lib/retry";
+
 const TRELLO_API_BASE = "https://api.trello.com/1";
 
 const API_KEY = process.env.TRELLO_API_KEY ?? "";
@@ -114,12 +116,14 @@ async function trelloFetch<T>(path: string, init?: RequestInit): Promise<T> {
   ensureCreds();
   const sep = path.includes("?") ? "&" : "?";
   const url = `${TRELLO_API_BASE}${path}${sep}${authParams()}`;
-  const res = await fetch(url, { cache: "no-store", ...init });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Trello ${res.status} ${res.statusText}: ${body.slice(0, 200)}`);
-  }
-  return (await res.json()) as T;
+  return withRetry(async () => {
+    const res = await fetch(url, { cache: "no-store", ...init });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`Trello ${res.status} ${res.statusText}: ${body.slice(0, 200)}`);
+    }
+    return (await res.json()) as T;
+  }, { context: "trello" });
 }
 
 export async function fetchBoard() {

@@ -1,8 +1,9 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import { handleXeroCallback } from '@/lib/xero-client'
 import { setToken } from '@/lib/token-store'
 
-export async function GET(request: NextRequest) {
+async function GET__inner(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
 
@@ -33,3 +34,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/settings?xero_error=callback_failed', process.env.NEXTAUTH_URL || 'http://localhost:3000'))
   }
 }
+
+export const GET = withErrorHandling(GET__inner as any)

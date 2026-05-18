@@ -1,9 +1,10 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { getToken } from '@/lib/token-store'
 import { withAuth } from '@/lib/auth'
 
-export const POST = withAuth(async () => {
+const POST__h = withAuth(async () => {
   const primaryToken = getToken('google_primary')
   const billingToken = getToken('google_billing')
 
@@ -69,3 +70,5 @@ export const POST = withAuth(async () => {
 
   return NextResponse.json({ briefs })
 })
+
+export const POST = withErrorHandling(POST__h as any)

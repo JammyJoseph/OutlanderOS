@@ -3,6 +3,7 @@ import { getToken } from "./token-store";
 import { fetchAllXeroData } from "./xero-api";
 import { analyseEmailsForCampaign, EmailMessage, XeroEvidence } from "./deal-intelligence";
 import prisma from "./prisma";
+import { logger } from "./logger";
 
 export interface SyncReport {
   runId: string;
@@ -81,6 +82,7 @@ function matchXeroForClient(
 export async function runCampaignSync(): Promise<SyncReport> {
   const runId = `sync_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const startedAt = new Date();
+  logger.info("campaign-sync", "started", { runId });
 
   const summary: string[] = [];
   let updatesApplied = 0;
@@ -169,6 +171,7 @@ export async function runCampaignSync(): Promise<SyncReport> {
       );
     } catch (err) {
       errors++;
+      logger.error("campaign-sync", `analysis failed for campaign ${campaign.id}`, err);
       await prisma.intelligenceLog.create({
         data: {
           runId,
@@ -271,6 +274,14 @@ export async function runCampaignSync(): Promise<SyncReport> {
   }
 
   const completedAt = new Date();
+  logger.info("campaign-sync", "completed", {
+    runId,
+    durationMs: completedAt.getTime() - startedAt.getTime(),
+    campaignsAnalyzed: campaigns.length,
+    updatesApplied,
+    flagsRaised,
+    errors,
+  });
 
   return {
     runId,

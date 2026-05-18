@@ -1,8 +1,9 @@
+import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 
-export const GET = withAuth(async () => {
+const GET__h = withAuth(async () => {
   try {
     const clients = await prisma.client.findMany({
       select: {
@@ -37,3 +38,5 @@ export const GET = withAuth(async () => {
     return NextResponse.json({ error: "Failed to fetch clients" }, { status: 500 });
   }
 });
+
+export const GET = withErrorHandling(GET__h as any)
