@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createSlackClient, getChannels } from '@/lib/slack-client'
+import { withAuth } from '@/lib/auth'
 
-export async function GET() {
+export const GET = withAuth(async () => {
   const client = createSlackClient()
   if (!client) {
     return NextResponse.json({ error: 'Slack not configured' }, { status: 503 })
@@ -9,7 +10,7 @@ export async function GET() {
   try {
     const channels = await getChannels(client)
     return NextResponse.json({ channels })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch channels' }, { status: 500 })
   }
-}
+})

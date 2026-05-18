@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createSlackClient, getTeamMembers, getUserPresence } from '@/lib/slack-client'
+import { withAuth } from '@/lib/auth'
 
 const TEAM = [
   { name: 'Joe Silver', email: 'silver@outlandermag.com' },
@@ -9,7 +10,7 @@ const TEAM = [
   { name: 'Patricia', email: '' },
 ]
 
-export async function GET() {
+export const GET = withAuth(async () => {
   const client = createSlackClient()
   if (!client) {
     return NextResponse.json({
@@ -81,4 +82,4 @@ export async function GET() {
       })),
     })
   }
-}
+})

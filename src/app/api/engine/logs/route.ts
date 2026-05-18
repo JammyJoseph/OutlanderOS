@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type"); // optional filter
@@ -28,4 +29,4 @@ export async function GET(request: NextRequest) {
     console.error("GET /api/engine/logs", err);
     return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });
   }
-}
+});

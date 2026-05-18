@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { getToken } from '@/lib/token-store'
+import { withAuth } from '@/lib/auth'
 
-export async function POST() {
+export const POST = withAuth(async () => {
   const primaryToken = getToken('google_primary')
   const billingToken = getToken('google_billing')
 
@@ -67,4 +68,4 @@ export async function POST() {
   }
 
   return NextResponse.json({ briefs })
-}
+})

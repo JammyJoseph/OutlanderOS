@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
+import { validateDate } from "@/lib/validate";
 
-export async function GET(
+export const GET = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
   try {
     const sheet = await prisma.callSheet.findUnique({
@@ -30,14 +32,17 @@ export async function GET(
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});
 
-export async function PUT(
+export const PUT = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
   const body = await request.json();
+  if (body.shootDate !== undefined && !validateDate(body.shootDate)) {
+    return NextResponse.json({ error: "Invalid shootDate" }, { status: 400 });
+  }
   try {
     const updateData: Record<string, unknown> = {};
     if (body.shootDate !== undefined) updateData.shootDate = new Date(body.shootDate);
@@ -80,12 +85,12 @@ export async function PUT(
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
   try {
     await prisma.callSheet.delete({ where: { id } });
@@ -93,4 +98,4 @@ export async function DELETE(
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});

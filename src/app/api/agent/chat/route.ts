@@ -5,9 +5,12 @@ import { getToken } from '@/lib/token-store'
 import { fetchBillingTracker, fetchCalendarEvents } from '@/lib/fetch-dashboard-data'
 import { fetchAllXeroData } from '@/lib/xero-api'
 import { scanBillingInbox } from '@/lib/billing-engine'
+import { withAuth } from '@/lib/auth'
+import { sanitizeString } from '@/lib/validate'
 
-export async function POST(request: NextRequest) {
-  const { message } = await request.json()
+export const POST = withAuth(async (request: NextRequest) => {
+  const body = await request.json()
+  const message = sanitizeString(body?.message, 4000)
   if (!message) return NextResponse.json({ error: 'No message' }, { status: 400 })
 
   const primaryToken = getToken('google_primary')
@@ -44,4 +47,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json(response)
-}
+})

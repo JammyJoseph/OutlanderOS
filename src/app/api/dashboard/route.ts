@@ -4,8 +4,9 @@ import { fetchCalendarEvents, fetchBillingTracker } from '@/lib/fetch-dashboard-
 import { scanBillingInbox } from '@/lib/billing-engine'
 import { fetchAllXeroData } from '@/lib/xero-api'
 import { crossReferenceDeals } from '@/lib/email-cross-ref'
+import { withAuth } from '@/lib/auth'
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   const billingTokenData = getToken('google_billing')
   const primaryTokenData = getToken('google_primary')
 
@@ -45,4 +46,4 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json(results)
-}
+})

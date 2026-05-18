@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
-export async function GET() {
+export const GET = withAuth(async () => {
   try {
     const clients = await prisma.client.findMany({
       select: {
@@ -35,4 +36,4 @@ export async function GET() {
     console.error("GET /api/clients", err);
     return NextResponse.json({ error: "Failed to fetch clients" }, { status: 500 });
   }
-}
+});

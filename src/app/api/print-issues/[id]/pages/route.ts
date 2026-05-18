@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
+import { validateRequired } from "@/lib/validate";
 
-export async function POST(
+export const POST = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
   const body = await request.json();
+
+  const missing = validateRequired(body, ["pageNumber"]);
+  if (missing) return NextResponse.json({ error: missing }, { status: 400 });
+
   try {
     const page = await prisma.printPage.create({
       data: {
@@ -24,4 +30,4 @@ export async function POST(
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});

@@ -4,8 +4,9 @@ import { fetchBillingTracker, fetchCalendarEvents } from '@/lib/fetch-dashboard-
 import { fetchAllXeroData } from '@/lib/xero-api'
 import { scanBillingInbox } from '@/lib/billing-engine'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { withAuth } from '@/lib/auth'
 
-export async function GET() {
+export const GET = withAuth(async () => {
   const primaryToken = getToken('google_primary')
   const billingToken = getToken('google_billing')
   const xeroToken = getToken('xero')
@@ -130,4 +131,4 @@ export async function GET() {
       urgentAlerts: urgentAlerts.length,
     },
   })
-}
+})

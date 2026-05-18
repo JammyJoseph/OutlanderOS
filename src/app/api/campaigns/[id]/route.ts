@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
-export async function GET(
+export const GET = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const campaign = await prisma.campaign.findUnique({
@@ -25,12 +26,12 @@ export async function GET(
     console.error("GET /api/campaigns/[id]", err);
     return NextResponse.json({ error: "Failed to fetch campaign" }, { status: 500 });
   }
-}
+});
 
-export async function PUT(
+export const PUT = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const body = await request.json();
@@ -57,12 +58,12 @@ export async function PUT(
     console.error("PUT /api/campaigns/[id]", err);
     return NextResponse.json({ error: "Failed to update campaign" }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     await prisma.campaign.update({
@@ -74,4 +75,4 @@ export async function DELETE(
     console.error("DELETE /api/campaigns/[id]", err);
     return NextResponse.json({ error: "Failed to delete campaign" }, { status: 500 });
   }
-}
+});

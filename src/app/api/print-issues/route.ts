@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
+import { validateRequired, sanitizeString } from "@/lib/validate";
 
-export async function GET() {
+export const GET = withAuth(async () => {
   try {
     const issues = await prisma.printIssue.findMany({
       orderBy: [{ year: "desc" }, { createdAt: "desc" }],
@@ -10,14 +12,18 @@ export async function GET() {
   } catch {
     return NextResponse.json({ issues: [] });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   const body = await request.json();
+
+  const missing = validateRequired(body, ["title"]);
+  if (missing) return NextResponse.json({ error: missing }, { status: 400 });
+
   try {
     const issue = await prisma.printIssue.create({
       data: {
-        title: body.title,
+        title: sanitizeString(body.title, 300),
         year: body.year ?? new Date().getFullYear(),
         pageCount: body.pageCount ?? 0,
         status: body.status ?? "planning",
@@ -29,4 +35,4 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});

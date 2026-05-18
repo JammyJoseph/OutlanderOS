@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createSlackClient, getChannels, getChannelMessages } from '@/lib/slack-client'
+import { withAuth } from '@/lib/auth'
 
-export async function GET() {
+export const GET = withAuth(async () => {
   const client = createSlackClient()
   if (!client) return NextResponse.json({ messages: [] })
 
@@ -32,4 +33,4 @@ export async function GET() {
   } catch (e) {
     return NextResponse.json({ messages: [], error: String(e) })
   }
-}
+})

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { withAuth } from "@/lib/auth";
+import { validateRequired, sanitizeString } from "@/lib/validate";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -26,45 +26,37 @@ export async function GET(request: NextRequest) {
     console.error("GET /api/campaigns", err);
     return NextResponse.json({ error: "Failed to fetch campaigns" }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
   try {
-    const session = await getServerSession(authOptions);
     const body = await request.json();
-    const { clientName, title, type, value, currency } = body;
 
-    if (!clientName?.trim() || !title?.trim() || !type) {
-      return NextResponse.json({ error: "clientName, title and type are required" }, { status: 400 });
-    }
+    const missing = validateRequired(body, ["clientName", "title", "type"]);
+    if (missing) return NextResponse.json({ error: missing }, { status: 400 });
 
-    let createdById = session?.user?.id;
-    if (!createdById) {
-      const fallback = await prisma.user.findFirst();
-      if (!fallback) {
-        return NextResponse.json({ error: "No user found — seed the database first" }, { status: 500 });
-      }
-      createdById = fallback.id;
-    }
+    const clientName = sanitizeString(body.clientName, 200);
+    const title = sanitizeString(body.title, 300);
+    const { type, value, currency } = body;
 
     let client = await prisma.client.findFirst({
-      where: { name: { equals: clientName.trim(), mode: "insensitive" } },
+      where: { name: { equals: clientName, mode: "insensitive" } },
     });
 
     if (!client) {
       client = await prisma.client.create({
-        data: { name: clientName.trim() },
+        data: { name: clientName },
       });
     }
 
     const campaign = await prisma.campaign.create({
       data: {
         clientId: client.id,
-        title: title.trim(),
+        title,
         type,
         value: value ? parseFloat(value) : null,
         currency: currency ?? "GBP",
-        createdById,
+        createdById: user.userId,
       },
       include: {
         client: { select: { id: true, name: true } },
@@ -76,4 +68,4 @@ export async function POST(request: NextRequest) {
     console.error("POST /api/campaigns", err);
     return NextResponse.json({ error: "Failed to create campaign" }, { status: 500 });
   }
-}
+});

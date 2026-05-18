@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getToken, setToken } from '@/lib/token-store'
 import { fetchAllXeroData } from '@/lib/xero-api'
+import { withAuth } from '@/lib/auth'
 
-export async function GET() {
+export const GET = withAuth(async () => {
   const xeroTokenData = getToken('xero')
 
   if (!xeroTokenData) {
@@ -14,4 +15,4 @@ export async function GET() {
     setToken('xero', JSON.parse(result.updatedTokenJson))
   }
   return NextResponse.json(result.data)
-}
+})

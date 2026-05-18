@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSlackClient, getChannelMessages } from '@/lib/slack-client'
+import { withAuth } from '@/lib/auth'
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   const channelId = request.nextUrl.searchParams.get('channelId')
   const limit = Number(request.nextUrl.searchParams.get('limit') || '20')
 
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const messages = await getChannelMessages(client, channelId, limit)
     return NextResponse.json({ messages })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
   }
-}
+})

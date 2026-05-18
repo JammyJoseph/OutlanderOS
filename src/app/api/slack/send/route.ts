@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSlackClient, sendMessage } from '@/lib/slack-client'
+import { withAuth } from '@/lib/auth'
+import { validateRequired, sanitizeString } from '@/lib/validate'
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   const body = await request.json()
-  const { channel, text } = body
 
-  if (!channel || !text) {
-    return NextResponse.json({ error: 'channel and text are required' }, { status: 400 })
-  }
+  const missing = validateRequired(body, ['channel', 'text'])
+  if (missing) return NextResponse.json({ error: missing }, { status: 400 })
+
+  const channel = sanitizeString(body.channel, 200)
+  const text = sanitizeString(body.text, 4000)
 
   const client = createSlackClient()
   if (!client) {
@@ -17,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await sendMessage(client, channel, text)
     return NextResponse.json({ ok: result.ok, ts: result.ts })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
   }
-}
+})

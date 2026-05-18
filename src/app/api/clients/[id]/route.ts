@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
-export async function GET(
+export const GET = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const client = await prisma.client.findUnique({
@@ -34,4 +35,4 @@ export async function GET(
     console.error("GET /api/clients/[id]", err);
     return NextResponse.json({ error: "Failed to fetch client" }, { status: 500 });
   }
-}
+});

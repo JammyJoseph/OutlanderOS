@@ -1,10 +1,11 @@
 import type { NextRequest } from "next/server";
 import { extractSheetId, getBillingEntries, testConnection } from "@/lib/google-sheets";
+import { withAuth } from "@/lib/auth";
 
-export async function GET(
+export const GET = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ sheetId: string }> }
-) {
+) => {
   const { sheetId: rawId } = await params;
   const sheetId = extractSheetId(decodeURIComponent(rawId));
   const { searchParams } = request.nextUrl;
@@ -29,4 +30,4 @@ export async function GET(
   const { getSpreadsheetMetadata } = await import("@/lib/google-sheets");
   const meta = await getSpreadsheetMetadata(sheetId);
   return Response.json(meta);
-}
+});

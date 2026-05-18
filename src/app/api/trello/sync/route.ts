@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { getCachedSnapshot } from "@/lib/trello-cache";
 import { getSyncEngine } from "@/lib/sync-engine";
+import { withAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export const POST = withAdmin(async () => {
   try {
     const engine = getSyncEngine();
     const result = await engine.runOnce("trello");
@@ -30,4 +31,4 @@ export async function POST() {
       { status: 500 }
     );
   }
-}
+});

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { runCampaignSync } from "@/lib/campaign-sync";
 import prisma from "@/lib/prisma";
+import { withAuth, withAdmin } from "@/lib/auth";
 
-export async function POST() {
+export const POST = withAdmin(async () => {
   try {
     const report = await runCampaignSync();
     return NextResponse.json(report);
@@ -13,9 +14,9 @@ export async function POST() {
       { status: 500 }
     );
   }
-}
+});
 
-export async function GET() {
+export const GET = withAuth(async () => {
   try {
     // Return summary of the most recent sync run
     const lastLog = await prisma.intelligenceLog.findFirst({
@@ -47,4 +48,4 @@ export async function GET() {
     console.error("Engine sync GET failed:", err);
     return NextResponse.json({ error: "Failed to fetch sync status" }, { status: 500 });
   }
-}
+});

@@ -4,10 +4,11 @@ import {
   getCachedSnapshot,
   setCachedSnapshot,
 } from "@/lib/trello-cache";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export const GET = withAuth(async () => {
   try {
     const cached = getCachedSnapshot();
     if (cached) {
@@ -25,4 +26,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
+import { validateRequired, validateDate } from "@/lib/validate";
 
-export async function GET() {
+export const GET = withAuth(async () => {
   try {
     const sheets = await prisma.callSheet.findMany({
       include: { production: { select: { title: true } } },
@@ -12,10 +14,17 @@ export async function GET() {
   } catch {
     return NextResponse.json({ sheets: [] });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   const body = await request.json();
+
+  const missing = validateRequired(body, ["productionId", "shootDate"]);
+  if (missing) return NextResponse.json({ error: missing }, { status: 400 });
+  if (!validateDate(body.shootDate)) {
+    return NextResponse.json({ error: "Invalid shootDate" }, { status: 400 });
+  }
+
   try {
     const sheet = await prisma.callSheet.create({
       data: {
@@ -33,4 +42,4 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});

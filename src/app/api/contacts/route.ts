@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { withAuth } from '@/lib/auth'
+import { validateRequired, sanitizeString, validateEmail } from '@/lib/validate'
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search') || ''
   const category = searchParams.get('category') || ''
@@ -32,19 +34,33 @@ export async function GET(request: NextRequest) {
   })
 
   return NextResponse.json(contacts)
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
   const body = await request.json()
-  const { name, email, phone, company, role, category, tags, instagram, website, notes, createdBy } = body
 
-  if (!name || !category || !createdBy) {
-    return NextResponse.json({ error: 'name, category, and createdBy are required' }, { status: 400 })
+  const missing = validateRequired(body, ['name', 'category'])
+  if (missing) return NextResponse.json({ error: missing }, { status: 400 })
+
+  if (body.email && !validateEmail(body.email)) {
+    return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
   }
 
   const contact = await prisma.contact.create({
-    data: { name, email, phone, company, role, category, tags: tags || [], instagram, website, notes, createdBy },
+    data: {
+      name: sanitizeString(body.name, 200),
+      email: body.email ? sanitizeString(body.email, 320) : null,
+      phone: body.phone ? sanitizeString(body.phone, 50) : null,
+      company: body.company ? sanitizeString(body.company, 200) : null,
+      role: body.role ? sanitizeString(body.role, 120) : null,
+      category: sanitizeString(body.category, 80),
+      tags: Array.isArray(body.tags) ? body.tags : [],
+      instagram: body.instagram ? sanitizeString(body.instagram, 120) : null,
+      website: body.website ? sanitizeString(body.website, 300) : null,
+      notes: body.notes ? sanitizeString(body.notes, 4000) : null,
+      createdBy: user.userId,
+    },
   })
 
   return NextResponse.json(contact, { status: 201 })
-}
+})

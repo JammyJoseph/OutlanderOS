@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
-export async function GET(
+export const GET = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const plan = await prisma.mediaPlan.findUnique({
@@ -21,12 +22,12 @@ export async function GET(
     console.error("GET /api/media-plans/[id]", err);
     return NextResponse.json({ error: "Failed to fetch media plan" }, { status: 500 });
   }
-}
+});
 
-export async function PUT(
+export const PUT = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const body = await request.json();
@@ -106,12 +107,12 @@ export async function PUT(
     console.error("PUT /api/media-plans/[id]", err);
     return NextResponse.json({ error: "Failed to update media plan" }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     await prisma.mediaPlan.delete({ where: { id } });
@@ -120,4 +121,4 @@ export async function DELETE(
     console.error("DELETE /api/media-plans/[id]", err);
     return NextResponse.json({ error: "Failed to delete media plan" }, { status: 500 });
   }
-}
+});

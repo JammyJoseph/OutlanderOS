@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { rateLimitResponse } from '@/lib/rate-limit'
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (pathname === '/login' || pathname.startsWith('/api/')) return NextResponse.next()
+  // API routes: rate-limit per IP, then let the route's own auth helpers run.
+  if (pathname.startsWith('/api/')) {
+    const limited = rateLimitResponse(request, pathname)
+    if (limited) return limited
+    return NextResponse.next()
+  }
+
+  if (pathname === '/login') return NextResponse.next()
   if (pathname.startsWith('/_next/') || pathname.includes('.')) return NextResponse.next()
 
   const token = request.cookies.get('auth_token')?.value
