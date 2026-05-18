@@ -59,6 +59,21 @@ export interface Counts {
   overdue: number;
   today: number;
   week: number;
+  inProgress: number;
+}
+
+export interface Holiday {
+  allowance: number;
+  used: number;
+  remaining: number;
+}
+
+export interface TrelloDeal {
+  id: string;
+  title: string;
+  client: string;
+  status: string;
+  value: number | null;
 }
 
 export interface DashboardData {
@@ -68,12 +83,25 @@ export interface DashboardData {
   culturalEvents: CulturalEvent[];
   shoots: Shoot[];
   counts: Counts;
+  holiday: Holiday;
+  trelloDeals: TrelloDeal[];
 }
 
 export interface Suggestion {
   title: string;
   detail: string;
 }
+
+// Normalised source for filtering — tasks and deadlines mapped onto one set.
+export type ItemSource = "MANUAL" | "EMAIL" | "TRELLO" | "PRODUCTION" | "PRINT";
+
+export const SOURCE_LABELS: Record<ItemSource, string> = {
+  MANUAL: "Manual",
+  EMAIL: "Email",
+  TRELLO: "Trello",
+  PRODUCTION: "Production",
+  PRINT: "Print",
+};
 
 // Unified item — a task or deadline normalised onto one shape.
 export interface UnifiedItem {
@@ -82,10 +110,18 @@ export interface UnifiedItem {
   title: string;
   dueDate: string | null;
   priority: string;
+  status: string;
   done: boolean;
   category: TaskCategory;
-  source: string;
+  source: ItemSource;
   link: string | null;
 }
 
-export type TaskCategory = "brand" | "editorial" | "production" | "admin" | "longterm";
+export type TaskCategory = "brand" | "editorial" | "production" | "admin";
+
+export const CATEGORY_LABELS: Record<TaskCategory, string> = {
+  brand: "Brand Partnerships",
+  editorial: "Editorial",
+  production: "Production",
+  admin: "General Admin",
+};

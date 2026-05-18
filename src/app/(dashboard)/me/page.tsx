@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { CommandCenter } from "./_components/CommandCenter";
-import { UnifiedTasks } from "./_components/UnifiedTasks";
+import { ProjectTasks } from "./_components/ProjectTasks";
 import { QuickAccess } from "./_components/QuickAccess";
 import type { DashboardData, Suggestion } from "./_components/types";
 
@@ -13,7 +13,9 @@ const EMPTY: DashboardData = {
   deadlines: [],
   culturalEvents: [],
   shoots: [],
-  counts: { overdue: 0, today: 0, week: 0 },
+  counts: { overdue: 0, today: 0, week: 0, inProgress: 0 },
+  holiday: { allowance: 25, used: 0, remaining: 25 },
+  trelloDeals: [],
 };
 
 export default function MePage() {
@@ -37,6 +39,8 @@ export default function MePage() {
         culturalEvents: json.culturalEvents ?? [],
         shoots: json.shoots ?? [],
         counts: json.counts ?? EMPTY.counts,
+        holiday: json.holiday ?? EMPTY.holiday,
+        trelloDeals: json.trelloDeals ?? [],
       });
       setError(null);
     } catch (e) {
@@ -102,11 +106,15 @@ export default function MePage() {
           suggestionsLoading={suggestionsLoading}
         />
 
-        {/* Zone 2 — Unified Tasks */}
-        <UnifiedTasks tasks={data.tasks} deadlines={data.deadlines} onChange={loadData} />
+        {/* Zone 2 — Projects & Tasks */}
+        <ProjectTasks
+          tasks={data.tasks}
+          deadlines={data.deadlines}
+          onChange={loadData}
+        />
 
         {/* Zone 3 — Quick Access */}
-        <QuickAccess user={data.user} />
+        <QuickAccess holiday={data.holiday} />
       </div>
     </div>
   );

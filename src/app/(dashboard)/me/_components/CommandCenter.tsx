@@ -19,6 +19,12 @@ function greeting(): string {
   return "Good evening";
 }
 
+const TODAY_LABEL = new Date().toLocaleDateString("en-GB", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
 function relativeDays(iso: string): string {
   const day = 86_400_000;
   const start = new Date();
@@ -37,23 +43,25 @@ export function CommandCenter({ data, digest, suggestions, suggestionsLoading }:
   const nextShoot = shoots[0];
 
   return (
-    <section className="grid grid-cols-1 gap-6 rounded-xl border border-gray-100 bg-white p-6 lg:grid-cols-[1.5fr_1fr]">
+    <section className="grid grid-cols-1 gap-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm lg:grid-cols-[1.5fr_1fr]">
       {/* Left — greeting, digest, numbers, suggestions */}
       <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
             {greeting()}, {firstName}
           </h1>
-          <p className="mt-1 flex items-start gap-1.5 text-sm leading-relaxed text-gray-500">
+          <p className="text-sm text-gray-400">{TODAY_LABEL}</p>
+          <p className="mt-2 flex items-start gap-1.5 text-sm leading-relaxed text-gray-500">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#D4A853]" />
             <span>{digest || "Pulling together your day…"}</span>
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="grid grid-cols-4 gap-2">
           <Stat label="Overdue" value={counts.overdue} tone="red" />
           <Stat label="Due today" value={counts.today} tone="amber" />
           <Stat label="This week" value={counts.week} tone="gray" />
+          <Stat label="In progress" value={counts.inProgress} tone="blue" />
         </div>
 
         <ProactiveSuggestions suggestions={suggestions} loading={suggestionsLoading} />
@@ -120,15 +128,16 @@ function Stat({
 }: {
   label: string;
   value: number;
-  tone: "red" | "amber" | "gray";
+  tone: "red" | "amber" | "gray" | "blue";
 }) {
   const tones = {
     red: "border-red-100 bg-red-50 text-red-600",
     amber: "border-[#D4A853]/30 bg-[#D4A853]/10 text-[#9a7322]",
     gray: "border-gray-100 bg-gray-50 text-gray-600",
+    blue: "border-blue-100 bg-blue-50 text-blue-600",
   };
   return (
-    <div className={`flex-1 rounded-xl border px-3 py-2.5 ${tones[tone]}`}>
+    <div className={`rounded-xl border px-3 py-2.5 ${tones[tone]}`}>
       <p className="text-2xl font-bold leading-none">{value}</p>
       <p className="mt-1 text-xs font-medium opacity-80">{label}</p>
     </div>

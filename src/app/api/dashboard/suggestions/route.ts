@@ -22,7 +22,7 @@ export const POST = withAuth(async (_request: NextRequest, _ctx, user) => {
   todayStart.setHours(0, 0, 0, 0);
   const horizon = new Date(todayStart.getTime() + 42 * DAY_MS);
 
-  const [tasks, deadlines, events, productions] = await Promise.all([
+  const [tasks, deadlines, events, productions, deals] = await Promise.all([
     prisma.task.findMany({
       where: { assignedToId: user.userId, status: { not: "DONE" } },
       orderBy: { dueDate: "asc" },
@@ -39,6 +39,17 @@ export const POST = withAuth(async (_request: NextRequest, _ctx, user) => {
     prisma.production.findMany({
       where: { status: { not: "ARCHIVED" } },
       select: { title: true, shootDates: true },
+    }),
+    prisma.campaign.findMany({
+      where: { status: { notIn: ["ARCHIVED", "PAID", "DELIVERED"] } },
+      select: {
+        title: true,
+        status: true,
+        updatedAt: true,
+        client: { select: { name: true } },
+      },
+      orderBy: { updatedAt: "asc" },
+      take: 12,
     }),
   ]);
 
@@ -61,6 +72,12 @@ export const POST = withAuth(async (_request: NextRequest, _ctx, user) => {
         lines.push(`SHOOT ${p.title} in ${daysFrom(todayStart, sd)}d`);
       }
     }
+  }
+  for (const c of deals) {
+    const stale = Math.abs(daysFrom(todayStart, c.updatedAt));
+    lines.push(
+      `DEAL ${c.client?.name ?? "Unknown"} — ${c.title} [${c.status}, last updated ${stale}d ago]`,
+    );
   }
 
   const overdueCount =
@@ -107,7 +124,7 @@ export const POST = withAuth(async (_request: NextRequest, _ctx, user) => {
       system:
         "You are an executive assistant for a team member at Outlander Magazine, a UK fashion and culture publication. " +
         "Given their current workload, write a short digest and 2-3 sharp, proactive suggestions. " +
-        "Suggestions should be specific and actionable (e.g. chasing a stalled deadline, prepping for an upcoming cultural moment or shoot). " +
+        "Suggestions should be specific and actionable (e.g. chasing a stalled deadline, following up a brand deal that has gone quiet, prepping for an upcoming cultural moment or shoot). " +
         'Respond with STRICT JSON only, no prose: {"digest":"1-2 sentences","suggestions":[{"title":"short headline","detail":"one sentence"}]}',
       messages: [
         {
