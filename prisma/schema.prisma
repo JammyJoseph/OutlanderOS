@@ -213,6 +213,7 @@ model Production {
   id           String           @id @default(cuid())
   campaignId   String?          @unique
   campaign     Campaign?        @relation(fields: [campaignId], references: [id])
+  trelloCardId String?          // linked Trello deal card (Commercial pipeline)
   title        String
   clientName   String?
   brief        String?
@@ -526,6 +527,20 @@ model CrossLink {
   @@unique([fromType, fromId, toType, toId])
   @@index([fromType, fromId])
   @@index([toType, toId])
+}
+
+// ===== FINANCE DEALS (Trello budgets → Finance) =====
+model FinanceDeal {
+  id           String   @id @default(cuid())
+  trelloCardId String   @unique
+  cardName     String
+  client       String?
+  budget       Float
+  budgetLabel  String
+  stage        String?
+  cardUrl      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 // ===== INTELLIGENCE ENGINE =====

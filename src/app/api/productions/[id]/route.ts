@@ -76,6 +76,9 @@ export const PUT = withAuth(async (
     }
     if (body.campaignId !== undefined) updateData.campaignId = body.campaignId || null;
     if (body.leadId !== undefined) updateData.leadId = body.leadId || null;
+    if (body.trelloCardId !== undefined) {
+      updateData.trelloCardId = body.trelloCardId || null;
+    }
 
     const production = await prisma.production.update({
       where: { id },

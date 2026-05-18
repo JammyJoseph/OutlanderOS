@@ -82,6 +82,18 @@ interface TrelloChecklist {
   checkItems: TrelloCheckItem[];
 }
 
+interface IgPost {
+  id: string;
+  caption: string | null;
+  permalink: string | null;
+  thumbnailUrl: string | null;
+  mediaType: string;
+  likeCount: number;
+  commentCount: number;
+  reachCount: number;
+  engagementRate: number;
+}
+
 const STAGE_TONE: Record<string, string> = {
   "CARD TEMPLATES": "bg-gray-100 text-gray-600",
   "2025 SPILL": "bg-rose-50 text-rose-700",
@@ -294,6 +306,12 @@ function CardPanel({
   const [postingComment, setPostingComment] = useState(false);
   const [loadingExtras, setLoadingExtras] = useState(true);
   const [labelMenuOpen, setLabelMenuOpen] = useState(false);
+  const [linkedProduction, setLinkedProduction] = useState<{
+    id: string;
+    title: string;
+    status: string;
+  } | null>(null);
+  const [igPosts, setIgPosts] = useState<IgPost[]>([]);
 
   useEffect(() => {
     setName(card.name);
@@ -309,11 +327,15 @@ function CardPanel({
     Promise.all([
       fetch(`/api/trello/cards/${card.id}/comments`).then((r) => r.json()).catch(() => ({ comments: [] })),
       fetch(`/api/trello/cards/${card.id}/checklist`).then((r) => r.json()).catch(() => ({ checklists: [] })),
+      fetch(`/api/productions?trelloCardId=${card.id}`).then((r) => r.json()).catch(() => ({ production: null })),
+      fetch(`/api/content-tracker?campaign=${card.id}&limit=12`).then((r) => r.json()).catch(() => ({ posts: [] })),
     ])
-      .then(([c, ck]) => {
+      .then(([c, ck, prod, ig]) => {
         if (cancelled) return;
         setComments(Array.isArray(c?.comments) ? c.comments : []);
         setChecklists(Array.isArray(ck?.checklists) ? ck.checklists : []);
+        setLinkedProduction(prod?.production ?? null);
+        setIgPosts(Array.isArray(ig?.posts) ? ig.posts : []);
       })
       .finally(() => {
         if (!cancelled) setLoadingExtras(false);
@@ -487,6 +509,65 @@ function CardPanel({
             <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2">
               <p className="text-[10px] uppercase tracking-wide text-emerald-600">Budget</p>
               <p className="text-sm font-semibold text-emerald-800">{card.budgetLabel}</p>
+            </div>
+          )}
+
+          {linkedProduction && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1.5">
+                Production Project
+              </p>
+              <a
+                href={`/production/${linkedProduction.id}`}
+                className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 hover:bg-gray-50"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-medium text-gray-800">
+                    {linkedProduction.title}
+                  </span>
+                  <span className="text-[10px] text-gray-400">{linkedProduction.status}</span>
+                </span>
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              </a>
+            </div>
+          )}
+
+          {igPosts.length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1.5">
+                Assigned IG Posts ({igPosts.length})
+              </p>
+              <div className="space-y-1.5">
+                {igPosts.map((p) => (
+                  <a
+                    key={p.id}
+                    href={p.permalink ?? "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2.5 rounded-lg border border-gray-100 bg-white px-2.5 py-2 hover:bg-gray-50"
+                  >
+                    {p.thumbnailUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.thumbnailUrl}
+                        alt=""
+                        className="h-9 w-9 shrink-0 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="h-9 w-9 shrink-0 rounded bg-gray-100" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11px] text-gray-700">
+                        {p.caption?.trim() || p.mediaType}
+                      </p>
+                      <p className="text-[10px] text-gray-400">
+                        {p.likeCount.toLocaleString()} likes · {p.commentCount.toLocaleString()} comments ·{" "}
+                        {p.engagementRate.toFixed(1)}% ER
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
             </div>
           )}
 

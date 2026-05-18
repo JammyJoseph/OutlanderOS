@@ -3,8 +3,16 @@ import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { validateRequired, sanitizeString } from "@/lib/validate";
 
-export const GET = withAuth(async () => {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
+    const trelloCardId = request.nextUrl.searchParams.get("trelloCardId");
+    if (trelloCardId) {
+      const production = await prisma.production.findFirst({
+        where: { trelloCardId },
+        select: { id: true, title: true, status: true, clientName: true },
+      });
+      return NextResponse.json({ production });
+    }
     const productions = await prisma.production.findMany({
       include: {
         campaign: { include: { client: true } },

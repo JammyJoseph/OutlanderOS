@@ -30,10 +30,30 @@ export async function syncTrello(): Promise<SyncJobResult> {
   const candidates: DeadlineCandidate[] = [];
   const presentRefs: string[] = [];
   const allCards: Array<{ id: string; name: string; url?: string }> = [];
+  const budgetCards: Array<{
+    id: string;
+    name: string;
+    client: string;
+    budget: number;
+    budgetLabel: string;
+    url?: string;
+    stage: string;
+  }> = [];
 
   for (const stage of snap.stages) {
     for (const card of stage.cards) {
       allCards.push({ id: card.id, name: card.name, url: card.url });
+      if (card.budget !== null) {
+        budgetCards.push({
+          id: card.id,
+          name: card.name,
+          client: card.client,
+          budget: card.budget,
+          budgetLabel: card.budgetLabel,
+          url: card.url,
+          stage: stage.name,
+        });
+      }
       if (!card.dueDate) continue;
       presentRefs.push(card.id);
       candidates.push({
@@ -54,11 +74,61 @@ export async function syncTrello(): Promise<SyncJobResult> {
   const upsert = await batchUpsertDeadlines(candidates);
   const reconciled = await reconcileMissing("trello", presentRefs);
   const linked = await linkTrelloCardsToProductions(allCards);
+  const financeDeals = await syncFinanceDealsFromTrello(budgetCards);
 
   return {
     records: upsert.created + upsert.updated,
-    detail: `cards: ${candidates.length}, created: ${upsert.created}, updated: ${upsert.updated}, completed: ${reconciled}, linked-to-prod: ${linked}`,
+    detail: `cards: ${candidates.length}, created: ${upsert.created}, updated: ${upsert.updated}, completed: ${reconciled}, linked-to-prod: ${linked}, finance-deals: ${financeDeals}`,
   };
+}
+
+/**
+ * Mirror Trello cards that carry a parsed budget into FinanceDeal records so
+ * the finance portal can surface pipeline deal budgets. Cards that no longer
+ * carry a budget are dropped.
+ */
+async function syncFinanceDealsFromTrello(
+  cards: Array<{
+    id: string;
+    name: string;
+    client: string;
+    budget: number;
+    budgetLabel: string;
+    url?: string;
+    stage: string;
+  }>
+): Promise<number> {
+  for (const c of cards) {
+    try {
+      await prisma.financeDeal.upsert({
+        where: { trelloCardId: c.id },
+        update: {
+          cardName: c.name,
+          client: c.client || null,
+          budget: c.budget,
+          budgetLabel: c.budgetLabel,
+          stage: c.stage,
+          cardUrl: c.url ?? null,
+        },
+        create: {
+          trelloCardId: c.id,
+          cardName: c.name,
+          client: c.client || null,
+          budget: c.budget,
+          budgetLabel: c.budgetLabel,
+          stage: c.stage,
+          cardUrl: c.url ?? null,
+        },
+      });
+    } catch (err) {
+      console.error("[sync] syncFinanceDealsFromTrello upsert failed:", err);
+    }
+  }
+  const presentIds = cards.map((c) => c.id);
+  await prisma.financeDeal.deleteMany({
+    where: { trelloCardId: { notIn: presentIds.length ? presentIds : ["__none__"] } },
+  });
+  return cards.length;
 }
 
 /** Print: aggregate print issues' printDate + page assignments. */
@@ -201,6 +271,23 @@ export async function syncDailyDigest(): Promise<SyncJobResult> {
   };
 }
 
+/**
+ * Payment reconciler — moves Trello deal cards to "Work Paid" when Xero
+ * confirms a payment. DISABLED until Xero OAuth is connected; the job runs
+ * but reconcilePayments() returns early. See src/lib/payment-reconciler.ts.
+ */
+export async function syncPaymentReconcile(): Promise<SyncJobResult> {
+  const { reconcilePayments } = await import("./payment-reconciler");
+  const r = await reconcilePayments();
+  if (!r.enabled) {
+    return { records: 0, detail: r.reason ?? "disabled" };
+  }
+  return {
+    records: r.cardsMoved,
+    detail: `paid invoices: ${r.paidInvoices}, cards moved: ${r.cardsMoved}`,
+  };
+}
+
 export type SyncSource =
   | "trello"
   | "printSheet"
@@ -210,7 +297,8 @@ export type SyncSource =
   | "culturalCalendar"
   | "intelligence"
   | "autoPing"
-  | "dailyDigest";
+  | "dailyDigest"
+  | "paymentReconcile";
 
 export const SYNC_JOBS: Record<SyncSource, () => Promise<SyncJobResult>> = {
   trello: syncTrello,
@@ -222,6 +310,7 @@ export const SYNC_JOBS: Record<SyncSource, () => Promise<SyncJobResult>> = {
   intelligence: syncIntelligence,
   autoPing: syncAutoPing,
   dailyDigest: syncDailyDigest,
+  paymentReconcile: syncPaymentReconcile,
 };
 
 export const SYNC_INTERVALS: Record<SyncSource, number> = {
@@ -234,6 +323,7 @@ export const SYNC_INTERVALS: Record<SyncSource, number> = {
   intelligence: 6 * 60 * 60 * 1000,
   autoPing: 15 * 60 * 1000,
   dailyDigest: 24 * 60 * 60 * 1000,
+  paymentReconcile: 60 * 60 * 1000,
 };
 
 export const SYNC_LABELS: Record<SyncSource, string> = {
@@ -246,6 +336,7 @@ export const SYNC_LABELS: Record<SyncSource, string> = {
   intelligence: "Task Intelligence",
   autoPing: "Auto-Ping",
   dailyDigest: "Daily Digest",
+  paymentReconcile: "Payment Reconciler",
 };
 
 // Used by /api/sync/status to compute "stale" thresholds.

@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Loader2, RefreshCw, AlertCircle, TrendingUp, Link2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import CrossPortalPanel from './_components/CrossPortalPanel'
 
 interface Deal {
   ioNumber: string
@@ -810,7 +811,12 @@ function FinancePageInner() {
 
         {loading ? (
           <SkeletonTable rows={8} />
-        ) : activeTab === 'overview' ? <OverviewTab bt={data?.billingTracker} xero={data?.xero} />
+        ) : activeTab === 'overview' ? (
+          <div className="space-y-5">
+            <OverviewTab bt={data?.billingTracker} xero={data?.xero} />
+            <CrossPortalPanel />
+          </div>
+        )
           : activeTab === 'expenses' ? <ExpensesTab xero={data?.xero} />
           : activeTab === 'cashflow' ? <CashFlowTab xero={data?.xero} bt={data?.billingTracker} />
           : !bt ? <p className="text-sm text-gray-500">No billing data available.</p>

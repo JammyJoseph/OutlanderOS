@@ -248,6 +248,7 @@ export default function ProjectDetail() {
               shootDates={shootDates}
               setShootDates={setShootDates}
               scheduleSave={scheduleSave}
+              refresh={refresh}
             />
           )}
           {tab === "budget" && (

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { format, parseISO, isAfter, startOfDay } from "date-fns";
 import { ProductionFull, gbp } from "./types";
+import LinkedDeal from "./LinkedDeal";
 
 interface Props {
   production: ProductionFull;
@@ -25,6 +26,7 @@ interface Props {
   shootDates: string[];
   setShootDates: (s: string[]) => void;
   scheduleSave: () => void;
+  refresh: () => void;
 }
 
 export default function OverviewTab({
@@ -38,6 +40,7 @@ export default function OverviewTab({
   shootDates,
   setShootDates,
   scheduleSave,
+  refresh,
 }: Props) {
   const totalBudgeted = useMemo(
     () => (production.budgetItems ?? []).reduce((sum, it) => sum + (it.budgeted || 0), 0),
@@ -196,7 +199,13 @@ export default function OverviewTab({
           )}
         </div>
 
-        {/* Shoot dates editor */}
+        {/* Sidebar — linked deal + shoot dates */}
+        <div className="space-y-5">
+        <LinkedDeal
+          productionId={production.id}
+          trelloCardId={production.trelloCardId}
+          onChange={refresh}
+        />
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
@@ -249,6 +258,7 @@ export default function OverviewTab({
               {(production.prodDeliverables ?? []).length === 1 ? "" : "s"}
             </p>
           </div>
+        </div>
         </div>
       </div>
     </div>

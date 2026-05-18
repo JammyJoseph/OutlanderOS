@@ -340,5 +340,30 @@ export async function linkPrintMilestonesToDeadlines(): Promise<UpsertResult> {
       linkedType: "printIssue",
       linkedId: i.id,
     }));
+
+  // Timeline milestones from the print Google Sheet — upcoming only.
+  try {
+    const { fetchPrintTimelineMilestones } = await import("./print-sheet");
+    const milestones = await fetchPrintTimelineMilestones();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    for (const m of milestones) {
+      if (m.date < now) continue;
+      const ref = `sheet:${m.issue}:${normaliseTitle(m.label)}`.slice(0, 180);
+      candidates.push({
+        title: `Print: ${m.label} — ${m.issue}`,
+        dueDate: m.date,
+        source: "print",
+        sourceRef: ref,
+        sourceUrl: `/print`,
+        type: "deliverable",
+        priority: "HIGH",
+        category: "print",
+      });
+    }
+  } catch (err) {
+    console.error("[cross-ref] print timeline milestones failed:", err);
+  }
+
   return batchUpsertDeadlines(candidates);
 }
