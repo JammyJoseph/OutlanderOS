@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export const GET = withAuth(async () => {
   try {
     const posts = await prisma.instagramPost.findMany({
       select: { brands: true, reachCount: true, engagementRate: true },
@@ -37,4 +38,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

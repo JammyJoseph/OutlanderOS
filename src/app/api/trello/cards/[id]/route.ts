@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { archiveCard, fetchCard, getChecklists, getComments, updateCard } from "@/lib/trello";
 import { clearCachedSnapshot } from "@/lib/trello-cache";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
+export const GET = withAuth(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const url = new URL(req.url);
@@ -24,12 +25,12 @@ export async function GET(
     const message = err instanceof Error ? err.message : "Failed to fetch card";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});
 
-export async function PUT(
+export const PUT = withAuth(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const body = await req.json();
@@ -49,12 +50,12 @@ export async function PUT(
     const message = err instanceof Error ? err.message : "Failed to update card";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuth(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const card = await archiveCard(id);
@@ -65,4 +66,4 @@ export async function DELETE(
     const message = err instanceof Error ? err.message : "Failed to archive card";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

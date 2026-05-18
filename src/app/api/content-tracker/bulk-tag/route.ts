@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 const ALLOWED_TYPES = ["ORGANIC", "EDITORIAL", "PAID", "COMMUNITY", "UNCLASSIFIED"];
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest) => {
   try {
     const body = await req.json();
     const postIds: string[] = Array.isArray(body.postIds)
@@ -61,4 +62,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

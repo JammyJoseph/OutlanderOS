@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { suggestNextActions } from "@/lib/ai-intelligence";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
+export const GET = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const project = await prisma.smartProject.findUnique({ where: { id } });
@@ -39,12 +40,12 @@ export async function GET(
     console.error("GET /api/intelligence/projects/[id]", err);
     return NextResponse.json({ error: "Failed to fetch project" }, { status: 500 });
   }
-}
+});
 
-export async function PUT(
+export const PUT = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const body = await request.json();
@@ -108,12 +109,12 @@ export async function PUT(
     console.error("PUT /api/intelligence/projects/[id]", err);
     return NextResponse.json({ error: "Failed to update project" }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     await prisma.smartProject.update({
@@ -125,4 +126,4 @@ export async function DELETE(
     console.error("DELETE /api/intelligence/projects/[id]", err);
     return NextResponse.json({ error: "Failed to archive project" }, { status: 500 });
   }
-}
+});

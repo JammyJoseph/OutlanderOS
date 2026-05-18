@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateCheckItem } from "@/lib/trello";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function PUT(
+export const PUT = withAuth(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string; itemId: string }> }
-) {
+) => {
   try {
     const { id, itemId } = await params;
     const body = await req.json();
@@ -18,4 +19,4 @@ export async function PUT(
     const message = err instanceof Error ? err.message : "Failed to update checkitem";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

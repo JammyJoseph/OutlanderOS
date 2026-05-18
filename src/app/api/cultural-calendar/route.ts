@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { withAuth } from '@/lib/auth'
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const month = searchParams.get('month')
   const category = searchParams.get('category')
@@ -53,9 +54,9 @@ export async function GET(request: NextRequest) {
   })
 
   return NextResponse.json(events)
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   const body = await request.json()
   const { title, date, category } = body
   if (!title || !date || !category) {
@@ -83,4 +84,4 @@ export async function POST(request: NextRequest) {
   })
 
   return NextResponse.json(event, { status: 201 })
-}
+})

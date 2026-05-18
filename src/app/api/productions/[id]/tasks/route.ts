@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
-export async function GET(
+export const GET = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
   try {
     const tasks = await prisma.productionTask.findMany({
@@ -15,12 +16,12 @@ export async function GET(
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});
 
-export async function POST(
+export const POST = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
   const body = await request.json();
   try {
@@ -47,9 +48,9 @@ export async function POST(
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});
 
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest) => {
   const url = new URL(request.url);
   const taskId = url.searchParams.get("taskId");
   if (!taskId) return NextResponse.json({ error: "taskId required" }, { status: 400 });
@@ -84,9 +85,9 @@ export async function PUT(request: NextRequest) {
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(async (request: NextRequest) => {
   const url = new URL(request.url);
   const taskId = url.searchParams.get("taskId");
   if (!taskId) return NextResponse.json({ error: "taskId required" }, { status: 400 });
@@ -100,4 +101,4 @@ export async function DELETE(request: NextRequest) {
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
-}
+});

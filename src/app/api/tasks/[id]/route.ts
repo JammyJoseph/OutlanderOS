@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const me = getCurrentUser(request)
-  if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const { id } = await params
+// A member may only see/modify tasks assigned to or created by them.
+async function loadOwnedTask(id: string, userId: string, isAdmin: boolean) {
   const task = await prisma.task.findUnique({
     where: { id },
     include: {
@@ -13,14 +11,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       createdBy: { select: { id: true, name: true, email: true } },
     },
   })
-  if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ task })
+  if (!task) return { error: 'Not found', status: 404 as const }
+  if (!isAdmin && task.assignedToId !== userId && task.createdById !== userId) {
+    return { error: 'Forbidden', status: 403 as const }
+  }
+  return { task }
+}
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const me = getCurrentUser(request)
+  if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { id } = await params
+  const owned = await loadOwnedTask(id, me.userId, me.role === 'ADMIN')
+  if ('error' in owned) {
+    return NextResponse.json({ error: owned.error }, { status: owned.status })
+  }
+  return NextResponse.json({ task: owned.task })
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
+  const owned = await loadOwnedTask(id, me.userId, me.role === 'ADMIN')
+  if ('error' in owned) {
+    return NextResponse.json({ error: owned.error }, { status: owned.status })
+  }
   const body = await request.json()
 
   const data: Record<string, unknown> = {}
@@ -52,6 +68,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
+  const owned = await loadOwnedTask(id, me.userId, me.role === 'ADMIN')
+  if ('error' in owned) {
+    return NextResponse.json({ error: owned.error }, { status: owned.status })
+  }
   try {
     await prisma.task.delete({ where: { id } })
     return NextResponse.json({ success: true })

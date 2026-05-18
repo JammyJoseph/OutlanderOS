@@ -12,10 +12,14 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status') || undefined
   const portal = searchParams.get('portal') || undefined
   const scope = searchParams.get('scope') // "mine" | "all"
+  const isAdmin = me.role === 'ADMIN'
 
   const where: Record<string, unknown> = {}
-  if (assignedToId) where.assignedToId = assignedToId
-  else if (scope !== 'all') where.assignedToId = me.userId
+  // Members are always scoped to their own tasks; only admins may view
+  // another user's tasks or the full board.
+  if (isAdmin && assignedToId) where.assignedToId = assignedToId
+  else if (isAdmin && scope === 'all') { /* no assignee filter */ }
+  else where.assignedToId = me.userId
   if (status) where.status = status
   if (portal) where.portal = portal
 

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
+import { withAuth } from '@/lib/auth'
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const category = searchParams.get('category') || ''
   const categories = searchParams.get('categories') || ''
@@ -48,4 +49,4 @@ export async function GET(request: NextRequest) {
   })
 
   return NextResponse.json(signals)
-}
+})

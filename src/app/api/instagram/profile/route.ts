@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getProfile, InstagramApiError } from "@/lib/instagram";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export const GET = withAuth(async () => {
   try {
     const profile = await getProfile();
     return NextResponse.json(profile);
@@ -18,4 +19,4 @@ export async function GET() {
     const message = err instanceof Error ? err.message : "Failed to fetch profile";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

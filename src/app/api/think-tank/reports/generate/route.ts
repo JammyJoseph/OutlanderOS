@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import prisma from '@/lib/prisma'
+import { withAuth } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,7 @@ function isoWeek(d: Date): string {
   return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   const body = await request.json().catch(() => ({}))
   const type: 'weekly' | 'monthly' | 'brand_pitch' | 'custom' = body.type || 'weekly'
   const brandId: string | undefined = body.brandId
@@ -145,4 +146,4 @@ Keep it scannable and editorial.`
   })
 
   return NextResponse.json(report, { status: 201 })
-}
+})

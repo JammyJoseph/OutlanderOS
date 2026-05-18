@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth";
 
 // Daily forecast shape returned to the client
 interface DailyForecast {
@@ -19,7 +20,7 @@ interface OwmEntry {
   wind: { speed: number };
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get("lat");
   const lng = searchParams.get("lng");
@@ -107,4 +108,4 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   }
-}
+});

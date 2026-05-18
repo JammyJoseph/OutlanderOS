@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccountInsights, InstagramApiError } from "@/lib/instagram";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const periodParam = searchParams.get("period") ?? "day";
@@ -25,4 +26,4 @@ export async function GET(request: NextRequest) {
     const message = err instanceof Error ? err.message : "Failed to fetch insights";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { analyzeAndGroupTasks } from "@/lib/ai-intelligence";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export const POST = withAuth(async () => {
   try {
     const result = await analyzeAndGroupTasks();
     return NextResponse.json(result);
@@ -14,4 +15,4 @@ export async function POST() {
       { status: 500 }
     );
   }
-}
+});

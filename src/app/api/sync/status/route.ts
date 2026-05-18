@@ -7,6 +7,7 @@ import {
   isStale,
   type SyncSource,
 } from "@/lib/sync-jobs";
+import { withAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ interface SourceStatus {
   health: "healthy" | "stale" | "error";
 }
 
-export async function GET() {
+export const GET = withAdmin(async () => {
   const engine = getSyncEngine();
   const sources = Object.keys(SYNC_INTERVALS) as SyncSource[];
   const rows = await prisma.syncStatus.findMany({
@@ -74,4 +75,4 @@ export async function GET() {
       error: statuses.filter((s) => s.health === "error").length,
     },
   });
-}
+});

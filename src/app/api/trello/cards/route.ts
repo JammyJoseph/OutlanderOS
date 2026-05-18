@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCard } from "@/lib/trello";
 import { clearCachedSnapshot } from "@/lib/trello-cache";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest) => {
   try {
     const body = await req.json();
     if (!body?.idList || !body?.name) {
@@ -26,4 +27,4 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Failed to create card";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

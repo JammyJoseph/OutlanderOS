@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { withAdmin } from '@/lib/auth'
 
 type SeedEvent = {
   title: string
@@ -157,7 +158,7 @@ const events: SeedEvent[] = [
   { title: 'Singles’ Day (11.11)', date: '2025-11-11', category: 'brand', subcategory: 'commerce', location: 'China / Global', description: 'World’s biggest online shopping day.', importance: 82, recurring: true, tags: ['retail'] },
 ]
 
-export async function POST() {
+export const POST = withAdmin(async () => {
   const created = await prisma.$transaction(
     events.map((e) =>
       prisma.culturalEvent.create({
@@ -179,9 +180,9 @@ export async function POST() {
     )
   )
   return NextResponse.json({ created: created.length })
-}
+})
 
-export async function DELETE() {
+export const DELETE = withAdmin(async () => {
   const result = await prisma.culturalEvent.deleteMany({})
   return NextResponse.json({ deleted: result.count })
-}
+})

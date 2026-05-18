@@ -42,10 +42,20 @@ export function getClientIp(request: Request): string {
   return request.headers.get("x-real-ip") || "local"
 }
 
+// Expensive AI/Claude-backed or email-scanning endpoints get a tighter budget.
+const AI_PATHS = new Set([
+  "/api/agent/chat",
+  "/api/briefing/scan-emails",
+  "/api/deadlines/scan-email",
+  "/api/deadlines/sync-portals",
+  "/api/think-tank/ingest",
+  "/api/think-tank/reports/generate",
+])
+
 // Picks the request-per-minute budget for a given API path.
 function limitForPath(pathname: string): { scope: string; limit: number } {
   if (pathname === "/api/auth/login") return { scope: "login", limit: 5 }
-  if (pathname === "/api/agent/chat" || pathname === "/api/briefing/scan-emails") {
+  if (AI_PATHS.has(pathname) || pathname.startsWith("/api/intelligence/")) {
     return { scope: "ai", limit: 10 }
   }
   return { scope: "std", limit: 100 }

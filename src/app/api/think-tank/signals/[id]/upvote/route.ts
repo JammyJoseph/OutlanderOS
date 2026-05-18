@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { withAuth } from '@/lib/auth'
 
-export async function POST(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withAuth(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
   try {
     const signal = await prisma.trendSignal.update({
@@ -12,4 +13,4 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   } catch {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
-}
+})

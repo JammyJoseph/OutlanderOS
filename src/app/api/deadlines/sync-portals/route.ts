@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/current-user";
 import { fetchCards } from "@/lib/trello";
 import { getSyncEngine } from "@/lib/sync-engine";
 
@@ -233,18 +232,12 @@ async function syncCampaignDeliverables(userId: string): Promise<SyncResult> {
   return result;
 }
 
-export async function POST() {
-  try {
-    const session = await getServerSession(authOptions);
-    let userId = session?.user?.id;
-    if (!userId) {
-      const fallback = await prisma.user.findFirst();
-      if (!fallback) {
-        return NextResponse.json({ error: "No user found" }, { status: 500 });
-      }
-      userId = fallback.id;
-    }
+export async function POST(request: NextRequest) {
+  const me = getCurrentUser(request);
+  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = me.userId;
 
+  try {
     // Also kick the engine's deadline sync so cross-references update
     // and the auto-schedule timer is reset.
     try {

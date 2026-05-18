@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { runAutoPing } from "@/lib/auto-escalation";
+import { withAdmin } from "@/lib/auth";
 
 const AUTOPING_INTERVAL_MS = 15 * 60 * 1000;
 
@@ -9,7 +10,7 @@ const AUTOPING_INTERVAL_MS = 15 * 60 * 1000;
  * run-on tasks, flag stale work. The scheduled job (sync engine, every 15
  * min) does the same — this is for on-demand runs.
  */
-export async function POST() {
+export const POST = withAdmin(async () => {
   try {
     const result = await runAutoPing();
 
@@ -54,4 +55,4 @@ export async function POST() {
       { status: 500 }
     );
   }
-}
+});

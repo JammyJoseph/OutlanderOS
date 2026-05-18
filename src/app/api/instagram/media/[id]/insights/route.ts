@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMediaInsights, InstagramApiError } from "@/lib/instagram";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
+export const GET = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const { searchParams } = new URL(request.url);
@@ -25,4 +26,4 @@ export async function GET(
     const message = err instanceof Error ? err.message : "Failed to fetch insights";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

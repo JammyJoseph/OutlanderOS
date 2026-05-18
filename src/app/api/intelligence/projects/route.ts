@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export const GET = withAuth(async () => {
   try {
     const projects = await prisma.smartProject.findMany({
       where: { status: { not: "ARCHIVED" } },
@@ -50,4 +51,4 @@ export async function GET() {
     console.error("GET /api/intelligence/projects", err);
     return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
   }
-}
+});

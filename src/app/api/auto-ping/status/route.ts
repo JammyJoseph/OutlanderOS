@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAdmin } from "@/lib/auth";
 
 /**
  * Reports auto-ping health: when escalation last ran and how many items are
  * currently overdue, due today, or flagged as stale.
  */
-export async function GET() {
+export const GET = withAdmin(async () => {
   try {
     const now = new Date();
     const todayStart = new Date(now);
@@ -64,4 +65,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

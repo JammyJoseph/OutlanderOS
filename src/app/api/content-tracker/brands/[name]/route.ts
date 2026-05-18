@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
+export const GET = withAuth(async (
   _req: NextRequest,
   { params }: { params: Promise<{ name: string }> }
-) {
+) => {
   try {
     const { name: encoded } = await params;
     const name = decodeURIComponent(encoded);
@@ -74,4 +75,4 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+});

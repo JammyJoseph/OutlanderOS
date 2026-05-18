@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { ingestAllFeeds } from '@/lib/think-tank/rss-ingester'
+import { withAuth } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-export async function POST() {
+export const POST = withAuth(async () => {
   const started = Date.now()
   const results = await ingestAllFeeds()
   const totals = results.reduce(
@@ -24,4 +25,4 @@ export async function POST() {
     totals,
     results,
   })
-}
+})

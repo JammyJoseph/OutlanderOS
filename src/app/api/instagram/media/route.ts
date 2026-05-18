@@ -4,10 +4,11 @@ import {
   getRecentMedia,
   InstagramApiError,
 } from "@/lib/instagram";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get("limit");
@@ -31,4 +32,4 @@ export async function GET(request: NextRequest) {
     const message = err instanceof Error ? err.message : "Failed to fetch media";
     return NextResponse.json({ error: message, data: [] }, { status: 500 });
   }
-}
+});

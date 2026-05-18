@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { getToken, setToken } from '@/lib/token-store'
+import { withAuth } from '@/lib/auth'
 
 const SHEET_ID = '1INpLAczQSTp0RdLV2_bPHC_2xO_Jhwy6MUDR2aALjZw'
 const CACHE_TTL_MS = 5 * 60 * 1000
@@ -456,7 +457,7 @@ async function fetchPrintData(): Promise<PrintData> {
   }
 }
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: Request) => {
   const url = new URL(request.url)
   const force = url.searchParams.get('refresh') === 'true'
 
@@ -472,4 +473,4 @@ export async function GET(request: Request) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ ...emptyData(msg, false), cached: false }, { status: 200 })
   }
-}
+})

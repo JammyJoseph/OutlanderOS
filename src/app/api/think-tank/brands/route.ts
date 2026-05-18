@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { withAuth } from '@/lib/auth'
 
-export async function GET() {
+export const GET = withAuth(async () => {
   const brands = await prisma.brandWatch.findMany({
     orderBy: [{ heatScore: 'desc' }, { updatedAt: 'desc' }],
   })
   return NextResponse.json(brands)
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   const body = await request.json().catch(() => ({}))
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   if (!name) {
@@ -35,4 +36,4 @@ export async function POST(request: NextRequest) {
   })
 
   return NextResponse.json(brand, { status: 201 })
-}
+})

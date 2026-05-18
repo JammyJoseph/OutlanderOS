@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 const ALLOWED_TYPES = ["ORGANIC", "EDITORIAL", "PAID", "COMMUNITY", "UNCLASSIFIED"];
 
-export async function PUT(
+export const PUT = withAuth(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const body = await req.json();
@@ -39,12 +40,12 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+});
 
-export async function GET(
+export const GET = withAuth(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const post = await prisma.instagramPost.findUnique({ where: { id } });
@@ -57,4 +58,4 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+});

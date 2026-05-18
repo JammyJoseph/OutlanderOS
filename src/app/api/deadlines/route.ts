@@ -1,34 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/current-user";
 import { detectProjectFromNewItem } from "@/lib/ai-intelligence";
 
-async function resolveUserId(): Promise<string | null> {
-  const session = await getServerSession(authOptions);
-  let userId = session?.user?.id;
-  if (!userId) {
-    const fallback = await prisma.user.findFirst();
-    if (!fallback) return null;
-    userId = fallback.id;
-  }
-  return userId;
-}
-
 export async function GET(request: NextRequest) {
-  try {
-    const userId = await resolveUserId();
-    if (!userId) {
-      return NextResponse.json({ error: "No user found" }, { status: 500 });
-    }
+  const me = getCurrentUser(request);
+  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const type = searchParams.get("type");
     const source = searchParams.get("source");
     const priority = searchParams.get("priority");
+    const all = searchParams.get("all") === "true";
 
-    const where: Record<string, unknown> = { assignedTo: userId };
+    const where: Record<string, unknown> = {};
+    // Members only ever see their own deadlines; admins may request all.
+    if (!(all && me.role === "ADMIN")) where.assignedTo = me.userId;
     if (status) where.status = status;
     if (type) where.type = type;
     if (source) where.source = source;
@@ -44,11 +33,7 @@ export async function GET(request: NextRequest) {
       if (d.status === "ACTIVE" && d.dueDate < now) {
         return { ...d, status: "OVERDUE" };
       }
-      if (
-        d.status === "SNOOZED" &&
-        d.snoozedUntil &&
-        d.snoozedUntil <= now
-      ) {
+      if (d.status === "SNOOZED" && d.snoozedUntil && d.snoozedUntil <= now) {
         return { ...d, status: d.dueDate < now ? "OVERDUE" : "ACTIVE" };
       }
       return d;
@@ -65,12 +50,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const userId = await resolveUserId();
-    if (!userId) {
-      return NextResponse.json({ error: "No user found" }, { status: 500 });
-    }
+  const me = getCurrentUser(request);
+  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  try {
     const body = await request.json();
     const {
       title,
@@ -104,12 +87,11 @@ export async function POST(request: NextRequest) {
         sourceUrl: sourceUrl ?? null,
         emailFrom: emailFrom ?? null,
         emailSnippet: emailSnippet ?? null,
-        assignedTo: userId,
-        createdBy: userId,
+        assignedTo: me.userId,
+        createdBy: me.userId,
       },
     });
 
-    // Auto-trigger: try to link the new deadline to an existing smart project
     try {
       await detectProjectFromNewItem({
         type: "deadline",
