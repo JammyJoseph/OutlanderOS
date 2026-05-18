@@ -47,6 +47,9 @@ model Task {
   assignedToId String
   createdBy    User      @relation("createdTasks", fields: [createdById], references: [id])
   createdById  String
+  escalatedAt     DateTime? // last time auto-ping raised this task
+  escalationLevel Int       @default(0) // 0 none, 1 HIGH, 2 URGENT, 3 7-day alert sent
+  staleFlaggedAt  DateTime? // set when flagged as stalled in-progress
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
@@ -262,6 +265,7 @@ model ProductionTask {
   status       String     @default("LOCKED")
   dependsOn    String?
   sortOrder    Int        @default(0)
+  unlockedAt   DateTime?  // set when auto-ping unlocks this run-on task
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -582,6 +586,8 @@ model Deadline {
   rawData      Json?
   completedAt  DateTime?
   snoozedUntil DateTime?
+  escalatedAt     DateTime? // last time auto-ping raised this deadline
+  escalationLevel Int       @default(0) // 0 none, 1 HIGH, 2 URGENT, 3 7-day alert sent
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

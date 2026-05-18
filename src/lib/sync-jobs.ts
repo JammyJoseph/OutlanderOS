@@ -168,6 +168,26 @@ export async function syncIntelligence(): Promise<SyncJobResult> {
   };
 }
 
+/**
+ * Auto-ping: escalate overdue tasks/deadlines, unlock run-on production
+ * tasks, and flag stale in-progress work. Escalation notifications it
+ * creates surface automatically in the notification bell.
+ */
+export async function syncAutoPing(): Promise<SyncJobResult> {
+  const { runAutoPing } = await import("./auto-escalation");
+  const r = await runAutoPing();
+  const records =
+    r.escalation.tasksEscalated +
+    r.escalation.deadlinesEscalated +
+    r.runOn.tasksUnlocked +
+    r.stale.staleFlagged +
+    r.stale.deadlinesReactivated;
+  return {
+    records,
+    detail: `escalated ${r.escalation.tasksEscalated} task(s) + ${r.escalation.deadlinesEscalated} deadline(s), unlocked ${r.runOn.tasksUnlocked}, stale ${r.stale.staleFlagged}, reactivated ${r.stale.deadlinesReactivated}, ${r.totalNotifications} notification(s)`,
+  };
+}
+
 export type SyncSource =
   | "trello"
   | "printSheet"
@@ -175,7 +195,8 @@ export type SyncSource =
   | "rssFeeds"
   | "deadlineSync"
   | "culturalCalendar"
-  | "intelligence";
+  | "intelligence"
+  | "autoPing";
 
 export const SYNC_JOBS: Record<SyncSource, () => Promise<SyncJobResult>> = {
   trello: syncTrello,
@@ -185,6 +206,7 @@ export const SYNC_JOBS: Record<SyncSource, () => Promise<SyncJobResult>> = {
   deadlineSync: syncDeadlines,
   culturalCalendar: syncCulturalCalendar,
   intelligence: syncIntelligence,
+  autoPing: syncAutoPing,
 };
 
 export const SYNC_INTERVALS: Record<SyncSource, number> = {
@@ -195,6 +217,7 @@ export const SYNC_INTERVALS: Record<SyncSource, number> = {
   deadlineSync: 5 * 60 * 1000,
   culturalCalendar: 24 * 60 * 60 * 1000,
   intelligence: 6 * 60 * 60 * 1000,
+  autoPing: 15 * 60 * 1000,
 };
 
 export const SYNC_LABELS: Record<SyncSource, string> = {
@@ -205,6 +228,7 @@ export const SYNC_LABELS: Record<SyncSource, string> = {
   deadlineSync: "Deadline Sync",
   culturalCalendar: "Cultural Calendar",
   intelligence: "Task Intelligence",
+  autoPing: "Auto-Ping",
 };
 
 // Used by /api/sync/status to compute "stale" thresholds.
