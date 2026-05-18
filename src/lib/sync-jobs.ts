@@ -158,13 +158,24 @@ export async function syncCulturalCalendar(): Promise<SyncJobResult> {
   return { records: 0, detail: "no source configured" };
 }
 
+/** Task intelligence — group related tasks & deadlines into smart projects. */
+export async function syncIntelligence(): Promise<SyncJobResult> {
+  const { analyzeAndGroupTasks } = await import("./ai-intelligence");
+  const result = await analyzeAndGroupTasks();
+  return {
+    records: result.projectsCreated,
+    detail: `projects created: ${result.projectsCreated}, items grouped: ${result.itemsGrouped}`,
+  };
+}
+
 export type SyncSource =
   | "trello"
   | "printSheet"
   | "emailScan"
   | "rssFeeds"
   | "deadlineSync"
-  | "culturalCalendar";
+  | "culturalCalendar"
+  | "intelligence";
 
 export const SYNC_JOBS: Record<SyncSource, () => Promise<SyncJobResult>> = {
   trello: syncTrello,
@@ -173,6 +184,7 @@ export const SYNC_JOBS: Record<SyncSource, () => Promise<SyncJobResult>> = {
   rssFeeds: syncRssFeeds,
   deadlineSync: syncDeadlines,
   culturalCalendar: syncCulturalCalendar,
+  intelligence: syncIntelligence,
 };
 
 export const SYNC_INTERVALS: Record<SyncSource, number> = {
@@ -182,6 +194,7 @@ export const SYNC_INTERVALS: Record<SyncSource, number> = {
   rssFeeds: 30 * 60 * 1000,
   deadlineSync: 5 * 60 * 1000,
   culturalCalendar: 24 * 60 * 60 * 1000,
+  intelligence: 6 * 60 * 60 * 1000,
 };
 
 export const SYNC_LABELS: Record<SyncSource, string> = {
@@ -191,6 +204,7 @@ export const SYNC_LABELS: Record<SyncSource, string> = {
   rssFeeds: "RSS Feeds",
   deadlineSync: "Deadline Sync",
   culturalCalendar: "Cultural Calendar",
+  intelligence: "Task Intelligence",
 };
 
 // Used by /api/sync/status to compute "stale" thresholds.

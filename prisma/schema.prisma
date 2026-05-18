@@ -590,6 +590,25 @@ model Deadline {
   @@index([status])
 }
 
+// ===== AI TASK INTELLIGENCE =====
+model SmartProject {
+  id                String    @id @default(cuid())
+  name              String
+  description       String?
+  brand             String?
+  confidence        Float     @default(0.8)
+  status            String    @default("ACTIVE") // ACTIVE, COMPLETED, ARCHIVED
+  linkedTasks       String[]  @default([])
+  linkedDeadlines   String[]  @default([])
+  linkedTrelloCards String[]  @default([])
+  linkedProductions String[]  @default([])
+  externalPeople    String[]  @default([])
+  aiSummary         String?
+  lastAnalyzed      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
 model MediaPlanLineItem {
   id                String    @id @default(cuid())
   mediaPlanId       String

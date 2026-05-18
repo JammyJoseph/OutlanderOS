@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { detectProjectFromNewItem } from "@/lib/ai-intelligence";
 
 async function resolveUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -107,6 +108,19 @@ export async function POST(request: NextRequest) {
         createdBy: userId,
       },
     });
+
+    // Auto-trigger: try to link the new deadline to an existing smart project
+    try {
+      await detectProjectFromNewItem({
+        type: "deadline",
+        id: deadline.id,
+        title: deadline.title,
+        description: deadline.description,
+        context: deadline.category ?? deadline.type,
+      });
+    } catch {
+      // Non-fatal — periodic analysis will catch it
+    }
 
     return NextResponse.json(deadline, { status: 201 });
   } catch (err) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
+import { detectProjectFromNewItem } from '@/lib/ai-intelligence'
 
 export async function GET(request: NextRequest) {
   const me = getCurrentUser(request)
@@ -74,6 +75,19 @@ export async function POST(request: NextRequest) {
           link: '/me',
         },
       })
+    }
+
+    // Auto-trigger: try to link the new task to an existing smart project
+    try {
+      await detectProjectFromNewItem({
+        type: 'task',
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        context: task.portal,
+      })
+    } catch {
+      // Non-fatal — periodic analysis will catch it
     }
 
     return NextResponse.json({ task })

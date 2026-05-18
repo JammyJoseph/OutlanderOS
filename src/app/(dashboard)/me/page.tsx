@@ -21,6 +21,8 @@ import {
   Trash2,
   AlarmClock,
 } from "lucide-react";
+import { DailyDigestCard } from "@/components/intelligence/DailyDigestCard";
+import { SmartProjectsSection } from "@/components/intelligence/SmartProjectsSection";
 
 // ===== Types =====
 interface Me {
@@ -754,6 +756,9 @@ export default function MeDashboard() {
         </Link>
       </div>
 
+      {/* AI Daily Digest */}
+      <DailyDigestCard />
+
       {/* Today's briefing */}
       <div className="card-apple p-5 mb-6">
         <div className="flex items-center gap-2 mb-3">
@@ -772,6 +777,9 @@ export default function MeDashboard() {
             : `${deadlineBuckets.overdue.length > 0 ? `${deadlineBuckets.overdue.length} overdue` : ""}${deadlineBuckets.overdue.length > 0 && deadlineBuckets.today.length > 0 ? ", " : ""}${deadlineBuckets.today.length > 0 ? `${deadlineBuckets.today.length} due today` : ""}${tasksDueToday > 0 ? ` · ${tasksDueToday} task${tasksDueToday === 1 ? "" : "s"} today` : ""}.`}
         </p>
       </div>
+
+      {/* AI Smart Projects */}
+      <SmartProjectsSection />
 
       {/* Deadline Tracker — most prominent section */}
       <section className="card-apple p-6 mb-6">
