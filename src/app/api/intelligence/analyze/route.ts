@@ -1,11 +1,10 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import { analyzeAndGroupTasks } from "@/lib/ai-intelligence";
 import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const POST__h = withAuth(async () => {
+export const POST = withAuth(async () => {
   try {
     const result = await analyzeAndGroupTasks();
     return NextResponse.json(result);
@@ -17,5 +16,3 @@ const POST__h = withAuth(async () => {
     );
   }
 });
-
-export const POST = withErrorHandling(POST__h as any)

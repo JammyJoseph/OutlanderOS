@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from 'next/server'
 import { createSlackClient, getTeamMembers, getUserPresence } from '@/lib/slack-client'
 import { withAuth } from '@/lib/auth'
@@ -11,7 +10,7 @@ const TEAM = [
   { name: 'Patricia', email: '' },
 ]
 
-const GET__h = withAuth(async () => {
+export const GET = withAuth(async () => {
   const client = createSlackClient()
   if (!client) {
     return NextResponse.json({
@@ -84,5 +83,3 @@ const GET__h = withAuth(async () => {
     })
   }
 })
-
-export const GET = withErrorHandling(GET__h as any)

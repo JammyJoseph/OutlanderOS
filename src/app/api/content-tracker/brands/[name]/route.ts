@@ -1,11 +1,10 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const GET__h = withAuth(async (
+export const GET = withAuth(async (
   _req: NextRequest,
   { params }: { params: Promise<{ name: string }> }
 ) => {
@@ -77,5 +76,3 @@ const GET__h = withAuth(async (
     );
   }
 });
-
-export const GET = withErrorHandling(GET__h as any)

@@ -1,16 +1,15 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
 
-const GET__h = withAuth(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+export const GET = withAuth(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
   const brand = await prisma.brandWatch.findUnique({ where: { id } })
   if (!brand) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(brand)
 })
 
-const PUT__h = withAuth(async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+export const PUT = withAuth(async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
   const body = await request.json().catch(() => ({}))
 
@@ -38,12 +37,8 @@ const PUT__h = withAuth(async (request: NextRequest, { params }: { params: Promi
   return NextResponse.json(brand)
 })
 
-const DELETE__h = withAuth(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+export const DELETE = withAuth(async (_: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params
   await prisma.brandWatch.delete({ where: { id } })
   return NextResponse.json({ success: true })
 })
-
-export const GET = withErrorHandling(GET__h as any)
-export const PUT = withErrorHandling(PUT__h as any)
-export const DELETE = withErrorHandling(DELETE__h as any)

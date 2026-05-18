@@ -1,9 +1,8 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 
-const GET__h = withAuth(async (
+export const GET = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -29,7 +28,7 @@ const GET__h = withAuth(async (
   }
 });
 
-const PUT__h = withAuth(async (
+export const PUT = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -61,7 +60,7 @@ const PUT__h = withAuth(async (
   }
 });
 
-const DELETE__h = withAuth(async (
+export const DELETE = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -77,7 +76,3 @@ const DELETE__h = withAuth(async (
     return NextResponse.json({ error: "Failed to delete campaign" }, { status: 500 });
   }
 });
-
-export const GET = withErrorHandling(GET__h as any)
-export const PUT = withErrorHandling(PUT__h as any)
-export const DELETE = withErrorHandling(DELETE__h as any)

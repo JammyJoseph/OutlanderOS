@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import prisma from '@/lib/prisma'
@@ -17,7 +16,7 @@ function isoWeek(d: Date): string {
   return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
 }
 
-const POST__h = withAuth(async (request: NextRequest) => {
+export const POST = withAuth(async (request: NextRequest) => {
   const body = await request.json().catch(() => ({}))
   const type: 'weekly' | 'monthly' | 'brand_pitch' | 'custom' = body.type || 'weekly'
   const brandId: string | undefined = body.brandId
@@ -148,5 +147,3 @@ Keep it scannable and editorial.`
 
   return NextResponse.json(report, { status: 201 })
 })
-
-export const POST = withErrorHandling(POST__h as any)

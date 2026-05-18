@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { runAutoPing } from "@/lib/auto-escalation";
@@ -11,7 +10,7 @@ const AUTOPING_INTERVAL_MS = 15 * 60 * 1000;
  * run-on tasks, flag stale work. The scheduled job (sync engine, every 15
  * min) does the same — this is for on-demand runs.
  */
-const POST__h = withAdmin(async () => {
+export const POST = withAdmin(async () => {
   try {
     const result = await runAutoPing();
 
@@ -57,5 +56,3 @@ const POST__h = withAdmin(async () => {
     );
   }
 });
-
-export const POST = withErrorHandling(POST__h as any)

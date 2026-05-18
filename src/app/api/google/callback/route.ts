@@ -1,9 +1,8 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import { createOAuth2Client } from '@/lib/google-client'
 import { setToken } from '@/lib/token-store'
 
-async function GET__inner(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
   const state = request.nextUrl.searchParams.get('state') || 'primary'
 
@@ -32,5 +31,3 @@ async function GET__inner(request: NextRequest) {
     return NextResponse.redirect(new URL('/settings?error=auth_failed', request.url))
   }
 }
-
-export const GET = withErrorHandling(GET__inner as any)

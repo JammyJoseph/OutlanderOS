@@ -1,11 +1,10 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import { getMediaInsights, InstagramApiError } from "@/lib/instagram";
 import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const GET__h = withAuth(async (
+export const GET = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -28,5 +27,3 @@ const GET__h = withAuth(async (
     return NextResponse.json({ error: message }, { status: 500 });
   }
 });
-
-export const GET = withErrorHandling(GET__h as any)

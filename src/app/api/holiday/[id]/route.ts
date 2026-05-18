@@ -1,10 +1,9 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
 import { businessDaysBetween } from '@/lib/holiday'
 
-async function PUT__inner(
+export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -62,5 +61,3 @@ async function PUT__inner(
 
   return NextResponse.json({ ...updated, days })
 }
-
-export const PUT = withErrorHandling(PUT__inner as any)

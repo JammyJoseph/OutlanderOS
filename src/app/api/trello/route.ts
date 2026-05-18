@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import { buildSnapshot } from "@/lib/trello";
 import {
@@ -9,7 +8,7 @@ import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const GET__h = withAuth(async () => {
+export const GET = withAuth(async () => {
   try {
     const cached = getCachedSnapshot();
     if (cached) {
@@ -28,5 +27,3 @@ const GET__h = withAuth(async () => {
     );
   }
 });
-
-export const GET = withErrorHandling(GET__h as any)

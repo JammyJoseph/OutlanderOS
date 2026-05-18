@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
@@ -17,7 +16,7 @@ const SELECT = {
   createdAt: true,
 } as const
 
-async function GET__inner(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ user: null }, { status: 401 })
   try {
@@ -31,7 +30,7 @@ async function GET__inner(request: NextRequest) {
   }
 }
 
-async function PUT__inner(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -58,6 +57,3 @@ async function PUT__inner(request: NextRequest) {
 
   return NextResponse.json({ user })
 }
-
-export const GET = withErrorHandling(GET__inner as any)
-export const PUT = withErrorHandling(PUT__inner as any)

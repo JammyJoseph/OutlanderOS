@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { getToken, setToken } from '@/lib/token-store'
@@ -458,7 +457,7 @@ async function fetchPrintData(): Promise<PrintData> {
   }
 }
 
-const GET__h = withAuth(async (request: Request) => {
+export const GET = withAuth(async (request: Request) => {
   const url = new URL(request.url)
   const force = url.searchParams.get('refresh') === 'true'
 
@@ -475,5 +474,3 @@ const GET__h = withAuth(async (request: Request) => {
     return NextResponse.json({ ...emptyData(msg, false), cached: false }, { status: 200 })
   }
 })
-
-export const GET = withErrorHandling(GET__h as any)

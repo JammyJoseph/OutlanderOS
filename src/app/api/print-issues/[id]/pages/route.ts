@@ -1,10 +1,9 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { validateRequired } from "@/lib/validate";
 
-const POST__h = withAuth(async (
+export const POST = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -32,5 +31,3 @@ const POST__h = withAuth(async (
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 });
-
-export const POST = withErrorHandling(POST__h as any)

@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import Anthropic from "@anthropic-ai/sdk";
@@ -99,7 +98,7 @@ function decodeBody(payload: any): string {
   return "";
 }
 
-async function POST__inner(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const me = getCurrentUser(request);
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const userId = me.userId;
@@ -215,5 +214,3 @@ async function POST__inner(request: NextRequest) {
     );
   }
 }
-
-export const POST = withErrorHandling(POST__inner as any)

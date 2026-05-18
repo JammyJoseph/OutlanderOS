@@ -1,9 +1,8 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
 
-async function GET__inner(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -28,5 +27,3 @@ async function GET__inner(request: NextRequest) {
 
   return NextResponse.json(users)
 }
-
-export const GET = withErrorHandling(GET__inner as any)

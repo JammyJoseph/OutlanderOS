@@ -1,9 +1,8 @@
-import { withErrorHandling } from "@/lib/api-error"
 import type { NextRequest } from "next/server";
 import { extractSheetId, getBillingEntries, testConnection } from "@/lib/google-sheets";
 import { withAuth } from "@/lib/auth";
 
-const GET__h = withAuth(async (
+export const GET = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ sheetId: string }> }
 ) => {
@@ -32,5 +31,3 @@ const GET__h = withAuth(async (
   const meta = await getSpreadsheetMetadata(sheetId);
   return Response.json(meta);
 });
-
-export const GET = withErrorHandling(GET__h as any)

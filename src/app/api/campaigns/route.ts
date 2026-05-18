@@ -1,10 +1,9 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { validateRequired, sanitizeString } from "@/lib/validate";
 
-const GET__h = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -29,7 +28,7 @@ const GET__h = withAuth(async (request: NextRequest) => {
   }
 });
 
-const POST__h = withAuth(async (request: NextRequest, _ctx, user) => {
+export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
   try {
     const body = await request.json();
 
@@ -70,6 +69,3 @@ const POST__h = withAuth(async (request: NextRequest, _ctx, user) => {
     return NextResponse.json({ error: "Failed to create campaign" }, { status: 500 });
   }
 });
-
-export const GET = withErrorHandling(GET__h as any)
-export const POST = withErrorHandling(POST__h as any)

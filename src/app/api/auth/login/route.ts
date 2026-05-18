@@ -1,13 +1,11 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { logger } from '@/lib/logger'
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'outlander-os-secret'
 
-async function POST__inner(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const { email, password } = await request.json()
 
   if (!email || !password) {
@@ -16,17 +14,13 @@ async function POST__inner(request: NextRequest) {
 
   const user = await prisma.user.findUnique({ where: { email } })
   if (!user) {
-    logger.warn('auth', 'Failed login attempt — unknown email', { email })
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
   }
 
   const valid = await bcrypt.compare(password, user.password)
   if (!valid) {
-    logger.warn('auth', 'Failed login attempt — bad password', { email })
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
   }
-
-  logger.info('auth', 'Successful login', { email })
 
   const token = jwt.sign(
     { userId: user.id, email: user.email, role: user.role, name: user.name },
@@ -44,5 +38,3 @@ async function POST__inner(request: NextRequest) {
   })
   return response
 }
-
-export const POST = withErrorHandling(POST__inner as any)

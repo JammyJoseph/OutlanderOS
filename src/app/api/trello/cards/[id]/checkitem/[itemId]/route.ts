@@ -1,11 +1,10 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import { updateCheckItem } from "@/lib/trello";
 import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const PUT__h = withAuth(async (
+export const PUT = withAuth(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string; itemId: string }> }
 ) => {
@@ -21,5 +20,3 @@ const PUT__h = withAuth(async (
     return NextResponse.json({ error: message }, { status: 500 });
   }
 });
-
-export const PUT = withErrorHandling(PUT__h as any)

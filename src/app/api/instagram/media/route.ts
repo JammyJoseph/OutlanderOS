@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import {
   classifyMediaType,
@@ -9,7 +8,7 @@ import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const GET__h = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get("limit");
@@ -34,5 +33,3 @@ const GET__h = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: message, data: [] }, { status: 500 });
   }
 });
-
-export const GET = withErrorHandling(GET__h as any)

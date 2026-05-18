@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
@@ -17,7 +16,7 @@ const ADMIN_SELECT = {
   createdAt: true,
 } as const
 
-async function GET__inner(
+export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -39,7 +38,7 @@ async function GET__inner(
   return NextResponse.json(user)
 }
 
-async function PUT__inner(
+export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -71,6 +70,3 @@ async function PUT__inner(
 
   return NextResponse.json(user)
 }
-
-export const GET = withErrorHandling(GET__inner as any)
-export const PUT = withErrorHandling(PUT__inner as any)

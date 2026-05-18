@@ -1,10 +1,9 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
 import { validateRequired, sanitizeString, validateEmail } from '@/lib/validate'
 
-const GET__h = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search') || ''
   const category = searchParams.get('category') || ''
@@ -37,7 +36,7 @@ const GET__h = withAuth(async (request: NextRequest) => {
   return NextResponse.json(contacts)
 })
 
-const POST__h = withAuth(async (request: NextRequest, _ctx, user) => {
+export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
   const body = await request.json()
 
   const missing = validateRequired(body, ['name', 'category'])
@@ -65,6 +64,3 @@ const POST__h = withAuth(async (request: NextRequest, _ctx, user) => {
 
   return NextResponse.json(contact, { status: 201 })
 })
-
-export const GET = withErrorHandling(GET__h as any)
-export const POST = withErrorHandling(POST__h as any)

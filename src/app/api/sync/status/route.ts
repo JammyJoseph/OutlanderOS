@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSyncEngine } from "@/lib/sync-engine";
@@ -27,7 +26,7 @@ interface SourceStatus {
   health: "healthy" | "stale" | "error";
 }
 
-const GET__h = withAdmin(async () => {
+export const GET = withAdmin(async () => {
   const engine = getSyncEngine();
   const sources = Object.keys(SYNC_INTERVALS) as SyncSource[];
   const rows = await prisma.syncStatus.findMany({
@@ -77,5 +76,3 @@ const GET__h = withAdmin(async () => {
     },
   });
 });
-
-export const GET = withErrorHandling(GET__h as any)

@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { withAdmin } from '@/lib/auth'
@@ -159,7 +158,7 @@ const events: SeedEvent[] = [
   { title: 'Singles’ Day (11.11)', date: '2025-11-11', category: 'brand', subcategory: 'commerce', location: 'China / Global', description: 'World’s biggest online shopping day.', importance: 82, recurring: true, tags: ['retail'] },
 ]
 
-const POST__h = withAdmin(async () => {
+export const POST = withAdmin(async () => {
   const created = await prisma.$transaction(
     events.map((e) =>
       prisma.culturalEvent.create({
@@ -183,10 +182,7 @@ const POST__h = withAdmin(async () => {
   return NextResponse.json({ created: created.length })
 })
 
-const DELETE__h = withAdmin(async () => {
+export const DELETE = withAdmin(async () => {
   const result = await prisma.culturalEvent.deleteMany({})
   return NextResponse.json({ deleted: result.count })
 })
-
-export const POST = withErrorHandling(POST__h as any)
-export const DELETE = withErrorHandling(DELETE__h as any)

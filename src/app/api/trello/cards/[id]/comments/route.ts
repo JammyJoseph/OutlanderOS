@@ -1,11 +1,10 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import { addComment, getComments } from "@/lib/trello";
 import { withAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const GET__h = withAuth(async (
+export const GET = withAuth(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -20,7 +19,7 @@ const GET__h = withAuth(async (
   }
 });
 
-const POST__h = withAuth(async (
+export const POST = withAuth(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -39,6 +38,3 @@ const POST__h = withAuth(async (
     return NextResponse.json({ error: message }, { status: 500 });
   }
 });
-
-export const GET = withErrorHandling(GET__h as any)
-export const POST = withErrorHandling(POST__h as any)

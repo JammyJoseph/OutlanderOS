@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
@@ -13,7 +12,7 @@ async function loadOwnedDeadline(id: string, userId: string, isAdmin: boolean) {
   return { deadline };
 }
 
-async function PUT__inner(
+export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -64,7 +63,7 @@ async function PUT__inner(
   }
 }
 
-async function DELETE__inner(
+export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -88,6 +87,3 @@ async function DELETE__inner(
     );
   }
 }
-
-export const PUT = withErrorHandling(PUT__inner as any)
-export const DELETE = withErrorHandling(DELETE__inner as any)

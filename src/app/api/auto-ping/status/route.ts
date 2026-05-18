@@ -1,4 +1,3 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/auth";
@@ -7,7 +6,7 @@ import { withAdmin } from "@/lib/auth";
  * Reports auto-ping health: when escalation last ran and how many items are
  * currently overdue, due today, or flagged as stale.
  */
-const GET__h = withAdmin(async () => {
+export const GET = withAdmin(async () => {
   try {
     const now = new Date();
     const todayStart = new Date(now);
@@ -67,5 +66,3 @@ const GET__h = withAdmin(async () => {
     );
   }
 });
-
-export const GET = withErrorHandling(GET__h as any)

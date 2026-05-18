@@ -1,10 +1,9 @@
-import { withErrorHandling } from "@/lib/api-error"
 import { NextResponse } from 'next/server'
 import { getToken, setToken } from '@/lib/token-store'
 import { fetchAllXeroData } from '@/lib/xero-api'
 import { withAuth } from '@/lib/auth'
 
-const GET__h = withAuth(async () => {
+export const GET = withAuth(async () => {
   const xeroTokenData = getToken('xero')
 
   if (!xeroTokenData) {
@@ -17,5 +16,3 @@ const GET__h = withAuth(async () => {
   }
   return NextResponse.json(result.data)
 })
-
-export const GET = withErrorHandling(GET__h as any)
