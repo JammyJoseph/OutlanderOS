@@ -188,6 +188,19 @@ export async function syncAutoPing(): Promise<SyncJobResult> {
   };
 }
 
+/**
+ * Daily digest: write each user's natural-language morning briefing and
+ * store it as a daily_digest notification.
+ */
+export async function syncDailyDigest(): Promise<SyncJobResult> {
+  const { generateAllUserDigests } = await import("./daily-digest");
+  const count = await generateAllUserDigests();
+  return {
+    records: count,
+    detail: `daily digest generated for ${count} user(s)`,
+  };
+}
+
 export type SyncSource =
   | "trello"
   | "printSheet"
@@ -196,7 +209,8 @@ export type SyncSource =
   | "deadlineSync"
   | "culturalCalendar"
   | "intelligence"
-  | "autoPing";
+  | "autoPing"
+  | "dailyDigest";
 
 export const SYNC_JOBS: Record<SyncSource, () => Promise<SyncJobResult>> = {
   trello: syncTrello,
@@ -207,6 +221,7 @@ export const SYNC_JOBS: Record<SyncSource, () => Promise<SyncJobResult>> = {
   culturalCalendar: syncCulturalCalendar,
   intelligence: syncIntelligence,
   autoPing: syncAutoPing,
+  dailyDigest: syncDailyDigest,
 };
 
 export const SYNC_INTERVALS: Record<SyncSource, number> = {
@@ -218,6 +233,7 @@ export const SYNC_INTERVALS: Record<SyncSource, number> = {
   culturalCalendar: 24 * 60 * 60 * 1000,
   intelligence: 6 * 60 * 60 * 1000,
   autoPing: 15 * 60 * 1000,
+  dailyDigest: 24 * 60 * 60 * 1000,
 };
 
 export const SYNC_LABELS: Record<SyncSource, string> = {
@@ -229,6 +245,7 @@ export const SYNC_LABELS: Record<SyncSource, string> = {
   culturalCalendar: "Cultural Calendar",
   intelligence: "Task Intelligence",
   autoPing: "Auto-Ping",
+  dailyDigest: "Daily Digest",
 };
 
 // Used by /api/sync/status to compute "stale" thresholds.

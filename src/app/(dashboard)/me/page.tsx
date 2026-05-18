@@ -22,6 +22,7 @@ import {
   AlarmClock,
 } from "lucide-react";
 import { DailyDigestCard } from "@/components/intelligence/DailyDigestCard";
+import { AutoPingDigestCard } from "@/components/intelligence/AutoPingDigestCard";
 import { SmartProjectsSection } from "@/components/intelligence/SmartProjectsSection";
 
 // ===== Types =====
@@ -758,6 +759,9 @@ export default function MeDashboard() {
 
       {/* AI Daily Digest */}
       <DailyDigestCard />
+
+      {/* Auto-ping briefing — escalation-aware digest with clickable items */}
+      <AutoPingDigestCard />
 
       {/* Today's briefing */}
       <div className="card-apple p-5 mb-6">
