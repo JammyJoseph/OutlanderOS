@@ -43,8 +43,14 @@ export async function PUT(
     if (body.shootDate !== undefined) updateData.shootDate = new Date(body.shootDate);
     if (body.callTime !== undefined) updateData.callTime = body.callTime;
     if (body.location !== undefined) updateData.location = body.location;
+    if (body.locationLat !== undefined) updateData.locationLat = body.locationLat;
+    if (body.locationLng !== undefined) updateData.locationLng = body.locationLng;
     if (body.schedule !== undefined) updateData.schedule = body.schedule;
+    if (body.shotlist !== undefined) updateData.shotlist = body.shotlist;
     if (body.crew !== undefined) updateData.crew = body.crew;
+    if (body.cateringDetails !== undefined) updateData.cateringDetails = body.cateringDetails;
+    if (body.documents !== undefined) updateData.documents = body.documents;
+    if (body.weatherData !== undefined) updateData.weatherData = body.weatherData;
     if (body.notes !== undefined) updateData.notes = body.notes;
     if (body.status !== undefined) updateData.status = body.status;
     if (body.distributedAt !== undefined) {
@@ -55,7 +61,19 @@ export async function PUT(
       where: { id },
       data: updateData,
       include: {
-        production: { select: { id: true, title: true } },
+        production: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            campaign: {
+              select: {
+                title: true,
+                client: { select: { name: true } },
+              },
+            },
+          },
+        },
       },
     });
     return NextResponse.json({ sheet });
