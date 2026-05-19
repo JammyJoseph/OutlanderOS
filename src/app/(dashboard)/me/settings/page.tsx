@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Lock, Bell, Sun, Check, AlertTriangle } from 'lucide-react'
+import { GoogleAccountSection } from './_components/GoogleAccountSection'
 
 const INPUT_CLS =
   'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#D4A853] focus:ring-2 focus:ring-amber-200/60'
@@ -50,6 +51,8 @@ export default function MeSettingsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
         <p className="mt-1 text-sm text-gray-500">Personal preferences</p>
       </div>
+
+      <GoogleAccountSection />
 
       <Section icon={<Lock className="h-4 w-4" />} title="Change password" subtitle="Use a strong password you don't use elsewhere">
         <div className="grid grid-cols-1 gap-4">

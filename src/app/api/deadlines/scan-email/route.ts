@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
-import { getToken, setToken } from "@/lib/token-store";
+import { getUserGmail } from "@/lib/google-user-auth";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -104,35 +103,24 @@ export async function POST(request: NextRequest) {
   const userId = me.userId;
 
   try {
-    const tokenData = getToken("google_primary");
-    if (!tokenData) {
+    // Each user's scan reads only their own inbox, via their personal token.
+    const gmailResult = await getUserGmail(
+      userId,
+      "in:inbox -category:promotions -category:social",
+      50
+    );
+    if (!gmailResult) {
       return NextResponse.json(
         {
-          error:
-            "Google primary inbox not connected. Connect via /api/google/connect first.",
+          error: "Connect Google to enable email scanning",
+          needsGoogle: true,
         },
         { status: 400 }
       );
     }
+    const { gmail, messages } = gmailResult;
 
-    const oauth = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET
-    );
-    oauth.setCredentials(tokenData);
-    oauth.on("tokens", (newTokens) => {
-      setToken("google_primary", { ...tokenData, ...newTokens });
-    });
-
-    const gmail = google.gmail({ version: "v1", auth: oauth });
-
-    const list = await gmail.users.messages.list({
-      userId: "me",
-      maxResults: 50,
-      q: "in:inbox -category:promotions -category:social",
-    });
-
-    const messageIds = (list.data.messages || []).map((m) => m.id!).filter(Boolean);
+    const messageIds = messages.map((m) => m.id!).filter(Boolean);
 
     const existing = await prisma.deadline.findMany({
       where: {

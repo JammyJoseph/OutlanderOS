@@ -13,6 +13,8 @@ const SELECT = {
   startDate: true,
   holidayAllowance: true,
   salary: true,
+  googleConnected: true,
+  googleEmail: true,
   createdAt: true,
 } as const
 

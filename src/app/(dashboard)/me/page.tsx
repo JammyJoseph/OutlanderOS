@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { CommandCenter } from "./_components/CommandCenter";
+import { ConnectGoogleBanner } from "./_components/ConnectGoogleBanner";
 import { ProjectTasks } from "./_components/ProjectTasks";
 import { QuickAccess } from "./_components/QuickAccess";
 import type { DashboardData, Suggestion } from "./_components/types";
@@ -98,6 +99,9 @@ export default function MePage() {
   return (
     <div className="min-h-full bg-[#f7f7f7] p-6">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
+        {/* First-login nudge — connect personal Google account */}
+        <ConnectGoogleBanner />
+
         {/* Zone 1 — Command Center */}
         <CommandCenter
           data={data}

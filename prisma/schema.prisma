@@ -19,6 +19,13 @@ model User {
   startDate        DateTime?
   holidayAllowance Int       @default(25)
   salary           Float?
+
+  googleAccessToken  String?
+  googleRefreshToken String?
+  googleTokenExpiry  DateTime?
+  googleEmail        String? // which Google account is connected
+  googleConnected    Boolean   @default(false)
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
