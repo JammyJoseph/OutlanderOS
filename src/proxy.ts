@@ -13,6 +13,8 @@ export function proxy(request: NextRequest) {
   }
 
   if (pathname === '/login') return NextResponse.next()
+  // Public: Google drops the user here after consent to surface the auth code.
+  if (pathname === '/auth/google/callback') return NextResponse.next()
   if (pathname.startsWith('/_next/') || pathname.includes('.')) return NextResponse.next()
 
   const token = request.cookies.get('auth_token')?.value
