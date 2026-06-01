@@ -4,12 +4,7 @@ import prisma from '@/lib/prisma'
 // Per-user Google OAuth. Each team member connects their own Google account;
 // Gmail / Calendar / Drive access uses that individual's tokens.
 
-// The app runs on a bare IP, so we use a localhost redirect URI. We reuse
-// /api/google/callback — the same URI the app-level flow registered and that
-// minted the existing tokens — so it is already authorised in the Google Cloud
-// Console. Google bounces the browser to a "connection refused" page and the
-// user copies the code (from the URL bar) into Settings → Google Account.
-export const GOOGLE_USER_REDIRECT_URI = 'http://localhost:3000/api/google/callback'
+export const GOOGLE_USER_REDIRECT_URI = `${process.env.NEXTAUTH_URL}/api/google/callback`
 
 export const GOOGLE_USER_SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
