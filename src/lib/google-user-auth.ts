@@ -4,7 +4,12 @@ import prisma from '@/lib/prisma'
 // Per-user Google OAuth. Each team member connects their own Google account;
 // Gmail / Calendar / Drive access uses that individual's tokens.
 
-export const GOOGLE_USER_REDIRECT_URI = `${process.env.NEXTAUTH_URL}/api/google/callback`
+// Per-user OAuth uses the public callback page at /auth/google/callback, which
+// renders the authorization code for the user to copy into Settings → Google
+// Account (the exchange happens server-side via /api/auth/google/exchange).
+// We build the URI from NEXTAUTH_URL — the same base the app-level flow uses —
+// so it points at the deployed host and stays in sync with the registered URI.
+export const GOOGLE_USER_REDIRECT_URI = `${process.env.NEXTAUTH_URL}/auth/google/callback`
 
 export const GOOGLE_USER_SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
