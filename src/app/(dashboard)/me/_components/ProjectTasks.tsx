@@ -79,12 +79,17 @@ function toUnified(tasks: Task[], deadlines: Deadline[]): UnifiedItem[] {
       kind: "task",
       title: t.title,
       dueDate: t.dueDate,
+      startDate: null,
       priority: t.priority,
       status: t.status,
       done: t.status === "DONE",
       category: categoryFromText(t.portal),
       source: "MANUAL",
       link: t.link,
+      emailSnippet: null,
+      emailFrom: null,
+      createdAt: t.createdAt,
+      type: null,
     });
   }
   for (const d of deadlines) {
@@ -93,12 +98,17 @@ function toUnified(tasks: Task[], deadlines: Deadline[]): UnifiedItem[] {
       kind: "deadline",
       title: d.title,
       dueDate: d.dueDate,
+      startDate: d.startDate,
       priority: d.priority,
       status: d.status,
       done: d.status === "COMPLETED" || d.status === "DONE",
       category: categoryFromText(d.category || d.type),
       source: deadlineSource(d.source),
       link: d.sourceUrl,
+      emailSnippet: d.emailSnippet,
+      emailFrom: d.emailFrom,
+      createdAt: d.createdAt,
+      type: d.type,
     });
   }
   return items;

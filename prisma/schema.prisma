@@ -25,6 +25,7 @@ model User {
   googleTokenExpiry  DateTime?
   googleEmail        String? // which Google account is connected
   googleConnected    Boolean   @default(false)
+  lastEmailScanAt  DateTime?
 
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -603,6 +604,7 @@ model Deadline {
   emailFrom    String?
   emailSnippet String?
   threadId     String?
+  startDate    DateTime?
   linkedType   String?
   linkedId     String?
   rawData      Json?

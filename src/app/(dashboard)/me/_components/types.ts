@@ -26,6 +26,7 @@ export interface Deadline {
   title: string;
   description: string | null;
   dueDate: string;
+  startDate: string | null;
   source: string;
   sourceRef: string | null;
   sourceUrl: string | null;
@@ -37,6 +38,7 @@ export interface Deadline {
   emailFrom: string | null;
   emailSnippet: string | null;
   completedAt: string | null;
+  createdAt: string;
 }
 
 export interface CulturalEvent {
@@ -109,12 +111,17 @@ export interface UnifiedItem {
   kind: "task" | "deadline";
   title: string;
   dueDate: string | null;
+  startDate: string | null;
   priority: string;
   status: string;
   done: boolean;
   category: TaskCategory;
   source: ItemSource;
   link: string | null;
+  emailSnippet: string | null;
+  emailFrom: string | null;
+  createdAt: string | null;
+  type: string | null;
 }
 
 export type TaskCategory = "brand" | "editorial" | "production" | "admin";

@@ -141,66 +141,37 @@ export async function syncPrintSheet(): Promise<SyncJobResult> {
 }
 
 /**
- * Email scan: derive deadlines from briefing inbox.
- * Best-effort — returns 0 records if Gmail tokens are absent.
+ * Email scan: derive deadlines from each connected user's Gmail inbox using
+ * per-user OAuth tokens and thread-level Claude analysis.
  */
 export async function syncEmailScan(): Promise<SyncJobResult> {
-  const { google } = await import("googleapis");
-  const { getToken } = await import("./token-store");
-  const primaryToken = getToken("google_primary");
-  if (!primaryToken) return { records: 0, detail: "no gmail token" };
+  const { scanEmailsForTasks } = await import("./email-task-extractor");
 
-  const auth = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
-  );
-  auth.setCredentials(primaryToken as Parameters<typeof auth.setCredentials>[0]);
-  const gmail = google.gmail({ version: "v1", auth });
-
-  const res = await gmail.users.messages.list({
-    userId: "me",
-    q: "(deadline OR due OR \"by friday\" OR \"by monday\") newer_than:14d",
-    maxResults: 15,
+  const users = await prisma.user.findMany({
+    where: { googleConnected: true },
+    select: { id: true, email: true },
   });
 
-  const candidates: DeadlineCandidate[] = [];
-  for (const msg of (res.data.messages ?? []).slice(0, 12)) {
-    if (!msg.id) continue;
+  if (users.length === 0) return { records: 0, detail: "no google-connected users" };
+
+  let totalNew = 0;
+  let totalUpdated = 0;
+  let totalScanned = 0;
+
+  for (const user of users) {
     try {
-      const detail = await gmail.users.messages.get({
-        userId: "me",
-        id: msg.id,
-        format: "metadata",
-        metadataHeaders: ["Subject", "Date", "From"],
-      });
-      const headers = detail.data.payload?.headers ?? [];
-      const subject = headers.find((h) => h.name === "Subject")?.value ?? "(no subject)";
-      const dateStr = headers.find((h) => h.name === "Date")?.value;
-      const from = headers.find((h) => h.name === "From")?.value ?? "";
-      const due = dateStr ? new Date(dateStr) : new Date();
-      due.setDate(due.getDate() + 7); // crude default
-      candidates.push({
-        title: subject,
-        description: detail.data.snippet ?? undefined,
-        dueDate: due,
-        source: "email",
-        sourceRef: msg.id,
-        type: "deliverable",
-        priority: "MEDIUM",
-        category: "commercial",
-        emailFrom: from.match(/<([^>]+)>/)?.[1] ?? from,
-        emailSnippet: detail.data.snippet ?? undefined,
-        threadId: detail.data.threadId ?? undefined,
-      });
-    } catch {
-      /* skip individual failures */
+      const result = await scanEmailsForTasks(user.id);
+      totalNew += result.newTasks;
+      totalUpdated += result.updatedTasks;
+      totalScanned += result.emailsScanned;
+    } catch (err) {
+      console.error(`[emailScan] failed for user ${user.email}:`, err);
     }
   }
 
-  const upsert = await batchUpsertDeadlines(candidates);
   return {
-    records: upsert.created + upsert.updated,
-    detail: `emails scanned: ${candidates.length}, created: ${upsert.created}, updated: ${upsert.updated}`,
+    records: totalNew + totalUpdated,
+    detail: `users: ${users.length}, threads scanned: ${totalScanned}, new: ${totalNew}, updated: ${totalUpdated}`,
   };
 }
 

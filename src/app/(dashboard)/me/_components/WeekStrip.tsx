@@ -29,21 +29,48 @@ export function WeekStrip({ tasks, deadlines, shoots, culturalEvents }: Props) {
     return Array.from({ length: 7 }, (_, i) => {
       const date = new Date(start.getTime() + i * DAY_MS);
 
-      const taskCount = tasks.filter(
-        (t) => t.dueDate && t.status !== "DONE" && sameDay(new Date(t.dueDate), date),
-      ).length;
-      const deadlineCount = deadlines.filter(
-        (d) => d.status !== "COMPLETED" && sameDay(new Date(d.dueDate), date),
-      ).length;
+      const dueTasks = tasks.filter(
+        (t) => t.dueDate && t.status !== "DONE" && sameDay(new Date(t.dueDate), date)
+      );
+      const dueDeadlines = deadlines.filter(
+        (d) => d.status !== "COMPLETED" && sameDay(new Date(d.dueDate), date)
+      );
+
+      const startDeadlines = deadlines.filter(
+        (d) =>
+          d.startDate &&
+          d.status !== "COMPLETED" &&
+          sameDay(new Date(d.startDate), date)
+      );
+
+      const dueLabels = [
+        ...dueTasks.map((t) => t.title),
+        ...dueDeadlines.map((d) => d.title),
+      ];
+      const startLabels = startDeadlines.map((d) => `Start: ${d.title}`);
+
       const shootCount = shoots.filter((s) => sameDay(new Date(s.date), date)).length;
-      const eventCount = culturalEvents.filter((e) => sameDay(new Date(e.date), date)).length;
+      const shootLabels = shoots
+        .filter((s) => sameDay(new Date(s.date), date))
+        .map((s) => s.title);
+      const eventCount = culturalEvents.filter((e) =>
+        sameDay(new Date(e.date), date)
+      ).length;
+      const eventLabels = culturalEvents
+        .filter((e) => sameDay(new Date(e.date), date))
+        .map((e) => e.title);
 
       return {
         date,
         isToday: i === 0,
-        taskCount: taskCount + deadlineCount,
+        dueCount: dueLabels.length,
+        dueTitle: dueLabels.join(", "),
+        startCount: startLabels.length,
+        startTitle: startLabels.join(", "),
         shootCount,
+        shootTitle: shootLabels.join(", "),
         eventCount,
+        eventTitle: eventLabels.join(", "),
       };
     });
   }, [tasks, deadlines, shoots, culturalEvents]);
@@ -70,22 +97,28 @@ export function WeekStrip({ tasks, deadlines, shoots, culturalEvents }: Props) {
             {d.date.getDate()}
           </span>
           <div className="mt-1.5 flex h-2 items-center gap-0.5">
-            {d.taskCount > 0 && (
+            {d.dueCount > 0 && (
               <span
                 className="h-1.5 w-1.5 rounded-full bg-gray-400"
-                title={`${d.taskCount} due`}
+                title={d.dueTitle || `${d.dueCount} due`}
+              />
+            )}
+            {d.startCount > 0 && (
+              <span
+                className="h-1.5 w-1.5 rounded-full border border-blue-400 bg-transparent"
+                title={d.startTitle || `${d.startCount} starting`}
               />
             )}
             {d.shootCount > 0 && (
               <span
                 className="h-1.5 w-1.5 rounded-full bg-blue-500"
-                title={`${d.shootCount} shoot`}
+                title={d.shootTitle || `${d.shootCount} shoot`}
               />
             )}
             {d.eventCount > 0 && (
               <span
                 className="h-1.5 w-1.5 rounded-full bg-purple-400"
-                title={`${d.eventCount} event`}
+                title={d.eventTitle || `${d.eventCount} event`}
               />
             )}
           </div>
