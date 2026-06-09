@@ -761,3 +761,75 @@ model CulturalEvent {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
+
+// ===== FINANCE PORTAL (F1) =====
+model CampaignBudget {
+  id              String   @id @default(cuid())
+  trelloCardId    String?  // links to Trello deal
+  trelloCardName  String?
+  clientName      String
+  campaignName    String
+  totalBudget     Float    @default(0)
+  productionBudget Float   @default(0)
+  mediaBudget     Float    @default(0)
+  internalBudget  Float    @default(0)
+  otherBudget     Float    @default(0)
+  status          String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, RECONCILED
+  submittedBy     String?  // userId
+  approvedBy      String?  // userId
+  notes           String?
+  productionId    String?  // link to Production project
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([trelloCardId])
+  @@index([productionId])
+}
+
+model CostEntry {
+  id              String   @id @default(cuid())
+  campaignBudgetId String?
+  category        String   // production, media, talent, location, equipment, catering, travel, internal, other
+  description     String
+  amount          Float
+  vendor          String?
+  date            DateTime @default(now())
+  receipt         String?  // URL to receipt/proof
+  loggedBy        String?  // userId
+  portal          String?  // which portal this was logged from: production, commercial, admin
+  status          String   @default("LOGGED") // LOGGED, APPROVED, PAID
+  xeroMatchId     String?  // matched Xero transaction ID
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([campaignBudgetId])
+  @@index([category])
+  @@index([portal])
+  @@index([status])
+}
+
+model InvoiceSubmission {
+  id              String   @id @default(cuid())
+  supplierName    String
+  supplierEmail   String
+  amount          Float?
+  currency        String   @default("GBP")
+  description     String?
+  emailSubject    String?
+  emailMessageId  String?  @unique // dedup
+  attachmentUrl   String?
+  receivedAt      DateTime @default(now())
+  paymentDeadline DateTime // 30 days from received
+  status          String   @default("RECEIVED") // RECEIVED, REVIEWED, APPROVED, PAID, REJECTED
+  reviewedBy      String?
+  paidAt          DateTime?
+  xeroPaymentId   String?  // matched Xero payment
+  reminderSent    Boolean  @default(false)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([paymentDeadline])
+}
