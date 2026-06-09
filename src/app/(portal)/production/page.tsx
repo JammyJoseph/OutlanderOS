@@ -276,7 +276,7 @@ export default function ProductionDashboard() {
             className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
           >
             <Plus size={16} />
-            New Project
+            New Editorial Project
           </button>
         </div>
 
@@ -915,6 +915,7 @@ function CreateProjectModal({
           status,
           figmaUrl: figmaUrl.trim() || null,
           budgetTotal: budget ? Number(budget) : null,
+          type: "EDITORIAL",
         }),
       });
       const data = await res.json();

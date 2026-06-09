@@ -258,6 +258,7 @@ export default function ProjectDetail() {
               campaignBudget={production.budgetTotal}
               onCampaignBudgetChange={(n) => savePatch({ budgetTotal: n })}
               refresh={refresh}
+              locked={production.type === "COMMERCIAL"}
             />
           )}
           {tab === "team" && (

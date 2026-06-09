@@ -8,9 +8,13 @@ import {
   Loader2,
   Plus,
   RefreshCw,
+  Rocket,
   Trash2,
   X,
 } from "lucide-react";
+import StartProjectModal, {
+  TrelloCardOption,
+} from "./_components/StartProjectModal";
 
 interface TrelloLabel {
   id: string;
@@ -911,6 +915,7 @@ export default function CommercialPipelinePage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<PipelineCard | null>(null);
   const [creating, setCreating] = useState(false);
+  const [startingProject, setStartingProject] = useState(false);
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
   const [dragOverListId, setDragOverListId] = useState<string | null>(null);
 
@@ -963,6 +968,19 @@ export default function CommercialPipelinePage() {
 
   const stages = snapshot?.stages ?? [];
   const labels = snapshot?.labels ?? [];
+
+  const cardOptions = useMemo<TrelloCardOption[]>(
+    () =>
+      stages.flatMap((s) =>
+        (s.cards ?? []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          client: c.client,
+          budget: c.budget,
+        }))
+      ),
+    [stages]
+  );
 
   const totals = useMemo(() => {
     let totalCards = 0;
@@ -1084,6 +1102,13 @@ export default function CommercialPipelinePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setStartingProject(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-[#D4A853] px-3 py-2 text-xs font-semibold text-white hover:bg-[#C49843]"
+          >
+            <Rocket className="h-3.5 w-3.5" />
+            Start Project
+          </button>
           <button
             onClick={() => setCreating(true)}
             disabled={stages.length === 0}
@@ -1213,6 +1238,14 @@ export default function CommercialPipelinePage() {
           stages={stages}
           onClose={() => setCreating(false)}
           onCreated={addCardLocal}
+        />
+      )}
+
+      {startingProject && (
+        <StartProjectModal
+          cards={cardOptions}
+          onClose={() => setStartingProject(false)}
+          onCreated={() => setStartingProject(false)}
         />
       )}
     </div>

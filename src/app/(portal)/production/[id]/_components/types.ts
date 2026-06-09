@@ -101,6 +101,8 @@ export interface ProductionDeliverable {
 export interface ProductionFull {
   id: string;
   title: string;
+  type: string; // "EDITORIAL" | "COMMERCIAL"
+  campaignBudgetId: string | null;
   status: ProductionStatus;
   brief: string | null;
   description: string | null;

@@ -44,6 +44,9 @@ export const POST = withAuth(async (request: NextRequest) => {
       clientName: body.clientName || body.client || null,
       status: body.status || "DRAFT",
       budgetTotal: body.budgetTotal != null ? Number(body.budgetTotal) : null,
+      // Productions created from the Production dashboard are EDITORIAL.
+      // COMMERCIAL productions are only created via /api/commercial/projects.
+      type: body.type === "COMMERCIAL" ? "COMMERCIAL" : "EDITORIAL",
     };
     if (Array.isArray(body.shootDates) && body.shootDates.length > 0) {
       data.shootDates = body.shootDates

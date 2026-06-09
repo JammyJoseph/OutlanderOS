@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import { Lock, Plus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { BudgetLineItem, BUDGET_CATEGORIES, gbp } from "./types";
 
 interface Props {
@@ -10,6 +10,9 @@ interface Props {
   campaignBudget: number | null;
   onCampaignBudgetChange: (n: number | null) => void;
   refresh: () => void;
+  // When the production was created from the Commercial portal its total
+  // allocation is locked — production can log costs but not change the total.
+  locked?: boolean;
 }
 
 export default function BudgetTab({
@@ -18,6 +21,7 @@ export default function BudgetTab({
   campaignBudget,
   onCampaignBudgetChange,
   refresh,
+  locked = false,
 }: Props) {
   const [budgetInput, setBudgetInput] = useState(
     campaignBudget != null ? String(campaignBudget) : ""
@@ -76,34 +80,66 @@ export default function BudgetTab({
     <div className="space-y-5">
       {/* Top: campaign budget + totals */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 md:col-span-1">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
-            Total Campaign Budget
+        <div
+          className={`rounded-2xl border shadow-sm p-5 md:col-span-1 ${
+            locked ? "bg-amber-50/40 border-amber-100" : "bg-white border-gray-100"
+          }`}
+        >
+          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+            {locked ? "Allocated Production Budget" : "Total Campaign Budget"}
+            {locked && <Lock size={11} className="text-[#D4A853]" />}
           </p>
-          <div className="flex items-center gap-1">
-            <span className="text-2xl font-semibold text-gray-400">£</span>
-            <input
-              type="number"
-              min="0"
-              value={budgetInput}
-              onChange={(e) => setBudgetInput(e.target.value)}
-              onBlur={() =>
-                onCampaignBudgetChange(budgetInput === "" ? null : Number(budgetInput))
-              }
-              placeholder="0"
-              className="text-2xl font-semibold text-gray-900 bg-transparent border-none outline-none w-full focus:bg-amber-50/40 rounded-md px-1"
-            />
-          </div>
-          {campaignBudget != null && (
-            <p
-              className={`text-xs font-medium mt-2 ${
-                overall! >= 0 ? "text-emerald-600" : "text-red-600"
-              }`}
-            >
-              {overall! >= 0
-                ? `${gbp(overall!)} remaining`
-                : `${gbp(Math.abs(overall!))} over`}
-            </p>
+          {locked ? (
+            <>
+              <div className="flex items-center gap-1">
+                <span className="text-2xl font-semibold text-gray-900">
+                  {gbp(campaignBudget ?? 0)}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-2 leading-snug">
+                Budget set by Commercial team — {gbp(campaignBudget ?? 0)} allocated for
+                production.
+              </p>
+              {campaignBudget != null && (
+                <p
+                  className={`text-xs font-medium mt-1.5 ${
+                    overall! >= 0 ? "text-emerald-600" : "text-red-600"
+                  }`}
+                >
+                  {overall! >= 0
+                    ? `${gbp(overall!)} remaining`
+                    : `${gbp(Math.abs(overall!))} over`}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-1">
+                <span className="text-2xl font-semibold text-gray-400">£</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={budgetInput}
+                  onChange={(e) => setBudgetInput(e.target.value)}
+                  onBlur={() =>
+                    onCampaignBudgetChange(budgetInput === "" ? null : Number(budgetInput))
+                  }
+                  placeholder="0"
+                  className="text-2xl font-semibold text-gray-900 bg-transparent border-none outline-none w-full focus:bg-amber-50/40 rounded-md px-1"
+                />
+              </div>
+              {campaignBudget != null && (
+                <p
+                  className={`text-xs font-medium mt-2 ${
+                    overall! >= 0 ? "text-emerald-600" : "text-red-600"
+                  }`}
+                >
+                  {overall! >= 0
+                    ? `${gbp(overall!)} remaining`
+                    : `${gbp(Math.abs(overall!))} over`}
+                </p>
+              )}
+            </>
           )}
         </div>
         <SummaryCard label="Total Budgeted" value={gbp(totals.budgeted)} />

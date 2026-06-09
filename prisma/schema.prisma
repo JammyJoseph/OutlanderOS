@@ -222,6 +222,8 @@ model Production {
   campaignId   String?          @unique
   campaign     Campaign?        @relation(fields: [campaignId], references: [id])
   trelloCardId String?          // linked Trello deal card (Commercial pipeline)
+  type         String           @default("EDITORIAL") // EDITORIAL | COMMERCIAL — COMMERCIAL projects are created from Commercial portal with a locked budget
+  campaignBudgetId String?      // links back to the CampaignBudget that spawned this production
   title        String
   clientName   String?
   brief        String?

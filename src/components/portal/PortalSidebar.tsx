@@ -29,6 +29,7 @@ import {
   Sparkles,
   Bookmark,
   List,
+  FolderKanban,
 } from "lucide-react";
 
 type NavItem = {
@@ -42,6 +43,7 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
     title: "Commercial",
     items: [
       { label: "Pipeline", href: "/commercial", icon: LayoutDashboard },
+      { label: "Projects", href: "/commercial/projects", icon: FolderKanban },
       { label: "Clients", href: "/commercial/clients", icon: Users },
       { label: "Media Plans", href: "/commercial/media-plans", icon: FileText },
       { label: "Content Tracker", href: "/commercial/content-tracker", icon: Camera },

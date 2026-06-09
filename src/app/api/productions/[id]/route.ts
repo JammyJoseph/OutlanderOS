@@ -59,6 +59,18 @@ export const PUT = withAuth(async (
     }
     if (body.status !== undefined) updateData.status = body.status;
     if (body.budgetTotal !== undefined) {
+      // COMMERCIAL productions have their total allocation locked by the
+      // Commercial team — production can log costs but not change the total.
+      const existing = await prisma.production.findUnique({
+        where: { id },
+        select: { type: true },
+      });
+      if (existing?.type === "COMMERCIAL") {
+        return NextResponse.json(
+          { error: "Budget allocation is locked by the Commercial team and cannot be changed from Production." },
+          { status: 403 }
+        );
+      }
       updateData.budgetTotal = body.budgetTotal === null || body.budgetTotal === ""
         ? null
         : Number(body.budgetTotal);
