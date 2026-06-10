@@ -25,13 +25,14 @@ model User {
   googleTokenExpiry  DateTime?
   googleEmail        String? // which Google account is connected
   googleConnected    Boolean   @default(false)
-  lastEmailScanAt  DateTime?
+  lastEmailScanAt    DateTime?
 
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   contacts        Contact[]
   campaigns       Campaign[]       @relation("CampaignCreator")
+  assignedDeals   Campaign[]       @relation("CampaignAssignee")
   productions     Production[]     @relation("ProductionLead")
   editorialPieces EditorialPiece[] @relation("Writer")
   deadlines       Deadline[]       @relation("userDeadlines")
@@ -43,23 +44,23 @@ model User {
 
 // ===== TASKS =====
 model Task {
-  id           String    @id @default(cuid())
-  title        String
-  description  String?
-  dueDate      DateTime?
-  status       String    @default("TODO") // TODO, IN_PROGRESS, DONE
-  priority     String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
-  portal       String? // commercial, production, print, editorial, finance
-  link         String? // deep link to related item
-  assignedTo   User      @relation("assignedTasks", fields: [assignedToId], references: [id])
-  assignedToId String
-  createdBy    User      @relation("createdTasks", fields: [createdById], references: [id])
-  createdById  String
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  dueDate         DateTime?
+  status          String    @default("TODO") // TODO, IN_PROGRESS, DONE
+  priority        String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  portal          String? // commercial, production, print, editorial, finance
+  link            String? // deep link to related item
+  assignedTo      User      @relation("assignedTasks", fields: [assignedToId], references: [id])
+  assignedToId    String
+  createdBy       User      @relation("createdTasks", fields: [createdById], references: [id])
+  createdById     String
   escalatedAt     DateTime? // last time auto-ping raised this task
   escalationLevel Int       @default(0) // 0 none, 1 HIGH, 2 URGENT, 3 7-day alert sent
   staleFlaggedAt  DateTime? // set when flagged as stalled in-progress
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 // ===== NOTIFICATIONS =====
@@ -138,6 +139,13 @@ model Campaign {
   title            String
   type             CampaignType
   status           CampaignStatus @default(BRIEF_RECEIVED)
+  stage            DealStage      @default(LEAD)
+  stageUpdatedAt   DateTime?
+  description      String?
+  dueDate          DateTime?
+  budgetBreakdown  Json? // [{ category: string, amount: number }] — set once on the deal, flows downstream
+  assignedToId     String?
+  assignedTo       User?          @relation("CampaignAssignee", fields: [assignedToId], references: [id])
   value            Float?
   currency         String         @default("GBP")
   margin           Float?
@@ -162,6 +170,32 @@ model Campaign {
   production       Production?
   mediaPlans       MediaPlan[]
   intelligenceLogs IntelligenceLog[]
+  activities       DealActivity[]
+}
+
+enum DealStage {
+  LEAD
+  PITCHED
+  NEGOTIATING
+  CONTRACTED
+  LIVE
+  COMPLETED
+  PAID
+}
+
+model DealActivity {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  type       String // created | stage_change | budget_update | field_update | note | deliverable | project_started
+  message    String
+  meta       Json?
+  userId     String?
+  userName   String?
+  createdAt  DateTime @default(now())
+
+  @@index([campaignId, createdAt])
+  @@index([createdAt])
 }
 
 enum CampaignType {
@@ -170,6 +204,10 @@ enum CampaignType {
   WHITE_LABEL
   EDITORIAL_FEATURE
   PRINT_AD
+  PARTNERSHIP
+  ADVERTORIAL
+  EVENT
+  EDITORIAL
 }
 
 enum CampaignStatus {
@@ -189,6 +227,7 @@ model Deliverable {
   type        String
   description String?
   dueDate     DateTime?
+  status      String    @default("PENDING") // PENDING, IN_PROGRESS, DELIVERED
   completed   Boolean   @default(false)
   completedAt DateTime?
   postedUrl   String?
@@ -218,26 +257,26 @@ model CampaignReport {
 
 // ===== PRODUCTION =====
 model Production {
-  id           String           @id @default(cuid())
-  campaignId   String?          @unique
-  campaign     Campaign?        @relation(fields: [campaignId], references: [id])
-  trelloCardId String?          // linked Trello deal card (Commercial pipeline)
-  type         String           @default("EDITORIAL") // EDITORIAL | COMMERCIAL — COMMERCIAL projects are created from Commercial portal with a locked budget
-  campaignBudgetId String?      // links back to the CampaignBudget that spawned this production
-  title        String
-  clientName   String?
-  brief        String?
-  description  String?
-  figmaUrl     String?
-  status       ProductionStatus @default(DRAFT)
-  budgetTotal  Float?
-  budgetActual Float?
-  marginTarget Float?
-  shootDates   DateTime[]
-  leadId       String?
-  lead         User?            @relation("ProductionLead", fields: [leadId], references: [id])
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id               String           @id @default(cuid())
+  campaignId       String?          @unique
+  campaign         Campaign?        @relation(fields: [campaignId], references: [id])
+  trelloCardId     String? // linked Trello deal card (Commercial pipeline)
+  type             String           @default("EDITORIAL") // EDITORIAL | COMMERCIAL — COMMERCIAL projects are created from Commercial portal with a locked budget
+  campaignBudgetId String? // links back to the CampaignBudget that spawned this production
+  title            String
+  clientName       String?
+  brief            String?
+  description      String?
+  figmaUrl         String?
+  status           ProductionStatus @default(DRAFT)
+  budgetTotal      Float?
+  budgetActual     Float?
+  marginTarget     Float?
+  shootDates       DateTime[]
+  leadId           String?
+  lead             User?            @relation("ProductionLead", fields: [leadId], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   callSheets CallSheet[]
   expenses   ProductionExpense[]
@@ -276,7 +315,7 @@ model ProductionTask {
   status       String     @default("LOCKED")
   dependsOn    String?
   sortOrder    Int        @default(0)
-  unlockedAt   DateTime?  // set when auto-ping unlocks this run-on task
+  unlockedAt   DateTime? // set when auto-ping unlocks this run-on task
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -355,9 +394,9 @@ enum CallSheetStatus {
 }
 
 model CallSheet {
-  id            String          @id @default(cuid())
-  productionId  String
-  production    Production      @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  id              String          @id @default(cuid())
+  productionId    String
+  production      Production      @relation(fields: [productionId], references: [id], onDelete: Cascade)
   status          CallSheetStatus @default(DRAFT)
   shootDate       DateTime
   callTime        String          @default("08:00")
@@ -589,33 +628,33 @@ model MediaPlan {
 
 // ===== DEADLINES =====
 model Deadline {
-  id           String    @id @default(cuid())
-  title        String
-  description  String?
-  dueDate      DateTime
-  source       String
-  sourceRef    String?
-  sourceUrl    String?
-  type         String
-  status       String    @default("ACTIVE")
-  priority     String    @default("MEDIUM")
-  category     String?
-  assignedTo   String?
-  user         User?     @relation("userDeadlines", fields: [assignedTo], references: [id])
-  createdBy    String?
-  emailFrom    String?
-  emailSnippet String?
-  threadId     String?
-  startDate    DateTime?
-  linkedType   String?
-  linkedId     String?
-  rawData      Json?
-  completedAt  DateTime?
-  snoozedUntil DateTime?
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  dueDate         DateTime
+  source          String
+  sourceRef       String?
+  sourceUrl       String?
+  type            String
+  status          String    @default("ACTIVE")
+  priority        String    @default("MEDIUM")
+  category        String?
+  assignedTo      String?
+  user            User?     @relation("userDeadlines", fields: [assignedTo], references: [id])
+  createdBy       String?
+  emailFrom       String?
+  emailSnippet    String?
+  threadId        String?
+  startDate       DateTime?
+  linkedType      String?
+  linkedId        String?
+  rawData         Json?
+  completedAt     DateTime?
+  snoozedUntil    DateTime?
   escalatedAt     DateTime? // last time auto-ping raised this deadline
   escalationLevel Int       @default(0) // 0 none, 1 HIGH, 2 URGENT, 3 7-day alert sent
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@unique([source, sourceRef])
   @@index([dueDate])
@@ -766,44 +805,46 @@ model CulturalEvent {
 
 // ===== FINANCE PORTAL (F1) =====
 model CampaignBudget {
-  id              String   @id @default(cuid())
-  trelloCardId    String?  // links to Trello deal
-  trelloCardName  String?
-  clientName      String
-  campaignName    String
-  totalBudget     Float    @default(0)
-  productionBudget Float   @default(0)
-  mediaBudget     Float    @default(0)
-  internalBudget  Float    @default(0)
-  otherBudget     Float    @default(0)
-  status          String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, RECONCILED
-  submittedBy     String?  // userId
-  approvedBy      String?  // userId
-  notes           String?
-  productionId    String?  // link to Production project
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  campaignId       String? // links to the Commercial pipeline deal (Campaign)
+  trelloCardId     String? // links to Trello deal
+  trelloCardName   String?
+  clientName       String
+  campaignName     String
+  totalBudget      Float    @default(0)
+  productionBudget Float    @default(0)
+  mediaBudget      Float    @default(0)
+  internalBudget   Float    @default(0)
+  otherBudget      Float    @default(0)
+  status           String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, RECONCILED
+  submittedBy      String? // userId
+  approvedBy       String? // userId
+  notes            String?
+  productionId     String? // link to Production project
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([status])
   @@index([trelloCardId])
   @@index([productionId])
+  @@index([campaignId])
 }
 
 model CostEntry {
-  id              String   @id @default(cuid())
+  id               String   @id @default(cuid())
   campaignBudgetId String?
-  category        String   // production, media, talent, location, equipment, catering, travel, internal, other
-  description     String
-  amount          Float
-  vendor          String?
-  date            DateTime @default(now())
-  receipt         String?  // URL to receipt/proof
-  loggedBy        String?  // userId
-  portal          String?  // which portal this was logged from: production, commercial, admin
-  status          String   @default("LOGGED") // LOGGED, APPROVED, PAID
-  xeroMatchId     String?  // matched Xero transaction ID
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  category         String // production, media, talent, location, equipment, catering, travel, internal, other
+  description      String
+  amount           Float
+  vendor           String?
+  date             DateTime @default(now())
+  receipt          String? // URL to receipt/proof
+  loggedBy         String? // userId
+  portal           String? // which portal this was logged from: production, commercial, admin
+  status           String   @default("LOGGED") // LOGGED, APPROVED, PAID
+  xeroMatchId      String? // matched Xero transaction ID
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([campaignBudgetId])
   @@index([category])
@@ -812,30 +853,30 @@ model CostEntry {
 }
 
 model InvoiceSubmission {
-  id              String   @id @default(cuid())
-  supplierName    String
-  supplierEmail   String
-  amount          Float?
-  currency        String   @default("GBP")
-  description     String?
-  emailSubject    String?
-  emailMessageId  String?  @unique // dedup
-  attachmentUrl   String?
-  receivedAt      DateTime @default(now())
-  paymentDeadline DateTime // 30 days from received
-  status          String   @default("RECEIVED") // RECEIVED, UNDER_REVIEW, APPROVED, PAID, REJECTED
+  id               String    @id @default(cuid())
+  supplierName     String
+  supplierEmail    String
+  amount           Float?
+  currency         String    @default("GBP")
+  description      String?
+  emailSubject     String?
+  emailMessageId   String?   @unique // dedup
+  attachmentUrl    String?
+  receivedAt       DateTime  @default(now())
+  paymentDeadline  DateTime // 30 days from received
+  status           String    @default("RECEIVED") // RECEIVED, UNDER_REVIEW, APPROVED, PAID, REJECTED
   campaignBudgetId String? // project this invoice is coded to
-  flagged         Boolean  @default(false)
-  flagNote        String?
-  reviewedBy      String?
-  approvedBy      String?
-  approvedAt      DateTime?
-  paidAt          DateTime?
-  xeroPaymentId   String?  // matched Xero payment
-  reminderSent    Boolean  @default(false)
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  flagged          Boolean   @default(false)
+  flagNote         String?
+  reviewedBy       String?
+  approvedBy       String?
+  approvedAt       DateTime?
+  paidAt           DateTime?
+  xeroPaymentId    String? // matched Xero payment
+  reminderSent     Boolean   @default(false)
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([status])
   @@index([paymentDeadline])

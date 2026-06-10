@@ -11,7 +11,6 @@ import {
   BarChart2,
   Calendar,
   DollarSign,
-  TrendingUp,
   Shield,
   Settings,
   Server,
@@ -36,13 +35,11 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
   commercial: {
     title: "Commercial",
     items: [
-      { label: "Pipeline", href: "/commercial", icon: LayoutDashboard },
-      { label: "Projects", href: "/commercial/projects", icon: FolderKanban },
+      { label: "Dashboard", href: "/commercial", icon: LayoutDashboard },
+      { label: "Pipeline", href: "/commercial/pipeline", icon: FolderKanban },
       { label: "Clients", href: "/commercial/clients", icon: Users },
       { label: "Media Plans", href: "/commercial/media-plans", icon: FileText },
       { label: "Content Tracker", href: "/commercial/content-tracker", icon: Camera },
-      { label: "Brand Performance", href: "/commercial/content-tracker/brands", icon: TrendingUp },
-      { label: "Calendar", href: "/commercial/calendar", icon: Calendar },
     ],
   },
   production: {
