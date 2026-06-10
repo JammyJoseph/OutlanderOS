@@ -10,7 +10,6 @@ import {
   BarChart2,
   Calendar,
   DollarSign,
-  CreditCard,
   TrendingUp,
   Shield,
   Settings,
@@ -101,12 +100,11 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
   finance: {
     title: "Finance",
     items: [
-      { label: "Dashboard", href: "/finance", icon: LayoutDashboard },
-      { label: "Deals", href: "/finance?tab=deals", icon: DollarSign },
-      { label: "Billing", href: "/finance?tab=billing", icon: CreditCard },
-      { label: "Expenses", href: "/finance?tab=expenses", icon: Receipt },
-      { label: "Cash Flow", href: "/finance?tab=cashflow", icon: TrendingUp },
-      { label: "Reports", href: "/finance/reports", icon: BarChart2 },
+      { label: "Overview", href: "/finance?tab=overview", icon: LayoutDashboard },
+      { label: "Project P&L", href: "/finance?tab=project-pl", icon: FolderKanban },
+      { label: "Invoicing", href: "/finance?tab=invoicing", icon: Receipt },
+      { label: "Budget Submissions", href: "/finance?tab=budgets", icon: Clipboard },
+      { label: "Company History", href: "/finance?tab=history", icon: BarChart2 },
     ],
   },
   admin: {

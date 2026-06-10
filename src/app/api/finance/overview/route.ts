@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/auth'
 import {
   getXeroProfitAndLoss,
@@ -9,13 +9,15 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-// Finance overview: P&L (year to date), bank balance, outstanding + overdue
-// receivables. Degrades gracefully when Xero is disconnected.
-export const GET = withAuth(async () => {
+// Finance overview: P&L, bank balance, outstanding + overdue receivables.
+// Defaults to year-to-date; accepts ?from=YYYY-MM-DD&to=YYYY-MM-DD for the
+// Company History tab. Degrades gracefully when Xero is disconnected.
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const now = new Date()
-    const fromDate = `${now.getFullYear()}-01-01`
-    const toDate = now.toISOString().split('T')[0]
+    const params = request.nextUrl.searchParams
+    const fromDate = params.get('from') || `${now.getFullYear()}-01-01`
+    const toDate = params.get('to') || now.toISOString().split('T')[0]
 
     const [status, pl, bank, invoices] = await Promise.all([
       getXeroStatus(),
