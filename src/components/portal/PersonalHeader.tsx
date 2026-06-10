@@ -6,22 +6,18 @@ import { useState, useRef, useEffect } from "react";
 import {
   Bell,
   ChevronDown,
-  MessageCircle,
   Lock,
   LayoutGrid,
   Calendar,
+  Shield,
   User as UserIcon,
 } from "lucide-react";
 
 const PORTALS = [
   { name: "Commercial", href: "/commercial" },
   { name: "Production", href: "/production" },
-  { name: "Print", href: "/print" },
-  { name: "Editorial", href: "/editorial" },
-  { name: "Contacts", href: "/contacts" },
   { name: "Finance", href: "/finance", restricted: true },
-  { name: "Admin", href: "/admin", restricted: true },
-  { name: "Ask OS", href: "/ask-os" },
+  { name: "Print", href: "/print" },
 ];
 
 interface NotificationItem {
@@ -155,6 +151,13 @@ export function PersonalHeader() {
                 Hub
               </button>
               <button
+                onClick={() => { router.push("/admin"); setPortalsOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                <Shield className="h-3.5 w-3.5 text-gray-400" />
+                Admin & Settings
+              </button>
+              <button
                 onClick={() => { router.push("/"); setPortalsOpen(false); }}
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
               >
@@ -164,14 +167,6 @@ export function PersonalHeader() {
             </div>
           )}
         </div>
-
-        <Link
-          href="/ask-os"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-amber-50 hover:text-[#D4A853] transition-colors"
-          title="Ask OS"
-        >
-          <MessageCircle className="h-4 w-4" />
-        </Link>
 
         {/* Notifications */}
         <div className="relative" ref={notifsRef}>

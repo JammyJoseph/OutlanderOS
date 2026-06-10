@@ -6,27 +6,21 @@ import {
   TrendingUp,
   Film,
   Newspaper,
-  PenTool,
-  BookUser,
   DollarSign,
-  Shield,
-  Bot,
   Lock,
-  Sparkles,
 } from 'lucide-react'
 
 interface PortalStats {
   commercial?: number
   production?: number
   print?: number
-  contacts?: number
   finance?: string
 }
 
 const PORTALS = [
   {
     name: 'Commercial',
-    description: 'Pipeline, clients & media plans',
+    description: 'Deal pipeline, clients & media plans',
     href: '/commercial',
     icon: TrendingUp,
     accent: '#D4A853',
@@ -43,42 +37,6 @@ const PORTALS = [
     statLabel: 'productions',
   },
   {
-    name: 'Print',
-    description: 'Issues, flat plans & distribution',
-    href: '/print',
-    icon: Newspaper,
-    accent: '#1D9E75',
-    statKey: 'print' as keyof PortalStats,
-    statLabel: 'issues',
-  },
-  {
-    name: 'Editorial',
-    description: 'Writers, calendar & content pipeline',
-    href: '/editorial',
-    icon: PenTool,
-    accent: '#7B5BD6',
-    statKey: null,
-    statLabel: null,
-  },
-  {
-    name: 'Think Tank',
-    description: 'Cultural intelligence & trend radar',
-    href: '/think-tank',
-    icon: Sparkles,
-    accent: '#E67E22',
-    statKey: null,
-    statLabel: null,
-  },
-  {
-    name: 'Contacts',
-    description: 'Brands, press & creatives',
-    href: '/contacts',
-    icon: BookUser,
-    accent: '#2C3E50',
-    statKey: 'contacts' as keyof PortalStats,
-    statLabel: 'contacts',
-  },
-  {
     name: 'Finance',
     description: 'Deals, billing & cash flow',
     href: '/finance',
@@ -89,23 +47,13 @@ const PORTALS = [
     statLabel: 'booked',
   },
   {
-    name: 'Admin',
-    description: 'Team, system & settings',
-    href: '/admin',
-    icon: Shield,
-    accent: '#6C757D',
-    restricted: true,
-    statKey: null,
-    statLabel: null,
-  },
-  {
-    name: 'Ask OS',
-    description: 'AI assistant for your business',
-    href: '/ask-os',
-    icon: Bot,
-    accent: '#D4A853',
-    statKey: null,
-    statLabel: null,
+    name: 'Print',
+    description: 'Issues, flat plans & distribution',
+    href: '/print',
+    icon: Newspaper,
+    accent: '#1D9E75',
+    statKey: 'print' as keyof PortalStats,
+    statLabel: 'issues',
   },
 ]
 
@@ -129,11 +77,10 @@ export default function HubPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [campaigns, productions, printIssues, contacts, dashboard] = await Promise.allSettled([
+        const [campaigns, productions, printIssues, dashboard] = await Promise.allSettled([
           fetch('/api/campaigns').then(r => r.json()),
           fetch('/api/productions').then(r => r.json()),
           fetch('/api/print-issues').then(r => r.json()),
-          fetch('/api/contacts').then(r => r.json()),
           fetch('/api/dashboard').then(r => r.json()),
         ])
 
@@ -146,9 +93,6 @@ export default function HubPage() {
         }
         if (printIssues.status === 'fulfilled' && Array.isArray(printIssues.value)) {
           next.print = printIssues.value.length
-        }
-        if (contacts.status === 'fulfilled' && Array.isArray(contacts.value)) {
-          next.contacts = contacts.value.length
         }
         if (dashboard.status === 'fulfilled' && dashboard.value?.billingTracker?.bookedRevenue) {
           next.finance = dashboard.value.billingTracker.bookedRevenue

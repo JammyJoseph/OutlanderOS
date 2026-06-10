@@ -12,8 +12,7 @@ export type PortalKey =
   | "finance"
   | "think-tank"
   | "contacts"
-  | "admin"
-  | "ask-os";
+  | "admin";
 
 export const PORTAL_ACCENTS: Record<PortalKey, string> = {
   commercial: "#D4A853",
@@ -24,7 +23,6 @@ export const PORTAL_ACCENTS: Record<PortalKey, string> = {
   "think-tank": "#E67E22",
   contacts: "#2C3E50",
   admin: "#6C757D",
-  "ask-os": "#D4A853",
 };
 
 /** Resolve a portal accent from a pathname like "/finance/reports". */

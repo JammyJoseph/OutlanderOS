@@ -1,6 +1,5 @@
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { PortalSidebar } from "@/components/portal/PortalSidebar";
-import { FloatingChat } from "@/components/chat/FloatingChat";
 
 export default function PortalLayout({
   children,
@@ -14,7 +13,6 @@ export default function PortalLayout({
         <PortalSidebar />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
-      <FloatingChat />
     </div>
   );
 }

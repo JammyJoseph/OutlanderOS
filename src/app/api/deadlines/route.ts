@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
-import { detectProjectFromNewItem } from "@/lib/ai-intelligence";
 
 export async function GET(request: NextRequest) {
   const me = getCurrentUser(request);
@@ -91,18 +90,6 @@ export async function POST(request: NextRequest) {
         createdBy: me.userId,
       },
     });
-
-    try {
-      await detectProjectFromNewItem({
-        type: "deadline",
-        id: deadline.id,
-        title: deadline.title,
-        description: deadline.description,
-        context: deadline.category ?? deadline.type,
-      });
-    } catch {
-      // Non-fatal — periodic analysis will catch it
-    }
 
     return NextResponse.json(deadline, { status: 201 });
   } catch (err) {

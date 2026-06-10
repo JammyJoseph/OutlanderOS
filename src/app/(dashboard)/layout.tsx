@@ -1,6 +1,5 @@
 "use client";
 
-import { FloatingChat } from "@/components/chat/FloatingChat";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -41,7 +40,6 @@ export default function DashboardLayout({
         </header>
       )}
       <main className="flex-1 overflow-y-auto">{children}</main>
-      <FloatingChat />
     </div>
   );
 }

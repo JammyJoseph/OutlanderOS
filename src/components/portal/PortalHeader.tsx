@@ -3,25 +3,27 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, MessageCircle, Lock, LayoutGrid } from "lucide-react";
+import { ChevronDown, Lock, LayoutGrid, Shield } from "lucide-react";
 import { NotificationBell } from "@/components/layout/NotificationBell";
-import { SyncIndicator } from "./SyncIndicator";
 import { portalAccent } from "@/lib/design";
 
 const PORTALS = [
   { name: "Commercial", href: "/commercial" },
   { name: "Production", href: "/production" },
+  { name: "Finance", href: "/finance", restricted: true },
   { name: "Print", href: "/print" },
-  { name: "Editorial", href: "/editorial" },
+];
+
+// Sections that still route but live outside the main portal switcher.
+const EXTRA_SECTIONS = [
+  { name: "Admin", href: "/admin" },
   { name: "Think Tank", href: "/think-tank" },
   { name: "Contacts", href: "/contacts" },
-  { name: "Finance", href: "/finance", restricted: true },
-  { name: "Admin", href: "/admin", restricted: true },
-  { name: "Ask OS", href: "/ask-os" },
+  { name: "Editorial", href: "/editorial" },
 ];
 
 function getPortalName(pathname: string): string {
-  for (const p of PORTALS) {
+  for (const p of [...PORTALS, ...EXTRA_SECTIONS]) {
     if (pathname.startsWith(p.href)) return p.name;
   }
   return "Portal";
@@ -118,6 +120,16 @@ export function PortalHeader() {
                   </button>
                 );
               })}
+
+              <div className="h-px bg-gray-100" />
+
+              <button
+                onClick={() => { router.push("/admin"); setDropdownOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                <Shield className="h-3.5 w-3.5 text-gray-400" />
+                Admin & Settings
+              </button>
             </div>
           )}
         </div>
@@ -138,15 +150,6 @@ export function PortalHeader() {
 
       {/* Right: actions */}
       <div className="flex items-center gap-2">
-        <SyncIndicator />
-        <Link
-          href="/ask-os"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-amber-50 hover:text-[#D4A853] transition-colors"
-          title="Ask OS"
-        >
-          <MessageCircle className="h-4 w-4" />
-        </Link>
-
         <NotificationBell tone="dark" />
 
         <Link

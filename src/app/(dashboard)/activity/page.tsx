@@ -273,7 +273,6 @@ export default function ActivityPage() {
   const [chaseDraftKey, setChaseDraftKey] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
-  const [scanning, setScanning] = useState(false)
   const [sendingBriefing, setSendingBriefing] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [blink, setBlink] = useState(true)
@@ -284,7 +283,7 @@ export default function ActivityPage() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/dashboard?crossref=true')
+    fetch('/api/dashboard')
       .then((r) => r.json())
       .then((data) => {
         setLogEntries(generateLogEntries(data))
@@ -340,36 +339,6 @@ export default function ActivityPage() {
     }
   }
 
-  async function runCrossRef() {
-    setScanning(true)
-    setToast('Running cross-reference scan…')
-    try {
-      const res = await fetch('/api/dashboard?crossref=true')
-      const data = await res.json()
-      if (data.crossReference?.length) {
-        const crossEntries: LogEntry[] = data.crossReference.map((status: any) => ({
-          timestamp: new Date().toISOString(),
-          type: 'CROSSREF' as const,
-          client: status.client,
-          message: status.flags?.length
-            ? status.flags[0]
-            : `No discrepancies found`,
-          flags: status.flags,
-        }))
-        setLogEntries((prev) => [...crossEntries, ...prev])
-        setReminders(generateReminders(data))
-        setToast(`Cross-ref complete — ${data.crossReference.length} clients scanned`)
-      } else {
-        setToast('Cross-ref complete — no deals found')
-      }
-    } catch {
-      setToast('Cross-reference scan failed')
-    } finally {
-      setScanning(false)
-      setTimeout(() => setToast(null), 5000)
-    }
-  }
-
   async function sendBriefing() {
     setSendingBriefing(true)
     try {
@@ -404,13 +373,6 @@ export default function ActivityPage() {
             ACTIVITY LOG
             <span className={blink ? 'opacity-100' : 'opacity-0'}>{' █'}</span>
           </span>
-          <button
-            onClick={runCrossRef}
-            disabled={scanning || loading}
-            className="rounded px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-purple-300 border border-purple-700 hover:bg-purple-900/40 disabled:opacity-40 transition-colors"
-          >
-            {scanning ? 'Scanning…' : 'Cross-Reference Scan'}
-          </button>
         </div>
 
         {/* Log lines */}

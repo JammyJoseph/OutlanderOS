@@ -86,11 +86,8 @@ export default function CommercialProjectsPage() {
             <FolderKanban className="mx-auto h-8 w-8 text-gray-300" />
             <p className="mt-3 text-sm font-medium text-gray-700">No projects yet</p>
             <p className="mt-1 text-xs text-gray-500">
-              Use “Start Project” on the{" "}
-              <Link href="/commercial" className="text-[#D4A853] hover:underline">
-                pipeline
-              </Link>{" "}
-              to book a deal with budget splits.
+              Projects will be booked from the new native deal pipeline once it
+              launches.
             </p>
           </div>
         ) : (

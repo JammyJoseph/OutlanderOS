@@ -16,7 +16,6 @@ import {
   Settings,
   Server,
   BookOpen,
-  Bot,
   Megaphone,
   Film,
   Clipboard,
@@ -116,13 +115,7 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "System", href: "/admin/system", icon: Server },
       { label: "Settings", href: "/admin/settings", icon: Settings },
       { label: "Business Plan", href: "/admin/business-plan", icon: BookOpen },
-      { label: "Engine Room", href: "/admin/engine-room", icon: Activity },
-    ],
-  },
-  "ask-os": {
-    title: "Ask OS",
-    items: [
-      { label: "Chat", href: "/ask-os", icon: Bot },
+      { label: "Contacts", href: "/contacts", icon: BookUser },
     ],
   },
 };

@@ -23,7 +23,6 @@ import {
   AlertCircle,
   ChevronRight,
 } from 'lucide-react'
-import { SyncHealthPanel } from '@/components/portal/SyncHealthPanel'
 
 interface DashboardData {
   connected?: {
@@ -45,12 +44,6 @@ function StatusDot({ connected }: { connected: boolean }) {
     <span
       className={`inline-block w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
     />
-  )
-}
-
-function openChat(question: string) {
-  window.dispatchEvent(
-    new CustomEvent('openChatWithQuestion', { detail: { question } })
   )
 }
 
@@ -125,14 +118,6 @@ export default function SystemPage() {
       connected: false,
       color: '#0088CC',
     },
-    {
-      id: 'ai',
-      icon: Bot,
-      label: 'AI Agent (Claude)',
-      description: 'Natural language queries over all business data, live reasoning',
-      connected: true,
-      color: '#D4A853',
-    },
   ]
 
   const quinnActions = [
@@ -166,14 +151,6 @@ export default function SystemPage() {
       detail: 'When a new integration is needed, you authorise via Settings.',
       href: '/settings',
     },
-  ]
-
-  const agentExamples = [
-    { question: 'How much have we booked this year?', label: 'Revenue' },
-    { question: "What's the status with Nike?", label: 'Clients' },
-    { question: 'Which invoices are overdue?', label: 'Invoices' },
-    { question: 'What payments are expected this month?', label: 'Cash Flow' },
-    { question: "Who's available today?", label: 'Team' },
   ]
 
   return (
@@ -402,42 +379,6 @@ export default function SystemPage() {
             )
           })}
         </div>
-      </section>
-
-      {/* ── Section 4: AI Agent Capabilities ── */}
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
-          Ask OS — What the Agent Can Do
-        </h2>
-        <p className="text-xs text-gray-400 mb-5">Click any example to open it in the chat</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {agentExamples.map((ex, i) => (
-            <button
-              key={i}
-              onClick={() => openChat(ex.question)}
-              className="bg-white border border-gray-200 rounded-xl p-4 text-left hover:border-[#D4A853] hover:shadow-md transition-all group"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center">
-                  <Bot size={11} className="text-[#D4A853]" />
-                </div>
-                <span className="text-[10px] font-semibold text-[#D4A853] uppercase tracking-wider">{ex.label}</span>
-              </div>
-              <p className="text-sm text-gray-700 font-mono leading-snug">&ldquo;{ex.question}&rdquo;</p>
-              <p className="text-[10px] text-gray-400 mt-2 group-hover:text-[#D4A853] transition-colors">
-                Open in chat →
-              </p>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Section 4.5: Sync Engine ── */}
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-5">
-          Sync Engine
-        </h2>
-        <SyncHealthPanel />
       </section>
 
       {/* ── Section 5: System Health ── */}
