@@ -159,9 +159,12 @@ export default function ThinkTankRadarPage() {
 
   return (
     <div className="flex h-full flex-col font-[family-name:var(--font-manrope)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-6 py-3">
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] bg-white/80 px-6 py-3 backdrop-blur-md">
         <div>
-          <h1 className="text-base font-semibold text-gray-900">Trend Radar</h1>
+          <h1 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+            <span className="h-2 w-2 rounded-full bg-[#E67E22]" />
+            Trend Radar
+          </h1>
           <p className="text-xs text-gray-500">
             Cultural intelligence for Outlander
             {lastIngest && <span className="text-gray-400"> · last refresh {timeAgo(lastIngest)}</span>}
@@ -170,7 +173,7 @@ export default function ThinkTankRadarPage() {
         <button
           onClick={handleIngest}
           disabled={ingesting}
-          className="flex items-center gap-2 rounded-lg bg-[#7B5BD6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#6A4BC4] disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-[#E67E22] px-3 py-2 text-xs font-semibold text-white hover:bg-[#CF6D14] disabled:opacity-50 transition-colors"
         >
           {ingesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           {ingesting ? "Refreshing feeds…" : "Refresh Feeds"}
@@ -215,7 +218,7 @@ export default function ThinkTankRadarPage() {
                       <p className="line-clamp-2 text-[11px] leading-tight text-gray-500">
                         {entry.topTitle ?? "No signals yet"}
                       </p>
-                      <div className="mt-auto flex items-center gap-1 text-[10px] font-medium text-gray-400 group-hover:text-[#7B5BD6]">
+                      <div className="mt-auto flex items-center gap-1 text-[10px] font-medium text-gray-400 group-hover:text-[#E67E22]">
                         View signals <ChevronRight className="h-3 w-3" />
                       </div>
                     </Link>
@@ -278,7 +281,7 @@ function StatCard({ label, value, icon }: { label: string; value: number; icon: 
     <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</span>
-        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#7B5BD6]/10 text-[#7B5BD6]">{icon}</span>
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#E67E22]/10 text-[#E67E22]">{icon}</span>
       </div>
       <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
     </div>
@@ -303,7 +306,7 @@ function SectionHeader({
         {subtitle && <p className="text-[11px] text-gray-400">{subtitle}</p>}
       </div>
       {actionHref && (
-        <Link href={actionHref} className="flex items-center gap-1 text-[11px] font-semibold text-[#7B5BD6] hover:text-[#6A4BC4]">
+        <Link href={actionHref} className="flex items-center gap-1 text-[11px] font-semibold text-[#E67E22] hover:text-[#CF6D14]">
           {actionLabel} <ArrowUpRight className="h-3 w-3" />
         </Link>
       )}
@@ -345,7 +348,7 @@ function HotSignalCard({ signal }: { signal: Signal }) {
             </span>
           )}
           {signal.sourceUrl && (
-            <span className="flex items-center gap-1 text-[#7B5BD6] opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="flex items-center gap-1 text-[#E67E22] opacity-0 transition-opacity group-hover:opacity-100">
               Open <ExternalLink className="h-3 w-3" />
             </span>
           )}
@@ -358,7 +361,7 @@ function HotSignalCard({ signal }: { signal: Signal }) {
 function EmptyState({ onIngest, ingesting }: { onIngest: () => void; ingesting: boolean }) {
   return (
     <div className="mx-auto mt-12 max-w-md rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#7B5BD6]/10 text-[#7B5BD6]">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#E67E22]/10 text-[#E67E22]">
         <Sparkles className="h-5 w-5" />
       </div>
       <h2 className="text-base font-semibold text-gray-900">Your radar is dark</h2>
@@ -368,7 +371,7 @@ function EmptyState({ onIngest, ingesting }: { onIngest: () => void; ingesting: 
       <button
         onClick={onIngest}
         disabled={ingesting}
-        className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#7B5BD6] px-4 py-2 text-xs font-semibold text-white hover:bg-[#6A4BC4] disabled:opacity-50"
+        className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#E67E22] px-4 py-2 text-xs font-semibold text-white hover:bg-[#CF6D14] disabled:opacity-50"
       >
         {ingesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
         Ingest your first feeds

@@ -217,8 +217,8 @@ function CardTile({
         onDragStart(card.id, card.listId);
       }}
       onClick={() => onSelect(card)}
-      className={`group cursor-pointer rounded-xl border border-gray-200 bg-white p-3 text-left shadow-sm transition-all hover:border-[#D4A853]/60 hover:shadow ${
-        isDragging ? "opacity-40" : ""
+      className={`group cursor-grab rounded-xl border border-[#E5E7EB] bg-white p-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#D4A853]/60 hover:shadow-md active:cursor-grabbing ${
+        isDragging ? "rotate-1 opacity-40" : ""
       }`}
     >
       <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">
@@ -1081,7 +1081,7 @@ export default function CommercialPipelinePage() {
 
   return (
     <div className="flex h-full flex-col font-[family-name:var(--font-manrope)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-6 py-3">
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] bg-white/80 px-6 py-3 backdrop-blur-md">
         <div>
           <h1 className="text-base font-semibold text-gray-900">Commercial Pipeline</h1>
           <p className="text-xs text-gray-500">
@@ -1177,8 +1177,8 @@ export default function CommercialPipelinePage() {
                   e.preventDefault();
                   handleDropOnStage(stage.id);
                 }}
-                className={`flex w-[300px] shrink-0 flex-col rounded-2xl p-2 transition-colors ${stageBg(stage.name)} ${
-                  isOver ? "ring-2 ring-[#D4A853]/60" : ""
+                className={`flex w-[300px] shrink-0 flex-col rounded-2xl border border-transparent p-2 transition-all duration-200 ${stageBg(stage.name)} ${
+                  isOver ? "scale-[1.01] ring-2 ring-[#D4A853]/60" : ""
                 }`}
               >
                 <div

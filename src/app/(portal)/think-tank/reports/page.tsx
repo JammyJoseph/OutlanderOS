@@ -74,7 +74,7 @@ function renderMarkdown(md: string): React.ReactNode[] {
     }
     if (line.startsWith("### ")) {
       nodes.push(
-        <h3 key={idx} className="mt-4 text-sm font-semibold text-[#7B5BD6]">
+        <h3 key={idx} className="mt-4 text-sm font-semibold text-[#E67E22]">
           {line.slice(4)}
         </h3>,
       );
@@ -172,7 +172,7 @@ export default function ReportsPage() {
           <button
             onClick={() => handleGenerate("weekly")}
             disabled={generating !== null}
-            className="flex items-center gap-2 rounded-lg bg-[#7B5BD6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#6A4BC4] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-[#E67E22] px-3 py-2 text-xs font-semibold text-white hover:bg-[#CF6D14] disabled:opacity-50"
           >
             {generating === "weekly" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Generate Weekly
@@ -180,7 +180,7 @@ export default function ReportsPage() {
           <button
             onClick={() => handleGenerate("monthly")}
             disabled={generating !== null}
-            className="flex items-center gap-2 rounded-lg border border-[#7B5BD6]/30 bg-white px-3 py-2 text-xs font-semibold text-[#7B5BD6] hover:bg-[#7B5BD6]/5 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg border border-[#E67E22]/30 bg-white px-3 py-2 text-xs font-semibold text-[#E67E22] hover:bg-[#E67E22]/5 disabled:opacity-50"
           >
             {generating === "monthly" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Generate Monthly
@@ -189,7 +189,7 @@ export default function ReportsPage() {
             <select
               value={selectedBrandId}
               onChange={(e) => setSelectedBrandId(e.target.value)}
-              className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs focus:border-[#7B5BD6] focus:outline-none"
+              className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs focus:border-[#E67E22] focus:outline-none"
             >
               <option value="">Brand pitch…</option>
               {brands.map((b) => (
@@ -234,7 +234,7 @@ export default function ReportsPage() {
                     <button
                       onClick={() => setSelected(r)}
                       className={`flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-gray-50 ${
-                        selected?.id === r.id ? "bg-[#7B5BD6]/5" : ""
+                        selected?.id === r.id ? "bg-[#E67E22]/5" : ""
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">

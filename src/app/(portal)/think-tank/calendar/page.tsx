@@ -158,9 +158,12 @@ export default function CulturalCalendarPage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50 font-[Manrope]">
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-[#E5E7EB] bg-white/80 px-6 py-3 backdrop-blur-md">
         <div>
-          <h1 className="text-base font-semibold text-gray-900">Cultural Calendar</h1>
+          <h1 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+            <span className="h-2 w-2 rounded-full bg-[#E67E22]" />
+            Cultural Calendar
+          </h1>
           <p className="text-xs text-gray-500">Fashion weeks, art fairs, film festivals & cultural moments</p>
         </div>
         <div className="flex items-center gap-2">
@@ -223,14 +226,14 @@ export default function CulturalCalendarPage() {
                   key={idx}
                   onClick={() => day && setSelectedDay(day)}
                   className={`flex min-h-[110px] flex-col items-stretch p-2 text-left transition ${
-                    day ? "bg-white hover:bg-amber-50/40" : "bg-gray-50"
-                  } ${selected ? "ring-2 ring-amber-300" : ""}`}
+                    day ? "bg-white hover:bg-[#E67E22]/5" : "bg-gray-50"
+                  } ${selected ? "ring-2 ring-[#E67E22]/50" : ""}`}
                 >
                   {day && (
                     <>
                       <span
                         className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                          isToday(day) ? "bg-amber-500 text-white" : "text-gray-700"
+                          isToday(day) ? "bg-[#E67E22] text-white" : "text-gray-700"
                         }`}
                       >
                         {day}

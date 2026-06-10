@@ -267,7 +267,7 @@ export function ProjectTasks({ tasks, deadlines, onChange }: Props) {
   }
 
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-gray-900">Projects &amp; Tasks</h2>
         <button

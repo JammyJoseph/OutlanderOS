@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, MessageCircle, Lock, LayoutGrid } from "lucide-react";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { SyncIndicator } from "./SyncIndicator";
+import { portalAccent } from "@/lib/design";
 
 const PORTALS = [
   { name: "Commercial", href: "/commercial" },
@@ -45,9 +46,13 @@ export function PortalHeader() {
   }, []);
 
   const breadcrumb = pathname.split("/").filter(Boolean);
+  const accent = portalAccent(pathname);
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-100 bg-white/80 backdrop-blur-md px-5 sticky top-0 z-30">
+    <header
+      className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white/80 backdrop-blur-md px-5 sticky top-0 z-30"
+      style={{ boxShadow: `inset 0 -2px 0 0 ${accent}` }}
+    >
       {/* Left: Logo + breadcrumb */}
       <div className="flex items-center gap-3">
         <Link
@@ -69,8 +74,9 @@ export function PortalHeader() {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition-colors"
           >
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
             {portalName}
             <ChevronDown className={`h-3.5 w-3.5 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
           </button>
@@ -92,20 +98,26 @@ export function PortalHeader() {
                 <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Switch Portal</span>
               </div>
 
-              {PORTALS.map((p) => (
-                <button
-                  key={p.href}
-                  onClick={() => { router.push(p.href); setDropdownOpen(false); }}
-                  className={`flex items-center justify-between w-full px-3 py-2 text-sm transition-colors ${
-                    pathname.startsWith(p.href)
-                      ? "bg-amber-50 text-amber-700 font-medium"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <span>{p.name}</span>
-                  {p.restricted && <Lock className="h-3 w-3 text-gray-400" />}
-                </button>
-              ))}
+              {PORTALS.map((p) => {
+                const pAccent = portalAccent(p.href);
+                const isCurrent = pathname.startsWith(p.href);
+                return (
+                  <button
+                    key={p.href}
+                    onClick={() => { router.push(p.href); setDropdownOpen(false); }}
+                    className={`flex items-center justify-between w-full px-3 py-2 text-sm transition-colors ${
+                      isCurrent ? "font-semibold text-gray-900" : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                    style={isCurrent ? { backgroundColor: `${pAccent}14` } : undefined}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: pAccent }} />
+                      {p.name}
+                    </span>
+                    {p.restricted && <Lock className="h-3 w-3 text-gray-400" />}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

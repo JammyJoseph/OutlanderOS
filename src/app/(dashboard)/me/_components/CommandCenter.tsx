@@ -43,15 +43,20 @@ export function CommandCenter({ data, digest, suggestions, suggestionsLoading }:
   const nextShoot = shoots[0];
 
   return (
-    <section className="grid grid-cols-1 gap-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm lg:grid-cols-[1.5fr_1fr]">
+    <section className="relative grid grid-cols-1 gap-6 overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white/80 p-6 shadow-sm backdrop-blur-md lg:grid-cols-[1.5fr_1fr]">
+      {/* Decorative gold wash */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#D4A853]/10 blur-3xl"
+      />
       {/* Left — greeting, digest, numbers, suggestions */}
-      <div className="flex flex-col gap-4">
+      <div className="relative flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             {greeting()}, {firstName}
           </h1>
-          <p className="text-sm text-gray-400">{TODAY_LABEL}</p>
-          <p className="mt-2 flex items-start gap-1.5 text-sm leading-relaxed text-gray-500">
+          <p className="mt-0.5 text-sm font-medium text-gray-400">{TODAY_LABEL}</p>
+          <p className="mt-3 flex items-start gap-1.5 text-sm leading-relaxed text-gray-600">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#D4A853]" />
             <span>{digest || "Pulling together your day…"}</span>
           </p>
@@ -68,7 +73,7 @@ export function CommandCenter({ data, digest, suggestions, suggestionsLoading }:
       </div>
 
       {/* Right — week strip, events, next shoot */}
-      <div className="flex flex-col gap-4 lg:border-l lg:border-gray-100 lg:pl-6">
+      <div className="relative flex flex-col gap-4 lg:border-l lg:border-[#E5E7EB] lg:pl-6">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
             Next 7 days

@@ -120,7 +120,7 @@ export default function BrandWatchlistPage() {
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-2 rounded-lg bg-[#7B5BD6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#6A4BC4] transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-[#E67E22] px-3 py-2 text-xs font-semibold text-white hover:bg-[#CF6D14] transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
           {showForm ? "Cancel" : "Add Brand"}
@@ -140,7 +140,7 @@ export default function BrandWatchlistPage() {
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 required
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:border-[#7B5BD6] focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:border-[#E67E22] focus:outline-none"
               />
             </div>
             <div>
@@ -149,7 +149,7 @@ export default function BrandWatchlistPage() {
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                 placeholder="fashion, luxury, beauty…"
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:border-[#7B5BD6] focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:border-[#E67E22] focus:outline-none"
               />
             </div>
             <div className="md:col-span-2">
@@ -158,7 +158,7 @@ export default function BrandWatchlistPage() {
                 value={form.keywords}
                 onChange={(e) => setForm((f) => ({ ...f, keywords: e.target.value }))}
                 placeholder="e.g. denim, archive, runway, jacquemus"
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:border-[#7B5BD6] focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:border-[#E67E22] focus:outline-none"
               />
             </div>
             <div className="md:col-span-2">
@@ -167,7 +167,7 @@ export default function BrandWatchlistPage() {
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:border-[#7B5BD6] focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:border-[#E67E22] focus:outline-none"
               />
             </div>
           </div>
@@ -175,7 +175,7 @@ export default function BrandWatchlistPage() {
             <button
               type="submit"
               disabled={submitting || !form.name.trim()}
-              className="rounded-lg bg-[#7B5BD6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#6A4BC4] disabled:opacity-50"
+              className="rounded-lg bg-[#E67E22] px-3 py-2 text-xs font-semibold text-white hover:bg-[#CF6D14] disabled:opacity-50"
             >
               {submitting ? "Saving…" : "Add brand"}
             </button>
@@ -195,7 +195,7 @@ export default function BrandWatchlistPage() {
             <p className="mt-1 text-xs text-gray-500">Add brands to see how they move across cultural signals.</p>
             <button
               onClick={() => setShowForm(true)}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#7B5BD6] px-3 py-2 text-xs font-semibold text-white hover:bg-[#6A4BC4]"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#E67E22] px-3 py-2 text-xs font-semibold text-white hover:bg-[#CF6D14]"
             >
               <Plus className="h-3.5 w-3.5" />
               Add your first brand
@@ -261,7 +261,7 @@ export default function BrandWatchlistPage() {
                   <button
                     onClick={() => handleGeneratePitch(b)}
                     disabled={generatingId === b.id}
-                    className="mt-auto flex items-center justify-center gap-2 rounded-lg border border-[#7B5BD6]/30 bg-[#7B5BD6]/5 px-3 py-1.5 text-[11px] font-semibold text-[#7B5BD6] hover:bg-[#7B5BD6]/10 disabled:opacity-50"
+                    className="mt-auto flex items-center justify-center gap-2 rounded-lg border border-[#E67E22]/30 bg-[#E67E22]/5 px-3 py-1.5 text-[11px] font-semibold text-[#E67E22] hover:bg-[#E67E22]/10 disabled:opacity-50"
                   >
                     {generatingId === b.id ? (
                       <Loader2 className="h-3 w-3 animate-spin" />

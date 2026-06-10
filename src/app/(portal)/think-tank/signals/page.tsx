@@ -167,13 +167,13 @@ function SignalLogInner() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search signals…"
-              className="rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-xs focus:border-[#7B5BD6] focus:outline-none"
+              className="rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-xs focus:border-[#E67E22] focus:outline-none"
             />
           </div>
           <select
             value={selectedSource}
             onChange={(e) => setSelectedSource(e.target.value)}
-            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs focus:border-[#7B5BD6] focus:outline-none"
+            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs focus:border-[#E67E22] focus:outline-none"
           >
             <option value="">All sources</option>
             {sources.map((s) => (
@@ -187,7 +187,7 @@ function SignalLogInner() {
               type="checkbox"
               checked={trendingOnly}
               onChange={(e) => setTrendingOnly(e.target.checked)}
-              className="rounded border-gray-300 text-[#7B5BD6] focus:ring-[#7B5BD6]"
+              className="rounded border-gray-300 text-[#E67E22] focus:ring-[#E67E22]"
             />
             Trending
           </label>
@@ -196,7 +196,7 @@ function SignalLogInner() {
               type="checkbox"
               checked={flaggedOnly}
               onChange={(e) => setFlaggedOnly(e.target.checked)}
-              className="rounded border-gray-300 text-[#7B5BD6] focus:ring-[#7B5BD6]"
+              className="rounded border-gray-300 text-[#E67E22] focus:ring-[#E67E22]"
             />
             Flagged
           </label>
@@ -219,7 +219,7 @@ function SignalLogInner() {
                 onClick={() => toggleCategory(cat.key)}
                 className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                   active
-                    ? `${categoryTone(cat.key)} ring-1 ring-[#7B5BD6]/40`
+                    ? `${categoryTone(cat.key)} ring-1 ring-[#E67E22]/40`
                     : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
                 }`}
               >
@@ -269,7 +269,7 @@ function SignalCard({
           href={signal.sourceUrl ?? "#"}
           target={signal.sourceUrl ? "_blank" : undefined}
           rel="noreferrer"
-          className="flex-1 text-sm font-semibold text-gray-900 hover:text-[#7B5BD6]"
+          className="flex-1 text-sm font-semibold text-gray-900 hover:text-[#E67E22]"
         >
           {signal.title}
           {signal.sourceUrl && <ExternalLink className="ml-1 inline h-3 w-3 text-gray-400" />}

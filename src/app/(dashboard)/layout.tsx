@@ -15,24 +15,24 @@ export default function DashboardLayout({
   const hideHeader = pathname?.startsWith("/me");
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-gray-50">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#F8F9FA]">
       {!hideHeader && (
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white/80 px-6 backdrop-blur-md">
           <Link href="/me" className="flex items-center gap-2">
-            <span className="text-lg font-bold text-gray-900">
+            <span className="text-lg font-bold tracking-tight text-gray-900">
               Outlander<span className="text-[#D4A853]">OS</span>
             </span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Link
               href="/me"
-              className="text-xs text-gray-500 hover:text-gray-900"
+              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
             >
               Deadlines
             </Link>
             <Link
               href="/tasks"
-              className="text-xs text-gray-500 hover:text-gray-900"
+              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
             >
               Tasks
             </Link>

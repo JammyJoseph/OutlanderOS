@@ -40,18 +40,21 @@ function FinanceInner() {
     <div className="flex flex-col py-6 px-4 sm:px-6">
       <div className="mx-auto w-full max-w-6xl space-y-5">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Finance</h1>
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#378ADD]">
+            OutlanderOS · Finance
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900">Finance</h1>
           <p className="mt-0.5 text-xs text-gray-500">Budgets, costs, invoices &amp; the company P&amp;L — one source of truth</p>
         </div>
 
-        <div className="flex overflow-x-auto border-b border-gray-200">
+        <div className="flex overflow-x-auto border-b border-[#E5E7EB]">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => switchTab(tab.id)}
               className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                 active === tab.id
-                  ? 'border-[#D4A853] text-[#D4A853]'
+                  ? 'border-[#378ADD] font-semibold text-[#378ADD]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >

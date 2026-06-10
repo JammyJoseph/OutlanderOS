@@ -73,7 +73,7 @@ export default function MePage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#f7f7f7]">
+      <div className="flex h-full items-center justify-center bg-[#F8F9FA]">
         <Loader2 className="h-6 w-6 animate-spin text-[#D4A853]" />
       </div>
     );
@@ -81,7 +81,7 @@ export default function MePage() {
 
   if (error) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#f7f7f7]">
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#F8F9FA]">
         <p className="text-sm text-gray-500">{error}</p>
         <button
           onClick={() => {
@@ -97,7 +97,7 @@ export default function MePage() {
   }
 
   return (
-    <div className="min-h-full bg-[#f7f7f7] p-6">
+    <div className="min-h-full bg-[#F8F9FA] p-6">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         {/* First-login nudge — connect personal Google account */}
         <ConnectGoogleBanner />

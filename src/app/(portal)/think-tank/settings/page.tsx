@@ -40,7 +40,7 @@ export default function ThinkTankSettingsPage() {
                     href={f.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1 text-[11px] font-medium text-[#7B5BD6] hover:text-[#6A4BC4]"
+                    className="flex items-center gap-1 text-[11px] font-medium text-[#E67E22] hover:text-[#CF6D14]"
                   >
                     Open feed <ExternalLink className="h-3 w-3" />
                   </a>

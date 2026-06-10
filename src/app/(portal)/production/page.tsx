@@ -261,7 +261,7 @@ export default function ProductionDashboard() {
         {/* Page header */}
         <div className="flex items-end justify-between mb-7">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A853]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#E24B4A]">
               OutlanderOS · Production
             </p>
             <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">
@@ -434,7 +434,6 @@ function HotSeatBanner({
     );
   }
 
-  const tone = countdownTone(hot.date);
   const client = getClientName(hot.production);
   const callTime = hot.callSheet?.callTime;
   const locationAddr = (hot.callSheet?.location as { address?: string } | undefined)?.address;
@@ -445,55 +444,53 @@ function HotSeatBanner({
       href={`/production/${hot.production.id}${hot.callSheet ? `/call-sheets/${hot.callSheet.id}` : ""}`}
       className="block group"
     >
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl shadow-lg p-6 transition-transform duration-200 hover:translate-y-[-1px]">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#E24B4A] via-[#D03B3A] to-[#A82E2D] text-white rounded-2xl shadow-lg p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
         {/* Decorative gradient */}
-        <div className="absolute right-0 top-0 w-64 h-64 bg-[#D4A853] opacity-[0.07] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-0 top-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative flex items-start justify-between gap-6">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A853]">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
                 Hot Seat — Next Shoot
               </span>
-              <span
-                className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${tone.bg} ${tone.text}`}
-              >
+              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-sm">
                 {countdownLabel(hot.date)}
               </span>
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight truncate">
+            <h2 className="text-2xl font-bold tracking-tight truncate">
               {hot.production.title}
             </h2>
             {client && (
-              <p className="text-sm text-gray-300 mt-0.5 truncate">{client}</p>
+              <p className="text-sm text-white/70 mt-0.5 truncate">{client}</p>
             )}
 
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-sm">
-              <span className="flex items-center gap-1.5 text-gray-200">
-                <CalendarIcon size={14} className="text-[#D4A853]" />
+              <span className="flex items-center gap-1.5 text-white/90">
+                <CalendarIcon size={14} className="text-white/70" />
                 {format(hot.date, "EEE d MMM yyyy")}
               </span>
               {callTime && (
-                <span className="flex items-center gap-1.5 text-gray-200">
-                  <Clock size={14} className="text-[#D4A853]" />
+                <span className="flex items-center gap-1.5 text-white/90">
+                  <Clock size={14} className="text-white/70" />
                   {callTime} call
                 </span>
               )}
               {locationAddr && (
-                <span className="flex items-center gap-1.5 text-gray-200 max-w-xs truncate">
-                  <MapPin size={14} className="text-[#D4A853]" />
+                <span className="flex items-center gap-1.5 text-white/90 max-w-xs truncate">
+                  <MapPin size={14} className="text-white/70" />
                   <span className="truncate">{locationAddr}</span>
                 </span>
               )}
               {crewCount > 0 && (
-                <span className="flex items-center gap-1.5 text-gray-200">
-                  <Users size={14} className="text-[#D4A853]" />
+                <span className="flex items-center gap-1.5 text-white/90">
+                  <Users size={14} className="text-white/70" />
                   {crewCount} crew
                 </span>
               )}
             </div>
           </div>
           <div className="flex flex-col items-end shrink-0">
-            <div className="flex items-center gap-1 text-xs text-gray-300 group-hover:text-white transition-colors">
+            <div className="flex items-center gap-1 text-xs text-white/80 group-hover:text-white transition-colors">
               Open project
               <ArrowUpRight size={14} />
             </div>
@@ -820,10 +817,10 @@ function ProjectCard({ production: p }: { production: Production }) {
 
   return (
     <Link href={`/production/${p.id}`}>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 p-5 group cursor-pointer h-full flex flex-col">
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-5 group cursor-pointer h-full flex flex-col">
         <div className="flex items-start justify-between mb-3">
-          <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Film size={18} className="text-[#D4A853]" />
+          <div className="w-10 h-10 bg-[#E24B4A]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Film size={18} className="text-[#E24B4A]" />
           </div>
           <span
             className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}

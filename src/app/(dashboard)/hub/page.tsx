@@ -29,9 +29,7 @@ const PORTALS = [
     description: 'Pipeline, clients & media plans',
     href: '/commercial',
     icon: TrendingUp,
-    color: 'text-amber-600',
-    bg: 'bg-amber-50',
-    border: 'border-amber-100',
+    accent: '#D4A853',
     statKey: 'commercial' as keyof PortalStats,
     statLabel: 'campaigns',
   },
@@ -40,9 +38,7 @@ const PORTALS = [
     description: 'Briefs, call sheets & crew',
     href: '/production',
     icon: Film,
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
-    border: 'border-blue-100',
+    accent: '#E24B4A',
     statKey: 'production' as keyof PortalStats,
     statLabel: 'productions',
   },
@@ -51,9 +47,7 @@ const PORTALS = [
     description: 'Issues, flat plans & distribution',
     href: '/print',
     icon: Newspaper,
-    color: 'text-purple-600',
-    bg: 'bg-purple-50',
-    border: 'border-purple-100',
+    accent: '#1D9E75',
     statKey: 'print' as keyof PortalStats,
     statLabel: 'issues',
   },
@@ -62,9 +56,7 @@ const PORTALS = [
     description: 'Writers, calendar & content pipeline',
     href: '/editorial',
     icon: PenTool,
-    color: 'text-green-600',
-    bg: 'bg-green-50',
-    border: 'border-green-100',
+    accent: '#7B5BD6',
     statKey: null,
     statLabel: null,
   },
@@ -73,9 +65,7 @@ const PORTALS = [
     description: 'Cultural intelligence & trend radar',
     href: '/think-tank',
     icon: Sparkles,
-    color: 'text-[#7B5BD6]',
-    bg: 'bg-[#7B5BD6]/10',
-    border: 'border-[#7B5BD6]/20',
+    accent: '#E67E22',
     statKey: null,
     statLabel: null,
   },
@@ -84,9 +74,7 @@ const PORTALS = [
     description: 'Brands, press & creatives',
     href: '/contacts',
     icon: BookUser,
-    color: 'text-teal-600',
-    bg: 'bg-teal-50',
-    border: 'border-teal-100',
+    accent: '#2C3E50',
     statKey: 'contacts' as keyof PortalStats,
     statLabel: 'contacts',
   },
@@ -95,9 +83,7 @@ const PORTALS = [
     description: 'Deals, billing & cash flow',
     href: '/finance',
     icon: DollarSign,
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-100',
+    accent: '#378ADD',
     restricted: true,
     statKey: 'finance' as keyof PortalStats,
     statLabel: 'booked',
@@ -107,9 +93,7 @@ const PORTALS = [
     description: 'Team, system & settings',
     href: '/admin',
     icon: Shield,
-    color: 'text-red-600',
-    bg: 'bg-red-50',
-    border: 'border-red-100',
+    accent: '#6C757D',
     restricted: true,
     statKey: null,
     statLabel: null,
@@ -119,9 +103,7 @@ const PORTALS = [
     description: 'AI assistant for your business',
     href: '/ask-os',
     icon: Bot,
-    color: 'text-gray-600',
-    bg: 'bg-gray-50',
-    border: 'border-gray-200',
+    accent: '#D4A853',
     statKey: null,
     statLabel: null,
   },
@@ -199,7 +181,8 @@ export default function HubPage() {
               <Link
                 key={portal.href}
                 href={portal.href}
-                className={`group relative flex flex-col gap-3 rounded-xl border ${portal.border} bg-white p-5 transition-all hover:shadow-md hover:-translate-y-0.5`}
+                className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                style={{ borderTop: `3px solid ${portal.accent}` }}
               >
                 {portal.restricted && (
                   <span className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
@@ -208,8 +191,11 @@ export default function HubPage() {
                   </span>
                 )}
 
-                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${portal.bg}`}>
-                  <Icon className={`h-5 w-5 ${portal.color}`} />
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110"
+                  style={{ backgroundColor: `${portal.accent}14` }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: portal.accent }} />
                 </div>
 
                 <div>

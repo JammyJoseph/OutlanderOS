@@ -23,14 +23,14 @@ export function QuickAccess({ holiday }: Props) {
   ];
 
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-bold text-gray-900">Quick Access</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {links.map((l) => (
           <Link
             key={l.href}
             href={l.href}
-            className="group flex flex-col gap-2 rounded-xl border border-gray-100 bg-gray-50/60 p-4 transition-colors hover:border-[#D4A853]/40 hover:bg-[#D4A853]/5"
+            className="group flex flex-col gap-2 rounded-xl border border-[#E5E7EB] bg-[#F8F9FA] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#D4A853]/40 hover:bg-[#D4A853]/5 hover:shadow-md"
           >
             <div className="flex items-center justify-between">
               <l.icon className="h-5 w-5 text-[#D4A853]" />

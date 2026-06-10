@@ -31,7 +31,7 @@ export default function RootLayout({
       lang="en"
       className="h-full antialiased"
     >
-      <body className={`${manrope.variable} ${mono.variable} font-sans h-full bg-[#0a0a0a]`}>
+      <body className={`${manrope.variable} ${mono.variable} font-sans h-full bg-white text-gray-900`}>
         <Providers>{children}</Providers>
       </body>
     </html>

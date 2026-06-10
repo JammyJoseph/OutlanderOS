@@ -166,12 +166,12 @@ function ContactsPageInner() {
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-[#E5E7EB] px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Contacts Blackbook</h1>
+            <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900"><span className="h-2 w-2 rounded-full bg-[#2C3E50]" />Contacts Blackbook</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {contextLabel && <span className="mr-2 text-amber-600 font-medium">{contextLabel} ·</span>}
+              {contextLabel && <span className="mr-2 text-[#2C3E50] font-medium">{contextLabel} ·</span>}
               {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -183,7 +183,7 @@ function ContactsPageInner() {
             </label>
             <button
               onClick={() => { setShowModal(true); setError('') }}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#2C3E50] text-white text-sm rounded-lg hover:bg-[#1F2D3A] transition-colors"
             >
               <Plus size={14} />
               Add Contact
@@ -198,14 +198,14 @@ function ContactsPageInner() {
             placeholder="Search by name, company, or email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C3E50]/30"
           />
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
           <button
             onClick={() => toggleCategory('all')}
-            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${activeCategories.length === 0 ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${activeCategories.length === 0 ? 'bg-[#2C3E50] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
           >
             All
           </button>
@@ -213,7 +213,7 @@ function ContactsPageInner() {
             <button
               key={cat.value}
               onClick={() => toggleCategory(cat.value)}
-              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${activeCategories.includes(cat.value) ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${activeCategories.includes(cat.value) ? 'bg-[#2C3E50] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
               {cat.label}
             </button>
@@ -258,7 +258,7 @@ function ContactsPageInner() {
                 <Field label="Role / Title" value={form.role} onChange={v => setForm(f => ({ ...f, role: v }))} />
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
-                  <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300">
+                  <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C3E50]/30">
                     {CATEGORIES.slice(1).map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
                 </div>
@@ -270,12 +270,12 @@ function ContactsPageInner() {
               <Field label="Tags (comma-separated)" value={form.tags} onChange={v => setForm(f => ({ ...f, tags: v }))} placeholder="fashion, luxury, tech" />
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none" />
+                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C3E50]/30 resize-none" />
               </div>
             </div>
             <div className="flex justify-end gap-2 p-5 border-t border-gray-100">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
+              <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm bg-[#2C3E50] text-white rounded-lg hover:bg-[#1F2D3A] disabled:opacity-50 transition-colors">
                 {saving ? 'Saving…' : 'Save Contact'}
               </button>
             </div>
@@ -298,7 +298,7 @@ function Field({ label, value, onChange, type = 'text', placeholder }: { label: 
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300" />
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2C3E50]/30" />
     </div>
   )
 }
@@ -308,10 +308,10 @@ function ContactCard({ contact, expanded, onToggle }: { contact: Contact; expand
   const initials = contact.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={onToggle}>
+    <div className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer" onClick={onToggle}>
       <div className="p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0 text-sm font-semibold text-amber-700">{initials}</div>
+          <div className="w-10 h-10 rounded-full bg-[#2C3E50]/10 border border-[#2C3E50]/15 flex items-center justify-center flex-shrink-0 text-sm font-semibold text-[#2C3E50]">{initials}</div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-900 text-sm truncate">{contact.name}</p>
             {contact.role && <p className="text-xs text-gray-500 truncate">{contact.role}</p>}
