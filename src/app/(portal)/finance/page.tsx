@@ -7,12 +7,12 @@ import { Loader2 } from 'lucide-react'
 import { TabSkeleton } from './_components/FinanceBits'
 
 // Lazy-load each tab so only the active one fetches and ships its JS.
-const tabLoader = { loading: () => <TabSkeleton />, ssr: false }
-const OverviewTab = dynamic(() => import('./_components/OverviewTab'), tabLoader)
-const ProjectPLTab = dynamic(() => import('./_components/ProjectPLTab'), tabLoader)
-const InvoicingTab = dynamic(() => import('./_components/InvoicingTab'), tabLoader)
-const BudgetSubmissionsTab = dynamic(() => import('./_components/BudgetSubmissionsTab'), tabLoader)
-const CompanyHistoryTab = dynamic(() => import('./_components/CompanyHistoryTab'), tabLoader)
+// next/dynamic requires the options arg to be an inline object literal.
+const OverviewTab = dynamic(() => import('./_components/OverviewTab'), { loading: () => <TabSkeleton />, ssr: false })
+const ProjectPLTab = dynamic(() => import('./_components/ProjectPLTab'), { loading: () => <TabSkeleton />, ssr: false })
+const InvoicingTab = dynamic(() => import('./_components/InvoicingTab'), { loading: () => <TabSkeleton />, ssr: false })
+const BudgetSubmissionsTab = dynamic(() => import('./_components/BudgetSubmissionsTab'), { loading: () => <TabSkeleton />, ssr: false })
+const CompanyHistoryTab = dynamic(() => import('./_components/CompanyHistoryTab'), { loading: () => <TabSkeleton />, ssr: false })
 
 type TabId = 'overview' | 'project-pl' | 'invoicing' | 'budgets' | 'history'
 
