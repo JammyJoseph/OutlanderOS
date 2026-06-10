@@ -33,15 +33,6 @@ function startDateLabel(iso: string | null): string | null {
   return `Start by ${new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 }
 
-function needsChase(item: UnifiedItem): boolean {
-  if (item.source !== "EMAIL") return false;
-  if (item.type !== "follow_up" && item.type !== "response_needed") return false;
-  if (item.done) return false;
-  if (!item.createdAt) return false;
-  const age = Date.now() - new Date(item.createdAt).getTime();
-  return age > 5 * DAY_MS;
-}
-
 const PRIORITY_DOT: Record<string, string> = {
   URGENT: "bg-red-500",
   HIGH: "bg-orange-400",
@@ -61,7 +52,6 @@ function Row({
   const due = dueInfo(item.dueDate);
   const startLabel = startDateLabel(item.startDate);
   const isEmail = item.source === "EMAIL";
-  const chase = needsChase(item);
 
   return (
     <li
@@ -116,12 +106,6 @@ function Row({
         ) : (
           <span className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
             {SOURCE_LABELS[item.source]}
-          </span>
-        )}
-
-        {chase && (
-          <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600">
-            needs chase
           </span>
         )}
 

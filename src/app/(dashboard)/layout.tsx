@@ -3,6 +3,7 @@
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Settings } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -30,10 +31,17 @@ export default function DashboardLayout({
               Deadlines
             </Link>
             <Link
-              href="/tasks"
+              href="/me/tasks"
               className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
             >
               Tasks
+            </Link>
+            <Link
+              href="/admin"
+              aria-label="Admin & Settings"
+              className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+            >
+              <Settings className="h-4 w-4" />
             </Link>
             <NotificationBell />
           </div>

@@ -11,7 +11,6 @@ import {
   TableProperties,
   Plug,
   X,
-  Hash,
   ExternalLink,
 } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
@@ -41,20 +40,20 @@ function OAuthHandler({
     const xeroError = searchParams.get("xero_error");
     if (connected) {
       onConnected(connected);
-      router.replace("/settings");
+      router.replace("/admin/settings");
     } else if (xeroConnected) {
       onConnected("xero");
-      router.replace("/settings");
+      router.replace("/admin/settings");
     } else if (error) {
       onError(
         error === "no_code"
           ? "Authorization cancelled."
           : "Connection failed. Please try again."
       );
-      router.replace("/settings");
+      router.replace("/admin/settings");
     } else if (xeroError) {
       onError("Xero connection failed. Please try again.");
-      router.replace("/settings");
+      router.replace("/admin/settings");
     }
   }, [searchParams, router, onConnected, onError]);
 
@@ -82,10 +81,6 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
     billing: initialBilling,
   });
   const [xeroConnected, setXeroConnected] = useState(initialXeroConnected);
-  const [slackToken, setSlackToken] = useState("");
-  const [slackStatus, setSlackStatus] = useState<"idle" | "connecting" | "connected" | "error">("idle");
-  const [slackWorkspace, setSlackWorkspace] = useState<string | null>(null);
-  const [slackChannels, setSlackChannels] = useState<Array<{ id: string; name: string }>>([]);
   const [connectedSheets, setConnectedSheets] = useState<ConnectedSheet[]>([]);
   const [sheetUrl, setSheetUrl] = useState("");
   const [sheetLabel, setSheetLabel] = useState("");
@@ -121,31 +116,6 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
     setSheetUrl("");
     setSheetLabel("");
     setTestStatus("idle");
-  }
-
-  async function handleConnectSlack() {
-    if (!slackToken.trim()) return;
-    setSlackStatus("connecting");
-    try {
-      const res = await fetch("/api/slack/channels", {
-        headers: { Authorization: `Bearer ${slackToken}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSlackChannels(
-          (data.channels || []).slice(0, 10).map((c: { id: string; name: string }) => ({
-            id: c.id,
-            name: c.name,
-          }))
-        );
-        setSlackWorkspace("Connected workspace");
-        setSlackStatus("connected");
-      } else {
-        setSlackStatus("error");
-      }
-    } catch {
-      setSlackStatus("error");
-    }
   }
 
   const accountCards = [
@@ -362,84 +332,6 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
               Add Sheet
             </Button>
           </div>
-        </div>
-      </section>
-
-      {/* Slack */}
-      <section>
-        <div className="mb-3 flex items-center gap-2">
-          <Hash className="h-4 w-4 text-[#D4A853]" />
-          <h2 className="text-sm font-semibold text-gray-800">Slack</h2>
-        </div>
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
-          {slackStatus === "connected" ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span className="text-sm text-gray-800 font-medium">{slackWorkspace}</span>
-                </div>
-                <button
-                  onClick={() => {
-                    setSlackStatus("idle");
-                    setSlackToken("");
-                    setSlackWorkspace(null);
-                    setSlackChannels([]);
-                  }}
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  Disconnect
-                </button>
-              </div>
-              {slackChannels.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-[11px] text-gray-500">Bot is in {slackChannels.length} channel{slackChannels.length !== 1 ? "s" : ""}:</p>
-                  <ul className="space-y-1">
-                    {slackChannels.map((ch) => (
-                      <li key={ch.id} className="flex items-center gap-1.5 text-xs text-gray-600">
-                        <Hash className="h-3 w-3 text-gray-400" />
-                        {ch.name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <p className="text-xs text-gray-500">
-                Connect your Slack workspace so the OutlanderOS Agent can read channels and send messages.
-              </p>
-              <div className="space-y-1.5">
-                <label className="text-xs text-gray-600">Slack Bot Token</label>
-                <Input
-                  type="password"
-                  placeholder="xoxb-…"
-                  value={slackToken}
-                  onChange={(e) => {
-                    setSlackToken(e.target.value);
-                    setSlackStatus("idle");
-                  }}
-                  className="border-gray-200 bg-white text-sm font-mono"
-                />
-              </div>
-              {slackStatus === "error" && (
-                <div className="flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  <span>Connection failed. Check your token and try again.</span>
-                </div>
-              )}
-              <Button
-                size="sm"
-                onClick={handleConnectSlack}
-                disabled={!slackToken.trim() || slackStatus === "connecting"}
-                className="bg-[#D4A853] text-zinc-900 hover:bg-[#C49843] disabled:opacity-40"
-              >
-                {slackStatus === "connecting" && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
-                Connect Slack
-              </Button>
-            </>
-          )}
         </div>
       </section>
 

@@ -6,7 +6,7 @@ import { CommandCenter } from "./_components/CommandCenter";
 import { ConnectGoogleBanner } from "./_components/ConnectGoogleBanner";
 import { ProjectTasks } from "./_components/ProjectTasks";
 import { QuickAccess } from "./_components/QuickAccess";
-import type { DashboardData, Suggestion } from "./_components/types";
+import type { DashboardData } from "./_components/types";
 
 const EMPTY: DashboardData = {
   user: { id: "", name: "", email: "", role: "MEMBER", holidayAllowance: 25 },
@@ -23,10 +23,6 @@ export default function MePage() {
   const [data, setData] = useState<DashboardData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [digest, setDigest] = useState("");
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
@@ -51,25 +47,9 @@ export default function MePage() {
     }
   }, []);
 
-  const loadSuggestions = useCallback(async () => {
-    setSuggestionsLoading(true);
-    try {
-      const res = await fetch("/api/dashboard/suggestions", { method: "POST" });
-      const json = (await res.json()) as { digest?: string; suggestions?: Suggestion[] };
-      setDigest(json.digest ?? "");
-      setSuggestions(Array.isArray(json.suggestions) ? json.suggestions : []);
-    } catch {
-      setDigest("");
-      setSuggestions([]);
-    } finally {
-      setSuggestionsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     loadData();
-    loadSuggestions();
-  }, [loadData, loadSuggestions]);
+  }, [loadData]);
 
   if (loading) {
     return (
@@ -103,12 +83,7 @@ export default function MePage() {
         <ConnectGoogleBanner />
 
         {/* Zone 1 — Command Center */}
-        <CommandCenter
-          data={data}
-          digest={digest}
-          suggestions={suggestions}
-          suggestionsLoading={suggestionsLoading}
-        />
+        <CommandCenter data={data} />
 
         {/* Zone 2 — Projects & Tasks */}
         <ProjectTasks

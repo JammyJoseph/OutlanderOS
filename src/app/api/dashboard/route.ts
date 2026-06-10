@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getToken, setToken } from '@/lib/token-store'
 import { fetchCalendarEvents, fetchBillingTracker } from '@/lib/fetch-dashboard-data'
-import { scanBillingInbox } from '@/lib/billing-engine'
 import { fetchAllXeroData } from '@/lib/xero-api'
 import { withAuth } from '@/lib/auth'
 
@@ -11,10 +10,6 @@ export const GET = withAuth(async () => {
 
   const results: Record<string, unknown> = {
     connected: { billing: !!billingTokenData, primary: !!primaryTokenData },
-  }
-
-  if (billingTokenData) {
-    results.billingAlerts = await scanBillingInbox(JSON.stringify(billingTokenData))
   }
 
   if (primaryTokenData) {

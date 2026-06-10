@@ -21,13 +21,8 @@ import {
   Clipboard,
   Newspaper,
   PenTool,
-  BookUser,
   Receipt,
   Camera,
-  Activity,
-  Sparkles,
-  Bookmark,
-  List,
   FolderKanban,
 } from "lucide-react";
 
@@ -69,34 +64,6 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Distribution", href: "/print/distribution", icon: Camera },
     ],
   },
-  editorial: {
-    title: "Editorial",
-    items: [
-      { label: "Pipeline", href: "/editorial", icon: PenTool },
-      { label: "Writers", href: "/editorial/writers", icon: Users },
-      { label: "Calendar", href: "/editorial/calendar", icon: Calendar },
-    ],
-  },
-  "think-tank": {
-    title: "Think Tank",
-    items: [
-      { label: "Trend Radar", href: "/think-tank", icon: Activity },
-      { label: "Signal Log", href: "/think-tank/signals", icon: List },
-      { label: "Brand Watchlist", href: "/think-tank/brands", icon: Bookmark },
-      { label: "Cultural Calendar", href: "/think-tank/calendar", icon: Calendar },
-      { label: "Reports", href: "/think-tank/reports", icon: Sparkles },
-      { label: "Settings", href: "/think-tank/settings", icon: Settings },
-    ],
-  },
-  contacts: {
-    title: "Contacts",
-    items: [
-      { label: "All Contacts", href: "/contacts", icon: BookUser },
-      { label: "Brands", href: "/contacts?category=brand", icon: Megaphone },
-      { label: "Press", href: "/contacts?category=press", icon: Newspaper },
-      { label: "Creatives", href: "/contacts?category=photographer", icon: Film },
-    ],
-  },
   finance: {
     title: "Finance",
     items: [
@@ -115,7 +82,6 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "System", href: "/admin/system", icon: Server },
       { label: "Settings", href: "/admin/settings", icon: Settings },
       { label: "Business Plan", href: "/admin/business-plan", icon: BookOpen },
-      { label: "Contacts", href: "/contacts", icon: BookUser },
     ],
   },
 };

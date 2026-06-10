@@ -108,6 +108,7 @@ export interface ProductionFull {
   description: string | null;
   figmaUrl: string | null;
   clientName: string | null;
+  campaignId: string | null;
   trelloCardId: string | null;
   budgetTotal: number | null;
   budgetActual: number | null;

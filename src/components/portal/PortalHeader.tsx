@@ -17,9 +17,6 @@ const PORTALS = [
 // Sections that still route but live outside the main portal switcher.
 const EXTRA_SECTIONS = [
   { name: "Admin", href: "/admin" },
-  { name: "Think Tank", href: "/think-tank" },
-  { name: "Contacts", href: "/contacts" },
-  { name: "Editorial", href: "/editorial" },
 ];
 
 function getPortalName(pathname: string): string {

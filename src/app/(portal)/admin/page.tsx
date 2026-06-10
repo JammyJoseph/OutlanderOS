@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { Users, Server, Settings, BookOpen, BookUser, Shield } from "lucide-react";
+import { Users, Server, Settings, BookOpen, Shield } from "lucide-react";
 
 const items = [
-  { label: "Team", desc: "Members, roles, Slack status", href: "/admin/team", icon: Users },
+  { label: "Team", desc: "Members, roles & holiday", href: "/admin/team", icon: Users },
   { label: "System", desc: "Integrations, connected accounts", href: "/admin/system", icon: Server },
   { label: "Settings", desc: "Account and app configuration", href: "/admin/settings", icon: Settings },
   { label: "Business Plan", desc: "Strategic goals and milestones", href: "/admin/business-plan", icon: BookOpen },
-  { label: "Contacts", desc: "Brands, press, and creatives directory", href: "/contacts", icon: BookUser },
 ];
 
 export default function AdminPage() {

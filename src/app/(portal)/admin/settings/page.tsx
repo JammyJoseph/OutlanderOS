@@ -1,5 +1,5 @@
 import { hasToken } from '@/lib/token-store'
-import SettingsClient from '@/app/(dashboard)/settings/SettingsClient'
+import SettingsClient from './SettingsClient'
 
 export default async function AdminSettingsPage() {
   const primaryConnected = hasToken('google_primary')

@@ -1,15 +1,11 @@
 "use client";
 
-import { CalendarDays, Film, Sparkles } from "lucide-react";
+import { CalendarDays, Film } from "lucide-react";
 import { WeekStrip } from "./WeekStrip";
-import { ProactiveSuggestions } from "./ProactiveSuggestions";
-import type { DashboardData, Suggestion } from "./types";
+import type { DashboardData } from "./types";
 
 interface Props {
   data: DashboardData;
-  digest: string;
-  suggestions: Suggestion[];
-  suggestionsLoading: boolean;
 }
 
 function greeting(): string {
@@ -36,7 +32,7 @@ function relativeDays(iso: string): string {
   return `in ${Math.round(diff / 7)} weeks`;
 }
 
-export function CommandCenter({ data, digest, suggestions, suggestionsLoading }: Props) {
+export function CommandCenter({ data }: Props) {
   const { user, counts, culturalEvents, shoots } = data;
   const firstName = user.name?.split(" ")[0] || "there";
   const nextEvents = culturalEvents.slice(0, 3);
@@ -49,17 +45,13 @@ export function CommandCenter({ data, digest, suggestions, suggestionsLoading }:
         aria-hidden
         className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#D4A853]/10 blur-3xl"
       />
-      {/* Left — greeting, digest, numbers, suggestions */}
+      {/* Left — greeting and numbers */}
       <div className="relative flex flex-col gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             {greeting()}, {firstName}
           </h1>
           <p className="mt-0.5 text-sm font-medium text-gray-400">{TODAY_LABEL}</p>
-          <p className="mt-3 flex items-start gap-1.5 text-sm leading-relaxed text-gray-600">
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#D4A853]" />
-            <span>{digest || "Pulling together your day…"}</span>
-          </p>
         </div>
 
         <div className="grid grid-cols-4 gap-2">
@@ -68,8 +60,6 @@ export function CommandCenter({ data, digest, suggestions, suggestionsLoading }:
           <Stat label="This week" value={counts.week} tone="gray" />
           <Stat label="In progress" value={counts.inProgress} tone="blue" />
         </div>
-
-        <ProactiveSuggestions suggestions={suggestions} loading={suggestionsLoading} />
       </div>
 
       {/* Right — week strip, events, next shoot */}

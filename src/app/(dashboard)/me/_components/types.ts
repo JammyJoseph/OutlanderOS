@@ -89,11 +89,6 @@ export interface DashboardData {
   trelloDeals: TrelloDeal[];
 }
 
-export interface Suggestion {
-  title: string;
-  detail: string;
-}
-
 // Normalised source for filtering — tasks and deadlines mapped onto one set.
 export type ItemSource = "MANUAL" | "EMAIL" | "TRELLO" | "PRODUCTION" | "PRINT";
 

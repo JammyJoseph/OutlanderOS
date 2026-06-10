@@ -2,13 +2,11 @@ import { NextResponse } from 'next/server'
 import { getToken } from '@/lib/token-store'
 import { fetchBillingTracker, fetchCalendarEvents } from '@/lib/fetch-dashboard-data'
 import { fetchAllXeroData } from '@/lib/xero-api'
-import { scanBillingInbox } from '@/lib/billing-engine'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { withAuth } from '@/lib/auth'
 
 export const GET = withAuth(async () => {
   const primaryToken = getToken('google_primary')
-  const billingToken = getToken('google_billing')
   const xeroToken = getToken('xero')
 
   let overdueInvoices = 0
@@ -16,7 +14,6 @@ export const GET = withAuth(async () => {
   let pendingInvoices = 0
   let paymentsReceived = 0
   let todayEvents: string[] = []
-  let urgentAlerts: string[] = []
 
   if (xeroToken) {
     try {
@@ -59,17 +56,6 @@ export const GET = withAuth(async () => {
     }
   }
 
-  if (billingToken) {
-    try {
-      const alerts = await scanBillingInbox(JSON.stringify(billingToken))
-      urgentAlerts = alerts
-        .filter((a) => a.priority === 'urgent')
-        .map((a) => `${a.client}: ${a.subject}`)
-    } catch {
-      // Non-fatal
-    }
-  }
-
   const now = new Date()
   const dateStr = now.toLocaleDateString('en-GB', {
     weekday: 'long',
@@ -101,13 +87,6 @@ export const GET = withAuth(async () => {
     message += `✅ No outstanding actions\n`
   }
 
-  if (urgentAlerts.length > 0) {
-    message += `\n<b>Urgent:</b>\n`
-    for (const alert of urgentAlerts.slice(0, 3)) {
-      message += `⚠️ ${alert}\n`
-    }
-  }
-
   if (todayEvents.length > 0) {
     message += `\n<b>Schedule:</b>\n`
     for (const event of todayEvents.slice(0, 5)) {
@@ -128,7 +107,6 @@ export const GET = withAuth(async () => {
       pendingInvoices,
       paymentsReceived,
       todayEvents: todayEvents.length,
-      urgentAlerts: urgentAlerts.length,
     },
   })
 })
