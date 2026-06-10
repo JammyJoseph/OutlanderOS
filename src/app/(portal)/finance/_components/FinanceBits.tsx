@@ -3,9 +3,11 @@
 import { AlertCircle, Link2 } from 'lucide-react'
 import { badgeClass } from './finance-utils'
 
-export function StatusBadge({ status, map }: { status?: string; map: Record<string, string> }) {
+// `status` is the displayed label; pass `rawKey` when the styling key differs
+// from the label (e.g. status "UNDER_REVIEW" displayed as "UNDER REVIEW").
+export function StatusBadge({ status, map, rawKey }: { status?: string; map: Record<string, string>; rawKey?: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass(map, status)}`}>
+    <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass(map, rawKey ?? status)}`}>
       {status ?? '—'}
     </span>
   )

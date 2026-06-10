@@ -100,11 +100,11 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
   finance: {
     title: "Finance",
     items: [
-      { label: "Overview", href: "/finance?tab=overview", icon: LayoutDashboard },
-      { label: "Project P&L", href: "/finance?tab=project-pl", icon: FolderKanban },
-      { label: "Invoicing", href: "/finance?tab=invoicing", icon: Receipt },
-      { label: "Budget Submissions", href: "/finance?tab=budgets", icon: Clipboard },
-      { label: "Company History", href: "/finance?tab=history", icon: BarChart2 },
+      { label: "Dashboard", href: "/finance?tab=dashboard", icon: LayoutDashboard },
+      { label: "Project Folders", href: "/finance?tab=projects", icon: FolderKanban },
+      { label: "Invoices & Approvals", href: "/finance?tab=invoices", icon: Receipt },
+      { label: "Expenses", href: "/finance?tab=expenses", icon: Clipboard },
+      { label: "P&L & History", href: "/finance?tab=pl", icon: BarChart2 },
     ],
   },
   admin: {

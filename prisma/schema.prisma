@@ -823,8 +823,13 @@ model InvoiceSubmission {
   attachmentUrl   String?
   receivedAt      DateTime @default(now())
   paymentDeadline DateTime // 30 days from received
-  status          String   @default("RECEIVED") // RECEIVED, REVIEWED, APPROVED, PAID, REJECTED
+  status          String   @default("RECEIVED") // RECEIVED, UNDER_REVIEW, APPROVED, PAID, REJECTED
+  campaignBudgetId String? // project this invoice is coded to
+  flagged         Boolean  @default(false)
+  flagNote        String?
   reviewedBy      String?
+  approvedBy      String?
+  approvedAt      DateTime?
   paidAt          DateTime?
   xeroPaymentId   String?  // matched Xero payment
   reminderSent    Boolean  @default(false)
@@ -834,4 +839,5 @@ model InvoiceSubmission {
 
   @@index([status])
   @@index([paymentDeadline])
+  @@index([campaignBudgetId])
 }

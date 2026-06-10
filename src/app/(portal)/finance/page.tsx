@@ -8,20 +8,20 @@ import { TabSkeleton } from './_components/FinanceBits'
 
 // Lazy-load each tab so only the active one fetches and ships its JS.
 // next/dynamic requires the options arg to be an inline object literal.
-const OverviewTab = dynamic(() => import('./_components/OverviewTab'), { loading: () => <TabSkeleton />, ssr: false })
-const ProjectPLTab = dynamic(() => import('./_components/ProjectPLTab'), { loading: () => <TabSkeleton />, ssr: false })
-const InvoicingTab = dynamic(() => import('./_components/InvoicingTab'), { loading: () => <TabSkeleton />, ssr: false })
-const BudgetSubmissionsTab = dynamic(() => import('./_components/BudgetSubmissionsTab'), { loading: () => <TabSkeleton />, ssr: false })
-const CompanyHistoryTab = dynamic(() => import('./_components/CompanyHistoryTab'), { loading: () => <TabSkeleton />, ssr: false })
+const DashboardTab = dynamic(() => import('./_components/DashboardTab'), { loading: () => <TabSkeleton />, ssr: false })
+const ProjectFoldersTab = dynamic(() => import('./_components/ProjectFoldersTab'), { loading: () => <TabSkeleton />, ssr: false })
+const InvoicesApprovalsTab = dynamic(() => import('./_components/InvoicesApprovalsTab'), { loading: () => <TabSkeleton />, ssr: false })
+const ExpensesTab = dynamic(() => import('./_components/ExpensesTab'), { loading: () => <TabSkeleton />, ssr: false })
+const PLHistoryTab = dynamic(() => import('./_components/PLHistoryTab'), { loading: () => <TabSkeleton />, ssr: false })
 
-type TabId = 'overview' | 'project-pl' | 'invoicing' | 'budgets' | 'history'
+type TabId = 'dashboard' | 'projects' | 'invoices' | 'expenses' | 'pl'
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'project-pl', label: 'Project P&L' },
-  { id: 'invoicing', label: 'Invoicing' },
-  { id: 'budgets', label: 'Budget Submissions' },
-  { id: 'history', label: 'Company History' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'projects', label: 'Project Folders' },
+  { id: 'invoices', label: 'Invoices & Approvals' },
+  { id: 'expenses', label: 'Expenses' },
+  { id: 'pl', label: 'P&L & History' },
 ]
 
 const VALID = new Set<TabId>(TABS.map((t) => t.id))
@@ -29,8 +29,8 @@ const VALID = new Set<TabId>(TABS.map((t) => t.id))
 function FinanceInner() {
   const router = useRouter()
   const params = useSearchParams()
-  const raw = (params.get('tab') as TabId) || 'overview'
-  const active: TabId = VALID.has(raw) ? raw : 'overview'
+  const raw = (params.get('tab') as TabId) || 'dashboard'
+  const active: TabId = VALID.has(raw) ? raw : 'dashboard'
 
   function switchTab(tab: TabId) {
     router.push(`/finance?tab=${tab}`)
@@ -41,7 +41,7 @@ function FinanceInner() {
       <div className="mx-auto w-full max-w-6xl space-y-5">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Finance</h1>
-          <p className="mt-0.5 text-xs text-gray-500">Revenue, projects, invoicing &amp; company history</p>
+          <p className="mt-0.5 text-xs text-gray-500">Budgets, costs, invoices &amp; the company P&amp;L — one source of truth</p>
         </div>
 
         <div className="flex overflow-x-auto border-b border-gray-200">
@@ -61,11 +61,11 @@ function FinanceInner() {
         </div>
 
         <div>
-          {active === 'overview' && <OverviewTab />}
-          {active === 'project-pl' && <ProjectPLTab />}
-          {active === 'invoicing' && <InvoicingTab />}
-          {active === 'budgets' && <BudgetSubmissionsTab />}
-          {active === 'history' && <CompanyHistoryTab />}
+          {active === 'dashboard' && <DashboardTab />}
+          {active === 'projects' && <ProjectFoldersTab />}
+          {active === 'invoices' && <InvoicesApprovalsTab />}
+          {active === 'expenses' && <ExpensesTab />}
+          {active === 'pl' && <PLHistoryTab />}
         </div>
       </div>
     </div>

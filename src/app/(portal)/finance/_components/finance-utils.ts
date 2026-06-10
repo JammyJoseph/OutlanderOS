@@ -50,9 +50,11 @@ export const BUDGET_STATUS_STYLES: Record<string, string> = {
   REJECTED: 'bg-red-100 text-red-700',
 }
 
-// InvoiceSubmission.status: RECEIVED, REVIEWED, APPROVED, PAID, REJECTED
+// InvoiceSubmission.status pipeline: RECEIVED → UNDER_REVIEW → APPROVED → PAID
+// (REVIEWED is the legacy name for UNDER_REVIEW; kept for old rows.)
 export const SUBMISSION_STATUS_STYLES: Record<string, string> = {
   RECEIVED: 'bg-gray-100 text-gray-600',
+  UNDER_REVIEW: 'bg-blue-100 text-blue-700',
   REVIEWED: 'bg-blue-100 text-blue-700',
   APPROVED: 'bg-amber-100 text-amber-700',
   PAID: 'bg-emerald-100 text-emerald-700',
@@ -67,10 +69,32 @@ export const INVOICE_STATUS_STYLES: Record<string, string> = {
   DRAFT: 'bg-gray-100 text-gray-600',
   OVERDUE: 'bg-red-100 text-red-700',
   VOIDED: 'bg-gray-100 text-gray-400',
+  'PARTIALLY PAID': 'bg-blue-100 text-blue-700',
+}
+
+// Project budget health
+export const OVERAGE_STATUS_STYLES: Record<string, string> = {
+  HEALTHY: 'bg-emerald-100 text-emerald-700',
+  WARNING: 'bg-amber-100 text-amber-700',
+  OVERAGE: 'bg-red-100 text-red-700',
+  NO_BUDGET: 'bg-gray-100 text-gray-500',
+}
+
+export const OVERAGE_STATUS_LABELS: Record<string, string> = {
+  HEALTHY: 'On budget',
+  WARNING: 'Near budget',
+  OVERAGE: 'Over budget',
+  NO_BUDGET: 'No budget',
 }
 
 export function badgeClass(map: Record<string, string>, status?: string): string {
   return map[status ?? ''] ?? 'bg-gray-100 text-gray-600'
+}
+
+export function displayStatus(status?: string): string {
+  if (!status) return '—'
+  if (status === 'REVIEWED') return 'UNDER REVIEW'
+  return status.replace(/_/g, ' ')
 }
 
 // ===== Data fetching =====
@@ -127,41 +151,70 @@ export interface XeroPL {
   profit: number
 }
 
+export interface OverageAlert {
+  id: string
+  campaignName: string
+  clientName: string
+  totalBudget: number
+  totalCosts: number
+  overBy: number
+  overageStatus: string
+}
+
+export interface ActivityItem {
+  type: 'incoming' | 'outgoing'
+  id: string
+  label: string
+  detail: string | null
+  amount: number | null
+  status: string
+  flagged: boolean
+  date: string
+}
+
 export interface OverviewResponse {
   xeroConnected: boolean
   xeroError: string | null
   organisation: string | null
   profitAndLoss: XeroPL
   bankBalance: { balance: number; accountName: string }
-  outstandingInvoices: number
-  overdueTotal: number
-  invoiceCount: number
+  outstandingReceivables: number
+  overdueReceivables: number
+  outstandingPayables: number
+  receivableCount: number
+  payableCount: number
+  pendingApprovals: number
+  flaggedCount: number
+  activeProjects: number
+  overageAlerts: OverageAlert[]
+  recentActivity: ActivityItem[]
   error?: string
 }
 
-export interface CampaignBudget {
+export interface ProjectSummary {
   id: string
-  trelloCardId: string | null
-  trelloCardName: string | null
-  clientName: string
   campaignName: string
+  clientName: string
+  status: string
+  productionId: string | null
   totalBudget: number
   productionBudget: number
   mediaBudget: number
   internalBudget: number
   otherBudget: number
-  status: string
-  submittedBy: string | null
-  approvedBy: string | null
-  notes: string | null
-  productionId: string | null
-  createdAt: string
+  totalCosts: number
+  totalPaid: number
+  remaining: number
+  spendPct: number | null
+  overageStatus: string
+  pendingInvoices: number
   updatedAt: string
 }
 
-export interface CampaignBudgetsResponse {
-  budgets: CampaignBudget[]
+export interface ProjectsResponse {
+  projects: ProjectSummary[]
   totalBudget: number
+  totalCosts: number
   count: number
   error?: string
 }
@@ -178,13 +231,6 @@ export interface CostEntry {
   status: string
 }
 
-export interface CostEntriesResponse {
-  entries: CostEntry[]
-  total: number
-  count: number
-  error?: string
-}
-
 export interface XeroInvoice {
   id: string
   contact: string
@@ -196,16 +242,6 @@ export interface XeroInvoice {
   dueDate: string
 }
 
-export interface InvoicesResponse {
-  xeroConnected: boolean
-  xeroError: string | null
-  invoices: XeroInvoice[]
-  total: number
-  totalDue: number
-  count: number
-  error?: string
-}
-
 export interface InvoiceSubmission {
   id: string
   supplierName: string
@@ -215,18 +251,52 @@ export interface InvoiceSubmission {
   description: string | null
   emailSubject: string | null
   attachmentUrl: string | null
+  campaignBudgetId: string | null
+  flagged: boolean
+  flagNote: string | null
   receivedAt: string
   paymentDeadline: string
   status: string
   reviewedBy: string | null
+  approvedBy: string | null
+  approvedAt: string | null
   paidAt: string | null
   reminderSent: boolean
   notes: string | null
 }
 
-export interface InvoiceSubmissionsResponse {
-  submissions: InvoiceSubmission[]
+export interface InvoicesResponse {
+  invoices: InvoiceSubmission[]
   totalOwed: number
+  pendingApproval: number
   count: number
+  error?: string
+}
+
+export interface ReceivablesResponse {
+  xeroConnected: boolean
+  xeroError: string | null
+  invoices: XeroInvoice[]
+  total: number
+  totalDue: number
+  count: number
+  error?: string
+}
+
+export interface ProjectDetailResponse {
+  project: ProjectSummary & {
+    notes: string | null
+    trelloCardName: string | null
+    createdAt: string
+  }
+  production: { id: string; title: string; status: string; budgetTotal: number } | null
+  costsByCategory: { category: string; total: number; entries: CostEntry[] }[]
+  invoices: InvoiceSubmission[]
+  xero: {
+    connected: boolean
+    clientInvoices: XeroInvoice[]
+    totalInvoiced: number
+    totalPaid: number
+  }
   error?: string
 }
