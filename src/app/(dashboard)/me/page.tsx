@@ -1,49 +1,63 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
-import { CommandCenter } from "./_components/CommandCenter";
-import { ConnectGoogleBanner } from "./_components/ConnectGoogleBanner";
-import { ProjectTasks } from "./_components/ProjectTasks";
-import { QuickAccess } from "./_components/QuickAccess";
+import { RefreshCw } from "lucide-react";
+import { BusinessPulse } from "./_components/BusinessPulse";
+import { CultureFeed } from "./_components/CultureFeed";
+import { HolidayCard } from "./_components/HolidayCard";
+import { QuickLinks } from "./_components/QuickLinks";
+import { TaskPanel } from "./_components/TaskPanel";
+import { UpcomingList } from "./_components/UpcomingList";
+import { WeekStrip } from "./_components/WeekStrip";
 import type { DashboardData } from "./_components/types";
 
-const EMPTY: DashboardData = {
-  user: { id: "", name: "", email: "", role: "MEMBER", holidayAllowance: 25 },
-  tasks: [],
-  deadlines: [],
-  culturalEvents: [],
-  shoots: [],
-  counts: { overdue: 0, today: 0, week: 0, inProgress: 0 },
-  holiday: { allowance: 25, used: 0, remaining: 25 },
-  trelloDeals: [],
-};
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function todayLabel(): string {
+  return new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function PageSkeleton() {
+  return (
+    <div className="min-h-full bg-[#F8F9FA] p-6">
+      <div className="mx-auto max-w-6xl space-y-4">
+        <div className="h-8 w-72 animate-pulse rounded-lg bg-gray-100" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="h-[92px] animate-pulse rounded-xl bg-gray-100" />
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-[65fr_35fr]">
+          <div className="h-72 animate-pulse rounded-xl bg-gray-100" />
+          <div className="h-72 animate-pulse rounded-xl bg-gray-100" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function MePage() {
-  const [data, setData] = useState<DashboardData>(EMPTY);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard/me");
       if (!res.ok) throw new Error(`Dashboard failed (${res.status})`);
-      const json = (await res.json()) as DashboardData;
-      setData({
-        user: json.user ?? EMPTY.user,
-        tasks: json.tasks ?? [],
-        deadlines: json.deadlines ?? [],
-        culturalEvents: json.culturalEvents ?? [],
-        shoots: json.shoots ?? [],
-        counts: json.counts ?? EMPTY.counts,
-        holiday: json.holiday ?? EMPTY.holiday,
-        trelloDeals: json.trelloDeals ?? [],
-      });
+      setData(await res.json());
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load dashboard");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -51,23 +65,12 @@ export default function MePage() {
     loadData();
   }, [loadData]);
 
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center bg-[#F8F9FA]">
-        <Loader2 className="h-6 w-6 animate-spin text-[#D4A853]" />
-      </div>
-    );
-  }
-
-  if (error) {
+  if (error && !data) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#F8F9FA]">
         <p className="text-sm text-gray-500">{error}</p>
         <button
-          onClick={() => {
-            setLoading(true);
-            loadData();
-          }}
+          onClick={loadData}
           className="flex items-center gap-1.5 rounded-xl bg-[#D4A853] px-4 py-2 text-sm font-semibold text-white"
         >
           <RefreshCw className="h-4 w-4" /> Retry
@@ -76,24 +79,41 @@ export default function MePage() {
     );
   }
 
+  if (!data) return <PageSkeleton />;
+
+  const firstName = data.user.name.split(" ")[0] || data.user.name;
+
   return (
     <div className="min-h-full bg-[#F8F9FA] p-6">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        {/* First-login nudge — connect personal Google account */}
-        <ConnectGoogleBanner />
+      <div className="mx-auto max-w-6xl space-y-4">
+        {/* Top strip — greeting + date */}
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className="text-xl font-bold text-gray-900">
+            {greeting()}, {firstName}
+          </h1>
+          <span className="text-sm text-gray-400">{todayLabel()}</span>
+        </div>
 
-        {/* Zone 1 — Command Center */}
-        <CommandCenter data={data} />
+        <div className="grid gap-4 lg:grid-cols-[65fr_35fr]">
+          {/* Left column — pulse, tasks, quick links */}
+          <div className="min-w-0 space-y-4">
+            <BusinessPulse />
+            <TaskPanel tasks={data.tasks} onChange={loadData} />
+            <QuickLinks counts={data.counts} />
+          </div>
 
-        {/* Zone 2 — Projects & Tasks */}
-        <ProjectTasks
-          tasks={data.tasks}
-          deadlines={data.deadlines}
-          onChange={loadData}
-        />
-
-        {/* Zone 3 — Quick Access */}
-        <QuickAccess holiday={data.holiday} />
+          {/* Right column — week, upcoming, culture feed, holiday */}
+          <div className="min-w-0 space-y-4">
+            <WeekStrip
+              tasks={data.tasks}
+              shoots={data.shoots}
+              culturalEvents={data.culturalEvents}
+            />
+            <UpcomingList items={data.upcoming} />
+            <CultureFeed />
+            <HolidayCard holiday={data.holiday} />
+          </div>
+        </div>
       </div>
     </div>
   );

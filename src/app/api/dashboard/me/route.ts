@@ -1,99 +1,153 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
+import { businessDaysBetween } from "@/lib/holiday";
+import { ACTIVE_STAGES } from "@/lib/deal-stages";
 
-const DAY_MS = 86_400_000;
+export const dynamic = "force-dynamic";
 
-// Calendar days covered by a holiday request, inclusive of both ends.
-function holidayDays(start: Date, end: Date): number {
-  const a = new Date(start);
-  a.setHours(0, 0, 0, 0);
-  const b = new Date(end);
-  b.setHours(0, 0, 0, 0);
-  return Math.max(1, Math.round((b.getTime() - a.getTime()) / DAY_MS) + 1);
+export interface UpcomingItem {
+  id: string;
+  title: string;
+  date: string;
+  portal: "commercial" | "production" | "print" | "personal";
+  kind: "shoot" | "deal" | "print" | "task";
+  href: string;
 }
 
-// Single-call dashboard payload for /me. Scoped strictly to the
-// authenticated user — their own tasks and their own deadlines.
+// Single-call dashboard payload for /me: the user's tasks, the next few
+// dated items across every portal, holiday balance, and quick-link counts.
 export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
   const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date(todayStart.getTime() + DAY_MS);
-  const weekEnd = new Date(todayStart.getTime() + 7 * DAY_MS);
   const yearStart = new Date(now.getFullYear(), 0, 1);
+  const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
 
-  const [dbUser, tasks, deadlines, culturalEvents, productions, campaigns, holidays] =
-    await Promise.all([
-      prisma.user.findUnique({
-        where: { id: user.userId },
-        select: { id: true, name: true, email: true, role: true, holidayAllowance: true },
+  const [
+    dbUser,
+    tasks,
+    productions,
+    dealDeadlines,
+    printIssues,
+    culturalEvents,
+    holidays,
+    counts,
+  ] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { id: true, name: true, email: true, role: true, holidayAllowance: true },
+    }),
+    prisma.task.findMany({
+      where: { assignedToId: user.userId },
+      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+    }),
+    prisma.production.findMany({
+      where: { status: { not: "ARCHIVED" } },
+      select: { id: true, title: true, shootDates: true },
+    }),
+    prisma.campaign.findMany({
+      where: {
+        status: { not: "ARCHIVED" },
+        stage: { in: ACTIVE_STAGES },
+        dueDate: { gte: todayStart },
+      },
+      select: { id: true, title: true, dueDate: true, client: { select: { name: true } } },
+      orderBy: { dueDate: "asc" },
+      take: 10,
+    }),
+    prisma.printIssue.findMany({
+      where: { printDate: { gte: todayStart } },
+      select: { id: true, title: true, printDate: true },
+      orderBy: { printDate: "asc" },
+      take: 10,
+    }),
+    prisma.culturalEvent.findMany({
+      where: { date: { gte: now } },
+      orderBy: { date: "asc" },
+      take: 8,
+    }),
+    prisma.holidayRequest.findMany({
+      where: {
+        userId: user.userId,
+        status: "APPROVED",
+        type: "ANNUAL",
+        startDate: { gte: yearStart, lt: yearEnd },
+      },
+      select: { startDate: true, endDate: true },
+      orderBy: { startDate: "asc" },
+    }),
+    Promise.all([
+      prisma.campaign.count({
+        where: { status: { not: "ARCHIVED" }, stage: { in: ACTIVE_STAGES } },
       }),
-      prisma.task.findMany({
-        where: { assignedToId: user.userId },
-        orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+      prisma.production.count({ where: { status: { not: "ARCHIVED" } } }),
+      prisma.campaignBudget.count({
+        where: { totalBudget: { gt: 0 }, status: { not: "RECONCILED" } },
       }),
-      prisma.deadline.findMany({
-        where: { assignedTo: user.userId },
-        orderBy: { dueDate: "asc" },
-      }),
-      prisma.culturalEvent.findMany({
-        where: { date: { gte: now } },
-        orderBy: { date: "asc" },
-        take: 8,
-      }),
-      prisma.production.findMany({
-        where: { status: { not: "ARCHIVED" } },
-        select: { id: true, title: true, shootDates: true, leadId: true },
-      }),
-      prisma.campaign.findMany({
-        where: { status: { notIn: ["ARCHIVED", "PAID"] } },
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          value: true,
-          client: { select: { name: true } },
-        },
-        orderBy: { updatedAt: "desc" },
-        take: 15,
-      }),
-      prisma.holidayRequest.findMany({
-        where: {
-          userId: user.userId,
-          status: "APPROVED",
-          startDate: { gte: yearStart },
-        },
-        select: { startDate: true, endDate: true },
-      }),
-    ]);
+      prisma.printIssue.count(),
+    ]),
+  ]);
 
+  // Shoots — flattened future shoot dates across active productions.
   const shoots: { id: string; title: string; date: string }[] = [];
   for (const p of productions) {
     for (const d of p.shootDates) {
-      if (d >= now) shoots.push({ id: p.id, title: p.title, date: d.toISOString() });
+      if (d >= todayStart) shoots.push({ id: p.id, title: p.title, date: d.toISOString() });
     }
   }
   shoots.sort((a, b) => a.date.localeCompare(b.date));
 
-  let overdue = 0;
-  let today = 0;
-  let week = 0;
-  const tally = (due: Date | null, done: boolean) => {
-    if (!due || done) return;
-    if (due < todayStart) overdue++;
-    else if (due < todayEnd) today++;
-    else if (due < weekEnd) week++;
-  };
-  for (const t of tasks) tally(t.dueDate, t.status === "DONE");
-  for (const d of deadlines) tally(d.dueDate, d.status === "COMPLETED");
-  const inProgress = tasks.filter((t) => t.status === "IN_PROGRESS").length;
+  // Upcoming — next 5 dated items across all portals, soonest first.
+  const upcoming: UpcomingItem[] = [
+    ...shoots.map((s) => ({
+      id: `shoot-${s.id}-${s.date}`,
+      title: `Shoot: ${s.title}`,
+      date: s.date,
+      portal: "production" as const,
+      kind: "shoot" as const,
+      href: `/production/${s.id}`,
+    })),
+    ...dealDeadlines.map((d) => ({
+      id: `deal-${d.id}`,
+      title: `${d.title}${d.client ? ` — ${d.client.name}` : ""}`,
+      date: d.dueDate!.toISOString(),
+      portal: "commercial" as const,
+      kind: "deal" as const,
+      href: `/commercial/pipeline`,
+    })),
+    ...printIssues.map((p) => ({
+      id: `print-${p.id}`,
+      title: `Print: ${p.title}`,
+      date: p.printDate!.toISOString(),
+      portal: "print" as const,
+      kind: "print" as const,
+      href: `/print`,
+    })),
+    ...tasks
+      .filter((t) => t.status !== "DONE" && t.dueDate && t.dueDate >= todayStart)
+      .map((t) => ({
+        id: `task-${t.id}`,
+        title: t.title,
+        date: t.dueDate!.toISOString(),
+        portal: "personal" as const,
+        kind: "task" as const,
+        href: t.link ?? "/me/tasks",
+      })),
+  ]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 5);
 
+  // Holiday balance — business days across approved annual leave this year.
   const allowance = dbUser?.holidayAllowance ?? 25;
   const used = holidays.reduce(
-    (sum, h) => sum + holidayDays(h.startDate, h.endDate),
+    (sum, h) => sum + businessDaysBetween(h.startDate, h.endDate),
     0,
   );
+  const nextHoliday =
+    holidays.find((h) => h.startDate >= todayStart || h.endDate >= todayStart) ?? null;
+
+  const [dealCount, productionCount, financeProjectCount, printIssueCount] = counts;
 
   return NextResponse.json({
     user: dbUser ?? {
@@ -104,17 +158,25 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
       holidayAllowance: 25,
     },
     tasks,
-    deadlines,
-    culturalEvents,
+    upcoming,
     shoots,
-    counts: { overdue, today, week, inProgress },
-    holiday: { allowance, used, remaining: Math.max(0, allowance - used) },
-    trelloDeals: campaigns.map((c) => ({
-      id: c.id,
-      title: c.title,
-      client: c.client?.name ?? "Unknown",
-      status: c.status,
-      value: c.value,
-    })),
+    culturalEvents,
+    holiday: {
+      allowance,
+      used,
+      remaining: Math.max(0, allowance - used),
+      nextHoliday: nextHoliday
+        ? {
+            startDate: nextHoliday.startDate.toISOString(),
+            endDate: nextHoliday.endDate.toISOString(),
+          }
+        : null,
+    },
+    counts: {
+      deals: dealCount,
+      productions: productionCount,
+      financeProjects: financeProjectCount,
+      printIssues: printIssueCount,
+    },
   });
 });

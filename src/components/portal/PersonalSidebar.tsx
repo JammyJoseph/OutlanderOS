@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 
 const ITEMS = [
-  { label: "Overview", href: "/me", icon: LayoutDashboard },
-  { label: "My Tasks", href: "/me/tasks", icon: Check },
-  { label: "My Calendar", href: "/me/calendar", icon: Calendar },
-  { label: "My Profile", href: "/me/profile", icon: User },
+  { label: "Dashboard", href: "/me", icon: LayoutDashboard },
+  { label: "Tasks", href: "/me/tasks", icon: Check },
+  { label: "Calendar", href: "/me/calendar", icon: Calendar },
   { label: "Holiday", href: "/me/holiday", icon: Plane },
+  { label: "Profile", href: "/me/profile", icon: User },
   { label: "Settings", href: "/me/settings", icon: Settings },
 ];
 

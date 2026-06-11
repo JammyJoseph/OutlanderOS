@@ -21,24 +21,10 @@ export interface Task {
   createdAt: string;
 }
 
-export interface Deadline {
+export interface Shoot {
   id: string;
   title: string;
-  description: string | null;
-  dueDate: string;
-  startDate: string | null;
-  source: string;
-  sourceRef: string | null;
-  sourceUrl: string | null;
-  type: string;
-  status: string;
-  priority: string;
-  category: string | null;
-  assignedTo: string | null;
-  emailFrom: string | null;
-  emailSnippet: string | null;
-  completedAt: string | null;
-  createdAt: string;
+  date: string;
 }
 
 export interface CulturalEvent {
@@ -51,79 +37,103 @@ export interface CulturalEvent {
   importance: number;
 }
 
-export interface Shoot {
+export interface UpcomingItem {
   id: string;
   title: string;
   date: string;
-}
-
-export interface Counts {
-  overdue: number;
-  today: number;
-  week: number;
-  inProgress: number;
+  portal: "commercial" | "production" | "print" | "personal";
+  kind: "shoot" | "deal" | "print" | "task";
+  href: string;
 }
 
 export interface Holiday {
   allowance: number;
   used: number;
   remaining: number;
+  nextHoliday: { startDate: string; endDate: string } | null;
 }
 
-export interface TrelloDeal {
-  id: string;
-  title: string;
-  client: string;
-  status: string;
-  value: number | null;
+export interface QuickLinkCounts {
+  deals: number;
+  productions: number;
+  financeProjects: number;
+  printIssues: number;
 }
 
 export interface DashboardData {
   user: DashUser;
   tasks: Task[];
-  deadlines: Deadline[];
-  culturalEvents: CulturalEvent[];
+  upcoming: UpcomingItem[];
   shoots: Shoot[];
-  counts: Counts;
+  culturalEvents: CulturalEvent[];
   holiday: Holiday;
-  trelloDeals: TrelloDeal[];
+  counts: QuickLinkCounts;
 }
 
-// Normalised source for filtering — tasks and deadlines mapped onto one set.
-export type ItemSource = "MANUAL" | "EMAIL" | "TRELLO" | "PRODUCTION" | "PRINT";
+export interface PulseData {
+  pipelineValue: number;
+  activeDealCount: number;
+  xeroConnected: boolean;
+  outstandingReceivables: number;
+  receivableCount: number;
+  bankBalance: number;
+  bankAccountName: string;
+  payroll: { date: string; daysUntil: number };
+}
 
-export const SOURCE_LABELS: Record<ItemSource, string> = {
-  MANUAL: "Manual",
-  EMAIL: "Email",
-  TRELLO: "Trello",
-  PRODUCTION: "Production",
-  PRINT: "Print",
-};
-
-// Unified item — a task or deadline normalised onto one shape.
-export interface UnifiedItem {
+export interface TrendSignal {
   id: string;
-  kind: "task" | "deadline";
   title: string;
-  dueDate: string | null;
-  startDate: string | null;
-  priority: string;
-  status: string;
-  done: boolean;
-  category: TaskCategory;
-  source: ItemSource;
-  link: string | null;
-  emailSnippet: string | null;
-  emailFrom: string | null;
-  createdAt: string | null;
-  type: string | null;
+  source: string;
+  sourceUrl: string | null;
+  category: string;
+  summary: string | null;
+  createdAt: string;
 }
 
-export type TaskCategory = "brand" | "editorial" | "production" | "admin";
+// Task tab categories map onto the Task.portal field.
+export const TASK_TABS = ["all", "commercial", "production", "print", "general"] as const;
+export type TaskTab = (typeof TASK_TABS)[number];
 
-export const CATEGORY_LABELS: Record<TaskCategory, string> = {
-  brand: "Brand Partnerships",
-  editorial: "Editorial",
+export const TASK_TAB_LABELS: Record<TaskTab, string> = {
+  all: "All",
+  commercial: "Commercial",
   production: "Production",
-  admin: "General Admin",
+  print: "Print",
+  general: "General",
 };
+
+export function taskTabFor(portal: string | null): Exclude<TaskTab, "all"> {
+  if (portal === "commercial" || portal === "production" || portal === "print") return portal;
+  return "general";
+}
+
+// Portal accent colours — Commercial gold, Production red, Finance blue, Print green.
+export const PORTAL_COLORS: Record<string, { accent: string; bg: string; text: string }> = {
+  commercial: { accent: "#D4A853", bg: "#D4A8531A", text: "#9a7322" },
+  production: { accent: "#DC4B4B", bg: "#DC4B4B1A", text: "#a83232" },
+  finance: { accent: "#3B82F6", bg: "#3B82F61A", text: "#1d4ed8" },
+  print: { accent: "#22A06B", bg: "#22A06B1A", text: "#15803d" },
+  personal: { accent: "#6B7280", bg: "#6B72801A", text: "#4b5563" },
+};
+
+export function timeAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(ms / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks}w ago`;
+}
+
+export function formatGBP(value: number): string {
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
