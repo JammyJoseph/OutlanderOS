@@ -40,7 +40,16 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
       select: { id: true, name: true, email: true, role: true, holidayAllowance: true },
     }),
     prisma.task.findMany({
-      where: { assignedToId: user.userId },
+      // Personal tasks plus tasks on projects/productions the user owns —
+      // mirrors what the ACTION/TRACK panel shows.
+      where: {
+        OR: [
+          { assignedToId: user.userId },
+          { createdById: user.userId },
+          { project: { assignedToId: user.userId } },
+          { production: { leadId: user.userId } },
+        ],
+      },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
     }),
     prisma.production.findMany({
@@ -152,7 +161,7 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
         date: t.dueDate!.toISOString(),
         portal: "personal" as const,
         kind: "task" as const,
-        href: t.link ?? "/me/tasks",
+        href: t.link ?? "/me",
       })),
   ]
     .sort((a, b) => a.date.localeCompare(b.date))

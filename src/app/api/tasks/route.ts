@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
 
+const TASK_INCLUDE = {
+  assignedTo: { select: { id: true, name: true, email: true } },
+  createdBy: { select: { id: true, name: true, email: true } },
+  project: { select: { id: true, title: true } },
+  production: { select: { id: true, title: true } },
+} as const
+
 export async function GET(request: NextRequest) {
   const me = getCurrentUser(request)
   if (!me) return NextResponse.json({ tasks: [] }, { status: 401 })
@@ -10,30 +17,44 @@ export async function GET(request: NextRequest) {
   const assignedToId = searchParams.get('assignedToId') || undefined
   const status = searchParams.get('status') || undefined
   const portal = searchParams.get('portal') || undefined
+  const type = searchParams.get('type') || undefined // ACTION | TRACK
+  const projectId = searchParams.get('projectId') || undefined
+  const productionId = searchParams.get('productionId') || undefined
   const scope = searchParams.get('scope') // "mine" | "all"
   const isAdmin = me.role === 'ADMIN'
 
   const where: Record<string, unknown> = {}
-  // Members are always scoped to their own tasks; only admins may view
-  // another user's tasks or the full board.
-  if (isAdmin && assignedToId) where.assignedToId = assignedToId
-  else if (isAdmin && scope === 'all') { /* no assignee filter */ }
-  else where.assignedToId = me.userId
+  if (projectId) {
+    // Project task lists are shared — everyone on the team sees them.
+    where.projectId = projectId
+  } else if (productionId) {
+    where.productionId = productionId
+  } else if (isAdmin && assignedToId) {
+    where.assignedToId = assignedToId
+  } else if (isAdmin && scope === 'all') {
+    /* no assignee filter */
+  } else {
+    // Personal view: tasks assigned to or created by the user, plus tasks
+    // on projects/productions they own or are assigned to.
+    where.OR = [
+      { assignedToId: me.userId },
+      { createdById: me.userId },
+      { project: { assignedToId: me.userId } },
+      { production: { leadId: me.userId } },
+    ]
+  }
   if (status) where.status = status
   if (portal) where.portal = portal
+  if (type) where.taskType = type
 
   try {
     const tasks = await prisma.task.findMany({
       where,
       orderBy: [
-        { status: 'asc' },
         { dueDate: 'asc' },
         { createdAt: 'desc' },
       ],
-      include: {
-        assignedTo: { select: { id: true, name: true, email: true } },
-        createdBy: { select: { id: true, name: true, email: true } },
-      },
+      include: TASK_INCLUDE,
     })
     return NextResponse.json({ tasks })
   } catch (e) {
@@ -60,13 +81,13 @@ export async function POST(request: NextRequest) {
         priority: body.priority || 'MEDIUM',
         portal: body.portal || null,
         link: body.link || null,
+        taskType: body.taskType === 'TRACK' ? 'TRACK' : 'ACTION',
+        projectId: body.projectId || null,
+        productionId: body.productionId || null,
         assignedToId: body.assignedToId || me.userId,
         createdById: me.userId,
       },
-      include: {
-        assignedTo: { select: { id: true, name: true, email: true } },
-        createdBy: { select: { id: true, name: true, email: true } },
-      },
+      include: TASK_INCLUDE,
     })
 
     if (task.assignedToId !== me.userId) {

@@ -59,6 +59,12 @@ model Task {
   escalatedAt     DateTime? // last time auto-ping raised this task
   escalationLevel Int       @default(0) // 0 none, 1 HIGH, 2 URGENT, 3 7-day alert sent
   staleFlaggedAt  DateTime? // set when flagged as stalled in-progress
+  taskType        String    @default("ACTION") // ACTION = needs doing now, TRACK = actioned, monitoring
+  completedAt     DateTime? // set when status flips to DONE — drives the "last 7 days" completed view
+  projectId       String? // linked Commercial deal (Campaign)
+  project         Campaign? @relation("campaignTasks", fields: [projectId], references: [id])
+  productionId    String? // linked Production project
+  production      Production? @relation("productionLinkedTasks", fields: [productionId], references: [id])
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
@@ -171,6 +177,7 @@ model Campaign {
   mediaPlans       MediaPlan[]
   intelligenceLogs IntelligenceLog[]
   activities       DealActivity[]
+  tasks            Task[]            @relation("campaignTasks")
 }
 
 enum DealStage {
@@ -288,6 +295,7 @@ model Production {
   creativeAssets   CreativeAsset[]         @relation("productionCreative")
   scheduleBlocks   ScheduleBlock[]         @relation("productionSchedule")
   prodDeliverables ProductionDeliverable[] @relation("productionDeliverables")
+  linkedTasks      Task[]                  @relation("productionLinkedTasks")
 }
 
 model BudgetLineItem {

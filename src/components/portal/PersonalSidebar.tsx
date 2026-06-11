@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
-  Check,
   Calendar,
   User,
   Plane,
@@ -14,7 +13,6 @@ import {
 
 const ITEMS = [
   { label: "Dashboard", href: "/me", icon: LayoutDashboard },
-  { label: "Tasks", href: "/me/tasks", icon: Check },
   { label: "Calendar", href: "/me/calendar", icon: Calendar },
   { label: "Holiday", href: "/me/holiday", icon: Plane },
   { label: "Profile", href: "/me/profile", icon: User },

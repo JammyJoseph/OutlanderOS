@@ -31,12 +31,6 @@ export default function DashboardLayout({
               Deadlines
             </Link>
             <Link
-              href="/me/tasks"
-              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
-            >
-              Tasks
-            </Link>
-            <Link
               href="/admin"
               aria-label="Admin & Settings"
               className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"

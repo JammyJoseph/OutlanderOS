@@ -202,7 +202,6 @@ export default function ProjectDetail() {
   const counts: Partial<Record<TabKey, number>> = {
     budget: (production.budgetItems ?? []).length,
     team: (production.teamMembers ?? []).length,
-    tasks: (production.productionTasks ?? []).length,
     creative: (production.creativeAssets ?? []).length,
     schedule: (production.scheduleBlocks ?? []).length,
     callsheets: (production.callSheets ?? []).length,
@@ -271,13 +270,7 @@ export default function ProjectDetail() {
               refresh={refresh}
             />
           )}
-          {tab === "tasks" && (
-            <TasksTab
-              productionId={production.id}
-              tasks={production.productionTasks ?? []}
-              refresh={refresh}
-            />
-          )}
+          {tab === "tasks" && <TasksTab productionId={production.id} />}
           {tab === "creative" && (
             <CreativeTab
               productionId={production.id}

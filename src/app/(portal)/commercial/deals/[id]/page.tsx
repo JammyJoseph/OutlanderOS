@@ -33,6 +33,7 @@ import {
   TYPE_STYLES,
   type DealStage,
 } from "../../_components/deal-ui";
+import { ActionTrackPanel } from "@/components/tasks/ActionTrackPanel";
 
 interface Deliverable {
   id: string;
@@ -96,7 +97,7 @@ interface TeamMember {
   name: string;
 }
 
-type Tab = "overview" | "budget" | "deliverables" | "activity";
+type Tab = "overview" | "budget" | "deliverables" | "tasks" | "activity";
 
 const WON_STAGES: DealStage[] = ["CONTRACTED", "LIVE", "COMPLETED", "PAID"];
 
@@ -186,6 +187,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     { key: "overview", label: "Overview" },
     { key: "budget", label: "Budget" },
     { key: "deliverables", label: `Deliverables (${deal.deliverables.length})` },
+    { key: "tasks", label: "Tasks" },
     { key: "activity", label: "Activity" },
   ];
 
@@ -340,6 +342,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         {tab === "deliverables" && (
           <DeliverablesTab dealId={deal.id} initial={deal.deliverables} onChanged={reload} />
         )}
+        {tab === "tasks" && <ActionTrackPanel projectId={deal.id} />}
         {tab === "activity" && <ActivityTab activities={deal.activities} />}
       </div>
 

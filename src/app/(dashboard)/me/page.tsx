@@ -8,7 +8,7 @@ import { CultureFeed } from "./_components/CultureFeed";
 import { HolidayCard } from "./_components/HolidayCard";
 import { OutstandingItems } from "./_components/OutstandingItems";
 import { QuickLinks } from "./_components/QuickLinks";
-import { TaskPanel } from "./_components/TaskPanel";
+import { ActionTrackPanel } from "@/components/tasks/ActionTrackPanel";
 import { UpcomingList } from "./_components/UpcomingList";
 import { WeekStrip } from "./_components/WeekStrip";
 import type { DashboardData } from "./_components/types";
@@ -100,7 +100,7 @@ export default function MePage() {
           {/* Left column — pulse, tasks, quick links */}
           <div className="min-w-0 space-y-4">
             <BusinessPulse />
-            <TaskPanel tasks={data.tasks} onChange={loadData} />
+            <ActionTrackPanel />
             <QuickLinks counts={data.counts} />
           </div>
 
