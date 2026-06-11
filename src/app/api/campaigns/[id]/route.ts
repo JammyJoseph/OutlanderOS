@@ -2,7 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, type AuthUser } from "@/lib/auth";
 import { sanitizeString } from "@/lib/validate";
-import { isDealStage, isDealType, isBriefStatus, dealTypeToCampaignType } from "@/lib/deal-stages";
+import {
+  isDealStage,
+  isDealType,
+  isBriefStatus,
+  isWorkflowType,
+  isCreativeStatus,
+  dealTypeToCampaignType,
+  parseClientBrief,
+  parseCreativeResponse,
+  parseClientFeedback,
+  stagesForWorkflow,
+} from "@/lib/deal-stages";
 
 export const GET = withAuth(async (
   _request: NextRequest,
@@ -62,17 +73,54 @@ async function updateCampaign(
     const {
       status, stage, title, value, currency, type, notes, ioSigned, description,
       dueDate, assignedToId, clientId, dealTypes, briefContent, briefDueDate, briefStatus,
+      workflowType, clientBrief, creativeResponse, clientFeedback, creativeStatus,
     } = body;
 
     const existing = await prisma.campaign.findUnique({
       where: { id },
-      select: { id: true, stage: true, value: true, title: true, briefStatus: true },
+      select: {
+        id: true, stage: true, value: true, title: true, briefStatus: true,
+        workflowType: true, creativeStatus: true, clientFeedback: true,
+      },
     });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     if (stage !== undefined && !isDealStage(stage)) {
       return NextResponse.json({ error: `Invalid stage: ${stage}` }, { status: 400 });
     }
+
+    if (workflowType !== undefined && !isWorkflowType(workflowType)) {
+      return NextResponse.json({ error: `Invalid workflowType: ${workflowType}` }, { status: 400 });
+    }
+
+    if (creativeStatus !== undefined && creativeStatus !== null && !isCreativeStatus(creativeStatus)) {
+      return NextResponse.json({ error: `Invalid creativeStatus: ${creativeStatus}` }, { status: 400 });
+    }
+
+    // Supplied-assets deals skip the creative + cleared-for-production stages.
+    const effectiveWorkflow = workflowType ?? existing.workflowType;
+    if (
+      stage !== undefined &&
+      effectiveWorkflow === "SUPPLIED_ASSETS" &&
+      !(stagesForWorkflow("SUPPLIED_ASSETS") as string[]).includes(stage) &&
+      stage !== "NEGOTIATING"
+    ) {
+      return NextResponse.json(
+        { error: `Supplied-assets deals skip the ${stage} stage` },
+        { status: 400 }
+      );
+    }
+
+    // Normalise creative-workflow JSON payloads before persisting.
+    const nextClientBrief = clientBrief !== undefined
+      ? clientBrief === null ? null : parseClientBrief(clientBrief)
+      : undefined;
+    const nextCreativeResponse = creativeResponse !== undefined
+      ? creativeResponse === null ? null : parseCreativeResponse(creativeResponse)
+      : undefined;
+    const nextClientFeedback = clientFeedback !== undefined
+      ? clientFeedback === null ? [] : parseClientFeedback(clientFeedback)
+      : undefined;
 
     let nextDealTypes: string[] | undefined;
     if (dealTypes !== undefined) {
@@ -116,6 +164,20 @@ async function updateCampaign(
         ...(briefContent !== undefined
           ? { briefContent: briefContent === null ? null : sanitizeString(briefContent, 20000) }
           : {}),
+        ...(workflowType !== undefined ? { workflowType } : {}),
+        // The client brief content mirrors into the legacy briefContent so the
+        // production handoff and older consumers stay coherent.
+        ...(nextClientBrief !== undefined
+          ? {
+              clientBrief: nextClientBrief ?? undefined,
+              ...(nextClientBrief?.content !== undefined
+                ? { briefContent: nextClientBrief.content ? sanitizeString(nextClientBrief.content, 20000) : null }
+                : {}),
+            }
+          : {}),
+        ...(nextCreativeResponse !== undefined ? { creativeResponse: nextCreativeResponse ?? undefined } : {}),
+        ...(nextClientFeedback !== undefined ? { clientFeedback: nextClientFeedback } : {}),
+        ...(creativeStatus !== undefined ? { creativeStatus } : {}),
         ...(briefDueDate !== undefined
           ? { briefDueDate: briefDueDate ? new Date(briefDueDate) : null }
           : {}),
@@ -170,6 +232,33 @@ async function updateCampaign(
     }
     if (notes !== undefined) {
       logs.push({ type: "note", message: `Notes updated on "${existing.title}"` });
+    }
+    if (creativeStatus !== undefined && creativeStatus !== existing.creativeStatus) {
+      const CREATIVE_LABELS: Record<string, string> = {
+        AWAITING_RESPONSE: "Awaiting Response",
+        RESPONSE_SENT: "Response Sent",
+        IN_REVIEW: "In Review",
+        REVISIONS_REQUESTED: "Revisions Requested",
+        APPROVED: "Approved",
+      };
+      logs.push({
+        type: "field_update",
+        message:
+          creativeStatus === "APPROVED"
+            ? `Creative for "${existing.title}" approved by the client`
+            : `Creative status on "${existing.title}" set to ${CREATIVE_LABELS[creativeStatus] ?? creativeStatus}`,
+        meta: { from: existing.creativeStatus, to: creativeStatus },
+      });
+    }
+    if (nextClientFeedback !== undefined) {
+      const prevCount = Array.isArray(existing.clientFeedback) ? existing.clientFeedback.length : 0;
+      if (nextClientFeedback.length > prevCount) {
+        const latest = nextClientFeedback[nextClientFeedback.length - 1];
+        logs.push({
+          type: "note",
+          message: `Client feedback (${latest.type}) logged on "${existing.title}"${latest.from ? ` from ${latest.from}` : ""}`,
+        });
+      }
     }
     if (briefStatus !== undefined && briefStatus !== existing.briefStatus) {
       logs.push({

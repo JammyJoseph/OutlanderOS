@@ -145,6 +145,7 @@ model Campaign {
   title            String
   type             CampaignType // legacy single type — kept for backwards compatibility
   dealTypes        String[]       @default([]) // multi-select deal types, e.g. ["EVENT", "DIGITAL_PARTNERSHIP"]
+  workflowType     String         @default("CREATIVE_BRIEF") // CREATIVE_BRIEF | SUPPLIED_ASSETS — determines the process, not the content type
   status           CampaignStatus @default(BRIEF_RECEIVED)
   stage            DealStage      @default(LEAD)
   stageUpdatedAt   DateTime?
@@ -171,6 +172,13 @@ model Campaign {
   briefContent     String? // creative brief for the production team
   briefDueDate     DateTime? // when the brief is due to production
   briefStatus      String         @default("DRAFT") // DRAFT, READY, SENT_TO_PRODUCTION
+  // Creative workflow (CREATIVE_BRIEF deals): the client brief, Outlander's
+  // creative response, and the client feedback log.
+  clientBrief      Json? // { content, references: string[], receivedDate, responseDueDate }
+  creativeResponse Json? // { treatment, moodBoardLinks: string[], sentDate, revisions: [{ treatment, moodBoardLinks, sentDate }] }
+  clientFeedback   Json? // [{ date, from, text, type: 'note'|'revision'|'approval' }]
+  creativeStatus   String? // AWAITING_RESPONSE | RESPONSE_SENT | IN_REVIEW | REVISIONS_REQUESTED | APPROVED
+  lastSyncedToProduction DateTime? // last time deal changes were pushed to the linked Production
   paymentTerms     String?
   notes            String?
   createdById      String
@@ -193,8 +201,14 @@ model Campaign {
 enum DealStage {
   LEAD
   PITCHED
-  NEGOTIATING
+  NEGOTIATING // legacy — folded into PITCHED in the UI
+  BRIEF_RECEIVED
+  CREATIVE_RESPONSE
+  CLIENT_REVIEW
+  CLIENT_APPROVED
   CONTRACTED
+  BUDGET_SET
+  CLEARED_FOR_PRODUCTION
   LIVE
   COMPLETED
   PAID

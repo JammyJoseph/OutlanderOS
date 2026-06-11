@@ -14,19 +14,25 @@ import {
   ChevronDown,
   Film,
   FileText,
+  Lock as LockIcon,
 } from "lucide-react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import {
   STAGE_ORDER,
   STAGE_STYLES,
+  STAGE_GROUPS,
+  CREATIVE_STAGES,
+  WORKFLOW_STYLES,
+  CREATIVE_STATUS_STYLES,
+  normalizeStage,
   typeStyle,
   formatMoney,
   dealTypesOf,
   DEAL_TYPE_OPTIONS,
   TYPE_STYLES,
-  BRIEF_STATUS_STYLES,
   type Deal,
   type DealStage,
+  type WorkflowType,
 } from "../_components/deal-ui";
 import NewDealModal from "../_components/NewDealModal";
 
@@ -107,14 +113,24 @@ function PipelineBoard() {
     const map = new Map<DealStage, Deal[]>();
     for (const stage of STAGE_ORDER) map.set(stage, []);
     for (const d of filtered) {
-      map.get(d.stage)?.push(d) ?? map.set(d.stage, [d]);
+      const stage = normalizeStage(d.stage);
+      const list = map.get(stage);
+      if (list) list.push(d);
+      else map.set(stage, [d]);
     }
     return map;
   }, [filtered]);
 
+  // Supplied-assets deals skip the creative + cleared-for-production columns.
+  function stageAllowedFor(deal: Deal, stage: DealStage): boolean {
+    if (deal.workflowType !== "SUPPLIED_ASSETS") return true;
+    return !CREATIVE_STAGES.includes(stage) && stage !== "CLEARED_FOR_PRODUCTION";
+  }
+
   async function moveDeal(dealId: string, stage: DealStage) {
     const deal = deals.find((d) => d.id === dealId);
     if (!deal || deal.stage === stage) return;
+    if (!stageAllowedFor(deal, stage)) return;
     const previous = deals;
     // Optimistic update
     setDeals((prev) =>
@@ -214,84 +230,135 @@ function PipelineBoard() {
           </div>
         ) : (
           <div className="overflow-x-auto pb-4">
-            <div className="flex gap-3 min-w-max">
-              {STAGE_ORDER.map((stage) => {
-                const style = STAGE_STYLES[stage];
-                const stageDeals = byStage.get(stage) ?? [];
-                const stageValue = stageDeals.reduce((sum, d) => sum + (d.value ?? 0), 0);
-                const isOver = dragOverStage === stage;
-                const isFocused = focusStage === stage;
-                return (
-                  <div
-                    key={stage}
-                    ref={(el) => {
-                      columnRefs.current[stage] = el;
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOverStage(stage);
-                    }}
-                    onDragLeave={(e) => {
-                      if (e.currentTarget === e.target) setDragOverStage(null);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const id = e.dataTransfer.getData("text/plain") || draggingId;
-                      if (id) moveDeal(id, stage);
-                      setDragOverStage(null);
-                      setDraggingId(null);
-                    }}
-                    className={`w-[280px] shrink-0 rounded-2xl bg-gray-100/70 border transition-all duration-150 ${
-                      isOver
-                        ? "border-[#D4A853] ring-2 ring-[#D4A853]/30 bg-amber-50/60"
-                        : isFocused
-                          ? "border-[#D4A853]/50 ring-1 ring-[#D4A853]/20"
-                          : "border-gray-200/60"
-                    }`}
-                  >
-                    {/* Column header */}
-                    <div className="px-3.5 pt-3.5 pb-2 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${style.dot}`} />
-                        <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                          {style.label}
-                        </span>
-                        <span className="text-[11px] font-semibold text-gray-400 bg-white rounded-full px-1.5 py-0.5 border border-gray-200/60">
-                          {stageDeals.length}
-                        </span>
-                      </div>
-                      <span className="text-[11px] font-semibold text-gray-500 tabular-nums">
-                        {stageValue > 0 ? formatMoney(stageValue) : ""}
+            <div className="flex gap-4 min-w-max items-start">
+              {STAGE_GROUPS.map((group) => (
+                <div
+                  key={group.key}
+                  className={`rounded-2xl p-1.5 ${
+                    group.creative ? "bg-purple-50/60 border border-purple-100" : "bg-transparent"
+                  }`}
+                >
+                  {/* Group header */}
+                  <div className="flex items-center gap-2 px-2 pt-1 pb-2">
+                    <span className={`w-1.5 h-1.5 rounded-full ${group.dot}`} />
+                    <span
+                      className={`text-[11px] font-bold uppercase tracking-widest ${group.accent}`}
+                    >
+                      {group.label}
+                    </span>
+                    {group.creative && (
+                      <span className="text-[10px] font-medium text-purple-400">
+                        creative brief jobs only
                       </span>
-                    </div>
-
-                    {/* Cards */}
-                    <div className="px-2.5 pb-3 space-y-2 min-h-[140px]">
-                      {stageDeals.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-gray-300/70 py-6 text-center text-[11px] text-gray-400">
-                          {isOver ? "Drop here" : "No deals"}
-                        </div>
-                      )}
-                      {stageDeals.map((deal) => (
-                        <DealCard
-                          key={deal.id}
-                          deal={deal}
-                          dragging={draggingId === deal.id}
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData("text/plain", deal.id);
-                            e.dataTransfer.effectAllowed = "move";
-                            setDraggingId(deal.id);
-                          }}
-                          onDragEnd={() => {
-                            setDraggingId(null);
-                            setDragOverStage(null);
-                          }}
-                        />
-                      ))}
-                    </div>
+                    )}
+                    <span className="flex-1 border-t border-dashed border-gray-200 ml-1" />
                   </div>
-                );
-              })}
+
+                  <div className="flex gap-3">
+                    {group.stages.map((stage) => {
+                      const style = STAGE_STYLES[stage];
+                      const stageDeals = byStage.get(stage) ?? [];
+                      const stageValue = stageDeals.reduce((sum, d) => sum + (d.value ?? 0), 0);
+                      const isOver = dragOverStage === stage;
+                      const isFocused = focusStage === stage;
+                      const draggingDeal = draggingId
+                        ? deals.find((d) => d.id === draggingId)
+                        : null;
+                      const dropBlocked = draggingDeal ? !stageAllowedFor(draggingDeal, stage) : false;
+                      return (
+                        <div
+                          key={stage}
+                          ref={(el) => {
+                            columnRefs.current[stage] = el;
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDragOverStage(stage);
+                          }}
+                          onDragLeave={(e) => {
+                            if (e.currentTarget === e.target) setDragOverStage(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const id = e.dataTransfer.getData("text/plain") || draggingId;
+                            if (id) moveDeal(id, stage);
+                            setDragOverStage(null);
+                            setDraggingId(null);
+                          }}
+                          className={`w-[270px] shrink-0 rounded-2xl border transition-all duration-150 ${
+                            group.creative ? "bg-purple-100/40" : "bg-gray-100/70"
+                          } ${
+                            isOver && dropBlocked
+                              ? "border-gray-300 ring-2 ring-gray-300/40 opacity-60"
+                              : isOver
+                                ? "border-[#D4A853] ring-2 ring-[#D4A853]/30 bg-amber-50/60"
+                                : isFocused
+                                  ? "border-[#D4A853]/50 ring-1 ring-[#D4A853]/20"
+                                  : group.creative
+                                    ? "border-purple-200/60"
+                                    : "border-gray-200/60"
+                          }`}
+                        >
+                          {/* Column header */}
+                          <div className="px-3.5 pt-3.5 pb-2 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${style.dot}`} />
+                              <span
+                                className={`text-xs font-semibold uppercase tracking-wide ${
+                                  group.creative ? "text-purple-800" : "text-gray-700"
+                                }`}
+                              >
+                                {style.label}
+                              </span>
+                              <span className="text-[11px] font-semibold text-gray-400 bg-white rounded-full px-1.5 py-0.5 border border-gray-200/60">
+                                {stageDeals.length}
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-semibold text-gray-500 tabular-nums">
+                              {stageValue > 0 ? formatMoney(stageValue) : ""}
+                            </span>
+                          </div>
+
+                          {/* Cards */}
+                          <div className="px-2.5 pb-3 space-y-2 min-h-[140px]">
+                            {stageDeals.length === 0 && (
+                              <div
+                                className={`rounded-xl border border-dashed py-6 text-center text-[11px] ${
+                                  group.creative
+                                    ? "border-purple-200/80 text-purple-300"
+                                    : "border-gray-300/70 text-gray-400"
+                                }`}
+                              >
+                                {isOver && dropBlocked
+                                  ? "Supplied assets skip this stage"
+                                  : isOver
+                                    ? "Drop here"
+                                    : "No deals"}
+                              </div>
+                            )}
+                            {stageDeals.map((deal) => (
+                              <DealCard
+                                key={deal.id}
+                                deal={deal}
+                                dragging={draggingId === deal.id}
+                                onDragStart={(e) => {
+                                  e.dataTransfer.setData("text/plain", deal.id);
+                                  e.dataTransfer.effectAllowed = "move";
+                                  setDraggingId(deal.id);
+                                }}
+                                onDragEnd={() => {
+                                  setDraggingId(null);
+                                  setDragOverStage(null);
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -401,9 +468,12 @@ function DealCard({
   const daysInStage = differenceInCalendarDays(new Date(), parseISO(stageSince));
   const due = deal.dueDate ? parseISO(deal.dueDate) : null;
   const overdue = due ? differenceInCalendarDays(due, new Date()) < 0 : false;
-  const briefStyle =
-    deal.briefContent || (deal.briefStatus && deal.briefStatus !== "DRAFT")
-      ? BRIEF_STATUS_STYLES[deal.briefStatus ?? "DRAFT"]
+  const workflow =
+    WORKFLOW_STYLES[(deal.workflowType as WorkflowType) ?? "CREATIVE_BRIEF"] ??
+    WORKFLOW_STYLES.CREATIVE_BRIEF;
+  const creativeStatus =
+    deal.workflowType !== "SUPPLIED_ASSETS" && deal.creativeStatus
+      ? CREATIVE_STATUS_STYLES[deal.creativeStatus]
       : null;
 
   return (
@@ -423,6 +493,11 @@ function DealCard({
           {deal.title}
         </p>
         <div className="flex flex-wrap items-center gap-1 mb-2">
+          <span
+            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${workflow.bg} ${workflow.text}`}
+          >
+            {workflow.label}
+          </span>
           {types.map((t) => {
             const style = typeStyle(t);
             return (
@@ -434,16 +509,30 @@ function DealCard({
               </span>
             );
           })}
+          {creativeStatus && !deal.production && (
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${creativeStatus.bg} ${creativeStatus.text}`}
+            >
+              <FileText size={10} /> {creativeStatus.label}
+            </span>
+          )}
+          <span
+            className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+              deal.budgetLocked ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
+            }`}
+            title={deal.budgetLocked ? "Budget locked" : "Budget draft"}
+          >
+            {deal.budgetLocked ? (
+              <>
+                <LockIcon size={9} /> Locked ✓
+              </>
+            ) : (
+              "Draft"
+            )}
+          </span>
           {deal.production && (
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
               <Film size={10} /> In Production
-            </span>
-          )}
-          {briefStyle && !deal.production && (
-            <span
-              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${briefStyle.bg} ${briefStyle.text}`}
-            >
-              <FileText size={10} /> {briefStyle.label}
             </span>
           )}
         </div>

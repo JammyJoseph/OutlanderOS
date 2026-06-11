@@ -3,8 +3,14 @@
 export const DEAL_STAGES = [
   "LEAD",
   "PITCHED",
-  "NEGOTIATING",
+  "NEGOTIATING", // legacy — folded into PITCHED in the UI
+  "BRIEF_RECEIVED",
+  "CREATIVE_RESPONSE",
+  "CLIENT_REVIEW",
+  "CLIENT_APPROVED",
   "CONTRACTED",
+  "BUDGET_SET",
+  "CLEARED_FOR_PRODUCTION",
   "LIVE",
   "COMPLETED",
   "PAID",
@@ -12,17 +18,230 @@ export const DEAL_STAGES = [
 
 export type DealStageValue = (typeof DEAL_STAGES)[number];
 
+// Display order of the pipeline (legacy NEGOTIATING excluded — normalizeStage
+// folds those deals into PITCHED).
+export const PIPELINE_STAGES: DealStageValue[] = [
+  "LEAD",
+  "PITCHED",
+  "BRIEF_RECEIVED",
+  "CREATIVE_RESPONSE",
+  "CLIENT_REVIEW",
+  "CLIENT_APPROVED",
+  "CONTRACTED",
+  "BUDGET_SET",
+  "CLEARED_FOR_PRODUCTION",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
+export function normalizeStage(stage: string): DealStageValue {
+  if (stage === "NEGOTIATING") return "PITCHED";
+  return isDealStage(stage) ? stage : "LEAD";
+}
+
+// Creative workflow stages — only CREATIVE_BRIEF deals pass through these.
+export const CREATIVE_STAGES: DealStageValue[] = [
+  "BRIEF_RECEIVED",
+  "CREATIVE_RESPONSE",
+  "CLIENT_REVIEW",
+  "CLIENT_APPROVED",
+];
+
+// Stages a SUPPLIED_ASSETS deal can be in (skips creative + production).
+export const SUPPLIED_ASSETS_STAGES: DealStageValue[] = [
+  "LEAD",
+  "PITCHED",
+  "CONTRACTED",
+  "BUDGET_SET",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
 // Stages counted as "won" / revenue booked
-export const WON_STAGES: DealStageValue[] = ["CONTRACTED", "LIVE", "COMPLETED", "PAID"];
+export const WON_STAGES: DealStageValue[] = [
+  "CONTRACTED",
+  "BUDGET_SET",
+  "CLEARED_FOR_PRODUCTION",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
 
 // Stages counted in active pipeline value
 export const ACTIVE_STAGES: DealStageValue[] = [
   "LEAD",
   "PITCHED",
   "NEGOTIATING",
+  "BRIEF_RECEIVED",
+  "CREATIVE_RESPONSE",
+  "CLIENT_REVIEW",
+  "CLIENT_APPROVED",
   "CONTRACTED",
+  "BUDGET_SET",
+  "CLEARED_FOR_PRODUCTION",
   "LIVE",
 ];
+
+// ── Workflow type — determines the PROCESS a deal goes through ──────────────
+export const WORKFLOW_TYPES = ["CREATIVE_BRIEF", "SUPPLIED_ASSETS"] as const;
+export type WorkflowTypeValue = (typeof WORKFLOW_TYPES)[number];
+
+export function isWorkflowType(value: string): value is WorkflowTypeValue {
+  return (WORKFLOW_TYPES as readonly string[]).includes(value);
+}
+
+export function stagesForWorkflow(workflowType: string): DealStageValue[] {
+  return workflowType === "SUPPLIED_ASSETS" ? SUPPLIED_ASSETS_STAGES : PIPELINE_STAGES;
+}
+
+// ── Creative status — where the brief/response/approval loop is ─────────────
+export const CREATIVE_STATUSES = [
+  "AWAITING_RESPONSE",
+  "RESPONSE_SENT",
+  "IN_REVIEW",
+  "REVISIONS_REQUESTED",
+  "APPROVED",
+] as const;
+export type CreativeStatusValue = (typeof CREATIVE_STATUSES)[number];
+
+export function isCreativeStatus(value: string): value is CreativeStatusValue {
+  return (CREATIVE_STATUSES as readonly string[]).includes(value);
+}
+
+// ── Creative workflow JSON shapes stored on Campaign ────────────────────────
+export type ClientBrief = {
+  content: string;
+  references: string[];
+  receivedDate: string | null;
+  responseDueDate: string | null;
+};
+
+export function parseClientBrief(value: unknown): ClientBrief | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  return {
+    content: typeof v.content === "string" ? v.content : "",
+    references: Array.isArray(v.references)
+      ? v.references.filter((r): r is string => typeof r === "string" && r.trim().length > 0)
+      : [],
+    receivedDate: typeof v.receivedDate === "string" && v.receivedDate ? v.receivedDate : null,
+    responseDueDate:
+      typeof v.responseDueDate === "string" && v.responseDueDate ? v.responseDueDate : null,
+  };
+}
+
+export type CreativeRevision = {
+  treatment: string;
+  moodBoardLinks: string[];
+  sentDate: string | null;
+};
+
+export type CreativeResponse = CreativeRevision & {
+  revisions: CreativeRevision[];
+};
+
+export function parseCreativeResponse(value: unknown): CreativeResponse | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const parseRevision = (r: unknown): CreativeRevision | null => {
+    if (!r || typeof r !== "object") return null;
+    const x = r as Record<string, unknown>;
+    return {
+      treatment: typeof x.treatment === "string" ? x.treatment : "",
+      moodBoardLinks: Array.isArray(x.moodBoardLinks)
+        ? x.moodBoardLinks.filter((l): l is string => typeof l === "string" && l.trim().length > 0)
+        : [],
+      sentDate: typeof x.sentDate === "string" && x.sentDate ? x.sentDate : null,
+    };
+  };
+  const base = parseRevision(value);
+  if (!base) return null;
+  return {
+    ...base,
+    revisions: Array.isArray(v.revisions)
+      ? (v.revisions.map(parseRevision).filter(Boolean) as CreativeRevision[])
+      : [],
+  };
+}
+
+export type FeedbackEntry = {
+  date: string;
+  from: string;
+  text: string;
+  type: "note" | "revision" | "approval";
+};
+
+export function parseClientFeedback(value: unknown): FeedbackEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((f): f is Record<string, unknown> => !!f && typeof f === "object")
+    .map((f) => ({
+      date: typeof f.date === "string" ? f.date : new Date().toISOString(),
+      from: typeof f.from === "string" ? f.from : "",
+      text: typeof f.text === "string" ? f.text : "",
+      type: (["note", "revision", "approval"].includes(String(f.type))
+        ? String(f.type)
+        : "note") as FeedbackEntry["type"],
+    }))
+    .filter((f) => f.text.trim().length > 0);
+}
+
+// ── Clear for Production readiness checklist ─────────────────────────────────
+// Shared by the API gate and the deal page launch checklist.
+export type ChecklistItem = { key: string; label: string; ok: boolean; detail?: string };
+
+export function clearForProductionChecklist(deal: {
+  stage: string;
+  workflowType: string;
+  budgetLocked: boolean;
+  creativeStatus: string | null;
+  clientBrief: unknown;
+  briefContent: string | null;
+  description?: string | null;
+}): { items: ChecklistItem[]; ready: boolean } {
+  const creative = deal.workflowType !== "SUPPLIED_ASSETS";
+  const stageIdx = PIPELINE_STAGES.indexOf(normalizeStage(deal.stage));
+  const contractedIdx = PIPELINE_STAGES.indexOf("CONTRACTED");
+  const stageOk = creative
+    ? deal.stage === "CLIENT_APPROVED" || stageIdx >= contractedIdx
+    : stageIdx >= contractedIdx;
+
+  const brief = parseClientBrief(deal.clientBrief);
+  const briefOk = Boolean(brief?.content?.trim() || deal.briefContent?.trim());
+
+  const items: ChecklistItem[] = [
+    {
+      key: "creative",
+      label: creative ? "Creative approved by client" : "Creative approval (N/A — supplied assets)",
+      ok: creative ? deal.creativeStatus === "APPROVED" : true,
+      detail: creative && deal.creativeStatus !== "APPROVED"
+        ? "Log an approval in Client Feedback on the Brief & Creative tab"
+        : undefined,
+    },
+    {
+      key: "budget",
+      label: "Budget locked",
+      ok: deal.budgetLocked,
+      detail: !deal.budgetLocked ? "Lock & Submit the budget on the Budget tab" : undefined,
+    },
+    {
+      key: "brief",
+      label: "Brief attached",
+      ok: briefOk,
+      detail: !briefOk ? "Add the client brief content on the Brief & Creative tab" : undefined,
+    },
+    {
+      key: "stage",
+      label: creative ? "Deal at Client Approved or Contracted+" : "Deal at Contracted or later",
+      ok: stageOk,
+      detail: !stageOk ? "Move the deal forward in the pipeline first" : undefined,
+    },
+  ];
+
+  return { items, ready: items.every((i) => i.ok) };
+}
 
 // Multi-select deal types stored in Campaign.dealTypes (string array).
 export const DEAL_TYPES = [

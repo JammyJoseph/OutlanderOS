@@ -6,8 +6,14 @@ export const GOLD_DARK = "#c49843";
 export type DealStage =
   | "LEAD"
   | "PITCHED"
-  | "NEGOTIATING"
+  | "NEGOTIATING" // legacy — folded into PITCHED in the UI
+  | "BRIEF_RECEIVED"
+  | "CREATIVE_RESPONSE"
+  | "CLIENT_REVIEW"
+  | "CLIENT_APPROVED"
   | "CONTRACTED"
+  | "BUDGET_SET"
+  | "CLEARED_FOR_PRODUCTION"
   | "LIVE"
   | "COMPLETED"
   | "PAID";
@@ -15,11 +21,76 @@ export type DealStage =
 export const STAGE_ORDER: DealStage[] = [
   "LEAD",
   "PITCHED",
-  "NEGOTIATING",
+  "BRIEF_RECEIVED",
+  "CREATIVE_RESPONSE",
+  "CLIENT_REVIEW",
+  "CLIENT_APPROVED",
   "CONTRACTED",
+  "BUDGET_SET",
+  "CLEARED_FOR_PRODUCTION",
   "LIVE",
   "COMPLETED",
   "PAID",
+];
+
+// Legacy NEGOTIATING deals render in the PITCHED column.
+export function normalizeStage(stage: string): DealStage {
+  if (stage === "NEGOTIATING") return "PITCHED";
+  return (STAGE_ORDER as string[]).includes(stage) ? (stage as DealStage) : "LEAD";
+}
+
+// Workflow types — determine the PROCESS a deal goes through.
+export type WorkflowType = "CREATIVE_BRIEF" | "SUPPLIED_ASSETS";
+
+export const WORKFLOW_STYLES: Record<WorkflowType, { label: string; bg: string; text: string }> = {
+  CREATIVE_BRIEF: { label: "Creative", bg: "bg-purple-100", text: "text-purple-700" },
+  SUPPLIED_ASSETS: { label: "Supplied", bg: "bg-gray-200", text: "text-gray-600" },
+};
+
+// Creative pipeline stages — only CREATIVE_BRIEF deals pass through these.
+export const CREATIVE_STAGES: DealStage[] = [
+  "BRIEF_RECEIVED",
+  "CREATIVE_RESPONSE",
+  "CLIENT_REVIEW",
+  "CLIENT_APPROVED",
+];
+
+// Stages a SUPPLIED_ASSETS deal can be in (skips creative + production).
+export const SUPPLIED_ASSETS_STAGES: DealStage[] = [
+  "LEAD",
+  "PITCHED",
+  "CONTRACTED",
+  "BUDGET_SET",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
+export function stagesForWorkflow(workflowType: string | undefined): DealStage[] {
+  return workflowType === "SUPPLIED_ASSETS" ? SUPPLIED_ASSETS_STAGES : STAGE_ORDER;
+}
+
+// Kanban column groups, in pipeline order. Creative columns get a purple tint.
+export const STAGE_GROUPS: {
+  key: string;
+  label: string;
+  stages: DealStage[];
+  accent: string; // header text colour
+  dot: string;
+  creative?: boolean;
+}[] = [
+  { key: "prospecting", label: "Prospecting", stages: ["LEAD", "PITCHED"], accent: "text-gray-500", dot: "bg-gray-400" },
+  {
+    key: "creative",
+    label: "Creative",
+    stages: ["BRIEF_RECEIVED", "CREATIVE_RESPONSE", "CLIENT_REVIEW", "CLIENT_APPROVED"],
+    accent: "text-purple-600",
+    dot: "bg-purple-400",
+    creative: true,
+  },
+  { key: "commercial", label: "Commercial", stages: ["CONTRACTED", "BUDGET_SET"], accent: "text-[#9C7424]", dot: "bg-[#D4A853]" },
+  { key: "execution", label: "Execution", stages: ["CLEARED_FOR_PRODUCTION", "LIVE"], accent: "text-emerald-600", dot: "bg-emerald-400" },
+  { key: "complete", label: "Complete", stages: ["COMPLETED", "PAID"], accent: "text-blue-600", dot: "bg-blue-400" },
 ];
 
 export const STAGE_STYLES: Record<
@@ -35,12 +106,54 @@ export const STAGE_STYLES: Record<
     dot: "bg-[#D4A853]",
     bar: "bg-[#D4A853]",
   },
-  CONTRACTED: {
-    label: "Contracted",
+  BRIEF_RECEIVED: {
+    label: "Brief Received",
+    bg: "bg-purple-50",
+    text: "text-purple-700",
+    dot: "bg-purple-300",
+    bar: "bg-purple-300",
+  },
+  CREATIVE_RESPONSE: {
+    label: "Creative Response",
+    bg: "bg-purple-100",
+    text: "text-purple-700",
+    dot: "bg-purple-400",
+    bar: "bg-purple-400",
+  },
+  CLIENT_REVIEW: {
+    label: "Client Review",
+    bg: "bg-fuchsia-100",
+    text: "text-fuchsia-700",
+    dot: "bg-fuchsia-400",
+    bar: "bg-fuchsia-400",
+  },
+  CLIENT_APPROVED: {
+    label: "Client Approved",
     bg: "bg-violet-100",
     text: "text-violet-700",
-    dot: "bg-violet-400",
-    bar: "bg-violet-400",
+    dot: "bg-violet-500",
+    bar: "bg-violet-500",
+  },
+  CONTRACTED: {
+    label: "Contracted",
+    bg: "bg-amber-100",
+    text: "text-amber-700",
+    dot: "bg-[#D4A853]",
+    bar: "bg-[#D4A853]",
+  },
+  BUDGET_SET: {
+    label: "Budget Set",
+    bg: "bg-yellow-100",
+    text: "text-yellow-700",
+    dot: "bg-yellow-500",
+    bar: "bg-yellow-500",
+  },
+  CLEARED_FOR_PRODUCTION: {
+    label: "Cleared for Production",
+    bg: "bg-teal-100",
+    text: "text-teal-700",
+    dot: "bg-teal-400",
+    bar: "bg-teal-400",
   },
   LIVE: {
     label: "Live",
@@ -52,6 +165,23 @@ export const STAGE_STYLES: Record<
   COMPLETED: { label: "Completed", bg: "bg-blue-100", text: "text-blue-700", dot: "bg-blue-400", bar: "bg-blue-400" },
   PAID: { label: "Paid", bg: "bg-green-100", text: "text-green-700", dot: "bg-green-500", bar: "bg-green-500" },
 };
+
+// Creative status — where the brief/response/approval loop is.
+export const CREATIVE_STATUS_STYLES: Record<string, { label: string; bg: string; text: string }> = {
+  AWAITING_RESPONSE: { label: "Awaiting Response", bg: "bg-amber-100", text: "text-amber-700" },
+  RESPONSE_SENT: { label: "Response Sent", bg: "bg-sky-100", text: "text-sky-700" },
+  IN_REVIEW: { label: "In Review", bg: "bg-blue-100", text: "text-blue-700" },
+  REVISIONS_REQUESTED: { label: "Revisions Requested", bg: "bg-orange-100", text: "text-orange-700" },
+  APPROVED: { label: "Approved", bg: "bg-emerald-100", text: "text-emerald-700" },
+};
+
+export const CREATIVE_STATUS_ORDER = [
+  "AWAITING_RESPONSE",
+  "RESPONSE_SENT",
+  "IN_REVIEW",
+  "REVISIONS_REQUESTED",
+  "APPROVED",
+] as const;
 
 // The full multi-select deal type catalogue (Campaign.dealTypes).
 export const DEAL_TYPE_OPTIONS = [
@@ -128,6 +258,9 @@ export interface Deal {
   title: string;
   type: string;
   dealTypes?: string[] | null;
+  workflowType?: string;
+  creativeStatus?: string | null;
+  budgetLocked?: boolean;
   briefContent?: string | null;
   briefDueDate?: string | null;
   briefStatus?: string;

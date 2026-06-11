@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { validateRequired, sanitizeString } from "@/lib/validate";
-import { isDealStage, isDealType, dealTypeToCampaignType } from "@/lib/deal-stages";
+import { isDealStage, isDealType, isWorkflowType, dealTypeToCampaignType } from "@/lib/deal-stages";
 
 export const GET = withAuth(async (request: NextRequest) => {
   try {
@@ -96,6 +96,12 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
     const { value, currency } = body;
     const type = dealTypes.length ? dealTypeToCampaignType(dealTypes[0]) : body.type;
 
+    // Workflow type determines the process — creative loop or straight through.
+    const workflowType =
+      typeof body.workflowType === "string" && isWorkflowType(body.workflowType)
+        ? body.workflowType
+        : "CREATIVE_BRIEF";
+
     let clientId: string | null = body.clientId || null;
     if (!clientId) {
       const clientName = sanitizeString(body.clientName, 200);
@@ -114,6 +120,9 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
         title,
         type,
         dealTypes,
+        workflowType,
+        // Creative-brief jobs start the creative loop awaiting Outlander's response.
+        creativeStatus: workflowType === "CREATIVE_BRIEF" ? "AWAITING_RESPONSE" : null,
         stage: body.stage && isDealStage(body.stage) ? body.stage : "LEAD",
         stageUpdatedAt: new Date(),
         value: value !== undefined && value !== null && value !== "" ? parseFloat(value) : null,

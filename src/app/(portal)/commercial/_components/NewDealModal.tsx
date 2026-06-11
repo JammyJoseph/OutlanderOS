@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Loader2 } from "lucide-react";
-import { DEAL_TYPE_OPTIONS, TYPE_STYLES, type Deal } from "./deal-ui";
+import { X, Loader2, Palette, Package } from "lucide-react";
+import { DEAL_TYPE_OPTIONS, TYPE_STYLES, type Deal, type WorkflowType } from "./deal-ui";
 
 interface ClientOption {
   id: string;
@@ -20,6 +20,7 @@ export default function NewDealModal({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [workflowType, setWorkflowType] = useState<WorkflowType | null>(null);
   const [title, setTitle] = useState("");
   const [clientId, setClientId] = useState("");
   const [newClientName, setNewClientName] = useState("");
@@ -42,6 +43,10 @@ export default function NewDealModal({
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+    if (!workflowType) {
+      setError("Pick what type of job this is first");
+      return;
+    }
     if (clientId === "__new__" ? !newClientName.trim() : !clientId) {
       setError("Pick a client or enter a new one");
       return;
@@ -57,6 +62,7 @@ export default function NewDealModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          workflowType,
           title: title.trim(),
           clientId: clientId === "__new__" ? undefined : clientId,
           clientName: clientId === "__new__" ? newClientName.trim() : undefined,
@@ -98,6 +104,58 @@ export default function NewDealModal({
         <form onSubmit={handleCreate} className="px-6 py-5 space-y-4">
           <div>
             <label className={labelCls}>
+              What type of job is this? <span className="text-red-400">*</span>
+            </label>
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                type="button"
+                onClick={() => setWorkflowType("CREATIVE_BRIEF")}
+                className={`w-full text-left rounded-xl border p-3.5 transition-all ${
+                  workflowType === "CREATIVE_BRIEF"
+                    ? "border-purple-400 ring-2 ring-purple-400/20 bg-purple-50/50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                    <Palette size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Creative Brief</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Needs a creative response, client approval, then production. The main
+                      workflow.
+                    </p>
+                  </div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkflowType("SUPPLIED_ASSETS")}
+                className={`w-full text-left rounded-xl border p-3.5 transition-all ${
+                  workflowType === "SUPPLIED_ASSETS"
+                    ? "border-gray-400 ring-2 ring-gray-400/20 bg-gray-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center shrink-0">
+                    <Package size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Supplied Assets</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Client provides the content — no creative or production needed. Simpler
+                      path.
+                    </p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className={labelCls}>
               Deal Title <span className="text-red-400">*</span>
             </label>
             <input
@@ -106,7 +164,6 @@ export default function NewDealModal({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. SS26 Launch Partnership"
               className={inputCls}
-              autoFocus
             />
           </div>
 
@@ -219,7 +276,7 @@ export default function NewDealModal({
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || dealTypes.length === 0 || creating}
+              disabled={!title.trim() || !workflowType || dealTypes.length === 0 || creating}
               className="flex-1 flex items-center justify-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creating ? <Loader2 size={15} className="animate-spin" /> : null}

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef, use } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Loader2,
   ArrowLeft,
@@ -25,18 +24,27 @@ import {
   FileText,
   Send,
   Lock as LockIcon,
+  Palette,
+  Package,
+  LinkIcon,
+  MessageSquare,
+  History,
+  RefreshCw,
+  Circle,
 } from "lucide-react";
-import { format, parseISO, formatDistanceToNow, differenceInCalendarDays } from "date-fns";
+import { format, parseISO, formatDistanceToNow } from "date-fns";
 import {
   STAGE_ORDER,
   STAGE_STYLES,
+  CREATIVE_STATUS_STYLES,
+  CREATIVE_STATUS_ORDER,
+  WORKFLOW_STYLES,
+  stagesForWorkflow,
   typeStyle,
   formatMoney,
   dealTypesOf,
-  isProductionDeal,
   DEAL_TYPE_OPTIONS,
   TYPE_STYLES,
-  BRIEF_STATUS_STYLES,
   type DealStage,
 } from "../../_components/deal-ui";
 import { ActionTrackPanel } from "@/components/tasks/ActionTrackPanel";
@@ -58,14 +66,45 @@ interface ActivityEntry {
   meta?: { from?: string; to?: string } | null;
 }
 
+interface ClientBriefData {
+  content: string;
+  references: string[];
+  receivedDate: string | null;
+  responseDueDate: string | null;
+}
+
+interface CreativeRevisionData {
+  treatment: string;
+  moodBoardLinks: string[];
+  sentDate: string | null;
+}
+
+interface CreativeResponseData extends CreativeRevisionData {
+  revisions: CreativeRevisionData[];
+}
+
+interface FeedbackEntryData {
+  date: string;
+  from: string;
+  text: string;
+  type: "note" | "revision" | "approval";
+}
+
 interface DealDetail {
   id: string;
   title: string;
   type: string;
   dealTypes: string[];
+  workflowType: string;
   briefContent: string | null;
   briefDueDate: string | null;
   briefStatus: string;
+  clientBrief: ClientBriefData | null;
+  creativeResponse: CreativeResponseData | null;
+  clientFeedback: FeedbackEntryData[] | null;
+  creativeStatus: string | null;
+  budgetLocked: boolean;
+  lastSyncedToProduction: string | null;
   stage: DealStage;
   stageUpdatedAt: string | null;
   value: number | null;
@@ -114,7 +153,64 @@ interface ClientOption {
 
 type Tab = "overview" | "brief" | "budget" | "deliverables" | "tasks" | "activity";
 
-const WON_STAGES: DealStage[] = ["CONTRACTED", "LIVE", "COMPLETED", "PAID"];
+const WON_STAGES: DealStage[] = [
+  "CONTRACTED",
+  "BUDGET_SET",
+  "CLEARED_FOR_PRODUCTION",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
+// Launch checklist for "Clear for Production" — mirrors the server-side gate
+// in /api/commercial/deals/[id]/clear-for-production.
+interface ChecklistItem {
+  key: string;
+  label: string;
+  ok: boolean;
+  detail?: string;
+}
+
+function buildLaunchChecklist(deal: DealDetail): { items: ChecklistItem[]; ready: boolean } {
+  const creative = deal.workflowType !== "SUPPLIED_ASSETS";
+  const stageIdx = STAGE_ORDER.indexOf(deal.stage === "NEGOTIATING" ? "PITCHED" : deal.stage);
+  const contractedIdx = STAGE_ORDER.indexOf("CONTRACTED");
+  const stageOk = creative
+    ? deal.stage === "CLIENT_APPROVED" || stageIdx >= contractedIdx
+    : stageIdx >= contractedIdx;
+  const briefOk = Boolean(deal.clientBrief?.content?.trim() || deal.briefContent?.trim());
+
+  const items: ChecklistItem[] = [
+    {
+      key: "creative",
+      label: creative ? "Creative approved by client" : "Creative approval — N/A for supplied assets",
+      ok: creative ? deal.creativeStatus === "APPROVED" : true,
+      detail:
+        creative && deal.creativeStatus !== "APPROVED"
+          ? "Log an approval in Client Feedback on the Brief & Creative tab"
+          : undefined,
+    },
+    {
+      key: "budget",
+      label: "Budget locked",
+      ok: deal.budgetLocked,
+      detail: !deal.budgetLocked ? "Lock & Submit the budget on the Budget tab" : undefined,
+    },
+    {
+      key: "brief",
+      label: "Brief attached",
+      ok: briefOk,
+      detail: !briefOk ? "Add the client brief on the Brief & Creative tab" : undefined,
+    },
+    {
+      key: "stage",
+      label: creative ? "Deal at Client Approved or Contracted+" : "Deal at Contracted or later",
+      ok: stageOk,
+      detail: !stageOk ? "Move the deal forward in the pipeline first" : undefined,
+    },
+  ];
+  return { items, ready: items.every((i) => i.ok) };
+}
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   created: <Sparkles size={13} />,
@@ -134,8 +230,10 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
-  const [showStartProject, setShowStartProject] = useState(false);
+  const [showMarkLive, setShowMarkLive] = useState(false);
   const [showClearProduction, setShowClearProduction] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -186,6 +284,25 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     [id, reload]
   );
 
+  async function syncToProduction() {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      const res = await fetch(`/api/commercial/deals/${id}/sync-production`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setSyncError(data.error || "Failed to sync to production");
+        return;
+      }
+      await reload();
+      flashSaved();
+    } catch {
+      setSyncError("Failed to sync to production");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -212,11 +329,24 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
 
   const stage = STAGE_STYLES[deal.stage] ?? STAGE_STYLES.LEAD;
   const types = dealTypesOf(deal);
-  const productionDeal = isProductionDeal(deal);
+  // The workflow type determines the process: creative loop + production, or
+  // the simpler supplied-assets path with no production at all.
+  const creativeWorkflow = deal.workflowType !== "SUPPLIED_ASSETS";
+  const workflowStyle = WORKFLOW_STYLES[creativeWorkflow ? "CREATIVE_BRIEF" : "SUPPLIED_ASSETS"];
   const stageWon = WON_STAGES.includes(deal.stage);
   const projectStarted = Boolean(deal.production);
-  const canClearProduction = productionDeal && stageWon && !projectStarted;
-  const canStartFinance = !productionDeal && stageWon && !projectStarted && !deal.financeBudget;
+  const checklist = buildLaunchChecklist(deal);
+  const showClearButton = creativeWorkflow && !projectStarted;
+  // Supplied assets: no production — "Mark as Live" once the budget is locked.
+  const canMarkLive =
+    !creativeWorkflow && stageWon && deal.budgetLocked &&
+    !["LIVE", "COMPLETED", "PAID"].includes(deal.stage);
+  // Changes made after the last production sync need pushing across.
+  const pendingSync =
+    projectStarted &&
+    deal.lastSyncedToProduction != null &&
+    parseISO(deal.updatedAt).getTime() > parseISO(deal.lastSyncedToProduction).getTime() + 2000;
+  const stageOptions = stagesForWorkflow(deal.workflowType);
   // Advertorials and print deliverables live in the magazine planning sheet too.
   const printRelated =
     types.includes("ADVERTORIAL") ||
@@ -227,7 +357,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
-    ...(productionDeal ? [{ key: "brief" as Tab, label: "Brief" }] : []),
+    ...(creativeWorkflow ? [{ key: "brief" as Tab, label: "Brief & Creative" }] : []),
     { key: "budget", label: "Budget" },
     { key: "deliverables", label: `Deliverables (${deal.deliverables.length})` },
     { key: "tasks", label: "Tasks" },
@@ -265,6 +395,17 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   <span className={`w-1.5 h-1.5 rounded-full ${stage.dot}`} />
                   {stage.label}
                 </span>
+                <span
+                  className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${workflowStyle.bg} ${workflowStyle.text}`}
+                  title={
+                    creativeWorkflow
+                      ? "Creative brief workflow — creative response, client approval, then production"
+                      : "Supplied assets — client provides content, no creative or production"
+                  }
+                >
+                  {creativeWorkflow ? <Palette size={11} /> : <Package size={11} />}
+                  {workflowStyle.label}
+                </span>
                 {projectStarted && (
                   <Link
                     href={`/production/${deal.production!.id}`}
@@ -274,12 +415,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                     <ArrowUpRight size={11} />
                   </Link>
                 )}
-                {productionDeal && !projectStarted && deal.briefContent && (
+                {creativeWorkflow && !projectStarted && deal.creativeStatus && (
                   <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${BRIEF_STATUS_STYLES[deal.briefStatus]?.bg ?? "bg-gray-100"} ${BRIEF_STATUS_STYLES[deal.briefStatus]?.text ?? "text-gray-600"}`}
+                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${CREATIVE_STATUS_STYLES[deal.creativeStatus]?.bg ?? "bg-gray-100"} ${CREATIVE_STATUS_STYLES[deal.creativeStatus]?.text ?? "text-gray-600"}`}
                   >
                     <FileText size={11} />{" "}
-                    {BRIEF_STATUS_STYLES[deal.briefStatus]?.label ?? deal.briefStatus}
+                    {CREATIVE_STATUS_STYLES[deal.creativeStatus]?.label ?? deal.creativeStatus}
                   </span>
                 )}
                 {deal.financeBudget && (
@@ -312,22 +453,32 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
 
             <div className="flex flex-col items-end gap-3 shrink-0">
               <EditableValue value={deal.value} onSave={(v) => patchDeal({ value: v })} />
-              {canClearProduction && (
+              {showClearButton && (
                 <button
-                  onClick={() => setShowClearProduction(true)}
-                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
+                  onClick={() => checklist.ready && setShowClearProduction(true)}
+                  disabled={!checklist.ready}
+                  title={
+                    checklist.ready
+                      ? "Everything's ready — send this deal to the production team"
+                      : `Not ready yet — ${checklist.items.filter((i) => !i.ok).length} item${checklist.items.filter((i) => !i.ok).length === 1 ? "" : "s"} outstanding on the launch checklist`
+                  }
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm ${
+                    checklist.ready
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                  }`}
                 >
                   <CheckCircle2 size={15} />
                   Clear for Production
                 </button>
               )}
-              {canStartFinance && (
+              {canMarkLive && (
                 <button
-                  onClick={() => setShowStartProject(true)}
-                  className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
+                  onClick={() => setShowMarkLive(true)}
+                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
                 >
                   <Rocket size={15} />
-                  Start Project
+                  Mark as Live
                 </button>
               )}
             </div>
@@ -341,7 +492,10 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 onChange={(e) => patchDeal({ stage: e.target.value })}
                 className="w-full text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer"
               >
-                {STAGE_ORDER.map((s) => (
+                {(deal.stage === "NEGOTIATING"
+                  ? (["NEGOTIATING", ...stageOptions] as DealStage[])
+                  : stageOptions
+                ).map((s) => (
                   <option key={s} value={s}>
                     {STAGE_STYLES[s].label}
                   </option>
@@ -389,6 +543,43 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
 
+        {/* Sync banner — changes made since the last push to production */}
+        {pendingSync && (
+          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-3">
+              <RefreshCw size={16} className="text-amber-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">
+                  Changes made since last submission to production
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Last synced{" "}
+                  {formatDistanceToNow(parseISO(deal.lastSyncedToProduction!), { addSuffix: true })}{" "}
+                  — click &ldquo;Update Production&rdquo; to push the latest brief and budget across.
+                </p>
+                {syncError && <p className="text-xs text-red-600 mt-1">{syncError}</p>}
+              </div>
+            </div>
+            <button
+              onClick={syncToProduction}
+              disabled={syncing}
+              className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50 shrink-0"
+            >
+              {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              Update Production
+            </button>
+          </div>
+        )}
+
+        {/* Launch checklist — what's ready / missing for Clear for Production */}
+        {showClearButton && (
+          <LaunchChecklist
+            items={checklist.items}
+            ready={checklist.ready}
+            onClear={() => setShowClearProduction(true)}
+          />
+        )}
+
         {/* Tabs */}
         <div className="flex items-center gap-1 mb-5 bg-white rounded-xl border border-gray-100 shadow-sm p-1 w-fit">
           {TABS.map((t) => (
@@ -407,8 +598,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {tab === "overview" && <OverviewTab deal={deal} onPatch={patchDeal} />}
-        {tab === "brief" && <BriefTab deal={deal} onPatch={patchDeal} />}
-        {tab === "budget" && <BudgetTab dealId={deal.id} dealValue={deal.value} onSaved={reload} />}
+        {tab === "brief" && creativeWorkflow && (
+          <BriefCreativeTab deal={deal} onPatch={patchDeal} />
+        )}
+        {tab === "budget" && (
+          <BudgetTab dealId={deal.id} dealValue={deal.value} onSaved={reload} />
+        )}
         {tab === "deliverables" && (
           <DeliverablesTab dealId={deal.id} initial={deal.deliverables} onChanged={reload} />
         )}
@@ -416,10 +611,10 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         {tab === "activity" && <ActivityTab activities={deal.activities} />}
       </div>
 
-      {showStartProject && (
-        <StartProjectModal
+      {showMarkLive && (
+        <MarkAsLiveModal
           deal={deal}
-          onClose={() => setShowStartProject(false)}
+          onClose={() => setShowMarkLive(false)}
           onDone={reload}
         />
       )}
@@ -823,130 +1018,587 @@ function OverviewTab({
   );
 }
 
-// ─── Creative Brief tab ───────────────────────────────────────────────────────
+// ─── Launch checklist — Clear for Production readiness ───────────────────────
 
-function BriefTab({
+function LaunchChecklist({
+  items,
+  ready,
+  onClear,
+}: {
+  items: ChecklistItem[];
+  ready: boolean;
+  onClear: () => void;
+}) {
+  const outstanding = items.filter((i) => !i.ok);
+  return (
+    <div
+      className={`mb-5 rounded-2xl border shadow-sm px-6 py-5 ${
+        ready ? "border-emerald-200 bg-emerald-50/60" : "border-gray-200 bg-white"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
+        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Rocket size={15} className={ready ? "text-emerald-600" : "text-[#D4A853]"} />
+          Production launch checklist
+        </h3>
+        {ready ? (
+          <button
+            onClick={onClear}
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
+          >
+            <CheckCircle2 size={14} /> Clear for Production
+          </button>
+        ) : (
+          <span className="text-xs font-semibold text-gray-400">
+            {items.length - outstanding.length}/{items.length} ready
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {items.map((item) => (
+          <div
+            key={item.key}
+            className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 ${
+              item.ok ? "border-emerald-100 bg-emerald-50/50" : "border-gray-100 bg-gray-50/60"
+            }`}
+          >
+            {item.ok ? (
+              <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+            ) : (
+              <Circle size={16} className="text-gray-300 mt-0.5 shrink-0" />
+            )}
+            <div className="min-w-0">
+              <p
+                className={`text-[13px] font-medium ${item.ok ? "text-emerald-800" : "text-gray-600"}`}
+              >
+                {item.label}
+              </p>
+              {!item.ok && item.detail && (
+                <p className="text-[11px] text-gray-400 mt-0.5">{item.detail}</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {!ready && outstanding.length > 0 && (
+        <p className="text-[11px] text-gray-400 mt-3">
+          Missing: {outstanding.map((i) => i.label).join(" · ")} — the Clear for Production button
+          unlocks when everything is ticked.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Brief & Creative tab — the case builder document workspace ──────────────
+
+function emptyBrief(): ClientBriefData {
+  return { content: "", references: [], receivedDate: null, responseDueDate: null };
+}
+
+function emptyResponse(): CreativeResponseData {
+  return { treatment: "", moodBoardLinks: [], sentDate: null, revisions: [] };
+}
+
+function BriefCreativeTab({
   deal,
   onPatch,
 }: {
   deal: DealDetail;
   onPatch: (data: Record<string, unknown>) => Promise<void>;
 }) {
-  const [content, setContent] = useState(deal.briefContent ?? "");
+  const brief = deal.clientBrief ?? emptyBrief();
+  const response = deal.creativeResponse ?? emptyResponse();
+  const feedback = deal.clientFeedback ?? [];
+
+  const [briefContent, setBriefContent] = useState(brief.content);
+  const [treatment, setTreatment] = useState(response.treatment);
   const [saving, setSaving] = useState(false);
 
-  const sent = deal.briefStatus === "SENT_TO_PRODUCTION";
-  const statusStyle = BRIEF_STATUS_STYLES[deal.briefStatus] ?? BRIEF_STATUS_STYLES.DRAFT;
+  useEffect(() => setBriefContent(deal.clientBrief?.content ?? ""), [deal.clientBrief?.content]);
+  useEffect(
+    () => setTreatment(deal.creativeResponse?.treatment ?? ""),
+    [deal.creativeResponse?.treatment]
+  );
 
-  const due = deal.briefDueDate ? parseISO(deal.briefDueDate) : null;
-  const dueDays = due ? differenceInCalendarDays(due, new Date()) : null;
-  const dueLabel =
-    dueDays === null
-      ? null
-      : dueDays < 0
-        ? `${Math.abs(dueDays)} day${Math.abs(dueDays) === 1 ? "" : "s"} overdue`
-        : dueDays === 0
-          ? "due today"
-          : `due in ${dueDays} day${dueDays === 1 ? "" : "s"}`;
+  const statusStyle =
+    CREATIVE_STATUS_STYLES[deal.creativeStatus ?? "AWAITING_RESPONSE"] ??
+    CREATIVE_STATUS_STYLES.AWAITING_RESPONSE;
 
-  async function saveContent() {
-    if (content === (deal.briefContent ?? "")) return;
+  async function patch(data: Record<string, unknown>) {
     setSaving(true);
-    await onPatch({ briefContent: content || null });
+    await onPatch(data);
     setSaving(false);
   }
 
+  function saveBrief(partial: Partial<ClientBriefData>) {
+    return patch({ clientBrief: { ...brief, content: briefContent, ...partial } });
+  }
+
+  function saveResponse(partial: Partial<CreativeResponseData>) {
+    return patch({ creativeResponse: { ...response, treatment, ...partial } });
+  }
+
+  async function sendResponse() {
+    if (!treatment.trim()) return;
+    // Re-sending after a round of revisions archives the previous version.
+    const revisions =
+      response.sentDate != null
+        ? [
+            ...response.revisions,
+            {
+              treatment: response.treatment,
+              moodBoardLinks: response.moodBoardLinks,
+              sentDate: response.sentDate,
+            },
+          ]
+        : response.revisions;
+    await patch({
+      creativeResponse: {
+        ...response,
+        treatment,
+        sentDate: new Date().toISOString(),
+        revisions,
+      },
+      creativeStatus: "RESPONSE_SENT",
+      stage: "CLIENT_REVIEW",
+    });
+  }
+
+  async function addFeedback(entry: FeedbackEntryData) {
+    const data: Record<string, unknown> = { clientFeedback: [...feedback, entry] };
+    if (entry.type === "revision" && deal.creativeStatus !== "APPROVED") {
+      data.creativeStatus = "REVISIONS_REQUESTED";
+    } else if (entry.type === "note" && deal.creativeStatus === "RESPONSE_SENT") {
+      data.creativeStatus = "IN_REVIEW";
+    }
+    await patch(data);
+  }
+
+  async function approveCreative() {
+    await patch({ creativeStatus: "APPROVED", stage: "CLIENT_APPROVED" });
+  }
+
+  const responseSent = Boolean(response.sentDate);
+  const inputCls =
+    "px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400";
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-3xl">
-      <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <FileText size={15} className="text-[#D4A853]" />
-          Creative Brief
-        </h3>
-        <div className="flex items-center gap-2.5">
-          {saving && <Loader2 size={13} className="animate-spin text-gray-400" />}
-          {sent ? (
-            <span
-              className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${statusStyle.bg} ${statusStyle.text}`}
-            >
-              <CheckCircle2 size={12} /> Sent to Production
-            </span>
-          ) : (
-            <select
-              value={deal.briefStatus}
-              onChange={(e) => onPatch({ briefStatus: e.target.value })}
-              className={`text-[11px] font-semibold rounded-full px-2.5 py-1 cursor-pointer focus:outline-none ${statusStyle.bg} ${statusStyle.text}`}
-              title="Brief status"
-            >
-              <option value="DRAFT">Draft</option>
-              <option value="READY">Ready</option>
-            </select>
-          )}
-        </div>
-      </div>
-      <p className="text-xs text-gray-400 mb-5">
-        What needs to be produced, requirements, references — this goes to the production team.
-      </p>
-
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onBlur={saveContent}
-        rows={12}
-        placeholder={
-          "Write the creative brief here — saved automatically when you click away.\n\n• What are we making?\n• Key requirements & deliverables\n• References / mood\n• Anything the production team must know"
-        }
-        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
-      />
-
-      <div className="mt-5 pt-4 border-t border-gray-100 flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
-            Brief due to production
+    <div className="space-y-5 max-w-3xl">
+      {/* Status strip */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            Creative status
           </p>
-          <div className="flex items-center gap-2.5">
+          <select
+            value={deal.creativeStatus ?? "AWAITING_RESPONSE"}
+            onChange={(e) => patch({ creativeStatus: e.target.value })}
+            className={`text-[11px] font-semibold rounded-full px-2.5 py-1 cursor-pointer focus:outline-none ${statusStyle.bg} ${statusStyle.text}`}
+            title="Creative status"
+          >
+            {CREATIVE_STATUS_ORDER.map((s) => (
+              <option key={s} value={s}>
+                {CREATIVE_STATUS_STYLES[s].label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {saving && <Loader2 size={13} className="animate-spin text-gray-400" />}
+      </div>
+
+      {/* Client Brief */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
+          <FileText size={15} className="text-purple-500" />
+          Client Brief
+        </h3>
+        <p className="text-xs text-gray-400 mb-4">
+          What the client wants — saved automatically as you go.
+        </p>
+
+        <textarea
+          value={briefContent}
+          onChange={(e) => setBriefContent(e.target.value)}
+          onBlur={() => {
+            if (briefContent !== brief.content) saveBrief({ content: briefContent });
+          }}
+          rows={8}
+          placeholder={
+            "Paste or write the client's brief here.\n\n• What do they want?\n• Objectives & audience\n• Mandatories, deadlines, budget signals"
+          }
+          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+        />
+
+        <LinkListEditor
+          label="Reference links"
+          links={brief.references}
+          onChange={(references) => saveBrief({ references })}
+          placeholder="https:// — client decks, references, examples"
+        />
+
+        <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+              Brief received
+            </p>
             <input
               type="date"
-              value={deal.briefDueDate ? deal.briefDueDate.slice(0, 10) : ""}
-              onChange={(e) => onPatch({ briefDueDate: e.target.value || null })}
-              className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+              value={brief.receivedDate ? brief.receivedDate.slice(0, 10) : ""}
+              onChange={(e) => saveBrief({ receivedDate: e.target.value || null })}
+              className={`${inputCls} w-full`}
             />
-            {dueLabel && (
-              <span
-                className={`text-xs font-semibold ${
-                  dueDays !== null && dueDays < 0
-                    ? "text-red-500"
-                    : dueDays !== null && dueDays <= 3
-                      ? "text-amber-600"
-                      : "text-gray-500"
-                }`}
-              >
-                {dueLabel}
-              </span>
-            )}
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+              Response due
+            </p>
+            <input
+              type="date"
+              value={brief.responseDueDate ? brief.responseDueDate.slice(0, 10) : ""}
+              onChange={(e) => saveBrief({ responseDueDate: e.target.value || null })}
+              className={`${inputCls} w-full`}
+            />
           </div>
         </div>
+      </div>
 
-        {!sent && (
+      {/* Creative Response */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <Sparkles size={15} className="text-purple-500" />
+            Creative Response
+          </h3>
+          {responseSent && (
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">
+              <Send size={11} /> Sent {format(parseISO(response.sentDate!), "d MMM yyyy")}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-gray-400 mb-4">
+          Outlander&apos;s treatment / concept in response to the brief.
+        </p>
+
+        <textarea
+          value={treatment}
+          onChange={(e) => setTreatment(e.target.value)}
+          onBlur={() => {
+            if (treatment !== response.treatment) saveResponse({ treatment });
+          }}
+          rows={8}
+          placeholder={
+            "Write the treatment / concept here.\n\n• The idea\n• Visual direction & tone\n• Formats and deliverables proposed"
+          }
+          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+        />
+
+        <LinkListEditor
+          label="Mood board links"
+          links={response.moodBoardLinks}
+          onChange={(moodBoardLinks) => saveResponse({ moodBoardLinks })}
+          placeholder="https:// — Figma, Pinterest, drive folders"
+        />
+
+        <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-end">
           <button
-            onClick={() => onPatch({ briefStatus: "SENT_TO_PRODUCTION" })}
-            disabled={!content.trim()}
-            title={content.trim() ? "Mark the brief as sent to production" : "Write the brief first"}
-            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={sendResponse}
+            disabled={!treatment.trim() || saving}
+            title={
+              treatment.trim()
+                ? "Send the response — moves the deal to Client Review"
+                : "Write the treatment first"
+            }
+            className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send size={14} />
-            Send to Production
+            {responseSent ? "Re-send Response" : "Send Response"}
           </button>
-        )}
-        {sent && deal.production && (
-          <Link
-            href={`/production/${deal.production.id}`}
-            className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800"
-          >
-            View in Production <ArrowUpRight size={14} />
-          </Link>
-        )}
+        </div>
+        <p className="text-[11px] text-gray-400 text-right mt-2">
+          Sending moves the deal to <span className="font-semibold">Client Review</span>
+          {responseSent ? " and archives the previous version in Revision History." : "."}
+        </p>
       </div>
+
+      {/* Client Feedback */}
+      <FeedbackLog
+        feedback={feedback}
+        creativeStatus={deal.creativeStatus}
+        onAdd={addFeedback}
+        onApprove={approveCreative}
+      />
+
+      {/* Revision History */}
+      {response.revisions.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
+            <History size={15} className="text-purple-500" />
+            Revision History
+          </h3>
+          <p className="text-xs text-gray-400 mb-4">
+            Earlier versions of the creative response, newest first.
+          </p>
+          <div className="space-y-3">
+            {[...response.revisions].reverse().map((rev, i) => (
+              <div key={i} className="rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-xs font-semibold text-gray-600">
+                    Version {response.revisions.length - i}
+                  </p>
+                  {rev.sentDate && (
+                    <p className="text-[11px] text-gray-400">
+                      Sent {format(parseISO(rev.sentDate), "d MMM yyyy")}
+                    </p>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 whitespace-pre-wrap line-clamp-4">
+                  {rev.treatment || "—"}
+                </p>
+                {rev.moodBoardLinks.length > 0 && (
+                  <p className="text-[11px] text-gray-400 mt-1.5">
+                    {rev.moodBoardLinks.length} mood board link
+                    {rev.moodBoardLinks.length === 1 ? "" : "s"}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Link list editor (references / mood boards) ─────────────────────────────
+
+function LinkListEditor({
+  label,
+  links,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  links: string[];
+  onChange: (links: string[]) => void;
+  placeholder: string;
+}) {
+  const [draft, setDraft] = useState("");
+
+  function add() {
+    const url = draft.trim();
+    if (!url) return;
+    onChange([...links, url]);
+    setDraft("");
+  }
+
+  return (
+    <div className="mt-4">
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+        {label}
+      </p>
+      {links.length > 0 && (
+        <div className="space-y-1.5 mb-2">
+          {links.map((url, i) => (
+            <div
+              key={`${url}-${i}`}
+              className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50/60 px-3 py-1.5 group"
+            >
+              <LinkIcon size={12} className="text-gray-400 shrink-0" />
+              <a
+                href={url.startsWith("http") ? url : `https://${url}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 text-xs text-purple-700 hover:underline truncate"
+              >
+                {url}
+              </a>
+              <button
+                onClick={() => onChange(links.filter((_, j) => j !== i))}
+                className="p-1 rounded text-gray-300 hover:text-red-500 transition-colors"
+                title="Remove link"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <input
+          type="url"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={placeholder}
+          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+        />
+        <button
+          onClick={add}
+          disabled={!draft.trim()}
+          className="flex items-center gap-1 text-xs font-medium text-purple-600 hover:text-purple-800 px-2.5 py-2 rounded-lg border border-purple-200 hover:bg-purple-50 transition-colors disabled:opacity-40"
+        >
+          <Plus size={12} /> Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Client feedback log — chat-style: date left, content right ──────────────
+
+const FEEDBACK_TYPE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
+  note: { label: "Note", bg: "bg-gray-100", text: "text-gray-600" },
+  revision: { label: "Revision", bg: "bg-orange-100", text: "text-orange-700" },
+  approval: { label: "Approval", bg: "bg-emerald-100", text: "text-emerald-700" },
+};
+
+function FeedbackLog({
+  feedback,
+  creativeStatus,
+  onAdd,
+  onApprove,
+}: {
+  feedback: FeedbackEntryData[];
+  creativeStatus: string | null;
+  onAdd: (entry: FeedbackEntryData) => Promise<void>;
+  onApprove: () => Promise<void>;
+}) {
+  const [from, setFrom] = useState("");
+  const [text, setText] = useState("");
+  const [type, setType] = useState<FeedbackEntryData["type"]>("note");
+  const [adding, setAdding] = useState(false);
+  const [approving, setApproving] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setAdding(true);
+    try {
+      await onAdd({
+        date: new Date().toISOString(),
+        from: from.trim(),
+        text: text.trim(),
+        type,
+      });
+      setText("");
+      setType("note");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function approve() {
+    setApproving(true);
+    try {
+      await onApprove();
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
+        <MessageSquare size={15} className="text-purple-500" />
+        Client Feedback
+      </h3>
+      <p className="text-xs text-gray-400 mb-4">
+        A running log of what the client said about the creative.
+      </p>
+
+      {feedback.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-gray-200 py-6 text-center text-sm text-gray-400 mb-4">
+          No feedback logged yet.
+        </div>
+      ) : (
+        <div className="space-y-3 mb-4">
+          {feedback.map((f, i) => {
+            const style = FEEDBACK_TYPE_STYLES[f.type] ?? FEEDBACK_TYPE_STYLES.note;
+            return (
+              <div key={i} className="flex gap-4">
+                <div className="w-20 shrink-0 text-right">
+                  <p className="text-[11px] font-semibold text-gray-500">
+                    {format(parseISO(f.date), "d MMM")}
+                  </p>
+                  <p className="text-[10px] text-gray-400">{format(parseISO(f.date), "HH:mm")}</p>
+                </div>
+                <div className="flex-1 rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    {f.from && <p className="text-xs font-semibold text-gray-700">{f.from}</p>}
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}
+                    >
+                      {style.label}
+                    </span>
+                    {f.type === "approval" && creativeStatus !== "APPROVED" && (
+                      <button
+                        onClick={approve}
+                        disabled={approving}
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                      >
+                        {approving ? (
+                          <Loader2 size={10} className="animate-spin" />
+                        ) : (
+                          <CheckCircle2 size={10} />
+                        )}
+                        Move to Client Approved
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{f.text}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <form onSubmit={submit} className="rounded-xl border border-gray-100 bg-gray-50/40 p-3.5 space-y-2.5">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+          Add feedback
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            placeholder="Who said it (client contact)"
+            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+          />
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as FeedbackEntryData["type"])}
+            className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none cursor-pointer"
+          >
+            <option value="note">Note</option>
+            <option value="revision">Revision requested</option>
+            <option value="approval">Approval</option>
+          </select>
+        </div>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={2}
+          placeholder="What did they say?"
+          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+        />
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={!text.trim() || adding}
+            className="flex items-center gap-1.5 bg-purple-600 text-white px-3.5 py-2 rounded-xl text-xs font-medium hover:bg-purple-700 transition-colors disabled:opacity-50"
+          >
+            {adding ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+            Add Feedback
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -1174,16 +1826,45 @@ function BudgetTab({
             <Banknote size={15} className="text-[#D4A853]" />
             Deal Economics
           </h3>
-          {savedAt && !saving && !locked && (
-            <span className="text-xs text-emerald-600 flex items-center gap-1">
-              <CheckCircle2 size={13} /> Saved
+          <div className="flex items-center gap-2.5">
+            {savedAt && !saving && !locked && (
+              <span className="text-xs text-emerald-600 flex items-center gap-1">
+                <CheckCircle2 size={13} /> Saved
+              </span>
+            )}
+            {/* Budget status: DRAFT → SET → LOCKED */}
+            <span
+              className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                locked
+                  ? "bg-emerald-100 text-emerald-700"
+                  : balanced
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-gray-100 text-gray-500"
+              }`}
+              title="Budget status"
+            >
+              {locked ? (
+                <>
+                  <LockIcon size={11} /> Locked
+                </>
+              ) : balanced ? (
+                "Set"
+              ) : (
+                "Draft"
+              )}
             </span>
-          )}
+          </div>
         </div>
-        <p className="text-xs text-gray-400 mb-5">
+        <p className="text-xs text-gray-400 mb-1.5">
           Total budget, company margin, and where the rest goes. The production allocation flows to
           the Production team; everything flows to Finance.
         </p>
+        {!locked && (
+          <p className="text-[11px] font-medium text-amber-600 bg-amber-50 rounded-lg px-3 py-1.5 mb-4 inline-flex items-center gap-1.5">
+            <LockIcon size={11} /> Budget must be locked before clearing for production.
+          </p>
+        )}
+        <div className="mb-4" />
 
         {/* Total deal budget */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
@@ -1792,16 +2473,16 @@ function ClearForProductionModal({
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Brief</span>
                 <span className="font-medium text-gray-800">
-                  {deal.briefContent?.trim() ? "Included" : "Not written yet"}
+                  {deal.clientBrief?.content?.trim() || deal.briefContent?.trim()
+                    ? "Included"
+                    : "Not written yet"}
                 </span>
               </p>
-            </div>
-            {!deal.briefContent?.trim() && (
-              <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-3">
-                No creative brief yet — the deal description will be sent instead. You can write
-                the brief on the Brief tab first.
+              <p className="flex items-center justify-between">
+                <span className="text-gray-400">Creative</span>
+                <span className="font-medium text-emerald-700">Approved by client</span>
               </p>
-            )}
+            </div>
 
             {error && (
               <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2 mt-3">{error}</p>
@@ -1834,9 +2515,9 @@ function ClearForProductionModal({
   );
 }
 
-// ─── Start Project modal (finance-only deals) ────────────────────────────────
+// ─── Mark as Live modal (supplied-assets deals — no production) ──────────────
 
-function StartProjectModal({
+function MarkAsLiveModal({
   deal,
   onClose,
   onDone,
@@ -1845,41 +2526,45 @@ function StartProjectModal({
   onClose: () => void;
   onDone: () => Promise<void>;
 }) {
-  const [choice, setChoice] = useState<"production" | "finance" | null>(null);
-  const [starting, setStarting] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [financeDone, setFinanceDone] = useState(false);
-  const router = useRouter();
+  const [done, setDone] = useState(false);
 
-  const splits = Array.isArray(deal.budgetBreakdown) ? deal.budgetBreakdown : [];
-  const budgetTotal = splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
-  const effectiveBudget = budgetTotal > 0 ? budgetTotal : deal.value ?? 0;
+  const needsFinance = !deal.financeBudget;
 
-  async function start() {
-    if (!choice) return;
-    setStarting(true);
+  async function markLive() {
+    setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/commercial/deals/${deal.id}/start-project`, {
-        method: "POST",
+      // Supplied-assets deals still get a CampaignBudget for finance tracking.
+      if (needsFinance) {
+        const res = await fetch(`/api/commercial/deals/${deal.id}/start-project`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requiresProduction: false }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          setError(data.error || "Failed to create the finance budget");
+          return;
+        }
+      }
+      const res = await fetch(`/api/campaigns/${deal.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requiresProduction: choice === "production" }),
+        body: JSON.stringify({ stage: "LIVE" }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to start project");
+        const data = await res.json();
+        setError(data.error || "Failed to mark the deal as live");
         return;
       }
-      if (choice === "production" && data.production?.id) {
-        router.push(`/production/${data.production.id}`);
-        return;
-      }
-      setFinanceDone(true);
       await onDone();
+      setDone(true);
     } catch {
-      setError("Failed to start project");
+      setError("Failed to mark the deal as live");
     } finally {
-      setStarting(false);
+      setBusy(false);
     }
   }
 
@@ -1888,8 +2573,8 @@ function StartProjectModal({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div className="border-b border-gray-50 px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Rocket size={17} className="text-[#D4A853]" />
-            Start Project
+            <Rocket size={17} className="text-emerald-600" />
+            Mark as Live
           </h2>
           <button
             onClick={onClose}
@@ -1899,82 +2584,47 @@ function StartProjectModal({
           </button>
         </div>
 
-        {financeDone ? (
+        {done ? (
           <div className="px-6 py-10 text-center">
             <div className="mx-auto w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
               <CheckCircle2 size={24} className="text-emerald-500" />
             </div>
-            <p className="text-base font-semibold text-gray-900">Finance budget created</p>
+            <p className="text-base font-semibold text-gray-900">Deal is live</p>
             <p className="text-sm text-gray-500 mt-1">
-              A {formatMoney(effectiveBudget)} budget for &ldquo;{deal.title}&rdquo; is now in the
-              Finance portal awaiting approval.
+              &ldquo;{deal.title}&rdquo; is now live
+              {needsFinance ? " and a budget was created in Finance for tracking." : "."}
             </p>
             <button
               onClick={onClose}
-              className="mt-6 bg-[#D4A853] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors"
+              className="mt-6 bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors"
             >
               Done
             </button>
           </div>
         ) : (
           <div className="px-6 py-5">
-            <p className="text-sm text-gray-600 mb-1">
-              Kick &ldquo;{deal.title}&rdquo; downstream with a locked budget of{" "}
-              <span className="font-semibold text-gray-900">{formatMoney(effectiveBudget)}</span>
-              {splits.length > 0
-                ? ` across ${splits.length} budget line${splits.length === 1 ? "" : "s"}.`
+            <p className="text-sm text-gray-700">
+              Supplied-assets job — no creative or production needed. This moves the deal to{" "}
+              <span className="font-semibold">Live</span>
+              {needsFinance
+                ? ` and creates a ${formatMoney(deal.value ?? 0)} budget in Finance for tracking.`
                 : "."}
             </p>
-            {effectiveBudget === 0 && (
-              <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-2">
-                No budget set yet — you can set the breakdown on the Budget tab first, or start
-                with £0 and adjust in Finance.
+            <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-sm space-y-1.5">
+              <p className="flex items-center justify-between">
+                <span className="text-gray-400">Deal</span>
+                <span className="font-medium text-gray-800 truncate ml-3">{deal.title}</span>
               </p>
-            )}
-
-            <div className="space-y-2.5 mt-4">
-              <button
-                onClick={() => setChoice("production")}
-                className={`w-full text-left rounded-xl border p-4 transition-all ${
-                  choice === "production"
-                    ? "border-[#D4A853] ring-2 ring-[#D4A853]/20 bg-amber-50/40"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-red-50 text-[#E24B4A] flex items-center justify-center shrink-0">
-                    <Film size={16} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Requires production</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Shoot / content creation — creates a Production project with the budget
-                      locked from Commercial.
-                    </p>
-                  </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setChoice("finance")}
-                className={`w-full text-left rounded-xl border p-4 transition-all ${
-                  choice === "finance"
-                    ? "border-[#D4A853] ring-2 ring-[#D4A853]/20 bg-amber-50/40"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <Banknote size={16} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">No production needed</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Print / digital only — creates the campaign budget directly in Finance.
-                    </p>
-                  </div>
-                </div>
-              </button>
+              <p className="flex items-center justify-between">
+                <span className="text-gray-400">Client</span>
+                <span className="font-medium text-gray-800">{deal.client.name}</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span className="text-gray-400">Budget</span>
+                <span className="font-medium text-gray-800 tabular-nums">
+                  {formatMoney(deal.value)} · locked
+                </span>
+              </p>
             </div>
 
             {error && (
@@ -1989,12 +2639,12 @@ function StartProjectModal({
                 Cancel
               </button>
               <button
-                onClick={start}
-                disabled={!choice || starting}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={markLive}
+                disabled={busy}
+                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
               >
-                {starting ? <Loader2 size={15} className="animate-spin" /> : <Rocket size={15} />}
-                Start Project
+                {busy ? <Loader2 size={15} className="animate-spin" /> : <Rocket size={15} />}
+                Mark as Live
               </button>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
-import { DEAL_STAGES, ACTIVE_STAGES, WON_STAGES } from "@/lib/deal-stages";
+import { PIPELINE_STAGES, ACTIVE_STAGES, WON_STAGES, normalizeStage } from "@/lib/deal-stages";
 
 // GET /api/commercial/stats — pipeline value, deals this month, won this quarter,
 // revenue booked, per-stage breakdown, and the current hot deal.
@@ -42,8 +42,10 @@ export const GET = withAuth(async () => {
       .filter((d) => (WON_STAGES as string[]).includes(d.stage))
       .reduce((sum, d) => sum + (d.value ?? 0), 0);
 
-    const stages = DEAL_STAGES.map((stage) => {
-      const inStage = deals.filter((d) => d.stage === stage);
+    // Per-stage breakdown over the display pipeline; legacy NEGOTIATING deals
+    // fold into PITCHED so they stay visible.
+    const stages = PIPELINE_STAGES.map((stage) => {
+      const inStage = deals.filter((d) => normalizeStage(d.stage) === stage);
       return {
         stage,
         count: inStage.length,
@@ -59,10 +61,12 @@ export const GET = withAuth(async () => {
       .sort((a, b) => a.dueDate!.getTime() - b.dueDate!.getTime());
     let hotDeal = withDeadline[0] ?? null;
     if (!hotDeal) {
-      const negotiating = active
-        .filter((d) => d.stage === "NEGOTIATING")
+      const inMotion = active
+        .filter((d) =>
+          ["NEGOTIATING", "CLIENT_REVIEW", "CLIENT_APPROVED", "CONTRACTED"].includes(d.stage)
+        )
         .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
-      hotDeal = negotiating[0] ?? null;
+      hotDeal = inMotion[0] ?? null;
     }
     if (!hotDeal) {
       const byValue = [...active].sort((a, b) => (b.value ?? 0) - (a.value ?? 0));

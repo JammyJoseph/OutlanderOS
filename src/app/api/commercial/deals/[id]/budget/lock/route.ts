@@ -31,6 +31,7 @@ export const POST = withAuth(async (
         marginPercent: true,
         allocations: true,
         budgetLocked: true,
+        stage: true,
       },
     });
     if (!deal) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -79,11 +80,30 @@ export const POST = withAuth(async (
       );
     }
 
+    // Locking from Contracted advances the pipeline to Budget Set.
+    const advanceStage = deal.stage === "CONTRACTED";
     const campaign = await prisma.campaign.update({
       where: { id },
-      data: { budgetLocked: true, budgetLockedAt: new Date(), budgetLockedBy: user.userId },
-      select: { id: true, budgetLocked: true, budgetLockedAt: true },
+      data: {
+        budgetLocked: true,
+        budgetLockedAt: new Date(),
+        budgetLockedBy: user.userId,
+        ...(advanceStage ? { stage: "BUDGET_SET", stageUpdatedAt: new Date() } : {}),
+      },
+      select: { id: true, budgetLocked: true, budgetLockedAt: true, stage: true },
     });
+    if (advanceStage) {
+      await prisma.dealActivity.create({
+        data: {
+          campaignId: id,
+          type: "stage_change",
+          message: `"${deal.title}" moved from CONTRACTED to BUDGET_SET (budget locked)`,
+          meta: { from: "CONTRACTED", to: "BUDGET_SET" },
+          userId: user.userId,
+          userName: user.name,
+        },
+      });
+    }
 
     // Push the finalised splits into the Finance project folder if one exists.
     const financeBudget = await prisma.campaignBudget.findFirst({ where: { campaignId: id } });

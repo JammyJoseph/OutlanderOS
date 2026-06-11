@@ -54,7 +54,9 @@ export const POST = withAuth(async (
 
     const splits = parseBudgetBreakdown(deal.budgetBreakdown);
     const splitTotal = splits.reduce((sum, s) => sum + s.amount, 0);
-    const totalBudget = splitTotal > 0 ? splitTotal : deal.value ?? 0;
+    // The deal value is the total budget (margin included); splits are the
+    // spend after margin — matches what the budget lock pushes to Finance.
+    const totalBudget = deal.value ?? (splitTotal > 0 ? splitTotal : 0);
     const mapped = mapSplitsToCampaignBudget(splits);
 
     let production = null;

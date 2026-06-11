@@ -4,9 +4,11 @@ import { withAuth } from "@/lib/auth";
 import {
   parseBudgetBreakdown,
   parseAllocations,
+  parseClientBrief,
   productionAllocationOf,
   mapSplitsToCampaignBudget,
   mapSplitToProductionCategory,
+  clearForProductionChecklist,
 } from "@/lib/deal-stages";
 
 // POST /api/commercial/deals/[id]/clear-for-production
@@ -41,6 +43,24 @@ export const POST = withAuth(async (
       );
     }
 
+    if (deal.workflowType === "SUPPLIED_ASSETS") {
+      return NextResponse.json(
+        { error: "Supplied-assets deals don't go to production — mark the deal as Live instead" },
+        { status: 400 }
+      );
+    }
+
+    // Launch checklist gate: creative approved, budget locked, brief attached,
+    // deal far enough through the pipeline.
+    const checklist = clearForProductionChecklist(deal);
+    if (!checklist.ready) {
+      const missing = checklist.items.filter((i) => !i.ok).map((i) => i.label);
+      return NextResponse.json(
+        { error: `Not ready for production. Missing: ${missing.join("; ")}`, checklist: checklist.items },
+        { status: 400 }
+      );
+    }
+
     const splits = parseBudgetBreakdown(deal.budgetBreakdown);
     const splitTotal = splits.reduce((sum, s) => sum + s.amount, 0);
     const totalBudget = deal.value ?? (splitTotal > 0 ? splitTotal : 0);
@@ -59,8 +79,11 @@ export const POST = withAuth(async (
         : deal.value ?? 0;
 
     // The brief travels with the production — description for the overview,
-    // brief for the "Brief from Commercial" panel.
-    const briefText = deal.briefContent?.trim() || deal.description || null;
+    // brief for the "Brief from Commercial" panel. The client brief (case
+    // builder) wins; legacy briefContent and the description are fallbacks.
+    const clientBrief = parseClientBrief(deal.clientBrief);
+    const briefText =
+      clientBrief?.content?.trim() || deal.briefContent?.trim() || deal.description || null;
 
     const production = await prisma.production.create({
       data: {
@@ -146,7 +169,12 @@ export const POST = withAuth(async (
 
     await prisma.campaign.update({
       where: { id: deal.id },
-      data: { briefStatus: "SENT_TO_PRODUCTION" },
+      data: {
+        briefStatus: "SENT_TO_PRODUCTION",
+        stage: "CLEARED_FOR_PRODUCTION",
+        stageUpdatedAt: new Date(),
+        lastSyncedToProduction: new Date(),
+      },
     });
 
     await prisma.dealActivity.create({
