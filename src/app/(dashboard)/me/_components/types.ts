@@ -44,6 +44,7 @@ export interface UpcomingItem {
   portal: "commercial" | "production" | "print" | "personal";
   kind: "shoot" | "deal" | "print" | "task";
   href: string;
+  context?: string; // cross-portal hint, e.g. the deal a shoot belongs to
 }
 
 export interface Holiday {

@@ -47,7 +47,10 @@ export function UpcomingList({ items }: Props) {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm text-gray-800">{item.title}</div>
-                    <div className="text-xs text-gray-400">{formatDate(item.date)}</div>
+                    <div className="truncate text-xs text-gray-400">
+                      {formatDate(item.date)}
+                      {item.context ? ` · ${item.context}` : ""}
+                    </div>
                   </div>
                   <span
                     className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"

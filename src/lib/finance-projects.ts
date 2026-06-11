@@ -13,6 +13,7 @@ export interface ProjectFinancialSummary {
   clientName: string
   status: string
   productionId: string | null
+  deal: { id: string; title: string; stage: string } | null // originating Commercial deal
   totalBudget: number
   productionBudget: number
   mediaBudget: number
@@ -61,6 +62,16 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
     getXeroInvoices().catch(() => []),
   ])
 
+  // Originating Commercial deals for the folders that have one.
+  const campaignIds = budgets.map((b) => b.campaignId).filter((id): id is string => !!id)
+  const campaigns = campaignIds.length
+    ? await prisma.campaign.findMany({
+        where: { id: { in: campaignIds } },
+        select: { id: true, title: true, stage: true },
+      })
+    : []
+  const dealById = new Map(campaigns.map((c) => [c.id, c]))
+
   const costsByBudget = new Map<string, number>()
   for (const c of costSums) {
     if (c.campaignBudgetId) costsByBudget.set(c.campaignBudgetId, c._sum.amount ?? 0)
@@ -79,6 +90,7 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
       clientName: b.clientName,
       status: b.status,
       productionId: b.productionId,
+      deal: (b.campaignId && dealById.get(b.campaignId)) || null,
       totalBudget: b.totalBudget,
       productionBudget: b.productionBudget,
       mediaBudget: b.mediaBudget,

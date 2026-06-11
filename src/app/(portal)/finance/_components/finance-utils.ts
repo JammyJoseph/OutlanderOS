@@ -197,6 +197,7 @@ export interface ProjectSummary {
   clientName: string
   status: string
   productionId: string | null
+  deal: { id: string; title: string; stage: string } | null
   totalBudget: number
   productionBudget: number
   mediaBudget: number
@@ -290,6 +291,7 @@ export interface ProjectDetailResponse {
     createdAt: string
   }
   production: { id: string; title: string; status: string; budgetTotal: number } | null
+  deal: { id: string; title: string; stage: string; client: { name: string } | null } | null
   costsByCategory: { category: string; total: number; entries: CostEntry[] }[]
   invoices: InvoiceSubmission[]
   xero: {

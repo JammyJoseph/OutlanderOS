@@ -67,10 +67,28 @@ interface DealDetail {
   client: { id: string; name: string; industry: string | null; brandColor: string | null };
   assignedTo: { id: string; name: string } | null;
   billingContact: { id: string; name: string; email: string | null; phone: string | null } | null;
-  production: { id: string; status: string; title: string; budgetTotal: number | null } | null;
+  production: {
+    id: string;
+    status: string;
+    title: string;
+    budgetTotal: number | null;
+    shootDates: string[];
+    _count?: { teamMembers: number };
+  } | null;
+  financeBudget: { id: string; status: string; totalBudget: number } | null;
   deliverables: Deliverable[];
   activities: ActivityEntry[];
 }
+
+const PRODUCTION_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Planning",
+  BRIEFED: "Briefed",
+  PRE_PRODUCTION: "Pre-Production",
+  SHOOTING: "Shooting",
+  POST_PRODUCTION: "Wrap",
+  DELIVERED: "Complete",
+  ARCHIVED: "Archived",
+};
 
 interface TeamMember {
   id: string;
@@ -195,7 +213,15 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                     href={`/production/${deal.production!.id}`}
                     className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-red-50 text-[#E24B4A] hover:bg-red-100 transition-colors"
                   >
-                    <Film size={11} /> In Production <ArrowUpRight size={11} />
+                    <Film size={11} /> Production: {deal.production!.title} <ArrowUpRight size={11} />
+                  </Link>
+                )}
+                {deal.financeBudget && (
+                  <Link
+                    href={`/finance?tab=projects&project=${deal.financeBudget.id}`}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  >
+                    <Banknote size={11} /> Finance: View project P&amp;L <ArrowUpRight size={11} />
                   </Link>
                 )}
               </div>
@@ -376,6 +402,44 @@ function OverviewTab({
       </div>
 
       <div className="space-y-5">
+        {/* Production — appears once a project has been started */}
+        {deal.production && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <Film size={15} className="text-[#E24B4A]" />
+              Production
+            </h3>
+            <Link
+              href={`/production/${deal.production.id}`}
+              className="text-sm font-semibold text-gray-900 hover:text-[#E24B4A] transition-colors"
+            >
+              {deal.production.title}
+            </Link>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-[11px] font-medium text-gray-600">
+                {PRODUCTION_STATUS_LABELS[deal.production.status] ?? deal.production.status}
+              </span>
+              <span className="text-xs text-gray-500">
+                {deal.production._count?.teamMembers ?? 0} crew
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
+              <CalendarDays size={12} className="text-gray-400" />
+              {deal.production.shootDates.length > 0
+                ? deal.production.shootDates
+                    .map((d) => format(parseISO(d), "d MMM"))
+                    .join(" · ")
+                : "No shoot dates yet"}
+            </p>
+            <Link
+              href={`/production/${deal.production.id}`}
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#E24B4A] hover:text-red-600 transition-colors"
+            >
+              Open in Production <ArrowUpRight size={12} />
+            </Link>
+          </div>
+        )}
+
         {/* Dates */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">Dates</h3>

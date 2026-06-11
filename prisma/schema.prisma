@@ -833,6 +833,7 @@ model CampaignBudget {
 model CostEntry {
   id               String   @id @default(cuid())
   campaignBudgetId String?
+  budgetLineItemId String?  @unique // mirror of a Production BudgetLineItem's actual spend
   category         String // production, media, talent, location, equipment, catering, travel, internal, other
   description      String
   amount           Float

@@ -18,13 +18,19 @@ export const GET = withAuth(async (request: NextRequest, context) => {
     const budget = await prisma.campaignBudget.findUnique({ where: { id } })
     if (!budget) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
-    const [costs, invoices, production, xeroStatus, xeroInvoices] = await Promise.all([
+    const [costs, invoices, production, deal, xeroStatus, xeroInvoices] = await Promise.all([
       prisma.costEntry.findMany({ where: { campaignBudgetId: id }, orderBy: { date: 'desc' } }),
       prisma.invoiceSubmission.findMany({ where: { campaignBudgetId: id }, orderBy: { receivedAt: 'desc' } }),
       budget.productionId
         ? prisma.production.findUnique({
             where: { id: budget.productionId },
             select: { id: true, title: true, status: true, budgetTotal: true },
+          })
+        : Promise.resolve(null),
+      budget.campaignId
+        ? prisma.campaign.findUnique({
+            where: { id: budget.campaignId },
+            select: { id: true, title: true, stage: true, client: { select: { name: true } } },
           })
         : Promise.resolve(null),
       getXeroStatus().catch(() => ({ connected: false, error: 'unavailable' })),
@@ -59,6 +65,7 @@ export const GET = withAuth(async (request: NextRequest, context) => {
         overageStatus: overageStatusFor(totalCosts, budget.totalBudget),
       },
       production,
+      deal,
       costsByCategory,
       invoices,
       xero: {

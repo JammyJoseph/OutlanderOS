@@ -48,6 +48,12 @@ export const PUT = withAuth(async (
   const { id } = await params;
   const body = await request.json();
   try {
+    const existing = await prisma.production.findUnique({
+      where: { id },
+      select: { type: true, status: true, campaignId: true },
+    });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     const updateData: Record<string, unknown> = {};
     if (body.title !== undefined) updateData.title = body.title;
     if (body.brief !== undefined) updateData.brief = body.brief;
@@ -61,11 +67,7 @@ export const PUT = withAuth(async (
     if (body.budgetTotal !== undefined) {
       // COMMERCIAL productions have their total allocation locked by the
       // Commercial team — production can log costs but not change the total.
-      const existing = await prisma.production.findUnique({
-        where: { id },
-        select: { type: true },
-      });
-      if (existing?.type === "COMMERCIAL") {
+      if (existing.type === "COMMERCIAL") {
         return NextResponse.json(
           { error: "Budget allocation is locked by the Commercial team and cannot be changed from Production." },
           { status: 403 }
@@ -111,6 +113,34 @@ export const PUT = withAuth(async (
         },
       },
     });
+
+    // Stage sync: production delivered → move the linked deal from Live to
+    // Completed in the Commercial pipeline.
+    if (
+      body.status === "DELIVERED" &&
+      existing.status !== "DELIVERED" &&
+      production.campaignId
+    ) {
+      const campaign = await prisma.campaign.findUnique({
+        where: { id: production.campaignId },
+        select: { id: true, stage: true, title: true },
+      });
+      if (campaign?.stage === "LIVE") {
+        await prisma.campaign.update({
+          where: { id: campaign.id },
+          data: { stage: "COMPLETED", stageUpdatedAt: new Date() },
+        });
+        await prisma.dealActivity.create({
+          data: {
+            campaignId: campaign.id,
+            type: "stage_change",
+            message: `"${campaign.title}" moved from LIVE to COMPLETED — production "${production.title}" delivered`,
+            meta: { from: "LIVE", to: "COMPLETED", source: "production" },
+          },
+        });
+      }
+    }
+
     return NextResponse.json({ production });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

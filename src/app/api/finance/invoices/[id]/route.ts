@@ -35,6 +35,46 @@ export const PATCH = withAuth(async (request: NextRequest, context, user) => {
     }
 
     const invoice = await prisma.invoiceSubmission.update({ where: { id }, data })
+
+    // Stage sync: once every invoice coded to this project is settled
+    // (PAID, ignoring REJECTED), mark the linked Commercial deal as Paid.
+    if (body.status === 'PAID' && invoice.campaignBudgetId) {
+      const open = await prisma.invoiceSubmission.count({
+        where: {
+          campaignBudgetId: invoice.campaignBudgetId,
+          status: { notIn: ['PAID', 'REJECTED'] },
+        },
+      })
+      if (open === 0) {
+        const budget = await prisma.campaignBudget.findUnique({
+          where: { id: invoice.campaignBudgetId },
+          select: { campaignId: true },
+        })
+        if (budget?.campaignId) {
+          const campaign = await prisma.campaign.findUnique({
+            where: { id: budget.campaignId },
+            select: { id: true, stage: true, title: true },
+          })
+          if (campaign && campaign.stage !== 'PAID') {
+            await prisma.campaign.update({
+              where: { id: campaign.id },
+              data: { stage: 'PAID', stageUpdatedAt: new Date() },
+            })
+            await prisma.dealActivity.create({
+              data: {
+                campaignId: campaign.id,
+                type: 'stage_change',
+                message: `"${campaign.title}" moved from ${campaign.stage} to PAID — all supplier invoices settled in Finance`,
+                meta: { from: campaign.stage, to: 'PAID', source: 'finance' },
+                userId: user.userId,
+                userName: user.name,
+              },
+            })
+          }
+        }
+      }
+    }
+
     return NextResponse.json({ invoice })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })

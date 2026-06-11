@@ -13,6 +13,7 @@ export interface UpcomingItem {
   portal: "commercial" | "production" | "print" | "personal";
   kind: "shoot" | "deal" | "print" | "task";
   href: string;
+  context?: string; // cross-portal hint, e.g. the deal a shoot belongs to
 }
 
 // Single-call dashboard payload for /me: the user's tasks, the next few
@@ -44,7 +45,12 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
     }),
     prisma.production.findMany({
       where: { status: { not: "ARCHIVED" } },
-      select: { id: true, title: true, shootDates: true },
+      select: {
+        id: true,
+        title: true,
+        shootDates: true,
+        campaign: { select: { title: true } },
+      },
     }),
     prisma.campaign.findMany({
       where: {
@@ -52,7 +58,13 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
         stage: { in: ACTIVE_STAGES },
         dueDate: { gte: todayStart },
       },
-      select: { id: true, title: true, dueDate: true, client: { select: { name: true } } },
+      select: {
+        id: true,
+        title: true,
+        dueDate: true,
+        client: { select: { name: true } },
+        production: { select: { id: true } },
+      },
       orderBy: { dueDate: "asc" },
       take: 10,
     }),
@@ -90,10 +102,16 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
   ]);
 
   // Shoots — flattened future shoot dates across active productions.
-  const shoots: { id: string; title: string; date: string }[] = [];
+  const shoots: { id: string; title: string; date: string; dealTitle: string | null }[] = [];
   for (const p of productions) {
     for (const d of p.shootDates) {
-      if (d >= todayStart) shoots.push({ id: p.id, title: p.title, date: d.toISOString() });
+      if (d >= todayStart)
+        shoots.push({
+          id: p.id,
+          title: p.title,
+          date: d.toISOString(),
+          dealTitle: p.campaign?.title ?? null,
+        });
     }
   }
   shoots.sort((a, b) => a.date.localeCompare(b.date));
@@ -107,6 +125,7 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
       portal: "production" as const,
       kind: "shoot" as const,
       href: `/production/${s.id}`,
+      ...(s.dealTitle ? { context: `From deal: ${s.dealTitle}` } : {}),
     })),
     ...dealDeadlines.map((d) => ({
       id: `deal-${d.id}`,
@@ -114,7 +133,8 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
       date: d.dueDate!.toISOString(),
       portal: "commercial" as const,
       kind: "deal" as const,
-      href: `/commercial/pipeline`,
+      href: `/commercial/deals/${d.id}`,
+      ...(d.production ? { context: "Production started" } : {}),
     })),
     ...printIssues.map((p) => ({
       id: `print-${p.id}`,

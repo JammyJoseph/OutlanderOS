@@ -43,6 +43,24 @@ export function parseBudgetBreakdown(value: unknown): BudgetSplit[] {
     .filter((s) => s.category.trim().length > 0);
 }
 
+// Map a free-form split category onto the Production portal's budget
+// category keys (BUDGET_CATEGORIES in the production components) so line
+// items copied from a deal render inside the right group.
+export function mapSplitToProductionCategory(category: string): string {
+  const c = category.toLowerCase();
+  if (c.includes("styl")) return "styling";
+  if (c.includes("glam") || c.includes("mua") || c.includes("makeup") || c.includes("hair")) return "glam_mua";
+  if (c.includes("talent") || c.includes("model")) return "talent";
+  if (c.includes("location") || c.includes("studio")) return "location";
+  if (c.includes("cater") || c.includes("food")) return "catering";
+  if (c.includes("equip") || c.includes("camera") || c.includes("kit")) return "equipment";
+  if (c.includes("travel") || c.includes("transport")) return "travel";
+  if (c.includes("conting")) return "contingency";
+  if (c.includes("internal") || c.includes("staff") || c.includes("fee")) return "internal";
+  if (c.includes("production") || c.includes("shoot") || c.includes("crew")) return "production_company";
+  return "other";
+}
+
 // Map free-form split categories onto the CampaignBudget fixed columns.
 export function mapSplitsToCampaignBudget(splits: BudgetSplit[]) {
   let production = 0;

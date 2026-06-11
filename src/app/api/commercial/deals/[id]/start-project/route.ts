@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
-import { parseBudgetBreakdown, mapSplitsToCampaignBudget } from "@/lib/deal-stages";
+import {
+  parseBudgetBreakdown,
+  mapSplitsToCampaignBudget,
+  mapSplitToProductionCategory,
+} from "@/lib/deal-stages";
 
 // POST /api/commercial/deals/[id]/start-project
 // Body: { requiresProduction: boolean }
@@ -67,7 +71,7 @@ export const POST = withAuth(async (
           budgetItems: splits.length
             ? {
                 create: splits.map((s, i) => ({
-                  category: s.category,
+                  category: mapSplitToProductionCategory(s.category),
                   description: `${s.category} — from Commercial deal budget`,
                   budgeted: s.amount,
                   sortOrder: i,

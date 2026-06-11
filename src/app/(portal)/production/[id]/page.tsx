@@ -76,7 +76,11 @@ export default function ProjectDetail() {
     const body: Record<string, unknown> = patch ?? {
       description: f.description,
       figmaUrl: f.figmaUrl,
-      budgetTotal: f.budget === "" ? null : Number(f.budget),
+      // COMMERCIAL budgets are locked by the Commercial team — sending
+      // budgetTotal would make the whole save 403.
+      ...(production.type === "COMMERCIAL"
+        ? {}
+        : { budgetTotal: f.budget === "" ? null : Number(f.budget) }),
       shootDates: (f.shootDates ?? []).filter(Boolean),
     };
     setSaving(true);

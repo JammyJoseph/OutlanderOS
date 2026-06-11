@@ -1,9 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
-import { AlertTriangle, ArrowLeft, Clapperboard, FolderOpen } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowUpRight, Briefcase, Clapperboard, FolderOpen } from 'lucide-react'
 import { StatusBadge, ErrorBox, TabSkeleton, EmptyState, BudgetBar } from './FinanceBits'
 import {
   useFinanceFetch,
@@ -28,11 +29,20 @@ const HEALTH_BORDER: Record<string, string> = {
   NO_BUDGET: 'border-gray-200',
 }
 
+function dealStageLabel(stage: string): string {
+  return stage.charAt(0) + stage.slice(1).toLowerCase()
+}
+
 function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
   return (
-    <button
+    <div
       onClick={onOpen}
-      className={`rounded-xl border bg-white p-4 text-left shadow-sm transition-shadow hover:shadow-md ${HEALTH_BORDER[p.overageStatus] ?? 'border-gray-200'}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onOpen()
+      }}
+      className={`cursor-pointer rounded-xl border bg-white p-4 text-left shadow-sm transition-shadow hover:shadow-md ${HEALTH_BORDER[p.overageStatus] ?? 'border-gray-200'}`}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -43,6 +53,18 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
           {OVERAGE_STATUS_LABELS[p.overageStatus] ?? p.overageStatus}
         </span>
       </div>
+      {p.deal && (
+        <Link
+          href={`/commercial/deals/${p.deal.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="mb-2 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[#D4A853] hover:text-[#c49843]"
+        >
+          <Briefcase className="h-3 w-3 shrink-0" />
+          <span className="truncate">Deal: {p.deal.title}</span>
+          <span className="shrink-0 text-gray-400">· {dealStageLabel(p.deal.stage)}</span>
+          <ArrowUpRight className="h-3 w-3 shrink-0" />
+        </Link>
+      )}
       <dl className="mb-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
         <div>
           <dt className="text-gray-400">Budget</dt>
@@ -68,7 +90,7 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
           <span className="text-[10px] font-medium text-amber-600">{p.pendingInvoices} open invoice{p.pendingInvoices === 1 ? '' : 's'}</span>
         )}
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -93,7 +115,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
   if (res.loading) return <TabSkeleton />
   if (res.error || res.data?.error) return <ErrorBox message={`Failed to load project: ${res.error ?? res.data?.error}`} />
 
-  const { project, production, costsByCategory, invoices, xero } = res.data!
+  const { project, production, deal, costsByCategory, invoices, xero } = res.data!
   const over = project.overageStatus === 'OVERAGE'
   const warn = project.overageStatus === 'WARNING'
 
@@ -133,12 +155,31 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
         <h2 className="text-lg font-bold text-gray-900">{project.campaignName}</h2>
         <p className="text-xs text-gray-500">
           {project.clientName} · created {fmtDate(project.createdAt)}
-          {production && (
-            <span className="ml-2 inline-flex items-center gap-1 text-gray-400">
-              <Clapperboard className="h-3 w-3" /> {production.title} ({production.status})
-            </span>
-          )}
         </p>
+        {(deal || production) && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+            {deal && (
+              <Link
+                href={`/commercial/deals/${deal.id}`}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#D4A853] hover:text-[#c49843]"
+              >
+                <Briefcase className="h-3 w-3" /> Deal: {deal.title} in Commercial
+                <span className="text-gray-400">· {dealStageLabel(deal.stage)}</span>
+                <ArrowUpRight className="h-3 w-3" />
+              </Link>
+            )}
+            {production && (
+              <Link
+                href={`/production/${production.id}`}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#E24B4A] hover:text-red-600"
+              >
+                <Clapperboard className="h-3 w-3" /> Production: {production.title}
+                <span className="text-gray-400">· {production.status.replace(/_/g, ' ').toLowerCase()}</span>
+                <ArrowUpRight className="h-3 w-3" />
+              </Link>
+            )}
+          </div>
+        )}
       </div>
 
       {(over || warn) && (

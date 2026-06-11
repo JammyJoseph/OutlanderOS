@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import {
+  ArrowUpRight,
   CalendarDays,
   CheckCircle2,
   ListChecks,
+  Lock,
   Wallet,
   Users,
   TrendingDown,
@@ -85,8 +88,21 @@ export default function OverviewTab({
     scheduleSave();
   }
 
+  const lockedBudget = production.type === "COMMERCIAL";
+
   return (
     <div className="space-y-5">
+      {/* Cross-portal breadcrumb */}
+      {production.campaign?.id && (
+        <Link
+          href={`/commercial/deals/${production.campaign.id}`}
+          className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-[#D4A853] transition-colors"
+        >
+          From: <span className="text-gray-600 font-semibold">{production.campaign.title}</span> in
+          Commercial <ArrowUpRight size={12} />
+        </Link>
+      )}
+
       {/* Quick stats row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -149,17 +165,28 @@ export default function OverviewTab({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div>
                 <Label>Total Campaign Budget (£)</Label>
-                <input
-                  type="number"
-                  min="0"
-                  value={budget}
-                  onChange={(e) => {
-                    setBudget(e.target.value);
-                    scheduleSave();
-                  }}
-                  placeholder="0"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853] transition-colors"
-                />
+                {lockedBudget ? (
+                  <div className="w-full px-3 py-2 rounded-xl border border-amber-100 bg-amber-50/40 text-sm flex items-center justify-between gap-2">
+                    <span className="font-medium text-gray-900">
+                      {gbp(production.budgetTotal ?? 0)}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#9C7424]">
+                      <Lock size={10} /> Budget set in Commercial
+                    </span>
+                  </div>
+                ) : (
+                  <input
+                    type="number"
+                    min="0"
+                    value={budget}
+                    onChange={(e) => {
+                      setBudget(e.target.value);
+                      scheduleSave();
+                    }}
+                    placeholder="0"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853] transition-colors"
+                  />
+                )}
               </div>
               <div>
                 <Label>Figma Link</Label>

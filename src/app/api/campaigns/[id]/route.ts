@@ -18,7 +18,16 @@ export const GET = withAuth(async (
         assets: true,
         assignedTo: { select: { id: true, name: true, avatarUrl: true, avatar: true } },
         billingContact: true,
-        production: { select: { id: true, status: true, title: true, budgetTotal: true } },
+        production: {
+          select: {
+            id: true,
+            status: true,
+            title: true,
+            budgetTotal: true,
+            shootDates: true,
+            _count: { select: { teamMembers: true } },
+          },
+        },
         activities: { orderBy: { createdAt: "desc" }, take: 50 },
       },
     });
@@ -27,7 +36,13 @@ export const GET = withAuth(async (
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json(campaign);
+    // Linked Finance project (CampaignBudget has no back-relation on Campaign).
+    const financeBudget = await prisma.campaignBudget.findFirst({
+      where: { campaignId: id },
+      select: { id: true, status: true, totalBudget: true },
+    });
+
+    return NextResponse.json({ ...campaign, financeBudget });
   } catch (err) {
     console.error("GET /api/campaigns/[id]", err);
     return NextResponse.json({ error: "Failed to fetch campaign" }, { status: 500 });
@@ -82,6 +97,20 @@ async function updateCampaign(
         production: { select: { id: true, status: true } },
       },
     });
+
+    // Stage sync: deal goes Live → kick the linked production into motion
+    // (SHOOTING is the portal's "in progress" status) if it hasn't started.
+    if (
+      stageChanged &&
+      stage === "LIVE" &&
+      campaign.production &&
+      ["DRAFT", "BRIEFED", "PRE_PRODUCTION"].includes(campaign.production.status)
+    ) {
+      await prisma.production.update({
+        where: { id: campaign.production.id },
+        data: { status: "SHOOTING" },
+      });
+    }
 
     // Activity log — one entry per meaningful change
     const logs: { type: string; message: string; meta?: object }[] = [];

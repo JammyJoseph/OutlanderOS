@@ -49,6 +49,16 @@ export default function BudgetTab({
     return map;
   }, [items]);
 
+  // Categories outside the standard list (e.g. free-form ones copied from a
+  // deal's budget breakdown) still need to render.
+  const categories = useMemo(() => {
+    const known = new Set(BUDGET_CATEGORIES.map((c) => c.key));
+    const extras = Object.keys(grouped)
+      .filter((key) => !known.has(key) && (grouped[key] ?? []).length > 0)
+      .map((key) => ({ key, label: key.replace(/_/g, " ") }));
+    return [...BUDGET_CATEGORIES, ...extras];
+  }, [grouped]);
+
   async function addLine(category: string) {
     await fetch(`/api/productions/${productionId}/budget`, {
       method: "POST",
@@ -97,8 +107,8 @@ export default function BudgetTab({
                 </span>
               </div>
               <p className="text-[11px] text-gray-500 mt-2 leading-snug">
-                Budget set by Commercial team — {gbp(campaignBudget ?? 0)} allocated for
-                production.
+                Budget set in Commercial — {gbp(campaignBudget ?? 0)} allocated for
+                production. Line items below were copied from the deal&apos;s budget breakdown.
               </p>
               {campaignBudget != null && (
                 <p
@@ -169,7 +179,7 @@ export default function BudgetTab({
           <div className="col-span-2 text-right">Variance</div>
           <div className="col-span-2">Notes</div>
         </div>
-        {(BUDGET_CATEGORIES ?? []).map((cat) => {
+        {categories.map((cat) => {
           const lines = grouped[cat.key] ?? [];
           const catBudgeted = lines.reduce((s, l) => s + (l.budgeted || 0), 0);
           const catActual = lines.reduce((s, l) => s + (l.actual || 0), 0);
