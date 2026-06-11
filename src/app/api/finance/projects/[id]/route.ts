@@ -3,10 +3,12 @@ import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
 import { getXeroInvoices, getXeroStatus } from '@/lib/xero-finance'
 import { overageStatusFor } from '@/lib/finance-projects'
+import { parseAllocations, productionAllocationOf } from '@/lib/deal-stages'
 
 export const dynamic = 'force-dynamic'
 
-// Detailed project financial view: budget splits, cost line items grouped by
+// Detailed project financial view: deal economics (margin + allocations),
+// production budget vs actuals, margin analysis, cost line items grouped by
 // category, supplier invoices coded to the project, and Xero payment status
 // for the client's invoices.
 export const GET = withAuth(async (request: NextRequest, context) => {
@@ -24,13 +26,31 @@ export const GET = withAuth(async (request: NextRequest, context) => {
       budget.productionId
         ? prisma.production.findUnique({
             where: { id: budget.productionId },
-            select: { id: true, title: true, status: true, budgetTotal: true },
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              budgetTotal: true,
+              productionBudgetStatus: true,
+              budgetItems: { select: { category: true, budgeted: true, actual: true } },
+            },
           })
         : Promise.resolve(null),
       budget.campaignId
         ? prisma.campaign.findUnique({
             where: { id: budget.campaignId },
-            select: { id: true, title: true, stage: true, client: { select: { name: true } } },
+            select: {
+              id: true,
+              title: true,
+              stage: true,
+              value: true,
+              marginPercent: true,
+              marginAmount: true,
+              allocations: true,
+              budgetLocked: true,
+              budgetLockedAt: true,
+              client: { select: { name: true } },
+            },
           })
         : Promise.resolve(null),
       getXeroStatus().catch(() => ({ connected: false, error: 'unavailable' })),
@@ -56,6 +76,43 @@ export const GET = withAuth(async (request: NextRequest, context) => {
     const totalPaid = clientInvoices.reduce((s, i) => s + i.amountPaid, 0)
     const totalInvoiced = clientInvoices.reduce((s, i) => s + i.amount, 0)
 
+    // ===== Budget & margin waterfall =====
+    const allocations = deal ? parseAllocations(deal.allocations) : []
+    const dealTotal = deal?.value ?? budget.totalBudget
+    const targetMarginAmount = deal?.marginAmount ?? null
+    const targetMarginPercent =
+      deal?.marginPercent ?? (targetMarginAmount != null && dealTotal > 0 ? (targetMarginAmount / dealTotal) * 100 : null)
+
+    // Production: allocation from the deal, line-item budget + actuals.
+    const productionAllocation = allocations.length
+      ? productionAllocationOf(allocations)
+      : production?.budgetTotal ?? budget.productionBudget
+    const productionBudgeted = (production?.budgetItems ?? []).reduce((s, i) => s + (i.budgeted || 0), 0)
+    const productionActuals = (production?.budgetItems ?? []).reduce((s, i) => s + (i.actual || 0), 0)
+    const productionSavings = productionAllocation - productionActuals
+
+    // Margin analysis: production savings flow straight into the margin.
+    const actualMarginAmount = targetMarginAmount != null ? targetMarginAmount + productionSavings : null
+    const actualMarginPercent =
+      actualMarginAmount != null && dealTotal > 0 ? (actualMarginAmount / dealTotal) * 100 : null
+
+    // Final P&L: revenue is the deal total; non-production allocations are
+    // taken at their allocated amounts, production at actuals.
+    const nonProductionAllocated = allocations
+      .filter((a) => !a.isProductionBudget)
+      .reduce((s, a) => s + a.amount, 0)
+    const plCosts = nonProductionAllocated + productionActuals
+    const grossProfit = dealTotal - plCosts
+    const grossMarginPercent = dealTotal > 0 ? (grossProfit / dealTotal) * 100 : null
+
+    // Invoice tracking: supplier invoices vs what production reported.
+    const settledStatuses = ['PAID', 'REJECTED']
+    const invoicesTotal = invoices
+      .filter((i) => i.status !== 'REJECTED')
+      .reduce((s, i) => s + (i.amount ?? 0), 0)
+    const invoicesPaid = invoices.filter((i) => i.status === 'PAID').reduce((s, i) => s + (i.amount ?? 0), 0)
+    const invoicesOutstanding = invoices.filter((i) => !settledStatuses.includes(i.status))
+
     return NextResponse.json({
       project: {
         ...budget,
@@ -66,6 +123,36 @@ export const GET = withAuth(async (request: NextRequest, context) => {
       },
       production,
       deal,
+      economics: {
+        dealTotal,
+        targetMarginAmount,
+        targetMarginPercent,
+        allocations,
+        budgetLocked: deal?.budgetLocked ?? false,
+        productionAllocation,
+        productionBudgeted,
+        productionActuals,
+        productionSavings,
+        productionBudgetStatus: production?.productionBudgetStatus ?? null,
+        actualMarginAmount,
+        actualMarginPercent,
+        finalPL: {
+          revenue: dealTotal,
+          nonProductionAllocated,
+          productionActuals,
+          costs: plCosts,
+          grossProfit,
+          grossMarginPercent,
+        },
+      },
+      invoiceTracking: {
+        invoicesTotal,
+        invoicesPaid,
+        invoicesUnpaid: invoicesTotal - invoicesPaid,
+        outstandingCount: invoicesOutstanding.length,
+        outstandingAmount: invoicesOutstanding.reduce((s, i) => s + (i.amount ?? 0), 0),
+        vsProductionActuals: invoicesTotal - productionActuals,
+      },
       costsByCategory,
       invoices,
       xero: {

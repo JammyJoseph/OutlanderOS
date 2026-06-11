@@ -198,6 +198,9 @@ export interface ProjectSummary {
   status: string
   productionId: string | null
   deal: { id: string; title: string; stage: string } | null
+  targetMarginAmount: number | null
+  targetMarginPercent: number | null
+  budgetLocked: boolean
   totalBudget: number
   productionBudget: number
   mediaBudget: number
@@ -284,14 +287,71 @@ export interface ReceivablesResponse {
   error?: string
 }
 
+export interface BudgetAllocation {
+  name: string
+  amount: number
+  isProductionBudget: boolean
+}
+
+// The budget & margin waterfall: deal economics from Commercial, production
+// budget vs actuals, and the resulting margin / P&L.
+export interface ProjectEconomics {
+  dealTotal: number
+  targetMarginAmount: number | null
+  targetMarginPercent: number | null
+  allocations: BudgetAllocation[]
+  budgetLocked: boolean
+  productionAllocation: number
+  productionBudgeted: number
+  productionActuals: number
+  productionSavings: number
+  productionBudgetStatus: string | null
+  actualMarginAmount: number | null
+  actualMarginPercent: number | null
+  finalPL: {
+    revenue: number
+    nonProductionAllocated: number
+    productionActuals: number
+    costs: number
+    grossProfit: number
+    grossMarginPercent: number | null
+  }
+}
+
+export interface InvoiceTracking {
+  invoicesTotal: number
+  invoicesPaid: number
+  invoicesUnpaid: number
+  outstandingCount: number
+  outstandingAmount: number
+  vsProductionActuals: number
+}
+
 export interface ProjectDetailResponse {
   project: ProjectSummary & {
     notes: string | null
     trelloCardName: string | null
     createdAt: string
   }
-  production: { id: string; title: string; status: string; budgetTotal: number } | null
-  deal: { id: string; title: string; stage: string; client: { name: string } | null } | null
+  production: {
+    id: string
+    title: string
+    status: string
+    budgetTotal: number
+    productionBudgetStatus: string | null
+  } | null
+  deal: {
+    id: string
+    title: string
+    stage: string
+    value: number | null
+    marginPercent: number | null
+    marginAmount: number | null
+    budgetLocked: boolean
+    client: { name: string } | null
+  } | null
+  economics: ProjectEconomics
+  invoiceTracking: InvoiceTracking
   costsByCategory: { category: string; total: number; entries: CostEntry[] }[]
   invoices: InvoiceSubmission[]
   xero: {

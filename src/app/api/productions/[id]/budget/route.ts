@@ -53,6 +53,28 @@ async function syncCostEntry(item: {
   });
 }
 
+// Lifecycle guard: once the production budget is locked the budgeted amounts
+// are frozen (actuals still flow in); once FINAL everything is read-only.
+async function budgetGuard(
+  productionId: string,
+  change: { budgeted?: boolean; structure?: boolean; actual?: boolean }
+): Promise<string | null> {
+  const production = await prisma.production.findUnique({
+    where: { id: productionId },
+    select: { productionBudgetStatus: true },
+  });
+  const status = production?.productionBudgetStatus;
+  if (!status || status === "BUDGETING") return null;
+  if (status === "FINAL") {
+    return "This production budget is FINAL — it can no longer be edited.";
+  }
+  // LOCKED / IN_PROGRESS: line items and budgeted amounts are frozen.
+  if (change.structure || change.budgeted) {
+    return "The budgeted amounts are locked — only actual costs can be updated. An admin can reopen the budget.";
+  }
+  return null;
+}
+
 export const GET = withAuth(async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -76,6 +98,8 @@ export const POST = withAuth(async (
   const { id } = await params;
   const body = await request.json();
   try {
+    const blocked = await budgetGuard(id, { structure: true });
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 403 });
     const item = await prisma.budgetLineItem.create({
       data: {
         productionId: id,
@@ -100,6 +124,19 @@ export const PUT = withAuth(async (request: NextRequest) => {
   if (!itemId) return NextResponse.json({ error: "itemId required" }, { status: 400 });
   const body = await request.json();
   try {
+    const existing = await prisma.budgetLineItem.findUnique({
+      where: { id: itemId },
+      select: { productionId: true, budgeted: true },
+    });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const changesBudgeted =
+      body.budgeted !== undefined && Number(body.budgeted || 0) !== existing.budgeted;
+    const blocked = await budgetGuard(existing.productionId, {
+      budgeted: changesBudgeted,
+      actual: body.actual !== undefined,
+    });
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 403 });
+
     const data: Record<string, unknown> = {};
     if (body.category !== undefined) data.category = body.category;
     if (body.description !== undefined) data.description = body.description;
@@ -123,6 +160,14 @@ export const DELETE = withAuth(async (request: NextRequest) => {
   const itemId = url.searchParams.get("itemId");
   if (!itemId) return NextResponse.json({ error: "itemId required" }, { status: 400 });
   try {
+    const existing = await prisma.budgetLineItem.findUnique({
+      where: { id: itemId },
+      select: { productionId: true },
+    });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const blocked = await budgetGuard(existing.productionId, { structure: true });
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 403 });
+
     await prisma.costEntry.deleteMany({ where: { budgetLineItemId: itemId } });
     await prisma.budgetLineItem.delete({ where: { id: itemId } });
     return NextResponse.json({ success: true });

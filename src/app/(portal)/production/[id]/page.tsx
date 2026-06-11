@@ -254,7 +254,7 @@ export default function ProjectDetail() {
           )}
           {tab === "budget" && (
             <BudgetTab
-              productionId={production.id}
+              production={production}
               items={production.budgetItems ?? []}
               campaignBudget={production.budgetTotal}
               onCampaignBudgetChange={(n) => savePatch({ budgetTotal: n })}

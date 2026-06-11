@@ -14,6 +14,9 @@ export interface ProjectFinancialSummary {
   status: string
   productionId: string | null
   deal: { id: string; title: string; stage: string } | null // originating Commercial deal
+  targetMarginAmount: number | null // company margin set on the deal
+  targetMarginPercent: number | null
+  budgetLocked: boolean // deal economics finalised in Commercial
   totalBudget: number
   productionBudget: number
   mediaBudget: number
@@ -67,7 +70,14 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
   const campaigns = campaignIds.length
     ? await prisma.campaign.findMany({
         where: { id: { in: campaignIds } },
-        select: { id: true, title: true, stage: true },
+        select: {
+          id: true,
+          title: true,
+          stage: true,
+          marginAmount: true,
+          marginPercent: true,
+          budgetLocked: true,
+        },
       })
     : []
   const dealById = new Map(campaigns.map((c) => [c.id, c]))
@@ -84,13 +94,17 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
 
   return budgets.map((b) => {
     const totalCosts = costsByBudget.get(b.id) ?? 0
+    const campaign = (b.campaignId && dealById.get(b.campaignId)) || null
     return {
       id: b.id,
       campaignName: b.campaignName,
       clientName: b.clientName,
       status: b.status,
       productionId: b.productionId,
-      deal: (b.campaignId && dealById.get(b.campaignId)) || null,
+      deal: campaign ? { id: campaign.id, title: campaign.title, stage: campaign.stage } : null,
+      targetMarginAmount: campaign?.marginAmount ?? null,
+      targetMarginPercent: campaign?.marginPercent ?? null,
+      budgetLocked: campaign?.budgetLocked ?? false,
       totalBudget: b.totalBudget,
       productionBudget: b.productionBudget,
       mediaBudget: b.mediaBudget,

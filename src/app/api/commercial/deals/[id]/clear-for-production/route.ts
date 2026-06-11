@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import {
   parseBudgetBreakdown,
+  parseAllocations,
+  productionAllocationOf,
   mapSplitsToCampaignBudget,
   mapSplitToProductionCategory,
 } from "@/lib/deal-stages";
@@ -11,7 +13,7 @@ import {
 //
 // Clears a contracted deal for production in one step:
 // - creates a Production (type COMMERCIAL, shown as "Planning") with the
-//   deal's budget locked in and the creative brief copied across
+//   deal's production allocation locked in and the creative brief copied across
 // - creates a CampaignBudget in Finance with the deal's budget splits
 //   (reuses an existing one if the budget was already submitted)
 // - marks the deal's brief as SENT_TO_PRODUCTION and logs the activity
@@ -41,8 +43,20 @@ export const POST = withAuth(async (
 
     const splits = parseBudgetBreakdown(deal.budgetBreakdown);
     const splitTotal = splits.reduce((sum, s) => sum + s.amount, 0);
-    const totalBudget = splitTotal > 0 ? splitTotal : deal.value ?? 0;
-    const mapped = mapSplitsToCampaignBudget(splits);
+    const totalBudget = deal.value ?? (splitTotal > 0 ? splitTotal : 0);
+
+    // New-style budget: margin + named allocations, one flagged as the
+    // production budget. The production team only gets their allocation —
+    // not the whole deal — and builds their own line items within it.
+    const allocations = parseAllocations(deal.allocations);
+    const hasAllocations = allocations.length > 0;
+    const productionAllocation = productionAllocationOf(allocations);
+
+    const productionBudgetTotal = hasAllocations
+      ? productionAllocation
+      : splitTotal > 0
+        ? splitTotal
+        : deal.value ?? 0;
 
     // The brief travels with the production — description for the overview,
     // brief for the "Brief from Commercial" panel.
@@ -57,8 +71,13 @@ export const POST = withAuth(async (
         description: briefText,
         type: "COMMERCIAL",
         status: "DRAFT", // shown as "Planning" in the Production portal
-        budgetTotal: totalBudget,
-        budgetItems: splits.length
+        budgetTotal: productionBudgetTotal,
+        marginTarget: deal.marginPercent ?? null,
+        productionBudgetStatus: "BUDGETING",
+        // Legacy deals without allocations: copy the splits as starter line
+        // items. Allocation-based deals start empty — the production manager
+        // budgets their allocation themselves.
+        budgetItems: !hasAllocations && splits.length
           ? {
               create: splits.map((s, i) => ({
                 category: mapSplitToProductionCategory(s.category),
@@ -71,6 +90,30 @@ export const POST = withAuth(async (
       },
     });
 
+    // Finance splits: the production allocation goes in productionBudget;
+    // the rest of the allocations map onto the fixed columns by name.
+    const financeSplits = hasAllocations
+      ? (() => {
+          const mapped = mapSplitsToCampaignBudget(
+            allocations
+              .filter((a) => !a.isProductionBudget)
+              .map((a) => ({ category: a.name, amount: a.amount }))
+          );
+          return {
+            productionBudget: productionAllocation + mapped.productionBudget,
+            mediaBudget: mapped.mediaBudget,
+            internalBudget: mapped.internalBudget,
+            otherBudget: mapped.otherBudget,
+          };
+        })()
+      : (() => {
+          const mapped = mapSplitsToCampaignBudget(splits);
+          return {
+            ...mapped,
+            otherBudget: splits.length ? mapped.otherBudget : totalBudget,
+          };
+        })();
+
     // Reuse a finance budget if one was already created for this deal.
     let campaignBudget = await prisma.campaignBudget.findFirst({
       where: { campaignId: id },
@@ -78,7 +121,7 @@ export const POST = withAuth(async (
     if (campaignBudget) {
       campaignBudget = await prisma.campaignBudget.update({
         where: { id: campaignBudget.id },
-        data: { productionId: production.id },
+        data: { productionId: production.id, totalBudget, ...financeSplits },
       });
     } else {
       campaignBudget = await prisma.campaignBudget.create({
@@ -87,10 +130,7 @@ export const POST = withAuth(async (
           clientName: deal.client.name,
           campaignName: deal.title,
           totalBudget,
-          productionBudget: mapped.productionBudget,
-          mediaBudget: mapped.mediaBudget,
-          internalBudget: mapped.internalBudget,
-          otherBudget: splits.length ? mapped.otherBudget : totalBudget,
+          ...financeSplits,
           status: "SUBMITTED",
           submittedBy: user.userId,
           productionId: production.id,
@@ -113,11 +153,12 @@ export const POST = withAuth(async (
       data: {
         campaignId: deal.id,
         type: "project_started",
-        message: `"${deal.title}" cleared for production — brief sent to the production team with £${totalBudget.toLocaleString()} budget`,
+        message: `"${deal.title}" cleared for production — brief sent to the production team with £${productionBudgetTotal.toLocaleString()} budget${hasAllocations ? ` (of £${totalBudget.toLocaleString()} total deal)` : ""}`,
         meta: {
           productionId: production.id,
           campaignBudgetId: campaignBudget.id,
           totalBudget,
+          productionAllocation: productionBudgetTotal,
         },
         userId: user.userId,
         userName: user.name,

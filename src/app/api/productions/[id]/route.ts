@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
+import { isProductionBudgetStatus } from "@/lib/deal-stages";
 
 export const GET = withAuth(async (
   _request: NextRequest,
@@ -46,14 +47,15 @@ export const GET = withAuth(async (
 
 export const PUT = withAuth(async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
+  user
 ) => {
   const { id } = await params;
   const body = await request.json();
   try {
     const existing = await prisma.production.findUnique({
       where: { id },
-      select: { type: true, status: true, campaignId: true },
+      select: { type: true, status: true, campaignId: true, productionBudgetStatus: true },
     });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -86,6 +88,37 @@ export const PUT = withAuth(async (
         : Number(body.budgetActual);
     }
     if (body.marginTarget !== undefined) updateData.marginTarget = body.marginTarget;
+    if (body.productionBudgetStatus !== undefined) {
+      // Production budget lifecycle: BUDGETING → LOCKED → IN_PROGRESS → FINAL.
+      // Unlocking back to BUDGETING from LOCKED/IN_PROGRESS is admin-only;
+      // FINAL can only be reopened by an admin too.
+      const next = String(body.productionBudgetStatus);
+      if (!isProductionBudgetStatus(next)) {
+        return NextResponse.json(
+          { error: `Invalid productionBudgetStatus: ${next}` },
+          { status: 400 }
+        );
+      }
+      const current = existing.productionBudgetStatus ?? "BUDGETING";
+      const reopening =
+        (current === "FINAL" && next !== "FINAL") ||
+        (next === "BUDGETING" && current !== "BUDGETING");
+      if (reopening && user.role !== "ADMIN") {
+        return NextResponse.json(
+          { error: "Only an admin can reopen a locked production budget." },
+          { status: 403 }
+        );
+      }
+      updateData.productionBudgetStatus = next;
+      if ((next === "LOCKED" || next === "FINAL") && next !== current) {
+        updateData.productionLockedAt = new Date();
+        updateData.productionLockedBy = user.userId;
+      }
+      if (next === "BUDGETING") {
+        updateData.productionLockedAt = null;
+        updateData.productionLockedBy = null;
+      }
+    }
     if (body.shootDates !== undefined) {
       updateData.shootDates = (body.shootDates ?? [])
         .filter((d: string) => d)

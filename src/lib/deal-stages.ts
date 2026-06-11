@@ -95,6 +95,40 @@ export function parseBudgetBreakdown(value: unknown): BudgetSplit[] {
     .filter((s) => s.category.trim().length > 0);
 }
 
+// Budget allocations: where the deal money goes after the company margin.
+// Stored on Campaign.allocations; the one flagged isProductionBudget is the
+// amount handed to the Production team.
+export type BudgetAllocation = { name: string; amount: number; isProductionBudget: boolean };
+
+export function parseAllocations(value: unknown): BudgetAllocation[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (a): a is { name: unknown; amount: unknown; isProductionBudget?: unknown } =>
+        !!a && typeof a === "object" && "name" in a && "amount" in a
+    )
+    .map((a) => ({
+      name: String(a.name),
+      amount: Number(a.amount) || 0,
+      isProductionBudget: Boolean(a.isProductionBudget),
+    }))
+    .filter((a) => a.name.trim().length > 0);
+}
+
+export function productionAllocationOf(allocations: BudgetAllocation[]): number {
+  return allocations.filter((a) => a.isProductionBudget).reduce((sum, a) => sum + a.amount, 0);
+}
+
+// Production budget lifecycle on a Production created from a deal:
+// BUDGETING (line items editable) → LOCKED (budgeted amounts frozen) →
+// IN_PROGRESS (actuals coming in) → FINAL (everything frozen).
+export const PRODUCTION_BUDGET_STATUSES = ["BUDGETING", "LOCKED", "IN_PROGRESS", "FINAL"] as const;
+export type ProductionBudgetStatus = (typeof PRODUCTION_BUDGET_STATUSES)[number];
+
+export function isProductionBudgetStatus(value: string): value is ProductionBudgetStatus {
+  return (PRODUCTION_BUDGET_STATUSES as readonly string[]).includes(value);
+}
+
 // Map a free-form split category onto the Production portal's budget
 // category keys (BUDGET_CATEGORIES in the production components) so line
 // items copied from a deal render inside the right group.

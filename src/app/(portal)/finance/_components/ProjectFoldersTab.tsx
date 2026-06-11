@@ -4,11 +4,12 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
-import { AlertTriangle, ArrowLeft, ArrowUpRight, Briefcase, Clapperboard, FolderOpen } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowUpRight, Briefcase, Clapperboard, FolderOpen, Lock, TrendingDown, TrendingUp } from 'lucide-react'
 import { StatusBadge, ErrorBox, TabSkeleton, EmptyState, BudgetBar } from './FinanceBits'
 import {
   useFinanceFetch,
   fmtGBP,
+  fmtPct,
   fmtDate,
   displayStatus,
   badgeClass,
@@ -82,6 +83,15 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
           <dt className="text-gray-400">Remaining</dt>
           <dd className={`font-mono ${p.remaining < 0 ? 'text-red-500' : 'text-gray-700'}`}>{fmtGBP(p.remaining)}</dd>
         </div>
+        {p.targetMarginAmount != null && (
+          <div className="col-span-2">
+            <dt className="text-gray-400">Target margin</dt>
+            <dd className="font-mono font-semibold text-[#D4A853]">
+              {fmtGBP(p.targetMarginAmount)}
+              {p.targetMarginPercent != null && <span className="text-gray-400"> ({fmtPct(p.targetMarginPercent)})</span>}
+            </dd>
+          </div>
+        )}
       </dl>
       <BudgetBar spent={p.totalCosts} budget={p.totalBudget} />
       <div className="mt-2 flex items-center justify-between">
@@ -115,9 +125,17 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
   if (res.loading) return <TabSkeleton />
   if (res.error || res.data?.error) return <ErrorBox message={`Failed to load project: ${res.error ?? res.data?.error}`} />
 
-  const { project, production, deal, costsByCategory, invoices, xero } = res.data!
+  const { project, production, deal, economics, invoiceTracking, costsByCategory, invoices, xero } = res.data!
   const over = project.overageStatus === 'OVERAGE'
   const warn = project.overageStatus === 'WARNING'
+
+  const eco = economics
+  const hasEconomics = Boolean(eco && (eco.allocations.length > 0 || eco.targetMarginAmount != null))
+  const savingsPositive = (eco?.productionSavings ?? 0) >= 0
+  const aboveTarget =
+    eco?.actualMarginAmount != null &&
+    eco?.targetMarginAmount != null &&
+    eco.actualMarginAmount >= eco.targetMarginAmount
 
   const splits = [
     { label: 'Production', value: project.productionBudget },
@@ -247,6 +265,204 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
         </div>
       </div>
 
+      {/* ===== Budget & margin waterfall (deals with finalised economics) ===== */}
+      {hasEconomics && (
+        <>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* Deal economics */}
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Deal Economics</p>
+                {eco.budgetLocked && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    <Lock className="h-2.5 w-2.5" /> Locked
+                  </span>
+                )}
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                  <span className="text-gray-600">Total Deal Budget</span>
+                  <span className="font-mono text-sm font-bold text-gray-900">{fmtGBP(eco.dealTotal)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Company Margin</span>
+                  <span className="font-mono font-semibold text-[#D4A853]">
+                    {fmtGBP(eco.targetMarginAmount)}
+                    {eco.targetMarginPercent != null && <span className="text-gray-400"> ({fmtPct(eco.targetMarginPercent)})</span>}
+                  </span>
+                </div>
+                {eco.allocations.map((a) => (
+                  <div key={a.name} className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-gray-600">
+                      {a.name}
+                      {a.isProductionBudget && (
+                        <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[9px] font-semibold text-[#E24B4A]">PRODUCTION</span>
+                      )}
+                    </span>
+                    <span className="font-mono font-semibold text-gray-900">{fmtGBP(a.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Production budget */}
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Production Budget</p>
+                {eco.productionBudgetStatus && (
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">
+                    {eco.productionBudgetStatus.replace(/_/g, ' ')}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                  <span className="text-gray-600">Production Allocation</span>
+                  <span className="font-mono text-sm font-bold text-gray-900">{fmtGBP(eco.productionAllocation)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Production Budgeted (line items)</span>
+                  <span className="font-mono font-semibold text-gray-900">{fmtGBP(eco.productionBudgeted)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Production Actuals</span>
+                  <span className="font-mono font-semibold text-gray-900">{fmtGBP(eco.productionActuals)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Production {savingsPositive ? 'Savings' : 'Overspend'}</span>
+                  <span className={`inline-flex items-center gap-1 font-mono font-bold ${savingsPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {savingsPositive ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+                    {savingsPositive ? '+' : '−'}{fmtGBP(Math.abs(eco.productionSavings))}
+                  </span>
+                </div>
+              </div>
+              {eco.productionAllocation > 0 && (
+                <div className="mt-3">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className={`h-full rounded-full ${eco.productionActuals > eco.productionAllocation ? 'bg-red-500' : 'bg-[#D4A853]'}`}
+                      style={{ width: `${Math.min((eco.productionActuals / eco.productionAllocation) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-gray-400">
+                    {fmtGBP(eco.productionActuals)} of {fmtGBP(eco.productionAllocation)} spent (
+                    {Math.round((eco.productionActuals / eco.productionAllocation) * 100)}%)
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Margin analysis */}
+          {eco.targetMarginAmount != null && (
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <p className="mb-4 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Margin Analysis</p>
+              <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-lg bg-gray-50 px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Target Margin</p>
+                  <p className="font-mono text-2xl font-bold text-gray-900">
+                    {fmtGBP(eco.targetMarginAmount)}
+                    {eco.targetMarginPercent != null && (
+                      <span className="ml-1 text-sm font-semibold text-gray-400">({fmtPct(eco.targetMarginPercent)})</span>
+                    )}
+                  </p>
+                </div>
+                <div className={`rounded-lg px-4 py-3 ${savingsPositive ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                  <p className={`text-[10px] font-semibold uppercase tracking-wider ${savingsPositive ? 'text-emerald-500' : 'text-red-400'}`}>
+                    Production {savingsPositive ? 'Savings' : 'Overspend'}
+                  </p>
+                  <p className={`font-mono text-2xl font-bold ${savingsPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {savingsPositive ? '+' : '−'}{fmtGBP(Math.abs(eco.productionSavings))}
+                  </p>
+                </div>
+                <div className={`rounded-lg px-4 py-3 ${aboveTarget ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                  <p className={`text-[10px] font-semibold uppercase tracking-wider ${aboveTarget ? 'text-emerald-500' : 'text-amber-500'}`}>
+                    Actual Margin
+                  </p>
+                  <p className={`font-mono text-2xl font-bold ${aboveTarget ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {fmtGBP(eco.actualMarginAmount)}
+                    {eco.actualMarginPercent != null && (
+                      <span className="ml-1 text-sm font-semibold opacity-60">({fmtPct(eco.actualMarginPercent)})</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              {/* Target margin bar + savings stacked against the deal total */}
+              {eco.dealTotal > 0 && (
+                <div>
+                  <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className="h-full bg-[#D4A853]"
+                      style={{ width: `${Math.min((eco.targetMarginAmount / eco.dealTotal) * 100, 100)}%` }}
+                      title={`Target margin ${fmtGBP(eco.targetMarginAmount)}`}
+                    />
+                    {eco.productionSavings > 0 && (
+                      <div
+                        className="h-full bg-emerald-500"
+                        style={{ width: `${Math.min((eco.productionSavings / eco.dealTotal) * 100, 100)}%` }}
+                        title={`Production savings ${fmtGBP(eco.productionSavings)}`}
+                      />
+                    )}
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-4 text-[10px] text-gray-500">
+                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#D4A853]" /> Target margin</span>
+                    {eco.productionSavings > 0 && (
+                      <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Production savings</span>
+                    )}
+                    <span className="ml-auto font-mono">of {fmtGBP(eco.dealTotal)} deal total</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Final P&L */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Final P&L</p>
+              {eco.targetMarginAmount != null && eco.finalPL.grossProfit !== 0 && (
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                  eco.finalPL.grossProfit >= eco.targetMarginAmount ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {eco.finalPL.grossProfit >= eco.targetMarginAmount ? 'Above target margin' : 'Below target margin'}
+                </span>
+              )}
+            </div>
+            <table className="w-full text-xs">
+              <tbody className="divide-y divide-gray-50">
+                <tr>
+                  <td className="py-2 text-gray-600">Revenue (deal budget)</td>
+                  <td className="py-2 text-right font-mono font-semibold text-gray-900">{fmtGBP(eco.finalPL.revenue)}</td>
+                </tr>
+                {eco.allocations.filter((a) => !a.isProductionBudget).map((a) => (
+                  <tr key={a.name}>
+                    <td className="py-2 pl-4 text-gray-500">{a.name}</td>
+                    <td className="py-2 text-right font-mono text-gray-700">−{fmtGBP(a.amount)}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className="py-2 pl-4 text-gray-500">Production (actuals)</td>
+                  <td className="py-2 text-right font-mono text-gray-700">−{fmtGBP(eco.finalPL.productionActuals)}</td>
+                </tr>
+                <tr>
+                  <td className="py-2 font-semibold text-gray-700">Total Costs</td>
+                  <td className="py-2 text-right font-mono font-semibold text-gray-900">−{fmtGBP(eco.finalPL.costs)}</td>
+                </tr>
+                <tr className="bg-gray-50/60">
+                  <td className="py-2.5 font-bold text-gray-900">Gross Profit</td>
+                  <td className={`py-2.5 text-right font-mono text-sm font-bold ${eco.finalPL.grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {fmtGBP(eco.finalPL.grossProfit)}
+                    {eco.finalPL.grossMarginPercent != null && (
+                      <span className="ml-1 text-[11px] font-semibold opacity-70">({fmtPct(eco.finalPL.grossMarginPercent)})</span>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       {/* Cost line items by category */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Cost Line Items</p>
@@ -282,6 +498,35 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
         {/* Supplier invoices coded to this project */}
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Supplier Invoices</p>
+          {invoiceTracking && invoices.length > 0 && (
+            <div className="mb-3 grid grid-cols-2 gap-2 text-[11px]">
+              <div className="rounded-lg bg-gray-50 px-3 py-2">
+                <p className="text-gray-400">Invoiced / Paid</p>
+                <p className="font-mono font-semibold text-gray-800">
+                  {fmtGBP(invoiceTracking.invoicesTotal)} / <span className="text-emerald-600">{fmtGBP(invoiceTracking.invoicesPaid)}</span>
+                </p>
+              </div>
+              <div className="rounded-lg bg-gray-50 px-3 py-2">
+                <p className="text-gray-400">Outstanding</p>
+                <p className={`font-mono font-semibold ${invoiceTracking.outstandingCount > 0 ? 'text-amber-600' : 'text-gray-800'}`}>
+                  {fmtGBP(invoiceTracking.outstandingAmount)} ({invoiceTracking.outstandingCount})
+                </p>
+              </div>
+              {hasEconomics && eco.productionActuals > 0 && (
+                <div className="col-span-2 rounded-lg bg-gray-50 px-3 py-2">
+                  <p className="text-gray-400">Invoices vs Production Actuals</p>
+                  <p className="font-mono font-semibold text-gray-800">
+                    {fmtGBP(invoiceTracking.invoicesTotal)} invoiced vs {fmtGBP(eco.productionActuals)} reported
+                    {Math.abs(invoiceTracking.vsProductionActuals) > 0.01 && (
+                      <span className={invoiceTracking.vsProductionActuals > 0 ? 'text-red-500' : 'text-amber-600'}>
+                        {' '}({invoiceTracking.vsProductionActuals > 0 ? '+' : '−'}{fmtGBP(Math.abs(invoiceTracking.vsProductionActuals))})
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           {invoices.length === 0 ? (
             <p className="py-4 text-center text-xs text-gray-400">No supplier invoices coded to this project.</p>
           ) : (

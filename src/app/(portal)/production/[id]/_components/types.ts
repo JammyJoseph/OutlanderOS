@@ -117,6 +117,8 @@ export interface ProductionDeliverable {
   notes: string | null;
 }
 
+export type ProductionBudgetStatus = "BUDGETING" | "LOCKED" | "IN_PROGRESS" | "FINAL";
+
 export interface ProductionFull {
   id: string;
   title: string;
@@ -131,8 +133,18 @@ export interface ProductionFull {
   trelloCardId: string | null;
   budgetTotal: number | null;
   budgetActual: number | null;
+  productionBudgetStatus: ProductionBudgetStatus | null;
+  productionLockedAt: string | null;
   shootDates: string[];
-  campaign: { id?: string; title: string; client: { name: string } } | null;
+  campaign: {
+    id?: string;
+    title: string;
+    client: { name: string };
+    value?: number | null;
+    marginPercent?: number | null;
+    marginAmount?: number | null;
+    budgetLocked?: boolean;
+  } | null;
   callSheets: CallSheet[];
   crew: CrewMember[];
   budgetItems: BudgetLineItem[];

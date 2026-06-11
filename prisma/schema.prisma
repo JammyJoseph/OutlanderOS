@@ -150,7 +150,13 @@ model Campaign {
   stageUpdatedAt   DateTime?
   description      String?
   dueDate          DateTime?
-  budgetBreakdown  Json? // [{ category: string, amount: number }] — set once on the deal, flows downstream
+  budgetBreakdown  Json? // [{ category: string, amount: number }] — legacy splits, kept in sync with allocations
+  marginPercent    Float? // company margin as % of the total deal budget (e.g. 30.0)
+  marginAmount     Float? // company margin in £
+  allocations      Json? // [{ name: string, amount: number, isProductionBudget: boolean }]
+  budgetLocked     Boolean        @default(false)
+  budgetLockedAt   DateTime?
+  budgetLockedBy   String? // userId who locked the budget
   assignedToId     String?
   assignedTo       User?          @relation("CampaignAssignee", fields: [assignedToId], references: [id])
   value            Float?
@@ -283,6 +289,9 @@ model Production {
   budgetTotal      Float?
   budgetActual     Float?
   marginTarget     Float?
+  productionBudgetStatus String? // BUDGETING | LOCKED | IN_PROGRESS | FINAL
+  productionLockedAt     DateTime?
+  productionLockedBy     String? // userId who locked the production budget
   shootDates       DateTime[]
   leadId           String?
   lead             User?            @relation("ProductionLead", fields: [leadId], references: [id])
