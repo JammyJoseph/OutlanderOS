@@ -21,6 +21,7 @@ import {
   PackageCheck,
   Activity as ActivityIcon,
   ArrowUpRight,
+  Newspaper,
 } from "lucide-react";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import {
@@ -173,6 +174,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const type = typeStyle(deal.type);
   const canStartProject = WON_STAGES.includes(deal.stage);
   const projectStarted = Boolean(deal.production);
+  // Advertorials and print deliverables live in the magazine planning sheet too.
+  const printRelated =
+    deal.type === "ADVERTORIAL" ||
+    deal.type === "PRINT_AD" ||
+    deal.deliverables.some((d) =>
+      /print|magazine|advertorial|flat\s*plan/i.test(`${d.type} ${d.description ?? ""}`)
+    );
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
@@ -222,6 +230,15 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                     className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
                   >
                     <Banknote size={11} /> Finance: View project P&amp;L <ArrowUpRight size={11} />
+                  </Link>
+                )}
+                {printRelated && (
+                  <Link
+                    href="/print"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-[#1D9E75] hover:bg-teal-100 transition-colors"
+                  >
+                    <Newspaper size={11} /> Print: View in magazine planning{" "}
+                    <ArrowUpRight size={11} />
                   </Link>
                 )}
               </div>

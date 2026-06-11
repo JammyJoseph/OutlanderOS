@@ -1,0 +1,96 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowUpRight, ReceiptText } from "lucide-react";
+import { formatGBP } from "./types";
+
+interface OverviewSlice {
+  xeroConnected: boolean;
+  overdueReceivables: number;
+  overdueReceivableCount: number;
+  pendingApprovals: number;
+}
+
+// Outstanding finance items — overdue invoices + approvals waiting, from
+// /api/finance/overview. Links through to the Finance portal for detail.
+export function OutstandingItems() {
+  const [data, setData] = useState<OverviewSlice | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/finance/overview")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((json: OverviewSlice) => {
+        if (!cancelled) setData(json);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (failed) return null;
+
+  return (
+    <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+          Outstanding Items
+        </h2>
+        <ReceiptText className="h-4 w-4 text-[#3B82F6] opacity-70" />
+      </div>
+
+      {!data ? (
+        <div className="mt-3 space-y-2">
+          <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-gray-100" />
+        </div>
+      ) : (
+        <>
+          <ul className="mt-2 space-y-2">
+            <li className="flex items-baseline justify-between text-sm">
+              <span className="text-gray-600">Overdue invoices</span>
+              <span
+                className={`font-semibold ${
+                  data.overdueReceivableCount > 0 ? "text-red-500" : "text-gray-900"
+                }`}
+              >
+                {data.xeroConnected ? data.overdueReceivableCount : "—"}
+                {data.xeroConnected && data.overdueReceivableCount > 0 && (
+                  <span className="ml-1.5 text-xs font-medium text-gray-400">
+                    {formatGBP(data.overdueReceivables)}
+                  </span>
+                )}
+              </span>
+            </li>
+            <li className="flex items-baseline justify-between text-sm">
+              <span className="text-gray-600">Pending approval</span>
+              <span
+                className={`font-semibold ${
+                  data.pendingApprovals > 0 ? "text-amber-600" : "text-gray-900"
+                }`}
+              >
+                {data.pendingApprovals}
+              </span>
+            </li>
+          </ul>
+          {!data.xeroConnected && (
+            <p className="mt-2 text-xs text-gray-400">
+              Connect Xero in Finance to track overdue invoices.
+            </p>
+          )}
+          <Link
+            href="/finance"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#3B82F6] hover:underline"
+          >
+            View in Finance <ArrowUpRight className="h-3 w-3" />
+          </Link>
+        </>
+      )}
+    </section>
+  );
+}

@@ -21,6 +21,14 @@ const PRIORITY_STYLES: Record<string, string> = {
   URGENT: "bg-red-50 text-red-700",
 };
 
+const PORTAL_LABELS: Record<string, string> = {
+  commercial: "Commercial",
+  production: "Production",
+  print: "Print",
+  finance: "Finance",
+  followup: "Follow-up",
+};
+
 export default function MyTasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +36,7 @@ export default function MyTasksPage() {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState("MEDIUM");
   const [due, setDue] = useState("");
+  const [category, setCategory] = useState("general");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "done">("active");
 
   useEffect(() => {
@@ -53,7 +62,12 @@ export default function MyTasksPage() {
     const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title.trim(), priority, dueDate: due || null }),
+      body: JSON.stringify({
+        title: title.trim(),
+        priority,
+        dueDate: due || null,
+        portal: category === "general" ? null : category,
+      }),
     });
     const data = await res.json();
     if (data.task) {
@@ -61,6 +75,7 @@ export default function MyTasksPage() {
       setTitle("");
       setDue("");
       setPriority("MEDIUM");
+      setCategory("general");
       setShowNew(false);
     }
   }
@@ -72,7 +87,16 @@ export default function MyTasksPage() {
   });
 
   if (loading) {
-    return <div className="p-8 text-sm text-gray-400">Loading…</div>;
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-8">
+        <div className="mb-6 h-8 w-40 animate-pulse rounded-lg bg-gray-100" />
+        <div className="space-y-2">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="h-12 animate-pulse rounded-xl bg-gray-100" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -124,6 +148,17 @@ export default function MyTasksPage() {
               <option value="HIGH">High</option>
               <option value="URGENT">Urgent</option>
             </select>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs"
+            >
+              <option value="general">General</option>
+              <option value="commercial">Commercial</option>
+              <option value="production">Production</option>
+              <option value="print">Print</option>
+              <option value="followup">Follow-up</option>
+            </select>
             <input
               type="date"
               value={due}
@@ -170,7 +205,9 @@ export default function MyTasksPage() {
                         {t.priority.toLowerCase()}
                       </span>
                       {t.portal && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600">{t.portal}</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600">
+                          {PORTAL_LABELS[t.portal] ?? t.portal}
+                        </span>
                       )}
                       {due && (
                         <span className={`flex items-center gap-1 text-[10px] ${overdue ? "text-red-600 font-medium" : "text-gray-500"}`}>

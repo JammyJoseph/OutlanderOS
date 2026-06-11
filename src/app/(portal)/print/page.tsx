@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   RefreshCw,
   Calendar,
@@ -645,7 +646,21 @@ export default function PrintPortalPage() {
 
           {/* Paid Features Pipeline */}
           <section id="paid-features" className="space-y-3 scroll-mt-20">
-            <SectionHeader title="Paid Features" subtitle="360 Deals & Advertorials" />
+            <SectionHeader
+              title="Paid Features"
+              subtitle="360 Deals & Advertorials"
+              actions={
+                <p className="text-[11px] text-gray-400">
+                  Paid features are tracked in the{" "}
+                  <Link
+                    href="/commercial/pipeline"
+                    className="font-semibold text-[#D4A853] hover:underline"
+                  >
+                    Commercial pipeline
+                  </Link>
+                </p>
+              }
+            />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <PaidColumn
                 title="360 Deals"

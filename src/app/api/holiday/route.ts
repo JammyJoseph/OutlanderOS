@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
   const isAdmin = me.role === 'ADMIN'
 
   const where: Record<string, unknown> = {}
-  if (!(all && isAdmin)) where.userId = me.userId
+  // Everyone may see the team's APPROVED holidays (for the team calendar);
+  // viewing other people's pending/rejected requests stays admin-only.
+  if (!(all && (isAdmin || status === 'APPROVED'))) where.userId = me.userId
   if (status) where.status = status
 
   const requests = await prisma.holidayRequest.findMany({

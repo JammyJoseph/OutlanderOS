@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Calendar, Plus, X, Check, AlertTriangle, Clock } from 'lucide-react'
+import { Calendar, Plus, X, Check, AlertTriangle, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 
 const INPUT_CLS =
   'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#D4A853] focus:ring-2 focus:ring-amber-200/60'
@@ -63,6 +63,7 @@ export default function HolidayPage() {
   const [me, setMe] = useState<Me | null>(null)
   const [balance, setBalance] = useState<Balance | null>(null)
   const [requests, setRequests] = useState<HolidayRequest[]>([])
+  const [teamApproved, setTeamApproved] = useState<HolidayRequest[]>([])
   const [pendingTeam, setPendingTeam] = useState<HolidayRequest[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -83,15 +84,17 @@ export default function HolidayPage() {
   async function load() {
     setLoading(true)
     try {
-      const [meJson, balJson, reqJson] = await Promise.all([
+      const [meJson, balJson, reqJson, teamJson] = await Promise.all([
         fetch('/api/me').then((r) => (r.ok ? r.json() : null)),
         fetch('/api/holiday/balance').then((r) => (r.ok ? r.json() : null)),
         fetch('/api/holiday').then((r) => (r.ok ? r.json() : [])),
+        fetch('/api/holiday?all=true&status=APPROVED').then((r) => (r.ok ? r.json() : [])),
       ])
       const meUser = meJson?.user
       setMe(meUser ? { id: meUser.id, role: meUser.role, name: meUser.name } : null)
       setBalance(balJson)
       setRequests(Array.isArray(reqJson) ? reqJson : [])
+      setTeamApproved(Array.isArray(teamJson) ? teamJson : [])
 
       if (meUser?.role === 'ADMIN') {
         const teamRes = await fetch('/api/holiday?all=true&status=PENDING').then((r) => (r.ok ? r.json() : []))
@@ -246,6 +249,15 @@ export default function HolidayPage() {
       </div>
 
       <section className="mt-10">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-gray-400" />
+          <h2 className="text-lg font-semibold text-gray-900">Team calendar</h2>
+        </div>
+        <p className="mt-0.5 text-xs text-gray-500">Approved time off across the team</p>
+        <TeamCalendar requests={teamApproved} />
+      </section>
+
+      <section className="mt-10">
         <h2 className="text-lg font-semibold text-gray-900">My requests</h2>
         <div className="mt-4 overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm">
           {requests.length === 0 ? (
@@ -387,6 +399,162 @@ function StatusBadge({ status }: { status: HolidayStatus }) {
 
 function prettyType(t: HolidayType): string {
   return t === 'ANNUAL' ? 'Annual leave' : t === 'SICK' ? 'Sick' : t === 'PERSONAL' ? 'Personal' : 'Other'
+}
+
+// Per-person colour palette for the team calendar rows.
+const TEAM_COLORS = [
+  { bar: 'bg-[#D4A853]', text: 'text-[#9a7322]', dot: 'bg-[#D4A853]' },
+  { bar: 'bg-[#378ADD]', text: 'text-[#1d5fa8]', dot: 'bg-[#378ADD]' },
+  { bar: 'bg-[#1D9E75]', text: 'text-[#15745a]', dot: 'bg-[#1D9E75]' },
+  { bar: 'bg-[#E24B4A]', text: 'text-[#a83232]', dot: 'bg-[#E24B4A]' },
+  { bar: 'bg-[#7B5BD6]', text: 'text-[#5b3fb0]', dot: 'bg-[#7B5BD6]' },
+  { bar: 'bg-pink-400', text: 'text-pink-700', dot: 'bg-pink-400' },
+]
+
+function localISO(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+// Month view of the whole team's approved leave — one colour-coded row per
+// person, bars across the days they're off.
+function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
+  const [monthDate, setMonthDate] = useState(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), 1)
+  })
+
+  const year = monthDate.getFullYear()
+  const month = monthDate.getMonth()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const todayKey = localISO(new Date())
+
+  // Group approved requests by person, then expand to a set of off-days.
+  const people = useMemo(() => {
+    const byUser = new Map<string, { name: string; days: Set<string> }>()
+    for (const r of requests) {
+      if (r.status !== 'APPROVED') continue
+      const id = r.user?.id ?? r.userId
+      const name = r.user?.name ?? 'Unknown'
+      let entry = byUser.get(id)
+      if (!entry) {
+        entry = { name, days: new Set() }
+        byUser.set(id, entry)
+      }
+      const cur = new Date(r.startDate)
+      const end = new Date(r.endDate)
+      cur.setHours(0, 0, 0, 0)
+      end.setHours(0, 0, 0, 0)
+      while (cur <= end) {
+        entry.days.add(localISO(cur))
+        cur.setDate(cur.getDate() + 1)
+      }
+    }
+    return Array.from(byUser.entries())
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [requests])
+
+  const monthLabel = monthDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
+        <span className="text-sm font-semibold text-gray-900">{monthLabel}</span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setMonthDate(new Date(year, month - 1, 1))}
+            aria-label="Previous month"
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => {
+              const d = new Date()
+              setMonthDate(new Date(d.getFullYear(), d.getMonth(), 1))
+            }}
+            className="rounded-lg px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+          >
+            Today
+          </button>
+          <button
+            onClick={() => setMonthDate(new Date(year, month + 1, 1))}
+            aria-label="Next month"
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {people.length === 0 ? (
+        <div className="px-6 py-10 text-center text-sm text-gray-400">
+          No approved time off yet — approved holidays will show up here.
+        </div>
+      ) : (
+        <div className="overflow-x-auto px-5 py-4">
+          <table className="w-full border-separate" style={{ borderSpacing: '1px 4px' }}>
+            <thead>
+              <tr>
+                <th className="w-32 min-w-32 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                  Person
+                </th>
+                {Array.from({ length: daysInMonth }, (_, i) => {
+                  const d = new Date(year, month, i + 1)
+                  const isWeekend = d.getDay() === 0 || d.getDay() === 6
+                  const isToday = localISO(d) === todayKey
+                  return (
+                    <th
+                      key={i}
+                      className={`min-w-5 pb-1 text-center text-[9px] font-medium ${
+                        isToday ? 'text-[#D4A853] font-bold' : isWeekend ? 'text-gray-300' : 'text-gray-400'
+                      }`}
+                    >
+                      {i + 1}
+                    </th>
+                  )
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {people.map((p, idx) => {
+                const color = TEAM_COLORS[idx % TEAM_COLORS.length]
+                return (
+                  <tr key={p.id}>
+                    <td className="w-32 min-w-32 pr-2">
+                      <span className={`flex items-center gap-1.5 text-xs font-medium ${color.text}`}>
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${color.dot}`} />
+                        <span className="truncate">{p.name}</span>
+                      </span>
+                    </td>
+                    {Array.from({ length: daysInMonth }, (_, i) => {
+                      const d = new Date(year, month, i + 1)
+                      const iso = localISO(d)
+                      const off = p.days.has(iso)
+                      const isWeekend = d.getDay() === 0 || d.getDay() === 6
+                      return (
+                        <td key={i} className="min-w-5 p-0">
+                          <div
+                            title={off ? `${p.name} — off ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : undefined}
+                            className={`h-5 rounded-sm ${
+                              off ? color.bar : isWeekend ? 'bg-gray-50' : 'bg-gray-100/60'
+                            }`}
+                          />
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function MiniCalendar({ dateMap }: { dateMap: Map<string, HolidayStatus> }) {

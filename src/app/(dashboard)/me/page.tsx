@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { BusinessPulse } from "./_components/BusinessPulse";
+import { BusinessReminders } from "./_components/BusinessReminders";
 import { CultureFeed } from "./_components/CultureFeed";
 import { HolidayCard } from "./_components/HolidayCard";
+import { OutstandingItems } from "./_components/OutstandingItems";
 import { QuickLinks } from "./_components/QuickLinks";
 import { TaskPanel } from "./_components/TaskPanel";
 import { UpcomingList } from "./_components/UpcomingList";
@@ -110,6 +112,8 @@ export default function MePage() {
               culturalEvents={data.culturalEvents}
             />
             <UpcomingList items={data.upcoming} />
+            <BusinessReminders />
+            <OutstandingItems />
             <CultureFeed />
             <HolidayCard holiday={data.holiday} />
           </div>

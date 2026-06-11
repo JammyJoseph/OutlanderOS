@@ -117,7 +117,7 @@ export default function HubPage() {
           <h1 className="text-3xl font-bold text-gray-900">Choose your workspace</h1>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {PORTALS.map((portal) => {
             const Icon = portal.icon
             const statValue = portal.statKey ? stats[portal.statKey] : undefined

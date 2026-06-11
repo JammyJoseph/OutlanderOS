@@ -190,6 +190,7 @@ export function TaskPanel({ tasks, onChange }: Props) {
             <option value="commercial">Commercial</option>
             <option value="production">Production</option>
             <option value="print">Print</option>
+            <option value="followup">Follow-up</option>
           </select>
           <button
             type="submit"
@@ -204,7 +205,11 @@ export function TaskPanel({ tasks, onChange }: Props) {
       {/* Open tasks */}
       {open.length === 0 ? (
         <p className="px-4 py-8 text-center text-sm text-gray-400">
-          {tab === "all" ? "No open tasks. Enjoy the quiet." : "No open tasks in this category."}
+          {tab === "all"
+            ? "No open tasks. Enjoy the quiet."
+            : tab === "followup"
+              ? "No follow-ups. Add one to track things like “chase Brand X about the contract”."
+              : "No open tasks in this category."}
         </p>
       ) : (
         <ul className="divide-y divide-gray-50">

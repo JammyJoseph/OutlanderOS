@@ -40,6 +40,10 @@ export const GET = withAuth(async (request: NextRequest) => {
       const due = i.dueDate ? new Date(i.dueDate).getTime() : nowMs
       return due < nowMs ? s + i.amountDue : s
     }, 0)
+    const overdueReceivableCount = invoices.filter((i) => {
+      const due = i.dueDate ? new Date(i.dueDate).getTime() : nowMs
+      return due < nowMs
+    }).length
     const outstandingPayables = bills.reduce((s, b) => s + b.amountDue, 0)
 
     const pendingApprovals = submissions.filter((s) => s.status === 'RECEIVED' || s.status === 'UNDER_REVIEW').length
@@ -102,6 +106,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       bankBalance: bank,
       outstandingReceivables,
       overdueReceivables,
+      overdueReceivableCount,
       outstandingPayables,
       receivableCount: invoices.length,
       payableCount: bills.length,

@@ -93,7 +93,14 @@ export interface TrendSignal {
 }
 
 // Task tab categories map onto the Task.portal field.
-export const TASK_TABS = ["all", "commercial", "production", "print", "general"] as const;
+export const TASK_TABS = [
+  "all",
+  "commercial",
+  "production",
+  "print",
+  "followup",
+  "general",
+] as const;
 export type TaskTab = (typeof TASK_TABS)[number];
 
 export const TASK_TAB_LABELS: Record<TaskTab, string> = {
@@ -101,11 +108,18 @@ export const TASK_TAB_LABELS: Record<TaskTab, string> = {
   commercial: "Commercial",
   production: "Production",
   print: "Print",
+  followup: "Follow-ups",
   general: "General",
 };
 
 export function taskTabFor(portal: string | null): Exclude<TaskTab, "all"> {
-  if (portal === "commercial" || portal === "production" || portal === "print") return portal;
+  if (
+    portal === "commercial" ||
+    portal === "production" ||
+    portal === "print" ||
+    portal === "followup"
+  )
+    return portal;
   return "general";
 }
 
@@ -115,6 +129,7 @@ export const PORTAL_COLORS: Record<string, { accent: string; bg: string; text: s
   production: { accent: "#DC4B4B", bg: "#DC4B4B1A", text: "#a83232" },
   finance: { accent: "#3B82F6", bg: "#3B82F61A", text: "#1d4ed8" },
   print: { accent: "#22A06B", bg: "#22A06B1A", text: "#15803d" },
+  followup: { accent: "#7B5BD6", bg: "#7B5BD61A", text: "#5b3fb0" },
   personal: { accent: "#6B7280", bg: "#6B72801A", text: "#4b5563" },
 };
 
