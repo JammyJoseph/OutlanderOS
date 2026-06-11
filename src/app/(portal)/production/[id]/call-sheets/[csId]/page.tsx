@@ -95,7 +95,9 @@ export default function CallSheetPage() {
         setWrapTime(s.wrapTime || "");
         setSchedule(Array.isArray(s.schedule) ? s.schedule : []);
         setLocation(
-          s.location && typeof s.location === "object" ? s.location : emptyLocation()
+          s.location && typeof s.location === "object" && !Array.isArray(s.location)
+            ? { ...emptyLocation(), ...s.location }
+            : emptyLocation()
         );
         setLocationLat(s.locationLat ?? null);
         setLocationLng(s.locationLng ?? null);

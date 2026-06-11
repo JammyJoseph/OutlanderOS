@@ -78,12 +78,12 @@ export function CallSheetEditor(p: EditorProps) {
     const team = p.production.teamMembers ?? [];
     if (!team.length) return;
     const existing = new Set(
-      p.crew.map((c) => `${c.name.trim().toLowerCase()}|${(c.email || "").trim().toLowerCase()}`)
+      p.crew.map((c) => `${(c.name || "").trim().toLowerCase()}|${(c.email || "").trim().toLowerCase()}`)
     );
     const incoming = team
       .filter(
         (m) =>
-          !existing.has(`${m.name.trim().toLowerCase()}|${(m.email || "").trim().toLowerCase()}`)
+          !existing.has(`${(m.name || "").trim().toLowerCase()}|${(m.email || "").trim().toLowerCase()}`)
       )
       .map((m) => ({
         role: m.role || "",

@@ -140,9 +140,8 @@ export default function ProjectDetail() {
         .sort((a, b) => a.time.localeCompare(b.time))
         .map((b) => ({
           time: b.time,
-          activity: b.activity,
-          location: b.location,
-          notes: b.notes,
+          description: b.activity,
+          notes: b.notes || "",
         }));
 
       const res = await fetch("/api/call-sheets", {

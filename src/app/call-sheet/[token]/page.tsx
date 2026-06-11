@@ -62,7 +62,7 @@ export default async function PublicCallSheetPage({
   const sheet = applyLegacyNotesShim(raw);
   const location =
     sheet.location && typeof sheet.location === "object" && !Array.isArray(sheet.location)
-      ? (sheet.location as unknown as LocationData)
+      ? { ...emptyLocation(), ...(sheet.location as unknown as Partial<LocationData>) }
       : emptyLocation();
   const catering =
     sheet.cateringDetails &&

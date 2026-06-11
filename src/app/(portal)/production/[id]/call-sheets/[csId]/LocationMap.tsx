@@ -8,7 +8,7 @@ import { inputCls, labelCls } from "./shared";
 export async function geocodeAddress(
   address: string
 ): Promise<{ lat: number; lng: number } | null> {
-  const q = address.trim();
+  const q = (address || "").trim();
   if (!q) return null;
   try {
     const res = await fetch(
@@ -107,7 +107,7 @@ export function LocationEditor({
         <div className="flex items-center gap-3 mt-2">
           <button
             onClick={findOnMap}
-            disabled={locating || !location.address.trim()}
+            disabled={locating || !(location.address || "").trim()}
             className="flex items-center gap-1.5 text-xs font-medium text-[#E24B4A] hover:text-[#C93D3C] transition-colors disabled:opacity-40"
           >
             {locating ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}

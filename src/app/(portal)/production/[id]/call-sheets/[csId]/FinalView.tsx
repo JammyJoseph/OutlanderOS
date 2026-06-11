@@ -90,7 +90,7 @@ export function FinalView({
 // ─── Distribution tracker ──────────────────────────────────────────────────────
 
 function distKey(name: string, email: string): string {
-  return `${name.trim().toLowerCase()}|${email.trim().toLowerCase()}`;
+  return `${(name || "").trim().toLowerCase()}|${(email || "").trim().toLowerCase()}`;
 }
 
 function DistributionPanel({
@@ -109,7 +109,7 @@ function DistributionPanel({
   const entries = useMemo<DistributionEntry[]>(() => {
     const stored = Array.isArray(sheet.distributions) ? sheet.distributions : [];
     const byKey = new Map(stored.map((d) => [distKey(d.name, d.email), d]));
-    const roster = [...viewData.crew, ...viewData.talent].filter((m) => m.name.trim());
+    const roster = [...viewData.crew, ...viewData.talent].filter((m) => (m.name || "").trim());
     const merged: DistributionEntry[] = roster.map((m) => {
       const key = distKey(m.name, m.email || "");
       const existing = byKey.get(key);
