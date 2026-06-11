@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   CalendarDays,
   CheckCircle2,
+  FileText,
   ListChecks,
   Lock,
   Wallet,
@@ -150,6 +151,39 @@ export default function OverviewTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Description / details */}
         <div className="lg:col-span-2 space-y-5">
+          {/* Brief handed over from the Commercial deal */}
+          {production.type === "COMMERCIAL" && production.brief && (
+            <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5">
+              <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <FileText size={15} className="text-emerald-600" />
+                  Brief from Commercial
+                </h2>
+                <div className="flex items-center gap-2 text-xs">
+                  {(production.clientName || production.campaign?.client?.name) && (
+                    <span className="text-gray-500">
+                      {production.clientName || production.campaign?.client?.name}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 font-semibold text-[#9C7424] bg-amber-50 rounded-full px-2 py-0.5">
+                    <Lock size={10} /> {gbp(production.budgetTotal ?? 0)} budget
+                  </span>
+                </div>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {production.brief}
+              </p>
+              {production.campaignId && (
+                <Link
+                  href={`/commercial/deals/${production.campaignId}`}
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 hover:text-emerald-800 transition-colors"
+                >
+                  View the deal in Commercial <ArrowUpRight size={12} />
+                </Link>
+              )}
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <Label>Description</Label>
             <textarea

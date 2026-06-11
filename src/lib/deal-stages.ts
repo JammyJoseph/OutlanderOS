@@ -24,7 +24,59 @@ export const ACTIVE_STAGES: DealStageValue[] = [
   "LIVE",
 ];
 
-export const DEAL_TYPES = ["PARTNERSHIP", "ADVERTORIAL", "EVENT", "EDITORIAL"] as const;
+// Multi-select deal types stored in Campaign.dealTypes (string array).
+export const DEAL_TYPES = [
+  "PARTNERSHIP",
+  "ADVERTORIAL",
+  "EVENT",
+  "DIGITAL_PARTNERSHIP",
+  "EDITORIAL",
+  "PRINT_AD",
+  "CONTENT_CREATION",
+  "SPONSORSHIP",
+] as const;
+
+export type DealTypeValue = (typeof DEAL_TYPES)[number];
+
+export function isDealType(value: string): value is DealTypeValue {
+  return (DEAL_TYPES as readonly string[]).includes(value);
+}
+
+// Deal types that involve production work — these unlock the creative brief
+// and the "Clear for Production" flow.
+export const PRODUCTION_DEAL_TYPES: DealTypeValue[] = [
+  "EVENT",
+  "CONTENT_CREATION",
+  "PARTNERSHIP",
+  "ADVERTORIAL",
+  "EDITORIAL",
+];
+
+export const BRIEF_STATUSES = ["DRAFT", "READY", "SENT_TO_PRODUCTION"] as const;
+
+export function isBriefStatus(value: string): value is (typeof BRIEF_STATUSES)[number] {
+  return (BRIEF_STATUSES as readonly string[]).includes(value);
+}
+
+// The legacy Campaign.type enum is still required by the schema — map the new
+// multi-select values onto it so old consumers keep working.
+export function dealTypeToCampaignType(dealType: string): string {
+  switch (dealType) {
+    case "PARTNERSHIP":
+    case "ADVERTORIAL":
+    case "EVENT":
+    case "EDITORIAL":
+    case "PRINT_AD":
+      return dealType;
+    case "DIGITAL_PARTNERSHIP":
+    case "SPONSORSHIP":
+      return "PARTNERSHIP";
+    case "CONTENT_CREATION":
+      return "BESPOKE_PRODUCTION";
+    default:
+      return "PARTNERSHIP";
+  }
+}
 
 export function isDealStage(value: string): value is DealStageValue {
   return (DEAL_STAGES as readonly string[]).includes(value);

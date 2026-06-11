@@ -143,7 +143,8 @@ model Campaign {
   clientId         String
   client           Client         @relation(fields: [clientId], references: [id])
   title            String
-  type             CampaignType
+  type             CampaignType // legacy single type — kept for backwards compatibility
+  dealTypes        String[]       @default([]) // multi-select deal types, e.g. ["EVENT", "DIGITAL_PARTNERSHIP"]
   status           CampaignStatus @default(BRIEF_RECEIVED)
   stage            DealStage      @default(LEAD)
   stageUpdatedAt   DateTime?
@@ -161,6 +162,9 @@ model Campaign {
   ioUrl            String?
   ioSigned         Boolean        @default(false)
   ioSignedAt       DateTime?
+  briefContent     String? // creative brief for the production team
+  briefDueDate     DateTime? // when the brief is due to production
+  briefStatus      String         @default("DRAFT") // DRAFT, READY, SENT_TO_PRODUCTION
   paymentTerms     String?
   notes            String?
   createdById      String

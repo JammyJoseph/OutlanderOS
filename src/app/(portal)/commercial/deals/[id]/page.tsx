@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,15 +22,20 @@ import {
   Activity as ActivityIcon,
   ArrowUpRight,
   Newspaper,
+  FileText,
+  Send,
 } from "lucide-react";
-import { format, parseISO, formatDistanceToNow } from "date-fns";
+import { format, parseISO, formatDistanceToNow, differenceInCalendarDays } from "date-fns";
 import {
   STAGE_ORDER,
   STAGE_STYLES,
   typeStyle,
   formatMoney,
+  dealTypesOf,
+  isProductionDeal,
   DEAL_TYPE_OPTIONS,
   TYPE_STYLES,
+  BRIEF_STATUS_STYLES,
   type DealStage,
 } from "../../_components/deal-ui";
 import { ActionTrackPanel } from "@/components/tasks/ActionTrackPanel";
@@ -56,6 +61,10 @@ interface DealDetail {
   id: string;
   title: string;
   type: string;
+  dealTypes: string[];
+  briefContent: string | null;
+  briefDueDate: string | null;
+  briefStatus: string;
   stage: DealStage;
   stageUpdatedAt: string | null;
   value: number | null;
@@ -97,7 +106,12 @@ interface TeamMember {
   name: string;
 }
 
-type Tab = "overview" | "budget" | "deliverables" | "tasks" | "activity";
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
+type Tab = "overview" | "brief" | "budget" | "deliverables" | "tasks" | "activity";
 
 const WON_STAGES: DealStage[] = ["CONTRACTED", "LIVE", "COMPLETED", "PAID"];
 
@@ -105,6 +119,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   created: <Sparkles size={13} />,
   stage_change: <ArrowRightLeft size={13} />,
   budget_update: <Banknote size={13} />,
+  field_update: <PenLine size={13} />,
   note: <PenLine size={13} />,
   deliverable: <PackageCheck size={13} />,
   project_started: <Rocket size={13} />,
@@ -114,10 +129,14 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const [deal, setDeal] = useState<DealDetail | null>(null);
   const [users, setUsers] = useState<TeamMember[]>([]);
+  const [clients, setClients] = useState<ClientOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
   const [showStartProject, setShowStartProject] = useState(false);
+  const [showClearProduction, setShowClearProduction] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reload = useCallback(async () => {
     const res = await fetch(`/api/campaigns/${id}`);
@@ -135,17 +154,36 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       fetch("/api/users")
         .then((r) => r.json())
         .then((u) => setUsers(Array.isArray(u) ? u : [])),
+      fetch("/api/clients")
+        .then((r) => r.json())
+        .then((c) => setClients(Array.isArray(c) ? c : [])),
     ]).finally(() => setLoading(false));
   }, [reload]);
 
-  async function patchDeal(data: Record<string, unknown>) {
-    const res = await fetch(`/api/campaigns/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (res.ok) await reload();
+  function flashSaved() {
+    setSaved(true);
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSaved(false), 2000);
   }
+
+  const patchDeal = useCallback(
+    async (data: Record<string, unknown>) => {
+      // Optimistic local merge for instant feedback; reload syncs the truth.
+      setDeal((prev) => (prev ? ({ ...prev, ...data } as DealDetail) : prev));
+      const res = await fetch(`/api/campaigns/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        await reload();
+        flashSaved();
+      } else {
+        await reload(); // roll back the optimistic merge
+      }
+    },
+    [id, reload]
+  );
 
   if (loading) {
     return (
@@ -172,19 +210,23 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const stage = STAGE_STYLES[deal.stage] ?? STAGE_STYLES.LEAD;
-  const type = typeStyle(deal.type);
-  const canStartProject = WON_STAGES.includes(deal.stage);
+  const types = dealTypesOf(deal);
+  const productionDeal = isProductionDeal(deal);
+  const stageWon = WON_STAGES.includes(deal.stage);
   const projectStarted = Boolean(deal.production);
+  const canClearProduction = productionDeal && stageWon && !projectStarted;
+  const canStartFinance = !productionDeal && stageWon && !projectStarted && !deal.financeBudget;
   // Advertorials and print deliverables live in the magazine planning sheet too.
   const printRelated =
-    deal.type === "ADVERTORIAL" ||
-    deal.type === "PRINT_AD" ||
+    types.includes("ADVERTORIAL") ||
+    types.includes("PRINT_AD") ||
     deal.deliverables.some((d) =>
       /print|magazine|advertorial|flat\s*plan/i.test(`${d.type} ${d.description ?? ""}`)
     );
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
+    ...(productionDeal ? [{ key: "brief" as Tab, label: "Brief" }] : []),
     { key: "budget", label: "Budget" },
     { key: "deliverables", label: `Deliverables (${deal.deliverables.length})` },
     { key: "tasks", label: "Tasks" },
@@ -194,13 +236,22 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="min-h-screen bg-[#F9F9F7]">
       <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Breadcrumb */}
-        <Link
-          href="/commercial/pipeline"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-600 mb-4 transition-colors"
-        >
-          <ArrowLeft size={13} /> Pipeline
-        </Link>
+        {/* Breadcrumb + saved indicator */}
+        <div className="flex items-center justify-between mb-4">
+          <Link
+            href="/commercial/pipeline"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <ArrowLeft size={13} /> Pipeline
+          </Link>
+          <span
+            className={`inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition-opacity duration-300 ${
+              saved ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <CheckCircle2 size={13} /> Saved
+          </span>
+        </div>
 
         {/* Header */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
@@ -213,23 +264,27 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   <span className={`w-1.5 h-1.5 rounded-full ${stage.dot}`} />
                   {stage.label}
                 </span>
-                <span
-                  className={`inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full ${type.bg} ${type.text}`}
-                >
-                  {type.label}
-                </span>
                 {projectStarted && (
                   <Link
                     href={`/production/${deal.production!.id}`}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-red-50 text-[#E24B4A] hover:bg-red-100 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
                   >
-                    <Film size={11} /> Production: {deal.production!.title} <ArrowUpRight size={11} />
+                    <Film size={11} /> In Production: {deal.production!.title}{" "}
+                    <ArrowUpRight size={11} />
                   </Link>
+                )}
+                {productionDeal && !projectStarted && deal.briefContent && (
+                  <span
+                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${BRIEF_STATUS_STYLES[deal.briefStatus]?.bg ?? "bg-gray-100"} ${BRIEF_STATUS_STYLES[deal.briefStatus]?.text ?? "text-gray-600"}`}
+                  >
+                    <FileText size={11} />{" "}
+                    {BRIEF_STATUS_STYLES[deal.briefStatus]?.label ?? deal.briefStatus}
+                  </span>
                 )}
                 {deal.financeBudget && (
                   <Link
                     href={`/finance?tab=projects&project=${deal.financeBudget.id}`}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
                   >
                     <Banknote size={11} /> Finance: View project P&amp;L <ArrowUpRight size={11} />
                   </Link>
@@ -244,15 +299,28 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   </Link>
                 )}
               </div>
-              <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">{deal.title}</h1>
+              <EditableTitle title={deal.title} onSave={(t) => patchDeal({ title: t })} />
               <p className="text-sm text-gray-500 mt-0.5">{deal.client.name}</p>
+              <div className="mt-3">
+                <TypePills
+                  types={types}
+                  onChange={(next) => patchDeal({ dealTypes: next })}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col items-end gap-3 shrink-0">
-              <p className="text-3xl font-bold text-gray-900 tabular-nums">
-                {formatMoney(deal.value)}
-              </p>
-              {canStartProject && !projectStarted && (
+              <EditableValue value={deal.value} onSave={(v) => patchDeal({ value: v })} />
+              {canClearProduction && (
+                <button
+                  onClick={() => setShowClearProduction(true)}
+                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
+                >
+                  <CheckCircle2 size={15} />
+                  Clear for Production
+                </button>
+              )}
+              {canStartFinance && (
                 <button
                   onClick={() => setShowStartProject(true)}
                   className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
@@ -279,20 +347,20 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 ))}
               </select>
             </HeaderField>
-            <HeaderField label="Type">
+            <HeaderField label="Client">
               <select
-                value={deal.type}
-                onChange={(e) => patchDeal({ type: e.target.value })}
+                value={deal.client.id}
+                onChange={(e) => patchDeal({ clientId: e.target.value })}
                 className="w-full text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer"
               >
-                {[...DEAL_TYPE_OPTIONS].map((t) => (
-                  <option key={t} value={t}>
-                    {TYPE_STYLES[t].label}
+                {!clients.some((c) => c.id === deal.client.id) && (
+                  <option value={deal.client.id}>{deal.client.name}</option>
+                )}
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
                   </option>
                 ))}
-                {!DEAL_TYPE_OPTIONS.includes(deal.type as never) && (
-                  <option value={deal.type}>{type.label}</option>
-                )}
               </select>
             </HeaderField>
             <HeaderField label="Assigned To">
@@ -338,6 +406,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {tab === "overview" && <OverviewTab deal={deal} onPatch={patchDeal} />}
+        {tab === "brief" && <BriefTab deal={deal} onPatch={patchDeal} />}
         {tab === "budget" && <BudgetTab dealId={deal.id} dealValue={deal.value} onSaved={reload} />}
         {tab === "deliverables" && (
           <DeliverablesTab dealId={deal.id} initial={deal.deliverables} onChanged={reload} />
@@ -350,6 +419,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         <StartProjectModal
           deal={deal}
           onClose={() => setShowStartProject(false)}
+          onDone={reload}
+        />
+      )}
+      {showClearProduction && (
+        <ClearForProductionModal
+          deal={deal}
+          onClose={() => setShowClearProduction(false)}
           onDone={reload}
         />
       )}
@@ -368,6 +444,183 @@ function HeaderField({ label, children }: { label: string; children: React.React
   );
 }
 
+// ─── Inline editable title + value ───────────────────────────────────────────
+
+function EditableTitle({ title, onSave }: { title: string; onSave: (t: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+
+  useEffect(() => setDraft(title), [title]);
+
+  function commit() {
+    setEditing(false);
+    const next = draft.trim();
+    if (next && next !== title) onSave(next);
+    else setDraft(title);
+  }
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") {
+            setDraft(title);
+            setEditing(false);
+          }
+        }}
+        className="w-full text-2xl font-semibold text-gray-900 tracking-tight bg-transparent border-b-2 border-[#D4A853] focus:outline-none"
+      />
+    );
+  }
+  return (
+    <h1
+      onClick={() => setEditing(true)}
+      title="Click to edit title"
+      className="text-2xl font-semibold text-gray-900 tracking-tight cursor-text rounded-lg -mx-1 px-1 hover:bg-amber-50/60 transition-colors"
+    >
+      {title}
+    </h1>
+  );
+}
+
+function EditableValue({
+  value,
+  onSave,
+}: {
+  value: number | null;
+  onSave: (v: number | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value != null ? String(value) : "");
+
+  useEffect(() => setDraft(value != null ? String(value) : ""), [value]);
+
+  function commit() {
+    setEditing(false);
+    const next = draft.trim() === "" ? null : Number(draft);
+    if (next !== value && (next === null || !Number.isNaN(next))) onSave(next);
+    else setDraft(value != null ? String(value) : "");
+  }
+
+  if (editing) {
+    return (
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-gray-400">£</span>
+        <input
+          autoFocus
+          type="number"
+          min="0"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") {
+              setDraft(value != null ? String(value) : "");
+              setEditing(false);
+            }
+          }}
+          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 tabular-nums rounded-xl border-2 border-[#D4A853] focus:outline-none"
+        />
+      </div>
+    );
+  }
+  return (
+    <p
+      onClick={() => setEditing(true)}
+      title="Click to edit value"
+      className="text-3xl font-bold text-gray-900 tabular-nums cursor-text rounded-lg px-1 hover:bg-amber-50/60 transition-colors"
+    >
+      {formatMoney(value)}
+    </p>
+  );
+}
+
+// ─── Editable type pills ──────────────────────────────────────────────────────
+
+function TypePills({
+  types,
+  onChange,
+}: {
+  types: string[];
+  onChange: (types: string[]) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const remaining = DEAL_TYPE_OPTIONS.filter((t) => !types.includes(t));
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {types.map((t) => {
+        const style = typeStyle(t);
+        return (
+          <span
+            key={t}
+            className={`inline-flex items-center gap-1 text-[11px] font-semibold pl-2.5 pr-1 py-1 rounded-full ${style.bg} ${style.text} group`}
+          >
+            {style.label}
+            <button
+              onClick={() => {
+                if (types.length <= 1) return; // a deal always keeps at least one type
+                onChange(types.filter((x) => x !== t));
+              }}
+              title={types.length <= 1 ? "A deal needs at least one type" : "Remove type"}
+              className={`rounded-full p-0.5 transition-colors ${
+                types.length <= 1
+                  ? "opacity-30 cursor-not-allowed"
+                  : "hover:bg-black/10 opacity-60 hover:opacity-100"
+              }`}
+            >
+              <X size={11} />
+            </button>
+          </span>
+        );
+      })}
+      {remaining.length > 0 && (
+        <div className="relative">
+          <button
+            onClick={() => setAdding((a) => !a)}
+            title="Add type"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-[#D4A853] hover:text-[#9C7424] transition-colors"
+          >
+            <Plus size={11} /> Add
+          </button>
+          {adding && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setAdding(false)} />
+              <div className="absolute z-20 mt-1.5 w-52 rounded-xl border border-gray-100 bg-white shadow-lg p-1.5">
+                {remaining.map((t) => {
+                  const style = TYPE_STYLES[t];
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => {
+                        onChange([...types, t]);
+                        setAdding(false);
+                      }}
+                      className="flex w-full items-center rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+                    >
+                      <span
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}
+                      >
+                        {style.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Overview tab ─────────────────────────────────────────────────────────────
 
 function OverviewTab({
@@ -378,6 +631,7 @@ function OverviewTab({
   onPatch: (data: Record<string, unknown>) => Promise<void>;
 }) {
   const [notes, setNotes] = useState(deal.notes ?? "");
+  const [description, setDescription] = useState(deal.description ?? "");
   const [saving, setSaving] = useState(false);
 
   const stageHistory = deal.activities.filter((a) => a.type === "stage_change").slice(0, 8);
@@ -389,19 +643,30 @@ function OverviewTab({
     setSaving(false);
   }
 
+  async function saveDescription() {
+    if (description === (deal.description ?? "")) return;
+    setSaving(true);
+    await onPatch({ description: description || null });
+    setSaving(false);
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div className="lg:col-span-2 space-y-5">
         {/* Description */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">Description</h3>
-          {deal.description ? (
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-              {deal.description}
-            </p>
-          ) : (
-            <p className="text-sm text-gray-400">No description yet.</p>
-          )}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-800">Description</h3>
+            {saving && <Loader2 size={13} className="animate-spin text-gray-400" />}
+          </div>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onBlur={saveDescription}
+            rows={4}
+            placeholder="What's the deal? Scope, deliverables, context — saved automatically when you click away…"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+          />
         </div>
 
         {/* Notes */}
@@ -422,7 +687,7 @@ function OverviewTab({
       </div>
 
       <div className="space-y-5">
-        {/* Production — appears once a project has been started */}
+        {/* Production — appears once the deal is cleared for production */}
         {deal.production && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -552,6 +817,134 @@ function OverviewTab({
             </p>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Creative Brief tab ───────────────────────────────────────────────────────
+
+function BriefTab({
+  deal,
+  onPatch,
+}: {
+  deal: DealDetail;
+  onPatch: (data: Record<string, unknown>) => Promise<void>;
+}) {
+  const [content, setContent] = useState(deal.briefContent ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const sent = deal.briefStatus === "SENT_TO_PRODUCTION";
+  const statusStyle = BRIEF_STATUS_STYLES[deal.briefStatus] ?? BRIEF_STATUS_STYLES.DRAFT;
+
+  const due = deal.briefDueDate ? parseISO(deal.briefDueDate) : null;
+  const dueDays = due ? differenceInCalendarDays(due, new Date()) : null;
+  const dueLabel =
+    dueDays === null
+      ? null
+      : dueDays < 0
+        ? `${Math.abs(dueDays)} day${Math.abs(dueDays) === 1 ? "" : "s"} overdue`
+        : dueDays === 0
+          ? "due today"
+          : `due in ${dueDays} day${dueDays === 1 ? "" : "s"}`;
+
+  async function saveContent() {
+    if (content === (deal.briefContent ?? "")) return;
+    setSaving(true);
+    await onPatch({ briefContent: content || null });
+    setSaving(false);
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-3xl">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <FileText size={15} className="text-[#D4A853]" />
+          Creative Brief
+        </h3>
+        <div className="flex items-center gap-2.5">
+          {saving && <Loader2 size={13} className="animate-spin text-gray-400" />}
+          {sent ? (
+            <span
+              className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${statusStyle.bg} ${statusStyle.text}`}
+            >
+              <CheckCircle2 size={12} /> Sent to Production
+            </span>
+          ) : (
+            <select
+              value={deal.briefStatus}
+              onChange={(e) => onPatch({ briefStatus: e.target.value })}
+              className={`text-[11px] font-semibold rounded-full px-2.5 py-1 cursor-pointer focus:outline-none ${statusStyle.bg} ${statusStyle.text}`}
+              title="Brief status"
+            >
+              <option value="DRAFT">Draft</option>
+              <option value="READY">Ready</option>
+            </select>
+          )}
+        </div>
+      </div>
+      <p className="text-xs text-gray-400 mb-5">
+        What needs to be produced, requirements, references — this goes to the production team.
+      </p>
+
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        onBlur={saveContent}
+        rows={12}
+        placeholder={
+          "Write the creative brief here — saved automatically when you click away.\n\n• What are we making?\n• Key requirements & deliverables\n• References / mood\n• Anything the production team must know"
+        }
+        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+      />
+
+      <div className="mt-5 pt-4 border-t border-gray-100 flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+            Brief due to production
+          </p>
+          <div className="flex items-center gap-2.5">
+            <input
+              type="date"
+              value={deal.briefDueDate ? deal.briefDueDate.slice(0, 10) : ""}
+              onChange={(e) => onPatch({ briefDueDate: e.target.value || null })}
+              className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+            />
+            {dueLabel && (
+              <span
+                className={`text-xs font-semibold ${
+                  dueDays !== null && dueDays < 0
+                    ? "text-red-500"
+                    : dueDays !== null && dueDays <= 3
+                      ? "text-amber-600"
+                      : "text-gray-500"
+                }`}
+              >
+                {dueLabel}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {!sent && (
+          <button
+            onClick={() => onPatch({ briefStatus: "SENT_TO_PRODUCTION" })}
+            disabled={!content.trim()}
+            title={content.trim() ? "Mark the brief as sent to production" : "Write the brief first"}
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send size={14} />
+            Send to Production
+          </button>
+        )}
+        {sent && deal.production && (
+          <Link
+            href={`/production/${deal.production.id}`}
+            className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800"
+          >
+            View in Production <ArrowUpRight size={14} />
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -893,7 +1286,155 @@ function ActivityTab({ activities }: { activities: ActivityEntry[] }) {
   );
 }
 
-// ─── Start Project modal ──────────────────────────────────────────────────────
+// ─── Clear for Production modal ───────────────────────────────────────────────
+
+function ClearForProductionModal({
+  deal,
+  onClose,
+  onDone,
+}: {
+  deal: DealDetail;
+  onClose: () => void;
+  onDone: () => Promise<void>;
+}) {
+  const [clearing, setClearing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<{ productionId: string } | null>(null);
+
+  const splits = Array.isArray(deal.budgetBreakdown) ? deal.budgetBreakdown : [];
+  const budgetTotal = splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+  const effectiveBudget = budgetTotal > 0 ? budgetTotal : deal.value ?? 0;
+
+  async function clear() {
+    setClearing(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/commercial/deals/${deal.id}/clear-for-production`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to clear for production");
+        return;
+      }
+      await onDone();
+      setDone({ productionId: data.production.id });
+    } catch {
+      setError("Failed to clear for production");
+    } finally {
+      setClearing(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div className="border-b border-gray-50 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <CheckCircle2 size={17} className="text-emerald-600" />
+            Clear for Production
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {done ? (
+          <div className="px-6 py-10 text-center">
+            <div className="mx-auto w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
+              <CheckCircle2 size={24} className="text-emerald-500" />
+            </div>
+            <p className="text-base font-semibold text-gray-900">Cleared for production</p>
+            <p className="text-sm text-gray-500 mt-1">
+              &ldquo;{deal.title}&rdquo; is now with the production team — the brief and a{" "}
+              {formatMoney(effectiveBudget)} budget went across.
+            </p>
+            <div className="flex gap-3 mt-6 justify-center">
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Stay on deal
+              </button>
+              <Link
+                href={`/production/${done.productionId}`}
+                className="flex items-center gap-1.5 bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors"
+              >
+                Open production <ArrowUpRight size={14} />
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="px-6 py-5">
+            <p className="text-sm text-gray-700">
+              This will create a production project and send the brief to the production team.
+              Continue?
+            </p>
+            <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-sm space-y-1.5">
+              <p className="flex items-center justify-between">
+                <span className="text-gray-400">Project</span>
+                <span className="font-medium text-gray-800 truncate ml-3">{deal.title}</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span className="text-gray-400">Client</span>
+                <span className="font-medium text-gray-800">{deal.client.name}</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span className="text-gray-400">Budget</span>
+                <span className="font-medium text-gray-800 tabular-nums">
+                  {formatMoney(effectiveBudget)}
+                  {splits.length > 0 ? ` · ${splits.length} line${splits.length === 1 ? "" : "s"}` : ""}
+                </span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span className="text-gray-400">Brief</span>
+                <span className="font-medium text-gray-800">
+                  {deal.briefContent?.trim() ? "Included" : "Not written yet"}
+                </span>
+              </p>
+            </div>
+            {!deal.briefContent?.trim() && (
+              <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-3">
+                No creative brief yet — the deal description will be sent instead. You can write
+                the brief on the Brief tab first.
+              </p>
+            )}
+
+            {error && (
+              <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2 mt-3">{error}</p>
+            )}
+
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={clear}
+                disabled={clearing}
+                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {clearing ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={15} />
+                )}
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Start Project modal (finance-only deals) ────────────────────────────────
 
 function StartProjectModal({
   deal,

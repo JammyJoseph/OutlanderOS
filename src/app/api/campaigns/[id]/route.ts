@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, type AuthUser } from "@/lib/auth";
 import { sanitizeString } from "@/lib/validate";
-import { isDealStage } from "@/lib/deal-stages";
+import { isDealStage, isDealType, isBriefStatus, dealTypeToCampaignType } from "@/lib/deal-stages";
 
 export const GET = withAuth(async (
   _request: NextRequest,
@@ -59,16 +59,41 @@ async function updateCampaign(
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
     const body = await request.json();
-    const { status, stage, title, value, currency, type, notes, ioSigned, description, dueDate, assignedToId } = body;
+    const {
+      status, stage, title, value, currency, type, notes, ioSigned, description,
+      dueDate, assignedToId, clientId, dealTypes, briefContent, briefDueDate, briefStatus,
+    } = body;
 
     const existing = await prisma.campaign.findUnique({
       where: { id },
-      select: { id: true, stage: true, value: true, title: true },
+      select: { id: true, stage: true, value: true, title: true, briefStatus: true },
     });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     if (stage !== undefined && !isDealStage(stage)) {
       return NextResponse.json({ error: `Invalid stage: ${stage}` }, { status: 400 });
+    }
+
+    let nextDealTypes: string[] | undefined;
+    if (dealTypes !== undefined) {
+      if (!Array.isArray(dealTypes)) {
+        return NextResponse.json({ error: "dealTypes must be an array" }, { status: 400 });
+      }
+      nextDealTypes = dealTypes.filter(
+        (t: unknown): t is string => typeof t === "string" && isDealType(t)
+      );
+      if (!nextDealTypes.length) {
+        return NextResponse.json({ error: "A deal needs at least one type" }, { status: 400 });
+      }
+    }
+
+    if (briefStatus !== undefined && !isBriefStatus(briefStatus)) {
+      return NextResponse.json({ error: `Invalid briefStatus: ${briefStatus}` }, { status: 400 });
+    }
+
+    if (clientId !== undefined) {
+      const client = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
+      if (!client) return NextResponse.json({ error: "Client not found" }, { status: 400 });
     }
 
     const stageChanged = stage !== undefined && stage !== existing.stage;
@@ -83,6 +108,18 @@ async function updateCampaign(
         ...(value !== undefined ? { value: value === null || value === "" ? null : parseFloat(value) } : {}),
         ...(currency !== undefined ? { currency } : {}),
         ...(type !== undefined ? { type } : {}),
+        // dealTypes drives the legacy type field so old consumers stay coherent
+        ...(nextDealTypes !== undefined
+          ? { dealTypes: nextDealTypes, type: dealTypeToCampaignType(nextDealTypes[0]) as never }
+          : {}),
+        ...(clientId !== undefined ? { clientId } : {}),
+        ...(briefContent !== undefined
+          ? { briefContent: briefContent === null ? null : sanitizeString(briefContent, 20000) }
+          : {}),
+        ...(briefDueDate !== undefined
+          ? { briefDueDate: briefDueDate ? new Date(briefDueDate) : null }
+          : {}),
+        ...(briefStatus !== undefined ? { briefStatus } : {}),
         ...(notes !== undefined ? { notes: notes === null ? null : sanitizeString(notes, 8000) } : {}),
         ...(description !== undefined
           ? { description: description === null ? null : sanitizeString(description, 4000) }
@@ -133,6 +170,16 @@ async function updateCampaign(
     }
     if (notes !== undefined) {
       logs.push({ type: "note", message: `Notes updated on "${existing.title}"` });
+    }
+    if (briefStatus !== undefined && briefStatus !== existing.briefStatus) {
+      logs.push({
+        type: "field_update",
+        message:
+          briefStatus === "SENT_TO_PRODUCTION"
+            ? `Creative brief for "${existing.title}" sent to production`
+            : `Creative brief status on "${existing.title}" set to ${briefStatus}`,
+        meta: { from: existing.briefStatus, to: briefStatus },
+      });
     }
     if (logs.length) {
       await prisma.dealActivity.createMany({

@@ -53,24 +53,70 @@ export const STAGE_STYLES: Record<
   PAID: { label: "Paid", bg: "bg-green-100", text: "text-green-700", dot: "bg-green-500", bar: "bg-green-500" },
 };
 
-export const DEAL_TYPE_OPTIONS = ["PARTNERSHIP", "ADVERTORIAL", "EVENT", "EDITORIAL"] as const;
+// The full multi-select deal type catalogue (Campaign.dealTypes).
+export const DEAL_TYPE_OPTIONS = [
+  "PARTNERSHIP",
+  "ADVERTORIAL",
+  "EVENT",
+  "DIGITAL_PARTNERSHIP",
+  "EDITORIAL",
+  "PRINT_AD",
+  "CONTENT_CREATION",
+  "SPONSORSHIP",
+] as const;
+
+// Deal types that involve production — they unlock the creative brief and
+// the "Clear for Production" flow. Mirrors PRODUCTION_DEAL_TYPES in lib/deal-stages.
+export const PRODUCTION_DEAL_TYPES = [
+  "EVENT",
+  "CONTENT_CREATION",
+  "PARTNERSHIP",
+  "ADVERTORIAL",
+  "EDITORIAL",
+] as const;
 
 export const TYPE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   PARTNERSHIP: { label: "Partnership", bg: "bg-purple-50", text: "text-purple-700" },
   ADVERTORIAL: { label: "Advertorial", bg: "bg-amber-50", text: "text-amber-700" },
   EVENT: { label: "Event", bg: "bg-pink-50", text: "text-pink-700" },
+  DIGITAL_PARTNERSHIP: { label: "Digital Partnership", bg: "bg-cyan-50", text: "text-cyan-700" },
   EDITORIAL: { label: "Editorial", bg: "bg-blue-50", text: "text-blue-700" },
+  PRINT_AD: { label: "Print Ad", bg: "bg-teal-50", text: "text-teal-700" },
+  CONTENT_CREATION: { label: "Content Creation", bg: "bg-rose-50", text: "text-rose-700" },
+  SPONSORSHIP: { label: "Sponsorship", bg: "bg-indigo-50", text: "text-indigo-700" },
   // Legacy campaign types
   SUPPLIED_ASSET: { label: "Supplied Asset", bg: "bg-gray-50", text: "text-gray-600" },
   BESPOKE_PRODUCTION: { label: "Bespoke Production", bg: "bg-gray-50", text: "text-gray-600" },
   WHITE_LABEL: { label: "White Label", bg: "bg-gray-50", text: "text-gray-600" },
   EDITORIAL_FEATURE: { label: "Editorial Feature", bg: "bg-gray-50", text: "text-gray-600" },
-  PRINT_AD: { label: "Print Ad", bg: "bg-gray-50", text: "text-gray-600" },
 };
 
 export function typeStyle(type: string) {
   return TYPE_STYLES[type] ?? { label: type, bg: "bg-gray-50", text: "text-gray-600" };
 }
+
+// Effective types for a deal — prefers the multi-select dealTypes array and
+// falls back to the legacy single type for deals created before the change.
+export function dealTypesOf(deal: { dealTypes?: string[] | null; type: string }): string[] {
+  if (Array.isArray(deal.dealTypes) && deal.dealTypes.length > 0) return deal.dealTypes;
+  return deal.type ? [deal.type] : [];
+}
+
+export function isProductionDeal(deal: { dealTypes?: string[] | null; type: string }): boolean {
+  return dealTypesOf(deal).some((t) =>
+    (PRODUCTION_DEAL_TYPES as readonly string[]).includes(t)
+  );
+}
+
+export const BRIEF_STATUS_STYLES: Record<string, { label: string; bg: string; text: string }> = {
+  DRAFT: { label: "Brief: Draft", bg: "bg-gray-100", text: "text-gray-600" },
+  READY: { label: "Brief: Ready", bg: "bg-amber-100", text: "text-amber-700" },
+  SENT_TO_PRODUCTION: {
+    label: "Brief: Sent to Production",
+    bg: "bg-emerald-100",
+    text: "text-emerald-700",
+  },
+};
 
 export function formatMoney(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
@@ -81,6 +127,10 @@ export interface Deal {
   id: string;
   title: string;
   type: string;
+  dealTypes?: string[] | null;
+  briefContent?: string | null;
+  briefDueDate?: string | null;
+  briefStatus?: string;
   stage: DealStage;
   stageUpdatedAt: string | null;
   status: string;

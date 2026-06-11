@@ -71,7 +71,10 @@ export interface DashboardData {
   counts: QuickLinkCounts;
 }
 
-export interface PulseData {
+// /api/dashboard/pulse is role-aware: ADMIN gets the finance cards,
+// MEMBER gets projects / deliveries / next shoot. Both get payroll.
+export interface AdminPulseData {
+  role: "ADMIN";
   pipelineValue: number;
   activeDealCount: number;
   xeroConnected: boolean;
@@ -81,6 +84,18 @@ export interface PulseData {
   bankAccountName: string;
   payroll: { date: string; daysUntil: number };
 }
+
+export interface MemberPulseData {
+  role: "MEMBER";
+  activeProjects: number;
+  activeDealCount: number;
+  activeProductionCount: number;
+  upcomingDeliveries: number;
+  nextShoot: { date: string; title: string; productionId: string } | null;
+  payroll: { date: string; daysUntil: number };
+}
+
+export type PulseData = AdminPulseData | MemberPulseData;
 
 export interface TrendSignal {
   id: string;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { validateRequired, sanitizeString } from "@/lib/validate";
-import { isDealStage } from "@/lib/deal-stages";
+import { isDealStage, isDealType, dealTypeToCampaignType } from "@/lib/deal-stages";
 
 export const GET = withAuth(async (request: NextRequest) => {
   try {
@@ -10,6 +10,19 @@ export const GET = withAuth(async (request: NextRequest) => {
     const status = searchParams.get("status");
     const stage = searchParams.get("stage");
     const type = searchParams.get("type");
+    // Multi-select type filter: ?types=EVENT,EDITORIAL matches deals that
+    // have ANY of the given types (in dealTypes or the legacy type field).
+    const types = (searchParams.get("types") ?? "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    // The legacy type column is a Postgres enum — only valid enum values can
+    // be used in the fallback comparison for deals without dealTypes.
+    const LEGACY_TYPES = [
+      "SUPPLIED_ASSET", "BESPOKE_PRODUCTION", "WHITE_LABEL", "EDITORIAL_FEATURE",
+      "PRINT_AD", "PARTNERSHIP", "ADVERTORIAL", "EVENT", "EDITORIAL",
+    ];
+    const legacyTypes = types.filter((t) => LEGACY_TYPES.includes(t));
     const search = searchParams.get("search");
     const clientId = searchParams.get("clientId");
     const assignedToId = searchParams.get("assignedToId");
@@ -19,6 +32,20 @@ export const GET = withAuth(async (request: NextRequest) => {
         status: status ? (status as never) : { not: "ARCHIVED" as never },
         ...(stage && isDealStage(stage) ? { stage } : {}),
         ...(type ? { type: type as never } : {}),
+        ...(types.length
+          ? {
+              AND: [
+                {
+                  OR: [
+                    { dealTypes: { hasSome: types } },
+                    ...(legacyTypes.length
+                      ? [{ dealTypes: { isEmpty: true }, type: { in: legacyTypes as never[] } }]
+                      : []),
+                  ],
+                },
+              ],
+            }
+          : {}),
         ...(clientId ? { clientId } : {}),
         ...(assignedToId ? { assignedToId } : {}),
         ...(search
@@ -49,15 +76,25 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
   try {
     const body = await request.json();
 
-    const missing = validateRequired(body, ["title", "type"]);
+    const missing = validateRequired(body, ["title"]);
     if (missing) return NextResponse.json({ error: missing }, { status: 400 });
 
     if (!body.clientId && !body.clientName) {
       return NextResponse.json({ error: "clientId or clientName is required" }, { status: 400 });
     }
 
+    // Multi-select dealTypes is the source of truth; the legacy single type
+    // is derived from the first selected type for backwards compatibility.
+    const dealTypes: string[] = Array.isArray(body.dealTypes)
+      ? body.dealTypes.filter((t: unknown): t is string => typeof t === "string" && isDealType(t))
+      : [];
+    if (!dealTypes.length && !body.type) {
+      return NextResponse.json({ error: "Missing required field: type" }, { status: 400 });
+    }
+
     const title = sanitizeString(body.title, 300);
-    const { type, value, currency } = body;
+    const { value, currency } = body;
+    const type = dealTypes.length ? dealTypeToCampaignType(dealTypes[0]) : body.type;
 
     let clientId: string | null = body.clientId || null;
     if (!clientId) {
@@ -76,6 +113,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
         clientId,
         title,
         type,
+        dealTypes,
         stage: body.stage && isDealStage(body.stage) ? body.stage : "LEAD",
         stageUpdatedAt: new Date(),
         value: value !== undefined && value !== null && value !== "" ? parseFloat(value) : null,

@@ -24,9 +24,13 @@ export default function NewDealModal({
   const [clientId, setClientId] = useState("");
   const [newClientName, setNewClientName] = useState("");
   const [value, setValue] = useState("");
-  const [type, setType] = useState<string>("PARTNERSHIP");
+  const [dealTypes, setDealTypes] = useState<string[]>(["PARTNERSHIP"]);
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
+
+  function toggleType(t: string) {
+    setDealTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }
 
   useEffect(() => {
     fetch("/api/clients")
@@ -42,6 +46,10 @@ export default function NewDealModal({
       setError("Pick a client or enter a new one");
       return;
     }
+    if (dealTypes.length === 0) {
+      setError("Pick at least one deal type");
+      return;
+    }
     setCreating(true);
     setError(null);
     try {
@@ -53,7 +61,7 @@ export default function NewDealModal({
           clientId: clientId === "__new__" ? undefined : clientId,
           clientName: clientId === "__new__" ? newClientName.trim() : undefined,
           value: value || null,
-          type,
+          dealTypes,
           description: description.trim() || null,
           dueDate: dueDate || null,
         }),
@@ -130,31 +138,49 @@ export default function NewDealModal({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Value (£)</label>
-              <input
-                type="number"
-                min="0"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                placeholder="0"
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Type</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className={`${inputCls} bg-white`}
-              >
-                {DEAL_TYPE_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {TYPE_STYLES[t].label}
-                  </option>
-                ))}
-              </select>
+          <div>
+            <label className={labelCls}>Value (£)</label>
+            <input
+              type="number"
+              min="0"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="0"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className={labelCls}>
+              Deal Types <span className="text-red-400">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {DEAL_TYPE_OPTIONS.map((t) => {
+                const style = TYPE_STYLES[t];
+                const checked = dealTypes.includes(t);
+                return (
+                  <label
+                    key={t}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors ${
+                      checked
+                        ? "border-[#D4A853] bg-amber-50/50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleType(t)}
+                      className="h-3.5 w-3.5 rounded border-gray-300 accent-[#D4A853]"
+                    />
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}
+                    >
+                      {style.label}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
 
@@ -193,7 +219,7 @@ export default function NewDealModal({
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || creating}
+              disabled={!title.trim() || dealTypes.length === 0 || creating}
               className="flex-1 flex items-center justify-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creating ? <Loader2 size={15} className="animate-spin" /> : null}

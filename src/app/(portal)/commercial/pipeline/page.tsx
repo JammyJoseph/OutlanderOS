@@ -11,6 +11,9 @@ import {
   User as UserIcon,
   Clock,
   LayoutDashboard,
+  ChevronDown,
+  Film,
+  FileText,
 } from "lucide-react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import {
@@ -18,8 +21,10 @@ import {
   STAGE_STYLES,
   typeStyle,
   formatMoney,
+  dealTypesOf,
   DEAL_TYPE_OPTIONS,
   TYPE_STYLES,
+  BRIEF_STATUS_STYLES,
   type Deal,
   type DealStage,
 } from "../_components/deal-ui";
@@ -50,9 +55,9 @@ function PipelineBoard() {
   const [loading, setLoading] = useState(true);
   const [showNewDeal, setShowNewDeal] = useState(false);
 
-  // Filters
+  // Filters — typeFilter is multi-select; a deal matches if it has ANY selected type
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
   const [memberFilter, setMemberFilter] = useState("");
 
   // Drag state
@@ -90,7 +95,7 @@ function PipelineBoard() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return deals.filter((d) => {
-      if (typeFilter && d.type !== typeFilter) return false;
+      if (typeFilter.length && !dealTypesOf(d).some((t) => typeFilter.includes(t))) return false;
       if (memberFilter && d.assignedTo?.id !== memberFilter) return false;
       if (q && !d.title.toLowerCase().includes(q) && !d.client.name.toLowerCase().includes(q))
         return false;
@@ -176,18 +181,7 @@ function PipelineBoard() {
               className={`${inputCls} pl-8 w-64`}
             />
           </div>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className={inputCls}
-          >
-            <option value="">All types</option>
-            {DEAL_TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {TYPE_STYLES[t].label}
-              </option>
-            ))}
-          </select>
+          <TypeFilterDropdown selected={typeFilter} onChange={setTypeFilter} />
           <select
             value={memberFilter}
             onChange={(e) => setMemberFilter(e.target.value)}
@@ -200,11 +194,11 @@ function PipelineBoard() {
               </option>
             ))}
           </select>
-          {(search || typeFilter || memberFilter) && (
+          {(search || typeFilter.length > 0 || memberFilter) && (
             <button
               onClick={() => {
                 setSearch("");
-                setTypeFilter("");
+                setTypeFilter([]);
                 setMemberFilter("");
               }}
               className="text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1"
@@ -318,6 +312,77 @@ function PipelineBoard() {
   );
 }
 
+// ─── Type filter dropdown (multi-select) ──────────────────────────────────────
+
+function TypeFilterDropdown({
+  selected,
+  onChange,
+}: {
+  selected: string[];
+  onChange: (types: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  function toggle(type: string) {
+    onChange(
+      selected.includes(type) ? selected.filter((t) => t !== type) : [...selected, type]
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1.5 rounded-xl border bg-white text-sm px-3 py-2 transition-colors ${
+          selected.length
+            ? "border-[#D4A853] text-[#9C7424] font-medium"
+            : "border-gray-200 text-gray-700"
+        }`}
+      >
+        {selected.length === 0
+          ? "All types"
+          : selected.length === 1
+            ? TYPE_STYLES[selected[0]]?.label ?? selected[0]
+            : `${selected.length} types`}
+        <ChevronDown size={13} className="text-gray-400" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute z-20 mt-1.5 w-56 rounded-xl border border-gray-100 bg-white shadow-lg p-1.5">
+            {DEAL_TYPE_OPTIONS.map((t) => (
+              <label
+                key={t}
+                className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.includes(t)}
+                  onChange={() => toggle(t)}
+                  className="h-3.5 w-3.5 rounded border-gray-300 accent-[#D4A853]"
+                />
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${TYPE_STYLES[t].bg} ${TYPE_STYLES[t].text}`}
+                >
+                  {TYPE_STYLES[t].label}
+                </span>
+              </label>
+            ))}
+            {selected.length > 0 && (
+              <button
+                onClick={() => onChange([])}
+                className="w-full text-left text-xs font-medium text-gray-400 hover:text-gray-600 px-2.5 py-1.5 mt-0.5 border-t border-gray-50"
+              >
+                Clear selection
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Deal card ────────────────────────────────────────────────────────────────
 
 function DealCard({
@@ -331,11 +396,15 @@ function DealCard({
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
 }) {
-  const type = typeStyle(deal.type);
+  const types = dealTypesOf(deal);
   const stageSince = deal.stageUpdatedAt ?? deal.createdAt;
   const daysInStage = differenceInCalendarDays(new Date(), parseISO(stageSince));
   const due = deal.dueDate ? parseISO(deal.dueDate) : null;
   const overdue = due ? differenceInCalendarDays(due, new Date()) < 0 : false;
+  const briefStyle =
+    deal.briefContent || (deal.briefStatus && deal.briefStatus !== "DRAFT")
+      ? BRIEF_STATUS_STYLES[deal.briefStatus ?? "DRAFT"]
+      : null;
 
   return (
     <Link href={`/commercial/deals/${deal.id}`} className="block">
@@ -347,19 +416,37 @@ function DealCard({
           dragging ? "opacity-40 rotate-1 scale-[0.98]" : ""
         }`}
       >
-        <div className="flex items-start justify-between gap-2 mb-1.5">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide truncate">
-            {deal.client.name}
-          </p>
-          <span
-            className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${type.bg} ${type.text}`}
-          >
-            {type.label}
-          </span>
-        </div>
-        <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 mb-2">
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide truncate mb-1.5">
+          {deal.client.name}
+        </p>
+        <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 mb-1.5">
           {deal.title}
         </p>
+        <div className="flex flex-wrap items-center gap-1 mb-2">
+          {types.map((t) => {
+            const style = typeStyle(t);
+            return (
+              <span
+                key={t}
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}
+              >
+                {style.label}
+              </span>
+            );
+          })}
+          {deal.production && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+              <Film size={10} /> In Production
+            </span>
+          )}
+          {briefStyle && !deal.production && (
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${briefStyle.bg} ${briefStyle.text}`}
+            >
+              <FileText size={10} /> {briefStyle.label}
+            </span>
+          )}
+        </div>
         <p className="text-base font-bold text-gray-900 tabular-nums mb-2.5">
           {formatMoney(deal.value)}
         </p>

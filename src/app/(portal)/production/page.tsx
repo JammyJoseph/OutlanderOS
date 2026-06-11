@@ -802,6 +802,10 @@ function ProjectCard({ production: p }: { production: Production }) {
   const client = getClientName(p);
   const sheetCount = (p.callSheets ?? []).length;
   const crewCount = (p.crew ?? []).length;
+  // Fresh arrivals (e.g. just cleared from Commercial) get a NEW badge for 24h.
+  const isNew = p.createdAt
+    ? Date.now() - parseISO(p.createdAt).getTime() < 24 * 60 * 60 * 1000
+    : false;
 
   // Progress: based on status order
   const statusIdx: Record<ProductionStatus, number> = {
@@ -822,12 +826,19 @@ function ProjectCard({ production: p }: { production: Production }) {
           <div className="w-10 h-10 bg-[#E24B4A]/10 rounded-xl flex items-center justify-center flex-shrink-0">
             <Film size={18} className="text-[#E24B4A]" />
           </div>
-          <span
-            className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-            {style.label}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {isNew && (
+              <span className="inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-full bg-[#E24B4A] text-white tracking-wide">
+                NEW
+              </span>
+            )}
+            <span
+              className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+              {style.label}
+            </span>
+          </div>
         </div>
 
         <div className="flex-1 mb-3">

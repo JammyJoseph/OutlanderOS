@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Banknote, CalendarClock, Landmark, TrendingUp } from "lucide-react";
+import {
+  Banknote,
+  CalendarClock,
+  Clapperboard,
+  FolderKanban,
+  Landmark,
+  PackageCheck,
+  TrendingUp,
+} from "lucide-react";
+import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { formatGBP, type PulseData } from "./types";
 
 function Skeleton() {
@@ -21,11 +30,16 @@ interface CardProps {
   sub?: React.ReactNode;
   icon: React.ReactNode;
   accent: string;
+  href?: string;
 }
 
-function PulseCard({ label, value, sub, icon, accent }: CardProps) {
-  return (
-    <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+function PulseCard({ label, value, sub, icon, accent, href }: CardProps) {
+  const body = (
+    <div
+      className={`rounded-xl border border-gray-100 bg-white p-4 shadow-sm ${
+        href ? "transition-shadow hover:shadow-md" : ""
+      }`}
+    >
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
           {label}
@@ -38,10 +52,26 @@ function PulseCard({ label, value, sub, icon, accent }: CardProps) {
       {sub && <div className="mt-0.5 truncate text-xs text-gray-400">{sub}</div>}
     </div>
   );
+  return href ? <Link href={href}>{body}</Link> : body;
 }
 
-// The four Business Pulse KPI cards. Fetches /api/dashboard/pulse on its own
-// so the rest of the dashboard isn't blocked by Xero round-trips.
+function PayrollCard({ payroll }: { payroll: { date: string; daysUntil: number } }) {
+  const payday = new Date(payroll.date);
+  return (
+    <PulseCard
+      label="Next Payroll"
+      value={payroll.daysUntil === 0 ? "Today" : `in ${payroll.daysUntil} days`}
+      sub={payday.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}
+      icon={<CalendarClock className="h-4 w-4" />}
+      accent="#6B7280"
+    />
+  );
+}
+
+// Role-aware Business Pulse KPI cards. ADMIN (finance/admin) sees pipeline +
+// Xero money; MEMBER (ops/production) sees projects, deliveries, and the next
+// shoot. Fetches /api/dashboard/pulse on its own so the rest of the dashboard
+// isn't blocked by Xero round-trips.
 export function BusinessPulse() {
   const [pulse, setPulse] = useState<PulseData | null>(null);
   const [error, setError] = useState(false);
@@ -70,13 +100,58 @@ export function BusinessPulse() {
   }
   if (!pulse) return <Skeleton />;
 
+  if (pulse.role === "MEMBER") {
+    const shoot = pulse.nextShoot;
+    const shootDate = shoot ? parseISO(shoot.date) : null;
+    const shootDays = shootDate ? differenceInCalendarDays(shootDate, new Date()) : null;
+    const shootCountdown =
+      shootDays === null
+        ? null
+        : shootDays === 0
+          ? "Today"
+          : shootDays === 1
+            ? "Tomorrow"
+            : `in ${shootDays} days`;
+
+    return (
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <PulseCard
+          label="Active Projects"
+          value={pulse.activeProjects}
+          sub={`${pulse.activeDealCount} deal${pulse.activeDealCount === 1 ? "" : "s"} · ${pulse.activeProductionCount} production${pulse.activeProductionCount === 1 ? "" : "s"}`}
+          icon={<FolderKanban className="h-4 w-4" />}
+          accent="#D4A853"
+          href="/commercial/pipeline"
+        />
+        <PulseCard
+          label="Upcoming Deliveries"
+          value={pulse.upcomingDeliveries}
+          sub="due in the next 14 days"
+          icon={<PackageCheck className="h-4 w-4" />}
+          accent="#E24B4A"
+        />
+        <PulseCard
+          label="Next Shoot"
+          value={shoot && shootCountdown ? shootCountdown : "No shoots scheduled"}
+          sub={
+            shoot && shootDate
+              ? `${shoot.title} · ${format(shootDate, "d MMM")}`
+              : "Schedule one in Production"
+          }
+          icon={<Clapperboard className="h-4 w-4" />}
+          accent="#22A06B"
+          href={shoot ? `/production/${shoot.productionId}` : "/production"}
+        />
+        <PayrollCard payroll={pulse.payroll} />
+      </div>
+    );
+  }
+
   const connectXero = (
     <Link href="/finance" className="font-semibold text-[#3B82F6] hover:underline">
       Connect Xero
     </Link>
   );
-
-  const payday = new Date(pulse.payroll.date);
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -105,15 +180,7 @@ export function BusinessPulse() {
         icon={<Landmark className="h-4 w-4" />}
         accent="#22A06B"
       />
-      <PulseCard
-        label="Next Payroll"
-        value={
-          pulse.payroll.daysUntil === 0 ? "Today" : `in ${pulse.payroll.daysUntil} days`
-        }
-        sub={payday.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}
-        icon={<CalendarClock className="h-4 w-4" />}
-        accent="#6B7280"
-      />
+      <PayrollCard payroll={pulse.payroll} />
     </div>
   );
 }
