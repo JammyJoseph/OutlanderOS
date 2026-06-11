@@ -26,9 +26,13 @@ export const GET = withAuth(async (request: NextRequest) => {
     const search = searchParams.get("search");
     const clientId = searchParams.get("clientId");
     const assignedToId = searchParams.get("assignedToId");
+    // Archived deals are hidden by default; ?includeArchived=true returns
+    // them alongside active deals (the UI greys them out).
+    const includeArchived = searchParams.get("includeArchived") === "true";
 
     const campaigns = await prisma.campaign.findMany({
       where: {
+        ...(includeArchived ? {} : { archived: false }),
         status: status ? (status as never) : { not: "ARCHIVED" as never },
         ...(stage && isDealStage(stage) ? { stage } : {}),
         ...(type ? { type: type as never } : {}),

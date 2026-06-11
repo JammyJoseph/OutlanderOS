@@ -135,6 +135,8 @@ export interface ProductionFull {
   budgetActual: number | null;
   productionBudgetStatus: ProductionBudgetStatus | null;
   productionLockedAt: string | null;
+  archived?: boolean;
+  archivedAt?: string | null;
   shootDates: string[];
   campaign: {
     id?: string;

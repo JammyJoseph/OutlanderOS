@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth } from "@/lib/auth";
+import { withAuth, isAdminInDb } from "@/lib/auth";
 import { isProductionBudgetStatus } from "@/lib/deal-stages";
 
 export const GET = withAuth(async (
@@ -103,7 +103,9 @@ export const PUT = withAuth(async (
       const reopening =
         (current === "FINAL" && next !== "FINAL") ||
         (next === "BUDGETING" && current !== "BUDGETING");
-      if (reopening && user.role !== "ADMIN") {
+      // Role read fresh from the DB — the JWT role is stale for users
+      // promoted to admin after they logged in.
+      if (reopening && !(await isAdminInDb(user))) {
         return NextResponse.json(
           { error: "Only an admin can reopen a locked production budget." },
           { status: 403 }
@@ -186,15 +188,12 @@ export const PUT = withAuth(async (
   }
 });
 
-export const DELETE = withAuth(async (
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) => {
-  const { id } = await params;
-  try {
-    await prisma.production.delete({ where: { id } });
-    return NextResponse.json({ success: true });
-  } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
-  }
+// Productions are never deleted. Commercial productions are archived by
+// archiving the parent deal; standalone editorial productions via
+// PATCH /api/productions/[id]/archive (admin only).
+export const DELETE = withAuth(async () => {
+  return NextResponse.json(
+    { error: "Productions can only be archived from the Commercial portal" },
+    { status: 403 }
+  );
 });

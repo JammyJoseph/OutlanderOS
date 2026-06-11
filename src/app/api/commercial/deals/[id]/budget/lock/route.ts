@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth } from "@/lib/auth";
+import { withAuth, isAdminInDb } from "@/lib/auth";
 import {
   parseAllocations,
   productionAllocationOf,
@@ -37,7 +37,9 @@ export const POST = withAuth(async (
     if (!deal) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     if (!locked) {
-      if (user.role !== "ADMIN") {
+      // Check the role fresh from the DB — the JWT bakes the role in at login,
+      // so admins promoted after signing in would otherwise be rejected.
+      if (!(await isAdminInDb(user))) {
         return NextResponse.json(
           { error: "Only an admin can unlock a finalised budget." },
           { status: 403 }

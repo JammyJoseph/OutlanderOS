@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Archive,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -133,6 +134,8 @@ interface Production {
   clientName?: string | null;
   status: ProductionStatus;
   budgetTotal?: number | null;
+  archived?: boolean;
+  archivedAt?: string | null;
   shootDates: string[];
   campaign: { title: string; client: { name: string } } | null;
   crew: { id: string; role?: string }[];
@@ -194,16 +197,27 @@ function countdownTone(date: Date): { bg: string; text: string } {
 }
 
 export default function ProductionDashboard() {
-  const [productions, setProductions] = useState<Production[]>([]);
+  const [allProductions, setAllProductions] = useState<Production[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
-    fetch("/api/productions")
+    fetch(showArchived ? "/api/productions?includeArchived=true" : "/api/productions")
       .then((r) => r.json())
-      .then((d) => setProductions(d.productions ?? []))
+      .then((d) => setAllProductions(d.productions ?? []))
       .finally(() => setLoading(false));
-  }, []);
+  }, [showArchived]);
+
+  // Everything except the dedicated archived section works off live projects.
+  const productions = useMemo(
+    () => allProductions.filter((p) => !p.archived),
+    [allProductions]
+  );
+  const archivedProjects = useMemo(
+    () => allProductions.filter((p) => p.archived),
+    [allProductions]
+  );
 
   const today = startOfDay(new Date());
 
@@ -294,13 +308,27 @@ export default function ProductionDashboard() {
               {list.length} project{list.length !== 1 ? "s" : ""} · live overview
             </p>
           </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
-          >
-            <Plus size={16} />
-            New Editorial Project
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowArchived((v) => !v)}
+              className={`flex items-center gap-1.5 rounded-xl border bg-white px-3 py-2.5 text-sm transition-colors ${
+                showArchived
+                  ? "border-gray-400 text-gray-700 font-medium"
+                  : "border-gray-200 text-gray-500"
+              }`}
+              title={showArchived ? "Hide archived projects" : "Show archived projects"}
+            >
+              <Archive size={14} className="text-gray-400" />
+              {showArchived ? "Showing archived" : "Archived"}
+            </button>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
+            >
+              <Plus size={16} />
+              New Editorial Project
+            </button>
+          </div>
         </div>
 
         {/* Loading */}
@@ -406,6 +434,24 @@ export default function ProductionDashboard() {
                   )}
                 </>
               )}
+
+              {/* Archived projects — visible only via the toggle, shown muted.
+                  Commercial projects are unarchived from the parent deal. */}
+              {showArchived && archivedProjects.length > 0 && (
+                <div className="mt-8">
+                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <Archive size={12} /> Archived — {archivedProjects.length}
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60 grayscale">
+                    {archivedProjects.map((p) => (
+                      <ProjectCard key={p.id} production={p} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {showArchived && archivedProjects.length === 0 && (
+                <p className="mt-8 text-xs text-gray-400">No archived projects.</p>
+              )}
             </section>
           </>
         )}
@@ -415,7 +461,7 @@ export default function ProductionDashboard() {
         <CreateProjectModal
           onClose={() => setShowCreate(false)}
           onCreated={(p) => {
-            setProductions((prev) => [p, ...prev]);
+            setAllProductions((prev) => [p, ...prev]);
             setShowCreate(false);
           }}
         />

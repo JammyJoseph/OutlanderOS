@@ -272,6 +272,8 @@ export interface Deal {
   description: string | null;
   notes: string | null;
   dueDate: string | null;
+  archived?: boolean;
+  archivedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   client: { id: string; name: string; industry?: string | null; brandColor?: string | null };

@@ -212,6 +212,7 @@ export interface ProjectSummary {
   spendPct: number | null
   overageStatus: string
   pendingInvoices: number
+  archived: boolean
   updatedAt: string
 }
 

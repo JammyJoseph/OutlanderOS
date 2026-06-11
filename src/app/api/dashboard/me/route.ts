@@ -49,11 +49,16 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
           { project: { assignedToId: user.userId } },
           { production: { leadId: user.userId } },
         ],
+        // Tasks on archived deals/productions stay hidden until unarchived.
+        NOT: [
+          { project: { archived: true } },
+          { production: { archived: true } },
+        ],
       },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
     }),
     prisma.production.findMany({
-      where: { status: { not: "ARCHIVED" } },
+      where: { archived: false, status: { not: "ARCHIVED" } },
       select: {
         id: true,
         title: true,
@@ -63,6 +68,7 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
     }),
     prisma.campaign.findMany({
       where: {
+        archived: false,
         status: { not: "ARCHIVED" },
         stage: { in: ACTIVE_STAGES },
         dueDate: { gte: todayStart },

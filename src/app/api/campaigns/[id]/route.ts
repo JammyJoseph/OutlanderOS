@@ -14,6 +14,7 @@ import {
   parseClientFeedback,
   stagesForWorkflow,
 } from "@/lib/deal-stages";
+import { archiveCampaign } from "@/lib/archive";
 
 export const GET = withAuth(async (
   _request: NextRequest,
@@ -293,19 +294,20 @@ async function updateCampaign(
 export const PATCH = withAuth(updateCampaign);
 export const PUT = withAuth(updateCampaign);
 
+// There is no delete — DELETE archives the deal (cascading to the linked
+// production) and returns the archived record.
 export const DELETE = withAuth(async (
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
+  user
 ) => {
   try {
     const { id } = await params;
-    await prisma.campaign.update({
-      where: { id },
-      data: { status: "ARCHIVED" },
-    });
-    return NextResponse.json({ success: true });
+    const campaign = await archiveCampaign(id, user);
+    if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(campaign);
   } catch (err) {
     console.error("DELETE /api/campaigns/[id]", err);
-    return NextResponse.json({ error: "Failed to delete campaign" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to archive campaign" }, { status: 500 });
   }
 });

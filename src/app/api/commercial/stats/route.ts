@@ -8,7 +8,7 @@ import { PIPELINE_STAGES, ACTIVE_STAGES, WON_STAGES, normalizeStage } from "@/li
 export const GET = withAuth(async () => {
   try {
     const deals = await prisma.campaign.findMany({
-      where: { status: { not: "ARCHIVED" } },
+      where: { archived: false, status: { not: "ARCHIVED" } },
       select: {
         id: true,
         title: true,

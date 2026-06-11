@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, ArrowUpRight, Briefcase, Loader2 } from "lucide-react";
 
 import { ProductionFull } from "./_components/types";
 import ProjectHeader from "./_components/ProjectHeader";
@@ -27,6 +27,15 @@ export default function ProjectDetail() {
   const [tab, setTab] = useState<TabKey>("overview");
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [archiveBusy, setArchiveBusy] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.user?.role === "ADMIN"))
+      .catch(() => {});
+  }, []);
 
   // Editable form fields for overview header
   const [description, setDescription] = useState("");
@@ -166,12 +175,32 @@ export default function ProjectDetail() {
     }
   }
 
-  async function deleteProject() {
+  // Standalone (editorial) productions can be archived here by an admin.
+  // Productions linked to a deal are archived from Commercial only.
+  async function setArchived(archived: boolean) {
     if (!production) return;
-    if (!confirm("Delete this project? This will remove its call sheets, budget, tasks, and team."))
+    if (
+      archived &&
+      !confirm("Archive this project? It disappears from the Production dashboard but nothing is deleted — an admin can unarchive it later.")
+    )
       return;
-    await fetch(`/api/productions/${id}`, { method: "DELETE" });
-    router.push("/production");
+    setArchiveBusy(true);
+    try {
+      const res = await fetch(`/api/productions/${id}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived }),
+      });
+      if (res.ok) {
+        if (archived) router.push("/production");
+        else await refresh();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to update archive state");
+      }
+    } finally {
+      setArchiveBusy(false);
+    }
   }
 
   if (loading) {
@@ -218,13 +247,63 @@ export default function ProjectDetail() {
             <ArrowLeft size={15} />
             Productions
           </Link>
-          <button
-            onClick={deleteProject}
-            className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1"
-          >
-            Delete project
-          </button>
+          {production.campaignId ? (
+            <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 px-2 py-1">
+              <Briefcase size={12} />
+              This project is managed from Commercial
+              <Link
+                href={`/commercial/deals/${production.campaignId}`}
+                className="inline-flex items-center gap-0.5 font-medium text-[#D4A853] hover:text-[#c49843]"
+              >
+                View deal <ArrowUpRight size={11} />
+              </Link>
+            </span>
+          ) : isAdmin ? (
+            <button
+              onClick={() => setArchived(true)}
+              disabled={archiveBusy}
+              className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 disabled:opacity-50"
+            >
+              <Archive size={12} />
+              Archive project
+            </button>
+          ) : null}
         </div>
+
+        {production.archived && (
+          <div className="mb-5 rounded-2xl border border-gray-300 bg-gray-100 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+              <Archive size={15} />
+              This project is archived
+              {production.campaignId && (
+                <span className="font-normal text-gray-400 text-xs">
+                  — unarchive it by unarchiving the parent deal in Commercial
+                </span>
+              )}
+            </p>
+            {production.campaignId ? (
+              <Link
+                href={`/commercial/deals/${production.campaignId}`}
+                className="flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Briefcase size={13} /> Open deal <ArrowUpRight size={12} />
+              </Link>
+            ) : isAdmin ? (
+              <button
+                onClick={() => setArchived(false)}
+                disabled={archiveBusy}
+                className="flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {archiveBusy ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <ArchiveRestore size={13} />
+                )}
+                Unarchive
+              </button>
+            ) : null}
+          </div>
+        )}
 
         <div className="mb-5">
           <ProjectHeader

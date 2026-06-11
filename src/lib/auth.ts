@@ -93,6 +93,19 @@ export async function requireAdmin(request: Request): Promise<AuthUser> {
   return user
 }
 
+// The JWT bakes the role in at login time, so a user promoted to ADMIN after
+// logging in still carries a stale MEMBER role until they sign in again.
+// Role-gated actions (budget unlock, archive) check the database instead.
+export async function isAdminInDb(user: AuthUser): Promise<boolean> {
+  if (user.role === "ADMIN") return true
+  const { default: prisma } = await import("@/lib/prisma")
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { role: true },
+  })
+  return dbUser?.role === "ADMIN"
+}
+
 type RouteContext = { params?: Promise<Record<string, string>> }
 type AuthedHandler = (
   request: NextRequest,

@@ -13,7 +13,11 @@ export const GET = withAuth(async (request: NextRequest) => {
       });
       return NextResponse.json({ production });
     }
+    // Archived productions are hidden by default; ?includeArchived=true
+    // returns them too (the landing page shows them muted).
+    const includeArchived = request.nextUrl.searchParams.get("includeArchived") === "true";
     const productions = await prisma.production.findMany({
+      where: includeArchived ? {} : { archived: false },
       include: {
         campaign: { include: { client: true } },
         crew: { include: { contact: true } },

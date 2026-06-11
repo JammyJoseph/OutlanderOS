@@ -15,6 +15,8 @@ import {
   Film,
   FileText,
   Lock as LockIcon,
+  Archive as ArchiveIcon,
+  ArchiveRestore,
 } from "lucide-react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import {
@@ -65,6 +67,7 @@ function PipelineBoard() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
   const [memberFilter, setMemberFilter] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
 
   // Drag state
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -77,7 +80,9 @@ function PipelineBoard() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/campaigns").then((r) => r.json()),
+      fetch(showArchived ? "/api/campaigns?includeArchived=true" : "/api/campaigns").then((r) =>
+        r.json()
+      ),
       fetch("/api/users").then((r) => r.json()),
     ])
       .then(([d, u]) => {
@@ -85,7 +90,7 @@ function PipelineBoard() {
         setUsers(Array.isArray(u) ? u : []);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [showArchived]);
 
   // Scroll the focused stage column into view (when arriving from the dashboard)
   useEffect(() => {
@@ -127,9 +132,47 @@ function PipelineBoard() {
     return !CREATIVE_STAGES.includes(stage) && stage !== "CLEARED_FOR_PRODUCTION";
   }
 
+  async function archiveDeal(deal: Deal) {
+    const cascades = Boolean(deal.production);
+    const message = cascades
+      ? `Archive "${deal.title}"? This will also archive the linked production project. Continue?`
+      : `Archive "${deal.title}"? It disappears from the pipeline but can be restored via "Show archived".`;
+    if (!confirm(message)) return;
+    const previous = deals;
+    setDeals((prev) =>
+      showArchived
+        ? prev.map((d) =>
+            d.id === deal.id
+              ? { ...d, archived: true, archivedAt: new Date().toISOString() }
+              : d
+          )
+        : prev.filter((d) => d.id !== deal.id)
+    );
+    try {
+      const res = await fetch(`/api/campaigns/${deal.id}/archive`, { method: "PATCH" });
+      if (!res.ok) setDeals(previous);
+    } catch {
+      setDeals(previous);
+    }
+  }
+
+  async function unarchiveDeal(deal: Deal) {
+    const previous = deals;
+    setDeals((prev) =>
+      prev.map((d) => (d.id === deal.id ? { ...d, archived: false, archivedAt: null } : d))
+    );
+    try {
+      const res = await fetch(`/api/campaigns/${deal.id}/unarchive`, { method: "PATCH" });
+      if (!res.ok) setDeals(previous);
+    } catch {
+      setDeals(previous);
+    }
+  }
+
   async function moveDeal(dealId: string, stage: DealStage) {
     const deal = deals.find((d) => d.id === dealId);
     if (!deal || deal.stage === stage) return;
+    if (deal.archived) return;
     if (!stageAllowedFor(deal, stage)) return;
     const previous = deals;
     // Optimistic update
@@ -210,6 +253,18 @@ function PipelineBoard() {
               </option>
             ))}
           </select>
+          <button
+            onClick={() => setShowArchived((v) => !v)}
+            className={`flex items-center gap-1.5 rounded-xl border bg-white text-sm px-3 py-2 transition-colors ${
+              showArchived
+                ? "border-gray-400 text-gray-700 font-medium"
+                : "border-gray-200 text-gray-500"
+            }`}
+            title={showArchived ? "Hide archived deals" : "Show archived deals"}
+          >
+            <ArchiveIcon size={13} className="text-gray-400" />
+            {showArchived ? "Showing archived" : "Show archived"}
+          </button>
           {(search || typeFilter.length > 0 || memberFilter) && (
             <button
               onClick={() => {
@@ -341,6 +396,8 @@ function PipelineBoard() {
                                 key={deal.id}
                                 deal={deal}
                                 dragging={draggingId === deal.id}
+                                onArchive={() => archiveDeal(deal)}
+                                onUnarchive={() => unarchiveDeal(deal)}
                                 onDragStart={(e) => {
                                   e.dataTransfer.setData("text/plain", deal.id);
                                   e.dataTransfer.effectAllowed = "move";
@@ -455,11 +512,15 @@ function TypeFilterDropdown({
 function DealCard({
   deal,
   dragging,
+  onArchive,
+  onUnarchive,
   onDragStart,
   onDragEnd,
 }: {
   deal: Deal;
   dragging: boolean;
+  onArchive: () => void;
+  onUnarchive: () => void;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
 }) {
@@ -476,16 +537,34 @@ function DealCard({
       ? CREATIVE_STATUS_STYLES[deal.creativeStatus]
       : null;
 
+  const archived = Boolean(deal.archived);
+
   return (
     <Link href={`/commercial/deals/${deal.id}`} className="block">
       <div
-        draggable
+        draggable={!archived}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
-        className={`bg-white rounded-xl border border-gray-200/80 shadow-sm p-3.5 cursor-grab active:cursor-grabbing transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 ${
-          dragging ? "opacity-40 rotate-1 scale-[0.98]" : ""
-        }`}
+        className={`relative group/card bg-white rounded-xl border shadow-sm p-3.5 transition-all duration-150 ${
+          archived
+            ? "border-gray-200/60 opacity-60 grayscale"
+            : "border-gray-200/80 cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5"
+        } ${dragging ? "opacity-40 rotate-1 scale-[0.98]" : ""}`}
       >
+        {/* Hover action: archive replaces delete everywhere */}
+        {!archived && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onArchive();
+            }}
+            title="Archive deal"
+            className="absolute top-2 right-2 p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-100 opacity-0 group-hover/card:opacity-100 transition-opacity"
+          >
+            <ArchiveIcon size={13} />
+          </button>
+        )}
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide truncate mb-1.5">
           {deal.client.name}
         </p>
@@ -493,6 +572,11 @@ function DealCard({
           {deal.title}
         </p>
         <div className="flex flex-wrap items-center gap-1 mb-2">
+          {archived && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+              <ArchiveIcon size={9} /> Archived
+            </span>
+          )}
           <span
             className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${workflow.bg} ${workflow.text}`}
           >
@@ -565,6 +649,18 @@ function DealCard({
             </span>
           )}
         </div>
+        {archived && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onUnarchive();
+            }}
+            className="mt-2.5 w-full flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <ArchiveRestore size={12} /> Unarchive
+          </button>
+        )}
       </div>
     </Link>
   );

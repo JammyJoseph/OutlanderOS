@@ -34,7 +34,7 @@ export const GET = withAuth(async (_request, _ctx, authUser) => {
     if (role === 'ADMIN') {
       const [pipeline, xeroStatus] = await Promise.all([
         prisma.campaign.aggregate({
-          where: { status: { not: 'ARCHIVED' }, stage: { in: ACTIVE_STAGES } },
+          where: { archived: false, status: { not: 'ARCHIVED' }, stage: { in: ACTIVE_STAGES } },
           _sum: { value: true },
           _count: true,
         }),
@@ -72,6 +72,7 @@ export const GET = withAuth(async (_request, _ctx, authUser) => {
     // MEMBER view — timelines, deliveries, to-dos. No finance round-trips.
     const horizon = new Date(todayStart.getTime() + 14 * 86_400_000)
     const activeProductionFilter = {
+      archived: false,
       status: { notIn: ['DELIVERED', 'ARCHIVED'] as ('DELIVERED' | 'ARCHIVED')[] },
     }
 
@@ -85,14 +86,14 @@ export const GET = withAuth(async (_request, _ctx, authUser) => {
       upcomingCallSheets,
     ] = await Promise.all([
       prisma.campaign.count({
-        where: { status: { not: 'ARCHIVED' }, stage: { in: ACTIVE_STAGES } },
+        where: { archived: false, status: { not: 'ARCHIVED' }, stage: { in: ACTIVE_STAGES } },
       }),
       prisma.production.count({ where: activeProductionFilter }),
       prisma.deliverable.count({
         where: {
           status: { not: 'DELIVERED' },
           dueDate: { gte: todayStart, lte: horizon },
-          campaign: { status: { not: 'ARCHIVED' } },
+          campaign: { archived: false, status: { not: 'ARCHIVED' } },
         },
       }),
       prisma.productionDeliverable.count({

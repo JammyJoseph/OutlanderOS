@@ -47,6 +47,15 @@ export async function GET(request: NextRequest) {
   if (portal) where.portal = portal
   if (type) where.taskType = type
 
+  // Tasks on archived deals/productions are hidden by default (they stay in
+  // the database and reappear when the parent is unarchived).
+  if (searchParams.get('includeArchived') !== 'true') {
+    where.NOT = [
+      { project: { archived: true } },
+      { production: { archived: true } },
+    ]
+  }
+
   try {
     const tasks = await prisma.task.findMany({
       where,

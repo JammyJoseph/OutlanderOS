@@ -28,6 +28,7 @@ export interface ProjectFinancialSummary {
   spendPct: number | null // costs as % of budget; null when no budget
   overageStatus: OverageStatus
   pendingInvoices: number // unsettled supplier invoices coded to this project
+  archived: boolean // parent deal/production archived — folder kept for history
   updatedAt: Date
 }
 
@@ -77,10 +78,23 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
           marginAmount: true,
           marginPercent: true,
           budgetLocked: true,
+          archived: true,
         },
       })
     : []
   const dealById = new Map(campaigns.map((c) => [c.id, c]))
+
+  // Folders without a deal can still belong to an archived production.
+  const productionIds = budgets
+    .map((b) => b.productionId)
+    .filter((id): id is string => !!id)
+  const archivedProductions = productionIds.length
+    ? await prisma.production.findMany({
+        where: { id: { in: productionIds }, archived: true },
+        select: { id: true },
+      })
+    : []
+  const archivedProductionIds = new Set(archivedProductions.map((p) => p.id))
 
   const costsByBudget = new Map<string, number>()
   for (const c of costSums) {
@@ -116,6 +130,9 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
       spendPct: b.totalBudget > 0 ? (totalCosts / b.totalBudget) * 100 : null,
       overageStatus: overageStatusFor(totalCosts, b.totalBudget),
       pendingInvoices: pendingByBudget.get(b.id) ?? 0,
+      archived:
+        (campaign?.archived ?? false) ||
+        (b.productionId ? archivedProductionIds.has(b.productionId) : false),
       updatedAt: b.updatedAt,
     }
   })

@@ -50,8 +50,15 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
           <p className="truncate text-sm font-semibold text-gray-900">{p.campaignName}</p>
           <p className="truncate text-[11px] text-gray-500">{p.clientName}</p>
         </div>
-        <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass(OVERAGE_STATUS_STYLES, p.overageStatus)}`}>
-          {OVERAGE_STATUS_LABELS[p.overageStatus] ?? p.overageStatus}
+        <span className="flex shrink-0 items-center gap-1">
+          {p.archived && (
+            <span className="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-600">
+              Archived
+            </span>
+          )}
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass(OVERAGE_STATUS_STYLES, p.overageStatus)}`}>
+            {OVERAGE_STATUS_LABELS[p.overageStatus] ?? p.overageStatus}
+          </span>
         </span>
       </div>
       {p.deal && (
@@ -585,13 +592,16 @@ export default function ProjectFoldersTab() {
   const selected = params.get('project')
   const res = useFinanceFetch<ProjectsResponse>('/api/finance/projects')
   const [filter, setFilter] = useState('ALL')
+  const [showArchived, setShowArchived] = useState(false)
 
   const projects = useMemo(() => {
-    const all = res.data?.projects ?? []
+    // Archived projects (deal archived in Commercial) are hidden by default —
+    // the folder and its records are kept for history.
+    const all = (res.data?.projects ?? []).filter((p) => showArchived || !p.archived)
     if (filter === 'ALL') return all
     if (filter === 'ATTENTION') return all.filter((p) => p.overageStatus === 'OVERAGE' || p.overageStatus === 'WARNING')
     return all.filter((p) => p.status === filter)
-  }, [res.data, filter])
+  }, [res.data, filter, showArchived])
 
   function open(id: string | null) {
     router.push(id ? `/finance?tab=projects&project=${id}` : '/finance?tab=projects')
@@ -602,7 +612,9 @@ export default function ProjectFoldersTab() {
   if (res.loading) return <TabSkeleton />
   if (res.error || res.data?.error) return <ErrorBox message={`Failed to load projects: ${res.error ?? res.data?.error}`} />
 
-  const all = res.data?.projects ?? []
+  const visible = (res.data?.projects ?? []).filter((p) => showArchived || !p.archived)
+  const archivedCount = (res.data?.projects ?? []).filter((p) => p.archived).length
+  const all = visible
   const filters = [
     { label: 'All', value: 'ALL', count: all.length },
     { label: 'Needs Attention', value: 'ATTENTION', count: all.filter((p) => p.overageStatus === 'OVERAGE' || p.overageStatus === 'WARNING').length },
@@ -612,7 +624,7 @@ export default function ProjectFoldersTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {filters.map((f) => (
           <button
             key={f.value}
@@ -622,6 +634,14 @@ export default function ProjectFoldersTab() {
             {f.label} <span className={filter === f.value ? 'text-gray-700' : 'text-gray-400'}>({f.count})</span>
           </button>
         ))}
+        {archivedCount > 0 && (
+          <button
+            onClick={() => setShowArchived((v) => !v)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${showArchived ? 'bg-gray-300 text-gray-800' : 'border border-gray-200 bg-white text-gray-500 hover:bg-gray-50'}`}
+          >
+            {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
+          </button>
+        )}
       </div>
 
       {projects.length === 0 ? (
@@ -629,7 +649,9 @@ export default function ProjectFoldersTab() {
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
-            <ProjectCard key={p.id} p={p} onOpen={() => open(p.id)} />
+            <div key={p.id} className={p.archived ? 'opacity-60 grayscale' : undefined}>
+              <ProjectCard p={p} onOpen={() => open(p.id)} />
+            </div>
           ))}
         </div>
       )}

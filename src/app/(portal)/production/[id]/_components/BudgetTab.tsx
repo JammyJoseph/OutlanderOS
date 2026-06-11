@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -56,6 +56,14 @@ export default function BudgetTab({
   const [apiError, setApiError] = useState<string | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<ProductionBudgetStatus | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.user?.role === "ADMIN"))
+      .catch(() => {});
+  }, []);
 
   // Budget lifecycle only applies to productions cleared from Commercial.
   const budgetStatus: ProductionBudgetStatus | null = locked
@@ -130,6 +138,18 @@ export default function BudgetTab({
       method: "DELETE",
     });
     await handleResponse(res);
+  }
+
+  function reopenBudget(current: ProductionBudgetStatus) {
+    // LOCKED reopens to BUDGETING (line items editable again);
+    // FINAL reopens to IN_PROGRESS (actuals editable again).
+    const target: ProductionBudgetStatus = current === "FINAL" ? "IN_PROGRESS" : "BUDGETING";
+    const message =
+      current === "FINAL"
+        ? "Reopen this finalised budget? Actual costs become editable again and the result is no longer reported as final to Finance."
+        : "Reopen this locked budget? Budgeted amounts become editable again.";
+    if (!confirm(message)) return;
+    setBudgetStatus(target);
   }
 
   async function setBudgetStatus(next: ProductionBudgetStatus) {
@@ -226,16 +246,40 @@ export default function BudgetTab({
               );
             })}
           </div>
-          {nextAction && (
-            <button
-              onClick={() => setConfirmStatus(nextAction.next)}
-              className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
-            >
-              <Lock size={13} />
-              {nextAction.label}
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {nextAction && (
+              <button
+                onClick={() => setConfirmStatus(nextAction.next)}
+                className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
+              >
+                <Lock size={13} />
+                {nextAction.label}
+              </button>
+            )}
+            {/* Admin-only reopen: LOCKED goes back to budgeting, FINAL back to
+                tracking actuals. */}
+            {isAdmin && (budgetStatus === "LOCKED" || budgetStatus === "FINAL") && (
+              <button
+                onClick={() => reopenBudget(budgetStatus)}
+                disabled={statusBusy}
+                className="text-xs font-medium text-amber-700 hover:text-amber-900 underline underline-offset-2 disabled:opacity-50"
+              >
+                Reopen Budget (admin)
+              </button>
+            )}
+          </div>
         </div>
+      )}
+      {budgetStatus && (budgetStatus === "LOCKED" || budgetStatus === "FINAL") && production.productionLockedAt && (
+        <p className="text-[11px] text-gray-400 -mt-3 px-1">
+          Budget {budgetStatus === "FINAL" ? "finalised" : "locked"} on{" "}
+          {new Date(production.productionLockedAt).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })}
+          {isAdmin ? "" : " — ask an admin to reopen it"}
+        </p>
       )}
 
       {apiError && (

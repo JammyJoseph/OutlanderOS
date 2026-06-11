@@ -181,6 +181,8 @@ model Campaign {
   lastSyncedToProduction DateTime? // last time deal changes were pushed to the linked Production
   paymentTerms     String?
   notes            String?
+  archived         Boolean        @default(false)
+  archivedAt       DateTime?
   createdById      String
   createdBy        User           @relation("CampaignCreator", fields: [createdById], references: [id])
   billingContactId String?
@@ -307,6 +309,8 @@ model Production {
   productionLockedAt     DateTime?
   productionLockedBy     String? // userId who locked the production budget
   shootDates       DateTime[]
+  archived         Boolean          @default(false)
+  archivedAt       DateTime?
   leadId           String?
   lead             User?            @relation("ProductionLead", fields: [leadId], references: [id])
   createdAt        DateTime         @default(now())

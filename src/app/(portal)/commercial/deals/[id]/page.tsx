@@ -24,6 +24,8 @@ import {
   FileText,
   Send,
   Lock as LockIcon,
+  Archive as ArchiveIcon,
+  ArchiveRestore,
   Palette,
   Package,
   LinkIcon,
@@ -105,6 +107,8 @@ interface DealDetail {
   creativeStatus: string | null;
   budgetLocked: boolean;
   lastSyncedToProduction: string | null;
+  archived: boolean;
+  archivedAt: string | null;
   stage: DealStage;
   stageUpdatedAt: string | null;
   value: number | null;
@@ -232,6 +236,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [tab, setTab] = useState<Tab>("overview");
   const [showMarkLive, setShowMarkLive] = useState(false);
   const [showClearProduction, setShowClearProduction] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [archiveBusy, setArchiveBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -283,6 +289,29 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     },
     [id, reload]
   );
+
+  async function archiveDeal() {
+    setArchiveBusy(true);
+    try {
+      const res = await fetch(`/api/campaigns/${id}/archive`, { method: "PATCH" });
+      if (res.ok) {
+        setShowArchiveConfirm(false);
+        await reload();
+      }
+    } finally {
+      setArchiveBusy(false);
+    }
+  }
+
+  async function unarchiveDeal() {
+    setArchiveBusy(true);
+    try {
+      const res = await fetch(`/api/campaigns/${id}/unarchive`, { method: "PATCH" });
+      if (res.ok) await reload();
+    } finally {
+      setArchiveBusy(false);
+    }
+  }
 
   async function syncToProduction() {
     setSyncing(true);
@@ -383,6 +412,38 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
             <CheckCircle2 size={13} /> Saved
           </span>
         </div>
+
+        {/* Archived banner */}
+        {deal.archived && (
+          <div className="mb-5 rounded-2xl border border-gray-300 bg-gray-100 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+              <ArchiveIcon size={15} />
+              This deal is archived
+              {deal.archivedAt && (
+                <span className="font-normal text-gray-400 text-xs">
+                  since {format(parseISO(deal.archivedAt), "d MMM yyyy")}
+                </span>
+              )}
+              {deal.production && (
+                <span className="font-normal text-gray-400 text-xs">
+                  · the linked production is archived with it
+                </span>
+              )}
+            </p>
+            <button
+              onClick={unarchiveDeal}
+              disabled={archiveBusy}
+              className="flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              {archiveBusy ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <ArchiveRestore size={13} />
+              )}
+              Unarchive
+            </button>
+          </div>
+        )}
 
         {/* Header */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
@@ -609,6 +670,18 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         )}
         {tab === "tasks" && <ActionTrackPanel projectId={deal.id} />}
         {tab === "activity" && <ActivityTab activities={deal.activities} />}
+
+        {/* Archive — quiet, at the bottom. Replaces delete platform-wide. */}
+        {!deal.archived && (
+          <div className="mt-10 pt-5 border-t border-gray-100 flex justify-end">
+            <button
+              onClick={() => setShowArchiveConfirm(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-red-500 transition-colors px-2 py-1"
+            >
+              <ArchiveIcon size={13} /> Archive Deal
+            </button>
+          </div>
+        )}
       </div>
 
       {showMarkLive && (
@@ -624,6 +697,58 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           onClose={() => setShowClearProduction(false)}
           onDone={reload}
         />
+      )}
+
+      {/* Archive confirmation */}
+      {showArchiveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="border-b border-gray-50 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <ArchiveIcon size={16} className="text-red-400" /> Archive deal?
+              </h2>
+              <button
+                onClick={() => setShowArchiveConfirm(false)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-gray-600">
+                &ldquo;{deal.title}&rdquo; disappears from the pipeline. Nothing is deleted — the
+                deal, its budget, and its history stay on record and you can unarchive it any time
+                via &ldquo;Show archived&rdquo;.
+              </p>
+              {deal.production && (
+                <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-3">
+                  This will also archive the linked production project &ldquo;
+                  {deal.production.title}&rdquo;. Continue?
+                </p>
+              )}
+              <div className="flex gap-3 mt-5">
+                <button
+                  onClick={() => setShowArchiveConfirm(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={archiveDeal}
+                  disabled={archiveBusy}
+                  className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {archiveBusy ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <ArchiveIcon size={15} />
+                  )}
+                  Archive
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
