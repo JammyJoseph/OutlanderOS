@@ -410,18 +410,26 @@ model CallSheet {
   productionId    String
   production      Production      @relation(fields: [productionId], references: [id], onDelete: Cascade)
   status          CallSheetStatus @default(DRAFT)
+  shootTitle      String?
   shootDate       DateTime
   callTime        String          @default("08:00")
+  wrapTime        String?
   location        Json
   locationLat     Float?
   locationLng     Float?
   schedule        Json
   shotlist        Json            @default("[]")
   crew            Json
+  talent          Json            @default("[]")
   cateringDetails Json            @default("{}")
   documents       Json            @default("[]")
   weatherData     Json?
-  notes           String?
+  productionNotes String?
+  safetyNotes     String?
+  parkingNotes    String?
+  notes           String? // legacy JSON blob — superseded by the dedicated columns above
+  shareToken      String?         @unique
+  distributions   Json            @default("[]") // [{ name, role, email, sentAt, confirmedAt? }]
   distributedAt   DateTime?
   createdAt       DateTime        @default(now())
 }

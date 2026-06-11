@@ -1,35 +1,83 @@
-import { Plus, Trash2 } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import type { CrewMember, TalentMember } from "./types";
 
+export const ACCENT = "#E24B4A";
+export const ACCENT_HOVER = "#C93D3C";
+
 export const inputCls =
-  "w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]";
+  "w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#E24B4A]/25 focus:border-[#E24B4A]";
 
 export const smallInputCls =
-  "px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]";
+  "px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#E24B4A]/25 focus:border-[#E24B4A]";
 
 export const labelCls = "block text-xs font-medium text-gray-500 mb-1.5";
+
+const COLLAPSE_PREFIX = "callsheet-section-collapsed:";
 
 export function Section({
   title,
   icon,
   action,
+  badge,
   children,
 }: {
   title: string;
   icon: React.ReactNode;
   action?: React.ReactNode;
+  badge?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Collapsed state survives navigation within the session, keyed per section.
+  useEffect(() => {
+    try {
+      setCollapsed(sessionStorage.getItem(COLLAPSE_PREFIX + title) === "1");
+    } catch {}
+  }, [title]);
+
+  function toggle() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        if (next) sessionStorage.setItem(COLLAPSE_PREFIX + title, "1");
+        else sessionStorage.removeItem(COLLAPSE_PREFIX + title);
+      } catch {}
+      return next;
+    });
+  }
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-5 py-3.5 border-b border-gray-50">
-        <div className="flex items-center gap-2">
+      <div
+        className={`flex items-center justify-between gap-2 px-5 py-3.5 ${
+          collapsed ? "" : "border-b border-gray-50"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={toggle}
+          className="flex flex-1 items-center gap-2 text-left group"
+          aria-expanded={!collapsed}
+        >
+          <ChevronDown
+            size={15}
+            className={`text-[#E24B4A] transition-transform duration-150 ${
+              collapsed ? "-rotate-90" : ""
+            }`}
+          />
           {icon}
-          <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
-        </div>
+          <h3 className="text-sm font-bold text-gray-800 group-hover:text-[#E24B4A] transition-colors">
+            {title}
+          </h3>
+          {badge}
+        </button>
         {action}
       </div>
-      <div className="px-5 py-4">{children}</div>
+      {!collapsed && <div className="px-5 py-4">{children}</div>}
     </div>
   );
 }
@@ -46,7 +94,7 @@ export function DocSection({
   return (
     <div className="break-inside-avoid">
       <div className="flex items-center gap-1.5 mb-3">
-        <span className="text-gray-400">{icon}</span>
+        <span className="text-[#E24B4A]">{icon}</span>
         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">{title}</h3>
       </div>
       {children}
@@ -58,7 +106,7 @@ export function AddButton({ label, onClick }: { label: string; onClick: () => vo
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 text-xs font-medium text-[#D4A853] hover:text-[#c49843] transition-colors mt-1"
+      className="flex items-center gap-1.5 text-xs font-medium text-[#E24B4A] hover:text-[#C93D3C] transition-colors mt-1"
     >
       <Plus size={13} /> {label}
     </button>
@@ -107,7 +155,7 @@ export function PeopleTable({
           >
             <span className="text-gray-600 font-medium">{p.role}</span>
             <span className="text-gray-800">{p.name}</span>
-            <span className="text-[#D4A853] font-mono text-xs">{p.callTime}</span>
+            <span className="text-[#E24B4A] font-mono text-xs">{p.callTime}</span>
             <span className="text-gray-500 text-xs truncate">{p.email}</span>
             <span className="text-gray-500 text-xs">{p.phone}</span>
           </div>

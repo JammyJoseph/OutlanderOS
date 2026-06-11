@@ -99,7 +99,30 @@ interface CallSheetSummary {
   status?: CallSheetStatus;
   callTime?: string | null;
   location?: { address?: string } | null;
+  shootTitle?: string | null;
 }
+
+// Roll a production's call sheets up to one chip: any published sheet wins,
+// otherwise any sheet at all counts as a draft in progress.
+function callSheetChip(p: { callSheets: CallSheetSummary[] }): {
+  label: string;
+  cls: string;
+} {
+  const sheets = p.callSheets ?? [];
+  if (sheets.some((cs) => cs.status === "PUBLISHED")) {
+    return { label: "Published ✓", cls: "bg-emerald-50 text-emerald-700" };
+  }
+  if (sheets.length > 0) {
+    return { label: "Draft", cls: "bg-blue-50 text-blue-600" };
+  }
+  return { label: "No call sheet", cls: "bg-gray-100 text-gray-400" };
+}
+
+const CS_BADGE: Record<CallSheetStatus, { label: string; cls: string }> = {
+  DRAFT: { label: "Draft", cls: "bg-white/20 text-white" },
+  SAVED: { label: "Saved", cls: "bg-white/20 text-white" },
+  PUBLISHED: { label: "Published ✓", cls: "bg-emerald-400/30 text-white" },
+};
 
 interface Production {
   id: string;
@@ -456,6 +479,13 @@ function HotSeatBanner({
               <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-sm">
                 {countdownLabel(hot.date)}
               </span>
+              {hot.callSheet?.status && (
+                <span
+                  className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm ${CS_BADGE[hot.callSheet.status].cls}`}
+                >
+                  Call sheet: {CS_BADGE[hot.callSheet.status].label}
+                </span>
+              )}
             </div>
             <h2 className="text-2xl font-bold tracking-tight truncate">
               {hot.production.title}
@@ -800,7 +830,6 @@ function ProjectCard({ production: p }: { production: Production }) {
   const next = getNextShoot(p);
   const style = STATUS_STYLES[p.status] || STATUS_STYLES.DRAFT;
   const client = getClientName(p);
-  const sheetCount = (p.callSheets ?? []).length;
   const crewCount = (p.crew ?? []).length;
   // Fresh arrivals (e.g. just cleared from Commercial) get a NEW badge for 24h.
   const isNew = p.createdAt
@@ -862,9 +891,12 @@ function ProjectCard({ production: p }: { production: Production }) {
 
         <div className="flex items-center justify-between text-xs text-gray-500">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1" title="Call sheets">
-              <ClipboardList size={12} />
-              {sheetCount}
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${callSheetChip(p).cls}`}
+              title="Call sheet status"
+            >
+              <ClipboardList size={11} />
+              {callSheetChip(p).label}
             </span>
             <span className="flex items-center gap-1" title="Crew">
               <Users size={12} />

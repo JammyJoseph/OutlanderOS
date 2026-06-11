@@ -67,7 +67,7 @@ export function DocumentsDoc({ documents }: { documents: Attachment[] }) {
         const inner = (
           <>
             <FileText size={15} className="text-gray-400 flex-shrink-0" />
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#D4A853]/15 text-[#a07e2e] flex-shrink-0">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E24B4A]/10 text-[#C93D3C] flex-shrink-0">
               {DOC_TYPE_LABELS[doc.type]}
             </span>
             <span className="text-sm text-gray-800 flex-1 truncate">
@@ -82,7 +82,7 @@ export function DocumentsDoc({ documents }: { documents: Attachment[] }) {
             href={doc.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2 hover:border-[#D4A853]/50 hover:bg-[#D4A853]/5 transition-colors"
+            className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2 hover:border-[#E24B4A]/50 hover:bg-[#E24B4A]/5 transition-colors"
           >
             {inner}
           </a>

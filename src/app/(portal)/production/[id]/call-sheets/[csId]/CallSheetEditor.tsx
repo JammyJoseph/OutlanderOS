@@ -1,8 +1,13 @@
 "use client";
 
-import { Clock, MapPin, Cloud, Camera, Users, Coffee, Paperclip, FileText } from "lucide-react";
+import { useState } from "react";
+import {
+  Clock, MapPin, Cloud, Camera, Users, Coffee, Paperclip, FileText,
+  GripVertical, UserPlus, Wallet, Contact as ContactIcon,
+} from "lucide-react";
 import type {
   Attachment,
+  CallSheet,
   CateringDetails,
   CrewMember,
   LocationData,
@@ -11,7 +16,8 @@ import type {
   TalentMember,
   WeatherData,
 } from "./types";
-import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls, PeopleTable } from "./shared";
+import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls } from "./shared";
+import { PeopleTable } from "./shared";
 import { LocationEditor } from "./LocationMap";
 import { WeatherEditor } from "./WeatherWidget";
 import { ShotlistEditor } from "./Shotlist";
@@ -35,12 +41,62 @@ export interface EditorProps {
   notesGeneral: string; setNotesGeneral: (v: string) => void;
   notesSafety: string; setNotesSafety: (v: string) => void;
   notesParking: string; setNotesParking: (v: string) => void;
+  production: CallSheet["production"];
 }
 
 const iconCls = "text-gray-400";
 
+function gbp(n: number): string {
+  return n.toLocaleString("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  });
+}
+
 export function CallSheetEditor(p: EditorProps) {
   const rosterCount = p.crew.length + p.talent.length;
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  function handleDrop(target: number) {
+    if (dragIndex === null || dragIndex === target) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const next = [...p.schedule];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(target, 0, moved);
+    p.setSchedule(next);
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }
+
+  // Merge the production team into crew, skipping people already listed.
+  function importTeam() {
+    const team = p.production.teamMembers ?? [];
+    if (!team.length) return;
+    const existing = new Set(
+      p.crew.map((c) => `${c.name.trim().toLowerCase()}|${(c.email || "").trim().toLowerCase()}`)
+    );
+    const incoming = team
+      .filter(
+        (m) =>
+          !existing.has(`${m.name.trim().toLowerCase()}|${(m.email || "").trim().toLowerCase()}`)
+      )
+      .map((m) => ({
+        role: m.role || "",
+        name: m.name,
+        callTime: p.callTime || "",
+        email: m.email || "",
+        phone: m.phone || "",
+      }));
+    if (incoming.length) p.setCrew([...p.crew, ...incoming]);
+  }
+
+  const billingContact = p.production.campaign?.billingContact ?? null;
+  const hasReference = p.production.budgetTotal != null || billingContact != null;
 
   return (
     <div className="space-y-4">
@@ -75,6 +131,39 @@ export function CallSheetEditor(p: EditorProps) {
             />
           </div>
         </div>
+
+        {/* Read-only references pulled from the production / Commercial deal */}
+        {hasReference && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50">
+            {p.production.budgetTotal != null && (
+              <div className="rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5">
+                <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+                  <Wallet size={11} /> Budget reference
+                </p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {gbp(p.production.budgetTotal)}
+                </p>
+                <p className="text-[11px] text-gray-400">Set on the production — read only</p>
+              </div>
+            )}
+            {billingContact && (
+              <div className="rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5">
+                <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+                  <ContactIcon size={11} /> Client contact
+                </p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {billingContact.name}
+                  {billingContact.role ? (
+                    <span className="text-gray-400 font-normal"> · {billingContact.role}</span>
+                  ) : null}
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  {[billingContact.email, billingContact.phone].filter(Boolean).join(" · ") || "—"}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </Section>
 
       {/* 2. Location */}
@@ -99,11 +188,42 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 4. Schedule */}
+      {/* 4. Schedule — drag the grip to reorder rows */}
       <Section title="Schedule" icon={<Clock size={15} className={iconCls} />}>
         <div className="space-y-2">
           {p.schedule.map((item, i) => (
-            <div key={i} className="grid grid-cols-[100px_1fr_1fr_32px] gap-2 items-center">
+            <div
+              key={i}
+              draggable
+              onDragStart={(e) => {
+                setDragIndex(i);
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (dragOverIndex !== i) setDragOverIndex(i);
+              }}
+              onDragLeave={() => setDragOverIndex((d) => (d === i ? null : d))}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDrop(i);
+              }}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setDragOverIndex(null);
+              }}
+              className={`grid grid-cols-[20px_100px_1fr_1fr_32px] gap-2 items-center rounded-lg transition-colors ${
+                dragOverIndex === i && dragIndex !== null && dragIndex !== i
+                  ? "bg-red-50/70 ring-1 ring-[#E24B4A]/30"
+                  : dragIndex === i
+                  ? "opacity-50"
+                  : ""
+              }`}
+            >
+              <span className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex justify-center">
+                <GripVertical size={14} />
+              </span>
               <input
                 type="time"
                 value={item.time}
@@ -148,7 +268,20 @@ export function CallSheetEditor(p: EditorProps) {
       </Section>
 
       {/* 6. Crew */}
-      <Section title="Crew" icon={<Users size={15} className={iconCls} />}>
+      <Section
+        title="Crew"
+        icon={<Users size={15} className={iconCls} />}
+        action={
+          (p.production.teamMembers ?? []).length > 0 ? (
+            <button
+              onClick={importTeam}
+              className="flex items-center gap-1.5 text-xs font-medium text-[#E24B4A] hover:text-[#C93D3C] transition-colors"
+            >
+              <UserPlus size={13} /> Import from team
+            </button>
+          ) : undefined
+        }
+      >
         <PeopleTable people={p.crew} setPeople={(v) => p.setCrew(v as CrewMember[])} addLabel="Add Crew" />
       </Section>
 

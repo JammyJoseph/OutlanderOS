@@ -91,25 +91,64 @@ export interface NotesData {
   parking: string;
 }
 
+export interface DistributionEntry {
+  name: string;
+  role: string;
+  email: string;
+  sentAt: string; // empty string until "Send to All" marks it sent
+  confirmedAt?: string;
+}
+
+export interface ClientContactRef {
+  name: string;
+  email: string | null;
+  phone: string | null;
+  role: string | null;
+}
+
+export interface TeamMemberRef {
+  name: string;
+  role: string;
+  email: string | null;
+  phone: string | null;
+  status: string;
+}
+
 export interface CallSheet {
   id: string;
   status: CallSheetStatus;
+  shootTitle: string | null;
   shootDate: string;
   callTime: string;
+  wrapTime: string | null;
   location: LocationData;
   locationLat: number | null;
   locationLng: number | null;
   schedule: ScheduleItem[];
   shotlist: Shot[];
   crew: CrewMember[];
+  talent: TalentMember[];
   cateringDetails: CateringDetails;
   documents: Attachment[];
   weatherData: WeatherData | null;
-  notes: string | null;
+  productionNotes: string | null;
+  safetyNotes: string | null;
+  parkingNotes: string | null;
+  notes: string | null; // legacy JSON blob, kept for backwards compat
+  shareToken: string | null;
+  distributions: DistributionEntry[];
   production: {
     id: string;
     title: string;
-    campaign: { title: string; client: { name: string } } | null;
+    budgetTotal: number | null;
+    clientName: string | null;
+    campaign: {
+      title: string;
+      briefContent: string | null;
+      client: { name: string };
+      billingContact: ClientContactRef | null;
+    } | null;
+    teamMembers: TeamMemberRef[];
   };
 }
 

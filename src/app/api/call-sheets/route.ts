@@ -26,14 +26,32 @@ export const POST = withAuth(async (request: NextRequest) => {
   }
 
   try {
+    // Pull the brief from the linked Commercial deal (or the production's own
+    // brief) so a fresh call sheet starts with production notes filled in.
+    const production = await prisma.production.findUnique({
+      where: { id: body.productionId },
+      select: {
+        title: true,
+        brief: true,
+        campaign: { select: { briefContent: true } },
+      },
+    });
+    if (!production) {
+      return NextResponse.json({ error: "Production not found" }, { status: 404 });
+    }
+    const autoNotes = production.campaign?.briefContent || production.brief || null;
+
     const sheet = await prisma.callSheet.create({
       data: {
         productionId: body.productionId,
+        shootTitle: body.shootTitle || body.title || production.title,
         shootDate: new Date(body.shootDate),
         callTime: body.callTime || "08:00",
         location: body.location || {},
         schedule: body.schedule || [],
         crew: body.crew || [],
+        talent: body.talent || [],
+        productionNotes: body.productionNotes ?? autoNotes,
         notes: body.notes || "",
         status: body.status || "DRAFT",
       },

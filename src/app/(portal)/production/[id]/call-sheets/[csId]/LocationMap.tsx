@@ -108,7 +108,7 @@ export function LocationEditor({
           <button
             onClick={findOnMap}
             disabled={locating || !location.address.trim()}
-            className="flex items-center gap-1.5 text-xs font-medium text-[#D4A853] hover:text-[#c49843] transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 text-xs font-medium text-[#E24B4A] hover:text-[#C93D3C] transition-colors disabled:opacity-40"
           >
             {locating ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
             Find on map

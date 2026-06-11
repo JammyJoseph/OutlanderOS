@@ -187,3 +187,31 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #aaa;
 }
+
+/* ── Call sheet print / PDF export ──────────────────────────────────────────
+   Scoped to pages that render a call sheet document ([data-callsheet-print]).
+   Hides portal chrome and unlocks the fixed-height portal shell so the
+   document flows across printed pages. */
+@media print {
+  body:has([data-callsheet-print]) header,
+  body:has([data-callsheet-print]) aside,
+  body:has([data-callsheet-print]) nav {
+    display: none !important;
+  }
+  body:has([data-callsheet-print]) .h-screen,
+  body:has([data-callsheet-print]) .overflow-hidden,
+  body:has([data-callsheet-print]) main {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  body:has([data-callsheet-print]) {
+    background: white !important;
+  }
+  body:has([data-callsheet-print]) [data-callsheet-print] {
+    min-height: 0 !important;
+  }
+  @page {
+    margin: 12mm;
+  }
+}

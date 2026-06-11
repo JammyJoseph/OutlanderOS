@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Plus, Loader2, ClipboardList, ChevronRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { CallSheet, CallSheetStatus, ProductionFull } from "./types";
+import { CallSheet, CallSheetStatus, ProductionFull, callSheetTitle } from "./types";
 
 interface Props {
   production: ProductionFull;
@@ -18,13 +18,7 @@ const CS_STATUS_STYLES: Record<CallSheetStatus, { bg: string; text: string; labe
 };
 
 function getShootTitle(cs: CallSheet, productionTitle: string): string {
-  if (cs.notes) {
-    try {
-      const parsed = JSON.parse(cs.notes);
-      if (parsed.shootTitle) return parsed.shootTitle;
-    } catch {}
-  }
-  return `${productionTitle} — ${format(parseISO(cs.shootDate), "d MMM")}`;
+  return callSheetTitle(cs, `${productionTitle} — ${format(parseISO(cs.shootDate), "d MMM")}`);
 }
 
 export default function CallSheetsTab({ production, creatingSheet, onCreateCallSheet }: Props) {

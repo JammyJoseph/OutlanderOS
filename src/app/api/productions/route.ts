@@ -18,7 +18,7 @@ export const GET = withAuth(async (request: NextRequest) => {
         campaign: { include: { client: true } },
         crew: { include: { contact: true } },
         callSheets: {
-          select: { id: true, shootDate: true, status: true, callTime: true, location: true },
+          select: { id: true, shootDate: true, status: true, callTime: true, location: true, shootTitle: true, notes: true },
         },
       },
       orderBy: { updatedAt: "desc" },
@@ -61,7 +61,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       include: {
         campaign: { include: { client: true } },
         crew: { include: { contact: true } },
-        callSheets: { select: { id: true, shootDate: true, status: true, callTime: true, location: true } },
+        callSheets: { select: { id: true, shootDate: true, status: true, callTime: true, location: true, shootTitle: true, notes: true } },
       },
     });
     return NextResponse.json({ production });

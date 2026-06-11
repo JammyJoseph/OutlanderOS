@@ -30,6 +30,7 @@ import { DocumentsDoc } from "./DocumentsSection";
 
 export interface CallSheetViewData {
   shootTitle: string;
+  clientName?: string;
   shootDate: string;
   callTime: string;
   wrapTime: string;
@@ -50,7 +51,7 @@ export interface CallSheetViewData {
 
 export function CallSheetDocument({ data }: { data: CallSheetViewData }) {
   const {
-    shootTitle, shootDate, callTime, wrapTime, location, locationLat, locationLng,
+    shootTitle, clientName, shootDate, callTime, wrapTime, location, locationLat, locationLng,
     weatherData, schedule, shotlist, crew, talent, catering, documents,
     notesGeneral, notesSafety, notesParking,
   } = data;
@@ -72,13 +73,24 @@ export function CallSheetDocument({ data }: { data: CallSheetViewData }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden print:rounded-none print:border-0 print:shadow-none">
       {/* Header */}
       <div className="bg-gray-900 text-white px-8 py-6 print:bg-white print:text-gray-900 print:border-b-2 print:border-gray-900">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm font-extrabold tracking-[0.3em] uppercase">
+            Outlander
+          </span>
+          <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#E24B4A]">
+            Call Sheet
+          </span>
+        </div>
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-semibold">{shootTitle || "Call Sheet"}</h1>
-            <p className="text-gray-400 text-sm mt-0.5 print:text-gray-600">{formattedDate}</p>
+            <p className="text-gray-400 text-sm mt-0.5 print:text-gray-600">
+              {formattedDate}
+              {clientName ? ` · ${clientName}` : ""}
+            </p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-[#D4A853]">{callTime || "—"}</div>
+            <div className="text-2xl font-bold text-[#E24B4A]">{callTime || "—"}</div>
             <div className="text-xs text-gray-400 uppercase tracking-wider print:text-gray-600">
               Call Time
             </div>
@@ -135,7 +147,7 @@ export function CallSheetDocument({ data }: { data: CallSheetViewData }) {
                     i % 2 === 0 ? "bg-gray-50/50" : "bg-white"
                   }`}
                 >
-                  <span className="text-xs font-mono font-semibold text-[#D4A853] w-12 flex-shrink-0 pt-0.5">
+                  <span className="text-xs font-mono font-semibold text-[#E24B4A] w-12 flex-shrink-0 pt-0.5">
                     {item.time}
                   </span>
                   <div className="flex-1">

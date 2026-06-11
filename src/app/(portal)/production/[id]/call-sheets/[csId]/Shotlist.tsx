@@ -2,6 +2,7 @@
 
 import type { Shot, ShotStatus } from "./types";
 import { SHOT_STATUS_LABELS, emptyShot } from "./types";
+import { Copy } from "lucide-react";
 import { AddButton, DeleteButton, smallInputCls } from "./shared";
 
 const STATUS_STYLES: Record<ShotStatus, string> = {
@@ -40,6 +41,17 @@ export function ShotlistEditor({
               {i + 1}
             </span>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const next = [...shotlist];
+                  next.splice(i + 1, 0, { ...shot, status: "planned" });
+                  setShotlist(next);
+                }}
+                title="Duplicate shot"
+                className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-[#E24B4A] transition-colors"
+              >
+                <Copy size={13} />
+              </button>
               <select
                 value={shot.status}
                 onChange={(e) => update(i, { status: e.target.value as ShotStatus })}
@@ -118,7 +130,7 @@ export function ShotlistDoc({ shotlist }: { shotlist: Shot[] }) {
             i % 2 === 0 ? "bg-white" : "bg-gray-50/50"
           }`}
         >
-          <span className="font-bold text-[#D4A853]">{i + 1}</span>
+          <span className="font-bold text-[#E24B4A]">{i + 1}</span>
           <span className="text-gray-800 font-medium pr-2">{shot.description || "—"}</span>
           <span className="text-gray-600 text-xs pr-2">{shot.setup}</span>
           <span className="text-gray-600 text-xs pr-2">{shot.talent}</span>

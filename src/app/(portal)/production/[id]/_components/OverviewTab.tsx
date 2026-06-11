@@ -66,6 +66,19 @@ export default function OverviewTab({
   const completed = tasks.filter((t) => t.status === "DONE").length;
   const pct = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
 
+  // Shotlist progress across this production's call sheets
+  const shots = useMemo(() => {
+    let total = 0;
+    let done = 0;
+    for (const cs of production.callSheets ?? []) {
+      for (const shot of cs.shotlist ?? []) {
+        total += 1;
+        if (shot?.status === "completed") done += 1;
+      }
+    }
+    return { total, done };
+  }, [production.callSheets]);
+
   const today = startOfDay(new Date());
   const upcomingTask = tasks
     .filter((t) => t.status !== "DONE" && t.dueDate)
@@ -147,6 +160,27 @@ export default function OverviewTab({
           }
         />
       </div>
+
+      {/* Shotlist progress — only when call sheets have shots planned */}
+      {shots.total > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <ListChecks size={15} className="text-[#E24B4A]" />
+              Shotlist Progress
+            </h2>
+            <span className="text-xs font-semibold text-gray-600">
+              {shots.done}/{shots.total} shots completed
+            </span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#E24B4A] rounded-full transition-all"
+              style={{ width: `${Math.round((shots.done / shots.total) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Description / details */}

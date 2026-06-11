@@ -19,7 +19,7 @@ import type { DailyForecast, WeatherData } from "./types";
 
 function ConditionIcon({ condition, size = 22 }: { condition: string; size?: number }) {
   const c = condition.toLowerCase();
-  const cls = "text-[#D4A853]";
+  const cls = "text-[#E24B4A]";
   if (c.includes("thunder")) return <CloudLightning size={size} className={cls} />;
   if (c.includes("drizzle")) return <CloudDrizzle size={size} className={cls} />;
   if (c.includes("rain")) return <CloudRain size={size} className={cls} />;
@@ -35,7 +35,7 @@ function DayCard({ day, highlight }: { day: DailyForecast; highlight: boolean })
   return (
     <div
       className={`flex-1 rounded-xl border p-3 text-center ${
-        highlight ? "border-[#D4A853] bg-[#D4A853]/5" : "border-gray-100 bg-gray-50/50"
+        highlight ? "border-[#E24B4A] bg-[#E24B4A]/5" : "border-gray-100 bg-gray-50/50"
       }`}
     >
       <p className="text-xs font-semibold text-gray-500">
@@ -100,6 +100,12 @@ export function WeatherEditor({
   const [message, setMessage] = useState("");
 
   const hasLocation = lat != null && lng != null;
+  // The forecast was fetched around a different shoot date — prompt a refresh.
+  const stale =
+    !!weatherData &&
+    weatherData.forecast.length > 0 &&
+    !!shootDate &&
+    !weatherData.forecast.some((d) => d.date === shootDate);
 
   async function fetchForecast() {
     if (!hasLocation) return;
@@ -150,7 +156,7 @@ export function WeatherEditor({
         <button
           onClick={fetchForecast}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs font-medium text-[#D4A853] hover:text-[#c49843] transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-xs font-medium text-[#E24B4A] hover:text-[#C93D3C] transition-colors disabled:opacity-40"
         >
           {loading ? (
             <Loader2 size={13} className="animate-spin" />
@@ -160,6 +166,20 @@ export function WeatherEditor({
           {weatherData ? "Refresh" : "Fetch forecast"}
         </button>
       </div>
+      {stale && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50 border border-amber-100 px-3.5 py-2.5">
+          <p className="text-xs text-amber-700 font-medium">
+            The shoot date changed since this forecast was fetched.
+          </p>
+          <button
+            onClick={fetchForecast}
+            disabled={loading}
+            className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-amber-800 hover:text-amber-900 disabled:opacity-40"
+          >
+            <RefreshCw size={12} /> Refresh weather
+          </button>
+        </div>
+      )}
       {message && <p className="text-xs text-amber-600">{message}</p>}
       {weatherData && (
         <WeatherDisplay weatherData={weatherData} shootDate={shootDate} />

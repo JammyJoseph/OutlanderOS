@@ -19,9 +19,28 @@ export interface CallSheet {
   id: string;
   shootDate: string;
   callTime: string;
+  shootTitle?: string | null;
   notes: string | null;
   status: CallSheetStatus;
   location?: { address?: string } | null;
+  shotlist?: { status?: string }[] | null;
+  shareToken?: string | null;
+}
+
+// Display title for a call sheet: dedicated column first, then the legacy
+// notes JSON, then a date-based fallback.
+export function callSheetTitle(
+  cs: Pick<CallSheet, "shootTitle" | "notes">,
+  fallback: string
+): string {
+  if (cs.shootTitle) return cs.shootTitle;
+  if (cs.notes) {
+    try {
+      const parsed = JSON.parse(cs.notes);
+      if (parsed?.shootTitle) return parsed.shootTitle;
+    } catch {}
+  }
+  return fallback;
 }
 
 export interface CrewMember {

@@ -33,16 +33,31 @@ export const POST = withAuth(async (
   }
 
   try {
+    const production = await prisma.production.findUnique({
+      where: { id },
+      select: {
+        title: true,
+        brief: true,
+        campaign: { select: { briefContent: true } },
+      },
+    });
+    if (!production) {
+      return NextResponse.json({ error: "Production not found" }, { status: 404 });
+    }
+    const autoNotes = production.campaign?.briefContent || production.brief || null;
+
     const sheet = await prisma.callSheet.create({
       data: {
         productionId: id,
         status: "DRAFT",
+        shootTitle: body.shootTitle || body.title || production.title,
         shootDate: new Date(body.shootDate),
         callTime: body.callTime || "08:00",
         location: body.location || {},
         schedule: body.schedule || [],
         crew: body.crew || [],
-        notes: body.title ? JSON.stringify({ shootTitle: body.title }) : "",
+        talent: body.talent || [],
+        productionNotes: body.productionNotes ?? autoNotes,
       },
     });
     return NextResponse.json({ sheet });

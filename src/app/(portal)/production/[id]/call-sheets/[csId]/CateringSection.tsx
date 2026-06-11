@@ -35,7 +35,7 @@ export function CateringEditor({
       {/* Headcount */}
       <div className="flex items-center gap-4 rounded-xl bg-gray-50/70 border border-gray-100 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Users size={16} className="text-[#D4A853]" />
+          <Users size={16} className="text-[#E24B4A]" />
           <span className="text-2xl font-semibold text-gray-900">{headcount}</span>
           <span className="text-xs text-gray-500">meals</span>
         </div>
