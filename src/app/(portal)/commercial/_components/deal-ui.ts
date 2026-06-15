@@ -191,7 +191,10 @@ export const DEAL_TYPE_OPTIONS = [
   "DIGITAL_PARTNERSHIP",
   "EDITORIAL",
   "PRINT_AD",
+  "PRINT_ADVERTORIAL",
   "CONTENT_CREATION",
+  "BESPOKE_CONTENT",
+  "SUPPLIED_ASSETS",
   "SPONSORSHIP",
 ] as const;
 
@@ -212,7 +215,10 @@ export const TYPE_STYLES: Record<string, { label: string; bg: string; text: stri
   DIGITAL_PARTNERSHIP: { label: "Digital Partnership", bg: "bg-cyan-50", text: "text-cyan-700" },
   EDITORIAL: { label: "Editorial", bg: "bg-blue-50", text: "text-blue-700" },
   PRINT_AD: { label: "Print Ad", bg: "bg-teal-50", text: "text-teal-700" },
+  PRINT_ADVERTORIAL: { label: "Print Advertorial", bg: "bg-teal-50", text: "text-teal-700" },
   CONTENT_CREATION: { label: "Content Creation", bg: "bg-rose-50", text: "text-rose-700" },
+  BESPOKE_CONTENT: { label: "Bespoke Content Production", bg: "bg-rose-50", text: "text-rose-700" },
+  SUPPLIED_ASSETS: { label: "Supplied Assets", bg: "bg-gray-100", text: "text-gray-600" },
   SPONSORSHIP: { label: "Sponsorship", bg: "bg-indigo-50", text: "text-indigo-700" },
   // Legacy campaign types
   SUPPLIED_ASSET: { label: "Supplied Asset", bg: "bg-gray-50", text: "text-gray-600" },

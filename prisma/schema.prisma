@@ -146,6 +146,7 @@ model Campaign {
   type             CampaignType // legacy single type — kept for backwards compatibility
   dealTypes        String[]       @default([]) // multi-select deal types, e.g. ["EVENT", "DIGITAL_PARTNERSHIP"]
   workflowType     String         @default("CREATIVE_BRIEF") // CREATIVE_BRIEF | SUPPLIED_ASSETS — determines the process, not the content type
+  jobType          String         @default("CREATIVE_BRIEF") // CREATIVE_BRIEF | SUPPLIED_ASSETS | PRINT_AD — the user-facing job classifier set at deal creation; drives auto-tags + workflowType
   status           CampaignStatus @default(BRIEF_RECEIVED)
   stage            DealStage      @default(LEAD)
   stageUpdatedAt   DateTime?
@@ -165,7 +166,11 @@ model Campaign {
   margin           Float?
   timelineStart    DateTime?
   timelineEnd      DateTime?
-  mediaPlan        Json?
+  mediaPlan          Json? // { phases: [{ name, lines: [...] }], version, updatedAt, updatedBy } — the spreadsheet-style media plan; its net total is the deal value
+  mediaPlanVersion   Int       @default(1)
+  mediaPlanUpdatedAt DateTime?
+  mediaPlanUpdatedBy String? // display name of the last editor
+  mediaPlanLockedAt  DateTime?
   ioUrl            String?
   ioSigned         Boolean        @default(false)
   ioSignedAt       DateTime?
@@ -652,6 +657,22 @@ model IntelligenceLog {
   sources    String[]
   rawData    Json?
   createdAt  DateTime  @default(now())
+}
+
+// ===== RATE CARD =====
+// Preset placements that pre-fill the media plan builder. Seeded with
+// Outlander's default rate card; editable from admin.
+model RateCardPlacement {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  rate        Float    @default(0)
+  impressions Int      @default(0)
+  rateType    String   @default("Flat Fee") // Flat Fee | Flat Post
+  measurement String   @default("Impressions") // Impressions | Reach | N/A
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ===== MEDIA PLANS =====

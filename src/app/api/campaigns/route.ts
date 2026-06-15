@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { validateRequired, sanitizeString } from "@/lib/validate";
-import { isDealStage, isDealType, isWorkflowType, dealTypeToCampaignType } from "@/lib/deal-stages";
+import {
+  isDealStage,
+  isDealType,
+  isWorkflowType,
+  isJobType,
+  dealTypeToCampaignType,
+  dealTypesForJob,
+  workflowForJobType,
+} from "@/lib/deal-stages";
 
 export const GET = withAuth(async (request: NextRequest) => {
   try {
@@ -87,11 +95,23 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
       return NextResponse.json({ error: "clientId or clientName is required" }, { status: 400 });
     }
 
-    // Multi-select dealTypes is the source of truth; the legacy single type
-    // is derived from the first selected type for backwards compatibility.
-    const dealTypes: string[] = Array.isArray(body.dealTypes)
-      ? body.dealTypes.filter((t: unknown): t is string => typeof t === "string" && isDealType(t))
-      : [];
+    // Job type is the user-facing classifier set in the New Deal flow; it
+    // drives the auto-tags (dealTypes) and the underlying workflowType. Falls
+    // back to explicit dealTypes/workflowType for older clients.
+    const jobType =
+      typeof body.jobType === "string" && isJobType(body.jobType) ? body.jobType : null;
+
+    let dealTypes: string[];
+    if (jobType) {
+      const extensions: string[] = Array.isArray(body.extensions)
+        ? body.extensions.filter((e: unknown): e is string => typeof e === "string")
+        : [];
+      dealTypes = dealTypesForJob(jobType, extensions);
+    } else {
+      dealTypes = Array.isArray(body.dealTypes)
+        ? body.dealTypes.filter((t: unknown): t is string => typeof t === "string" && isDealType(t))
+        : [];
+    }
     if (!dealTypes.length && !body.type) {
       return NextResponse.json({ error: "Missing required field: type" }, { status: 400 });
     }
@@ -101,8 +121,9 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
     const type = dealTypes.length ? dealTypeToCampaignType(dealTypes[0]) : body.type;
 
     // Workflow type determines the process — creative loop or straight through.
-    const workflowType =
-      typeof body.workflowType === "string" && isWorkflowType(body.workflowType)
+    const workflowType = jobType
+      ? workflowForJobType(jobType)
+      : typeof body.workflowType === "string" && isWorkflowType(body.workflowType)
         ? body.workflowType
         : "CREATIVE_BRIEF";
 
@@ -125,6 +146,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
         type,
         dealTypes,
         workflowType,
+        jobType: jobType ?? workflowType,
         // Creative-brief jobs start the creative loop awaiting Outlander's response.
         creativeStatus: workflowType === "CREATIVE_BRIEF" ? "AWAITING_RESPONSE" : null,
         stage: body.stage && isDealStage(body.stage) ? body.stage : "LEAD",

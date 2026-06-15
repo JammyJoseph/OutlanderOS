@@ -1,13 +1,44 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Loader2, Palette, Package } from "lucide-react";
-import { DEAL_TYPE_OPTIONS, TYPE_STYLES, type Deal, type WorkflowType } from "./deal-ui";
+import { X, Loader2, Palette, Package, Newspaper, ArrowLeft } from "lucide-react";
+import { TYPE_STYLES, type Deal } from "./deal-ui";
+import { JOB_TYPE_CONFIG, type JobTypeValue } from "@/lib/deal-stages";
 
 interface ClientOption {
   id: string;
   name: string;
 }
+
+const JOB_TYPE_CARDS: {
+  key: JobTypeValue;
+  icon: React.ReactNode;
+  accent: string; // selected ring/border
+  iconBg: string;
+  blurb: string;
+}[] = [
+  {
+    key: "CREATIVE_BRIEF",
+    icon: <Palette size={18} />,
+    accent: "border-purple-400 ring-2 ring-purple-400/20 bg-purple-50/50",
+    iconBg: "bg-purple-100 text-purple-600",
+    blurb: "Bespoke content that needs a creative response. The main workflow.",
+  },
+  {
+    key: "SUPPLIED_ASSETS",
+    icon: <Package size={18} />,
+    accent: "border-gray-400 ring-2 ring-gray-400/20 bg-gray-50",
+    iconBg: "bg-gray-100 text-gray-600",
+    blurb: "Client provides the content — no creative response needed.",
+  },
+  {
+    key: "PRINT_AD",
+    icon: <Newspaper size={18} />,
+    accent: "border-teal-400 ring-2 ring-teal-400/20 bg-teal-50/50",
+    iconBg: "bg-teal-100 text-teal-600",
+    blurb: "Print advertising — straight to the media plan.",
+  },
+];
 
 export default function NewDealModal({
   onClose,
@@ -20,18 +51,11 @@ export default function NewDealModal({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [workflowType, setWorkflowType] = useState<WorkflowType | null>(null);
+  const [jobType, setJobType] = useState<JobTypeValue | null>(null);
   const [title, setTitle] = useState("");
   const [clientId, setClientId] = useState("");
   const [newClientName, setNewClientName] = useState("");
-  const [value, setValue] = useState("");
-  const [dealTypes, setDealTypes] = useState<string[]>(["PARTNERSHIP"]);
-  const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState("");
-
-  function toggleType(t: string) {
-    setDealTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
-  }
+  const [extensions, setExtensions] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/clients")
@@ -40,19 +64,25 @@ export default function NewDealModal({
       .catch(() => setClients([]));
   }, []);
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim()) return;
-    if (!workflowType) {
-      setError("Pick what type of job this is first");
+  function pickJobType(t: JobTypeValue) {
+    setJobType(t);
+    setExtensions([]);
+    setError(null);
+  }
+
+  function toggleExtension(e: string) {
+    setExtensions((prev) => (prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e]));
+  }
+
+  async function handleCreate(ev: React.FormEvent) {
+    ev.preventDefault();
+    if (!jobType) return;
+    if (!title.trim()) {
+      setError("Give the deal a title");
       return;
     }
     if (clientId === "__new__" ? !newClientName.trim() : !clientId) {
       setError("Pick a client or enter a new one");
-      return;
-    }
-    if (dealTypes.length === 0) {
-      setError("Pick at least one deal type");
       return;
     }
     setCreating(true);
@@ -62,14 +92,11 @@ export default function NewDealModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          workflowType,
+          jobType,
+          extensions,
           title: title.trim(),
           clientId: clientId === "__new__" ? undefined : clientId,
           clientName: clientId === "__new__" ? newClientName.trim() : undefined,
-          value: value || null,
-          dealTypes,
-          description: description.trim() || null,
-          dueDate: dueDate || null,
         }),
       });
       const data = await res.json();
@@ -89,11 +116,26 @@ export default function NewDealModal({
     "w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]";
   const labelCls = "block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5";
 
+  const cfg = jobType ? JOB_TYPE_CONFIG[jobType] : null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-50 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-lg font-semibold text-gray-900">New Deal</h2>
+          <div className="flex items-center gap-2">
+            {jobType && (
+              <button
+                onClick={() => setJobType(null)}
+                className="p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                title="Back to job type"
+              >
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <h2 className="text-lg font-semibold text-gray-900">
+              {jobType ? "Deal details" : "New Deal"}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
@@ -101,189 +143,147 @@ export default function NewDealModal({
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleCreate} className="px-6 py-5 space-y-4">
-          <div>
-            <label className={labelCls}>
-              What type of job is this? <span className="text-red-400">*</span>
-            </label>
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                onClick={() => setWorkflowType("CREATIVE_BRIEF")}
-                className={`w-full text-left rounded-xl border p-3.5 transition-all ${
-                  workflowType === "CREATIVE_BRIEF"
-                    ? "border-purple-400 ring-2 ring-purple-400/20 bg-purple-50/50"
-                    : "border-gray-200 hover:border-gray-300"
+
+        {/* Step 1 — choose the job type */}
+        {!jobType && (
+          <div className="px-6 py-5 space-y-3">
+            <p className="text-sm text-gray-500">What type of job is this?</p>
+            {JOB_TYPE_CARDS.map((card) => {
+              const c = JOB_TYPE_CONFIG[card.key];
+              return (
+                <button
+                  key={card.key}
+                  type="button"
+                  onClick={() => pickJobType(card.key)}
+                  className="w-full text-left rounded-xl border border-gray-200 hover:border-gray-300 p-4 transition-all"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${card.iconBg}`}
+                    >
+                      {card.icon}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{c.label}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{card.blurb}</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Step 2 — basic details */}
+        {jobType && cfg && (
+          <form onSubmit={handleCreate} className="px-6 py-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Job type:</span>
+              <span
+                className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                  JOB_TYPE_CARDS.find((c) => c.key === jobType)?.iconBg ?? "bg-gray-100 text-gray-600"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                    <Palette size={16} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Creative Brief</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Needs a creative response, client approval, then production. The main
-                      workflow.
-                    </p>
-                  </div>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setWorkflowType("SUPPLIED_ASSETS")}
-                className={`w-full text-left rounded-xl border p-3.5 transition-all ${
-                  workflowType === "SUPPLIED_ASSETS"
-                    ? "border-gray-400 ring-2 ring-gray-400/20 bg-gray-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center shrink-0">
-                    <Package size={16} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Supplied Assets</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Client provides the content — no creative or production needed. Simpler
-                      path.
-                    </p>
-                  </div>
-                </div>
-              </button>
+                {cfg.label}
+              </span>
             </div>
-          </div>
 
-          <div>
-            <label className={labelCls}>
-              Deal Title <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. SS26 Launch Partnership"
-              className={inputCls}
-            />
-          </div>
-
-          <div>
-            <label className={labelCls}>
-              Client <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className={`${inputCls} bg-white`}
-            >
-              <option value="">Select a client…</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-              <option value="__new__">+ New client…</option>
-            </select>
-            {clientId === "__new__" && (
+            <div>
+              <label className={labelCls}>
+                Deal Title <span className="text-red-400">*</span>
+              </label>
               <input
                 type="text"
-                value={newClientName}
-                onChange={(e) => setNewClientName(e.target.value)}
-                placeholder="New client name"
-                className={`${inputCls} mt-2`}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. SS26 Launch Partnership"
+                autoFocus
+                className={inputCls}
               />
-            )}
-          </div>
-
-          <div>
-            <label className={labelCls}>Value (£)</label>
-            <input
-              type="number"
-              min="0"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="0"
-              className={inputCls}
-            />
-          </div>
-
-          <div>
-            <label className={labelCls}>
-              Deal Types <span className="text-red-400">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {DEAL_TYPE_OPTIONS.map((t) => {
-                const style = TYPE_STYLES[t];
-                const checked = dealTypes.includes(t);
-                return (
-                  <label
-                    key={t}
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors ${
-                      checked
-                        ? "border-[#D4A853] bg-amber-50/50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleType(t)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 accent-[#D4A853]"
-                    />
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}
-                    >
-                      {style.label}
-                    </span>
-                  </label>
-                );
-              })}
             </div>
-          </div>
 
-          <div>
-            <label className={labelCls}>Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="What's the deal? Scope, deliverables, context…"
-              className={`${inputCls} resize-none`}
-            />
-          </div>
+            <div>
+              <label className={labelCls}>
+                Client <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className={`${inputCls} bg-white`}
+              >
+                <option value="">Select a client…</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+                <option value="__new__">+ New client…</option>
+              </select>
+              {clientId === "__new__" && (
+                <input
+                  type="text"
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                  placeholder="New client name"
+                  className={`${inputCls} mt-2`}
+                />
+              )}
+            </div>
 
-          <div>
-            <label className={labelCls}>Due Date</label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className={inputCls}
-            />
-          </div>
+            {cfg.extensions.length > 0 && (
+              <div>
+                <label className={labelCls}>Extensions</label>
+                <p className="text-[11px] text-gray-400 mb-2">
+                  Add-ons for this job. Optional — tick any that apply.
+                </p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {cfg.extensions.map((ext) => {
+                    const style = TYPE_STYLES[ext] ?? { label: ext, bg: "bg-gray-50", text: "text-gray-600" };
+                    const checked = extensions.includes(ext);
+                    return (
+                      <label
+                        key={ext}
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors ${
+                          checked ? "border-[#D4A853] bg-amber-50/50" : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleExtension(ext)}
+                          className="h-3.5 w-3.5 rounded border-gray-300 accent-[#D4A853]"
+                        />
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
+                          {style.label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-          {error && (
-            <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-          )}
+            {error && <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
 
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!title.trim() || !workflowType || dealTypes.length === 0 || creating}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {creating ? <Loader2 size={15} className="animate-spin" /> : null}
-              Create Deal
-            </button>
-          </div>
-        </form>
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setJobType(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={!title.trim() || creating}
+                className="flex-1 flex items-center justify-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {creating ? <Loader2 size={15} className="animate-spin" /> : null}
+                Create Deal
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

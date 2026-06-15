@@ -96,6 +96,63 @@ export function stagesForWorkflow(workflowType: string): DealStageValue[] {
   return workflowType === "SUPPLIED_ASSETS" ? SUPPLIED_ASSETS_STAGES : PIPELINE_STAGES;
 }
 
+// ── Job type — the user-facing classifier chosen when a deal is created ─────
+// It drives the auto-tags (dealTypes), the available extensions, and the
+// underlying workflowType (which still drives the pipeline process).
+export const JOB_TYPES = ["CREATIVE_BRIEF", "SUPPLIED_ASSETS", "PRINT_AD"] as const;
+export type JobTypeValue = (typeof JOB_TYPES)[number];
+
+export function isJobType(value: string): value is JobTypeValue {
+  return (JOB_TYPES as readonly string[]).includes(value);
+}
+
+export interface JobTypeConfig {
+  label: string;
+  description: string;
+  // dealTypes applied automatically when this job type is chosen.
+  autoTags: DealTypeValue[];
+  // Optional extra dealTypes the user can tick on at creation.
+  extensions: DealTypeValue[];
+  workflowType: WorkflowTypeValue;
+}
+
+export const JOB_TYPE_CONFIG: Record<JobTypeValue, JobTypeConfig> = {
+  CREATIVE_BRIEF: {
+    label: "Creative Brief",
+    description: "Bespoke content, needs a creative response.",
+    autoTags: ["BESPOKE_CONTENT"],
+    extensions: ["EVENT", "ADVERTORIAL"],
+    workflowType: "CREATIVE_BRIEF",
+  },
+  SUPPLIED_ASSETS: {
+    label: "Supplied Assets",
+    description: "Client provides the content.",
+    autoTags: ["SUPPLIED_ASSETS"],
+    extensions: ["EVENT", "PRINT_ADVERTORIAL"],
+    workflowType: "SUPPLIED_ASSETS",
+  },
+  PRINT_AD: {
+    label: "Print Ad",
+    description: "Print advertising.",
+    autoTags: ["PRINT_AD"],
+    extensions: [],
+    workflowType: "SUPPLIED_ASSETS",
+  },
+};
+
+export function workflowForJobType(jobType: string): WorkflowTypeValue {
+  return isJobType(jobType) ? JOB_TYPE_CONFIG[jobType].workflowType : "CREATIVE_BRIEF";
+}
+
+// The dealTypes a freshly-created deal should carry: the job type's auto-tags
+// plus any selected extensions (deduped, validated).
+export function dealTypesForJob(jobType: string, extensions: string[]): DealTypeValue[] {
+  const cfg = isJobType(jobType) ? JOB_TYPE_CONFIG[jobType] : JOB_TYPE_CONFIG.CREATIVE_BRIEF;
+  const allowed = new Set<string>(cfg.extensions);
+  const picked = (extensions ?? []).filter((e) => allowed.has(e) && isDealType(e)) as DealTypeValue[];
+  return Array.from(new Set<DealTypeValue>([...cfg.autoTags, ...picked]));
+}
+
 // ── Creative status — where the brief/response/approval loop is ─────────────
 export const CREATIVE_STATUSES = [
   "AWAITING_RESPONSE",
@@ -222,9 +279,9 @@ export function clearForProductionChecklist(deal: {
     },
     {
       key: "budget",
-      label: "Budget locked",
+      label: "Media plan locked",
       ok: deal.budgetLocked,
-      detail: !deal.budgetLocked ? "Lock & Submit the budget on the Budget tab" : undefined,
+      detail: !deal.budgetLocked ? "Lock the media plan on the Media Plan tab" : undefined,
     },
     {
       key: "brief",
@@ -251,7 +308,10 @@ export const DEAL_TYPES = [
   "DIGITAL_PARTNERSHIP",
   "EDITORIAL",
   "PRINT_AD",
+  "PRINT_ADVERTORIAL",
   "CONTENT_CREATION",
+  "BESPOKE_CONTENT",
+  "SUPPLIED_ASSETS",
   "SPONSORSHIP",
 ] as const;
 
@@ -266,6 +326,7 @@ export function isDealType(value: string): value is DealTypeValue {
 export const PRODUCTION_DEAL_TYPES: DealTypeValue[] = [
   "EVENT",
   "CONTENT_CREATION",
+  "BESPOKE_CONTENT",
   "PARTNERSHIP",
   "ADVERTORIAL",
   "EDITORIAL",
@@ -287,11 +348,16 @@ export function dealTypeToCampaignType(dealType: string): string {
     case "EDITORIAL":
     case "PRINT_AD":
       return dealType;
+    case "PRINT_ADVERTORIAL":
+      return "PRINT_AD";
     case "DIGITAL_PARTNERSHIP":
     case "SPONSORSHIP":
       return "PARTNERSHIP";
     case "CONTENT_CREATION":
+    case "BESPOKE_CONTENT":
       return "BESPOKE_PRODUCTION";
+    case "SUPPLIED_ASSETS":
+      return "SUPPLIED_ASSET";
     default:
       return "PARTNERSHIP";
   }
