@@ -63,7 +63,9 @@ export const GET = withAuth(async () => {
     if (!hotDeal) {
       const inMotion = active
         .filter((d) =>
-          ["NEGOTIATING", "CLIENT_REVIEW", "CLIENT_APPROVED", "CONTRACTED"].includes(d.stage)
+          ["DEAL_SIGNED", "CREATIVE_REVIEW", "CREATIVE_APPROVED", "APPROVAL", "IO_SIGNED"].includes(
+            normalizeStage(d.stage)
+          )
         )
         .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
       hotDeal = inMotion[0] ?? null;

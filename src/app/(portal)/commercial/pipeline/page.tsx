@@ -23,7 +23,7 @@ import {
   STAGE_ORDER,
   STAGE_STYLES,
   STAGE_GROUPS,
-  CREATIVE_STAGES,
+  stagesForDeal,
   WORKFLOW_STYLES,
   CREATIVE_STATUS_STYLES,
   normalizeStage,
@@ -126,10 +126,10 @@ function PipelineBoard() {
     return map;
   }, [filtered]);
 
-  // Supplied-assets deals skip the creative + cleared-for-production columns.
+  // Each workflow only allows its own stages — bespoke skips Approval; supplied
+  // skips Creative/IO/Cleared; print skips those plus Approval.
   function stageAllowedFor(deal: Deal, stage: DealStage): boolean {
-    if (deal.workflowType !== "SUPPLIED_ASSETS") return true;
-    return !CREATIVE_STAGES.includes(stage) && stage !== "CLEARED_FOR_PRODUCTION";
+    return (stagesForDeal(deal) as string[]).includes(stage);
   }
 
   async function archiveDeal(deal: Deal) {
@@ -301,9 +301,13 @@ function PipelineBoard() {
                     >
                       {group.label}
                     </span>
-                    {group.creative && (
-                      <span className="text-[10px] font-medium text-purple-400">
-                        creative brief jobs only
+                    {group.note && (
+                      <span
+                        className={`text-[10px] font-medium ${
+                          group.creative ? "text-purple-400" : "text-gray-400"
+                        }`}
+                      >
+                        {group.note}
                       </span>
                     )}
                     <span className="flex-1 border-t border-dashed border-gray-200 ml-1" />

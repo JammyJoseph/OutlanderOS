@@ -5,6 +5,8 @@ import {
   parseAllocations,
   productionAllocationOf,
   mapSplitsToCampaignBudget,
+  PIPELINE_STAGES,
+  normalizeStage,
 } from "@/lib/deal-stages";
 
 // POST /api/commercial/deals/[id]/budget/lock — lock or unlock the deal budget.
@@ -82,30 +84,26 @@ export const POST = withAuth(async (
       );
     }
 
-    // Locking from Contracted advances the pipeline to Budget Set.
-    const advanceStage = deal.stage === "CONTRACTED";
+    // The budget can only be locked once the deal is signed off.
+    if (PIPELINE_STAGES.indexOf(normalizeStage(deal.stage)) < PIPELINE_STAGES.indexOf("DEAL_SIGNED")) {
+      return NextResponse.json(
+        { error: "Sign the deal off (move it to Deal Signed) before locking the budget." },
+        { status: 400 }
+      );
+    }
+
+    // Locking just freezes the numbers — stage progression is handled
+    // explicitly on the pipeline / deal page (deal sign-off is separate from
+    // creative and commercial sign-off).
     const campaign = await prisma.campaign.update({
       where: { id },
       data: {
         budgetLocked: true,
         budgetLockedAt: new Date(),
         budgetLockedBy: user.userId,
-        ...(advanceStage ? { stage: "BUDGET_SET", stageUpdatedAt: new Date() } : {}),
       },
       select: { id: true, budgetLocked: true, budgetLockedAt: true, stage: true },
     });
-    if (advanceStage) {
-      await prisma.dealActivity.create({
-        data: {
-          campaignId: id,
-          type: "stage_change",
-          message: `"${deal.title}" moved from CONTRACTED to BUDGET_SET (budget locked)`,
-          meta: { from: "CONTRACTED", to: "BUDGET_SET" },
-          userId: user.userId,
-          userName: user.name,
-        },
-      });
-    }
 
     // Push the finalised splits into the Finance project folder if one exists.
     const financeBudget = await prisma.campaignBudget.findFirst({ where: { campaignId: id } });

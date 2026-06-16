@@ -89,11 +89,16 @@ export const POST = withAuth(async (
       );
     }
 
-    // Locking advances the deal to BUDGET_SET if it isn't already there or beyond.
-    const stageIdx = PIPELINE_STAGES.indexOf(normalizeStage(deal.stage));
-    const budgetSetIdx = PIPELINE_STAGES.indexOf("BUDGET_SET");
-    const advanceStage = stageIdx < budgetSetIdx;
+    // The media plan can only be locked once the deal is signed off.
+    if (PIPELINE_STAGES.indexOf(normalizeStage(deal.stage)) < PIPELINE_STAGES.indexOf("DEAL_SIGNED")) {
+      return NextResponse.json(
+        { error: "Sign the deal off (move it to Deal Signed) before locking the media plan." },
+        { status: 400 }
+      );
+    }
 
+    // Locking just freezes the plan total — stage progression is explicit
+    // (deal sign-off is separate from the commercial/IO sign-off).
     await prisma.campaign.update({
       where: { id },
       data: {
@@ -102,22 +107,8 @@ export const POST = withAuth(async (
         budgetLockedAt: new Date(),
         budgetLockedBy: user.userId,
         mediaPlanLockedAt: new Date(),
-        ...(advanceStage ? { stage: "BUDGET_SET", stageUpdatedAt: new Date() } : {}),
       },
     });
-
-    if (advanceStage) {
-      await prisma.dealActivity.create({
-        data: {
-          campaignId: id,
-          type: "stage_change",
-          message: `"${deal.title}" moved to BUDGET_SET (media plan locked)`,
-          meta: { from: deal.stage, to: "BUDGET_SET" },
-          userId: user.userId,
-          userName: user.name,
-        },
-      });
-    }
 
     // Push the finalised numbers into the Finance project folder if one exists.
     const financeBudget = await prisma.campaignBudget.findFirst({ where: { campaignId: id } });

@@ -1,78 +1,23 @@
 // Shared constants + helpers for the Commercial deal pipeline.
 
+// The DealStage enum holds BOTH the current (simplified) stages and the legacy
+// ones still present in the database. normalizeStage() maps the legacy values
+// onto the current set so the UI only ever deals with the new pipeline.
 export const DEAL_STAGES = [
+  // ── current pipeline ──
   "LEAD",
   "PITCHED",
-  "NEGOTIATING", // legacy — folded into PITCHED in the UI
-  "BRIEF_RECEIVED",
-  "CREATIVE_RESPONSE",
-  "CLIENT_REVIEW",
-  "CLIENT_APPROVED",
-  "CONTRACTED",
-  "BUDGET_SET",
+  "DEAL_SIGNED",
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
+  "APPROVAL",
+  "IO_SIGNED",
   "CLEARED_FOR_PRODUCTION",
   "LIVE",
   "COMPLETED",
   "PAID",
-] as const;
-
-export type DealStageValue = (typeof DEAL_STAGES)[number];
-
-// Display order of the pipeline (legacy NEGOTIATING excluded — normalizeStage
-// folds those deals into PITCHED).
-export const PIPELINE_STAGES: DealStageValue[] = [
-  "LEAD",
-  "PITCHED",
-  "BRIEF_RECEIVED",
-  "CREATIVE_RESPONSE",
-  "CLIENT_REVIEW",
-  "CLIENT_APPROVED",
-  "CONTRACTED",
-  "BUDGET_SET",
-  "CLEARED_FOR_PRODUCTION",
-  "LIVE",
-  "COMPLETED",
-  "PAID",
-];
-
-export function normalizeStage(stage: string): DealStageValue {
-  if (stage === "NEGOTIATING") return "PITCHED";
-  return isDealStage(stage) ? stage : "LEAD";
-}
-
-// Creative workflow stages — only CREATIVE_BRIEF deals pass through these.
-export const CREATIVE_STAGES: DealStageValue[] = [
-  "BRIEF_RECEIVED",
-  "CREATIVE_RESPONSE",
-  "CLIENT_REVIEW",
-  "CLIENT_APPROVED",
-];
-
-// Stages a SUPPLIED_ASSETS deal can be in (skips creative + production).
-export const SUPPLIED_ASSETS_STAGES: DealStageValue[] = [
-  "LEAD",
-  "PITCHED",
-  "CONTRACTED",
-  "BUDGET_SET",
-  "LIVE",
-  "COMPLETED",
-  "PAID",
-];
-
-// Stages counted as "won" / revenue booked
-export const WON_STAGES: DealStageValue[] = [
-  "CONTRACTED",
-  "BUDGET_SET",
-  "CLEARED_FOR_PRODUCTION",
-  "LIVE",
-  "COMPLETED",
-  "PAID",
-];
-
-// Stages counted in active pipeline value
-export const ACTIVE_STAGES: DealStageValue[] = [
-  "LEAD",
-  "PITCHED",
+  // ── legacy (kept for backwards compat — folded via normalizeStage) ──
   "NEGOTIATING",
   "BRIEF_RECEIVED",
   "CREATIVE_RESPONSE",
@@ -80,8 +25,129 @@ export const ACTIVE_STAGES: DealStageValue[] = [
   "CLIENT_APPROVED",
   "CONTRACTED",
   "BUDGET_SET",
+] as const;
+
+export type DealStageValue = (typeof DEAL_STAGES)[number];
+
+// Canonical display order of the simplified pipeline. Supplied/print deals use a
+// subset of these — see stagesForJobType.
+export const PIPELINE_STAGES: DealStageValue[] = [
+  "LEAD",
+  "PITCHED",
+  "DEAL_SIGNED",
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
+  "APPROVAL",
+  "IO_SIGNED",
   "CLEARED_FOR_PRODUCTION",
   "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
+// Map any legacy stage value onto the simplified pipeline.
+export function normalizeStage(stage: string): DealStageValue {
+  switch (stage) {
+    case "NEGOTIATING":
+      return "PITCHED";
+    case "BRIEF_RECEIVED":
+      return "CREATIVE_BRIEF";
+    case "CREATIVE_RESPONSE":
+    case "CLIENT_REVIEW":
+      return "CREATIVE_REVIEW";
+    case "CLIENT_APPROVED":
+      return "CREATIVE_APPROVED";
+    case "CONTRACTED":
+      return "DEAL_SIGNED";
+    case "BUDGET_SET":
+      return "IO_SIGNED";
+    default:
+      return isDealStage(stage) ? (stage as DealStageValue) : "LEAD";
+  }
+}
+
+// Creative workflow stages — only bespoke (CREATIVE_BRIEF) deals pass through these.
+export const CREATIVE_STAGES: DealStageValue[] = [
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
+];
+
+// ── Per-workflow stage lists ────────────────────────────────────────────────
+// Bespoke / Creative Brief: full creative + production path.
+export const BESPOKE_STAGES: DealStageValue[] = [
+  "LEAD",
+  "PITCHED",
+  "DEAL_SIGNED",
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
+  "IO_SIGNED",
+  "CLEARED_FOR_PRODUCTION",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
+// Supplied assets: client provides content — single approval, no production.
+export const SUPPLIED_ASSETS_STAGES: DealStageValue[] = [
+  "LEAD",
+  "PITCHED",
+  "DEAL_SIGNED",
+  "APPROVAL",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
+// Print ad: simplest path — sign the deal, go live.
+export const PRINT_AD_STAGES: DealStageValue[] = [
+  "LEAD",
+  "PITCHED",
+  "DEAL_SIGNED",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
+// Stages counted as "won" / revenue booked — from deal sign-off onward.
+export const WON_STAGES: DealStageValue[] = [
+  "DEAL_SIGNED",
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
+  "APPROVAL",
+  "IO_SIGNED",
+  "CLEARED_FOR_PRODUCTION",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+  // legacy raw values
+  "CONTRACTED",
+  "BUDGET_SET",
+];
+
+// Stages counted in active pipeline value (everything not yet completed/paid).
+export const ACTIVE_STAGES: DealStageValue[] = [
+  "LEAD",
+  "PITCHED",
+  "DEAL_SIGNED",
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
+  "APPROVAL",
+  "IO_SIGNED",
+  "CLEARED_FOR_PRODUCTION",
+  "LIVE",
+  // legacy raw values
+  "NEGOTIATING",
+  "BRIEF_RECEIVED",
+  "CREATIVE_RESPONSE",
+  "CLIENT_REVIEW",
+  "CLIENT_APPROVED",
+  "CONTRACTED",
+  "BUDGET_SET",
 ];
 
 // ── Workflow type — determines the PROCESS a deal goes through ──────────────
@@ -93,7 +159,37 @@ export function isWorkflowType(value: string): value is WorkflowTypeValue {
 }
 
 export function stagesForWorkflow(workflowType: string): DealStageValue[] {
-  return workflowType === "SUPPLIED_ASSETS" ? SUPPLIED_ASSETS_STAGES : PIPELINE_STAGES;
+  return workflowType === "SUPPLIED_ASSETS" ? SUPPLIED_ASSETS_STAGES : BESPOKE_STAGES;
+}
+
+// The stage list a deal can move through, keyed on its jobType (preferred) with
+// a fallback to the workflowType for older deals that predate jobType.
+export function stagesForJobType(jobType: string): DealStageValue[] {
+  switch (jobType) {
+    case "SUPPLIED_ASSETS":
+      return SUPPLIED_ASSETS_STAGES;
+    case "PRINT_AD":
+      return PRINT_AD_STAGES;
+    case "CREATIVE_BRIEF":
+      return BESPOKE_STAGES;
+    default:
+      return BESPOKE_STAGES;
+  }
+}
+
+// Resolve the valid stage list for a deal — prefers jobType, falls back to
+// workflowType (print/supplied share the SUPPLIED_ASSETS workflow but differ).
+export function stagesForDeal(deal: { jobType?: string | null; workflowType?: string | null }): DealStageValue[] {
+  if (deal.jobType && isJobType(deal.jobType)) return stagesForJobType(deal.jobType);
+  return stagesForWorkflow(deal.workflowType ?? "CREATIVE_BRIEF");
+}
+
+// True when `stage` is a legal stage for this deal's workflow/job type.
+export function isStageValidForDeal(
+  stage: string,
+  deal: { jobType?: string | null; workflowType?: string | null }
+): boolean {
+  return (stagesForDeal(deal) as string[]).includes(normalizeStage(stage));
 }
 
 // ── Job type — the user-facing classifier chosen when a deal is created ─────
@@ -259,11 +355,12 @@ export function clearForProductionChecklist(deal: {
   description?: string | null;
 }): { items: ChecklistItem[]; ready: boolean } {
   const creative = deal.workflowType !== "SUPPLIED_ASSETS";
-  const stageIdx = PIPELINE_STAGES.indexOf(normalizeStage(deal.stage));
-  const contractedIdx = PIPELINE_STAGES.indexOf("CONTRACTED");
-  const stageOk = creative
-    ? deal.stage === "CLIENT_APPROVED" || stageIdx >= contractedIdx
-    : stageIdx >= contractedIdx;
+  const stage = normalizeStage(deal.stage);
+  const stageIdx = PIPELINE_STAGES.indexOf(stage);
+  // Bespoke: creative must be approved (CREATIVE_APPROVED or later).
+  // Supplied/print: the deal just needs to be signed (DEAL_SIGNED or later).
+  const gateIdx = PIPELINE_STAGES.indexOf(creative ? "CREATIVE_APPROVED" : "DEAL_SIGNED");
+  const stageOk = stageIdx >= gateIdx;
 
   const brief = parseClientBrief(deal.clientBrief);
   const briefOk = Boolean(brief?.content?.trim() || deal.briefContent?.trim());
@@ -291,7 +388,7 @@ export function clearForProductionChecklist(deal: {
     },
     {
       key: "stage",
-      label: creative ? "Deal at Client Approved or Contracted+" : "Deal at Contracted or later",
+      label: creative ? "Creative approved (deal at Creative Approved+)" : "Deal signed (Deal Signed or later)",
       ok: stageOk,
       detail: !stageOk ? "Move the deal forward in the pipeline first" : undefined,
     },

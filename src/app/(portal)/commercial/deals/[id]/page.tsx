@@ -41,7 +41,8 @@ import {
   CREATIVE_STATUS_STYLES,
   CREATIVE_STATUS_ORDER,
   WORKFLOW_STYLES,
-  stagesForWorkflow,
+  stagesForDeal,
+  normalizeStage,
   typeStyle,
   formatMoney,
   dealTypesOf,
@@ -158,9 +159,14 @@ interface ClientOption {
 
 type Tab = "overview" | "brief" | "mediaplan" | "deliverables" | "tasks" | "activity";
 
+// Deal sign-off onward counts as "won".
 const WON_STAGES: DealStage[] = [
-  "CONTRACTED",
-  "BUDGET_SET",
+  "DEAL_SIGNED",
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
+  "APPROVAL",
+  "IO_SIGNED",
   "CLEARED_FOR_PRODUCTION",
   "LIVE",
   "COMPLETED",
@@ -178,11 +184,10 @@ interface ChecklistItem {
 
 function buildLaunchChecklist(deal: DealDetail): { items: ChecklistItem[]; ready: boolean } {
   const creative = deal.workflowType !== "SUPPLIED_ASSETS";
-  const stageIdx = STAGE_ORDER.indexOf(deal.stage === "NEGOTIATING" ? "PITCHED" : deal.stage);
-  const contractedIdx = STAGE_ORDER.indexOf("CONTRACTED");
-  const stageOk = creative
-    ? deal.stage === "CLIENT_APPROVED" || stageIdx >= contractedIdx
-    : stageIdx >= contractedIdx;
+  const stageIdx = STAGE_ORDER.indexOf(normalizeStage(deal.stage));
+  // Bespoke needs creative approved; supplied/print just need the deal signed.
+  const gateIdx = STAGE_ORDER.indexOf(creative ? "CREATIVE_APPROVED" : "DEAL_SIGNED");
+  const stageOk = stageIdx >= gateIdx;
   const briefOk = Boolean(deal.clientBrief?.content?.trim() || deal.briefContent?.trim());
 
   const items: ChecklistItem[] = [
@@ -209,7 +214,7 @@ function buildLaunchChecklist(deal: DealDetail): { items: ChecklistItem[]; ready
     },
     {
       key: "stage",
-      label: creative ? "Deal at Client Approved or Contracted+" : "Deal at Contracted or later",
+      label: creative ? "Creative approved (deal at Creative Approved+)" : "Deal signed (Deal Signed or later)",
       ok: stageOk,
       detail: !stageOk ? "Move the deal forward in the pipeline first" : undefined,
     },
@@ -363,7 +368,13 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   // the simpler supplied-assets path with no production at all.
   const creativeWorkflow = deal.workflowType !== "SUPPLIED_ASSETS";
   const workflowStyle = WORKFLOW_STYLES[creativeWorkflow ? "CREATIVE_BRIEF" : "SUPPLIED_ASSETS"];
-  const stageWon = WON_STAGES.includes(deal.stage);
+  const normalizedStage = normalizeStage(deal.stage);
+  const stageWon = WON_STAGES.includes(normalizedStage);
+  // The creative loop + budget/media-plan lock only unlock once the deal is
+  // signed off — deal sign-off is separate from creative sign-off.
+  const dealSigned =
+    STAGE_ORDER.indexOf(normalizedStage) >= STAGE_ORDER.indexOf("DEAL_SIGNED");
+  const creativeUnlocked = creativeWorkflow && dealSigned;
   const projectStarted = Boolean(deal.production);
   const checklist = buildLaunchChecklist(deal);
   const showClearButton = creativeWorkflow && !projectStarted;
@@ -376,7 +387,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     projectStarted &&
     deal.lastSyncedToProduction != null &&
     parseISO(deal.updatedAt).getTime() > parseISO(deal.lastSyncedToProduction).getTime() + 2000;
-  const stageOptions = stagesForWorkflow(deal.workflowType);
+  const stageOptions = stagesForDeal(deal);
   // Advertorials and print deliverables live in the magazine planning sheet too.
   const printRelated =
     types.includes("ADVERTORIAL") ||
@@ -387,7 +398,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
-    ...(creativeWorkflow ? [{ key: "brief" as Tab, label: "Brief & Creative" }] : []),
+    ...(creativeUnlocked ? [{ key: "brief" as Tab, label: "Brief & Creative" }] : []),
     { key: "mediaplan", label: "Media Plan" },
     { key: "deliverables", label: `Deliverables (${deal.deliverables.length})` },
     { key: "tasks", label: "Tasks" },
@@ -554,12 +565,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 onChange={(e) => patchDeal({ stage: e.target.value })}
                 className="w-full text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer"
               >
-                {(deal.stage === "NEGOTIATING"
-                  ? (["NEGOTIATING", ...stageOptions] as DealStage[])
-                  : stageOptions
+                {(stageOptions.includes(deal.stage)
+                  ? stageOptions
+                  : ([deal.stage, ...stageOptions] as DealStage[])
                 ).map((s) => (
                   <option key={s} value={s}>
-                    {STAGE_STYLES[s].label}
+                    {STAGE_STYLES[s]?.label ?? s}
                   </option>
                 ))}
               </select>
@@ -660,8 +671,18 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {tab === "overview" && <OverviewTab deal={deal} onPatch={patchDeal} />}
-        {tab === "brief" && creativeWorkflow && (
+        {tab === "brief" && creativeUnlocked && (
           <BriefCreativeTab deal={deal} onPatch={patchDeal} />
+        )}
+        {/* Brief tab requested but the deal isn't signed yet — show why it's locked. */}
+        {tab === "brief" && !creativeUnlocked && (
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-8 text-center max-w-2xl">
+            <LockIcon className="mx-auto mb-3 text-gray-300" size={28} />
+            <p className="text-sm font-semibold text-gray-700">Creative is locked until the deal is signed</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Move the deal to <span className="font-medium text-gray-600">Deal Signed</span> to unlock the brief &amp; creative workflow.
+            </p>
+          </div>
         )}
         {tab === "mediaplan" && <MediaPlanTab dealId={deal.id} onSaved={reload} />}
         {tab === "deliverables" && (
@@ -1285,7 +1306,7 @@ function BriefCreativeTab({
         revisions,
       },
       creativeStatus: "RESPONSE_SENT",
-      stage: "CLIENT_REVIEW",
+      stage: "CREATIVE_REVIEW",
     });
   }
 
@@ -1300,7 +1321,7 @@ function BriefCreativeTab({
   }
 
   async function approveCreative() {
-    await patch({ creativeStatus: "APPROVED", stage: "CLIENT_APPROVED" });
+    await patch({ creativeStatus: "APPROVED", stage: "CREATIVE_APPROVED" });
   }
 
   const responseSent = Boolean(response.sentDate);

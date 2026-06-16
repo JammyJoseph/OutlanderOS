@@ -4,39 +4,63 @@ export const GOLD = "#ffd700";
 export const GOLD_DARK = "#e6c200";
 
 export type DealStage =
+  // ── current pipeline ──
   | "LEAD"
   | "PITCHED"
-  | "NEGOTIATING" // legacy — folded into PITCHED in the UI
+  | "DEAL_SIGNED"
+  | "CREATIVE_BRIEF"
+  | "CREATIVE_REVIEW"
+  | "CREATIVE_APPROVED"
+  | "APPROVAL"
+  | "IO_SIGNED"
+  | "CLEARED_FOR_PRODUCTION"
+  | "LIVE"
+  | "COMPLETED"
+  | "PAID"
+  // ── legacy — folded via normalizeStage ──
+  | "NEGOTIATING"
   | "BRIEF_RECEIVED"
   | "CREATIVE_RESPONSE"
   | "CLIENT_REVIEW"
   | "CLIENT_APPROVED"
   | "CONTRACTED"
-  | "BUDGET_SET"
-  | "CLEARED_FOR_PRODUCTION"
-  | "LIVE"
-  | "COMPLETED"
-  | "PAID";
+  | "BUDGET_SET";
 
+// Canonical display order of the simplified pipeline.
 export const STAGE_ORDER: DealStage[] = [
   "LEAD",
   "PITCHED",
-  "BRIEF_RECEIVED",
-  "CREATIVE_RESPONSE",
-  "CLIENT_REVIEW",
-  "CLIENT_APPROVED",
-  "CONTRACTED",
-  "BUDGET_SET",
+  "DEAL_SIGNED",
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
+  "APPROVAL",
+  "IO_SIGNED",
   "CLEARED_FOR_PRODUCTION",
   "LIVE",
   "COMPLETED",
   "PAID",
 ];
 
-// Legacy NEGOTIATING deals render in the PITCHED column.
+// Fold legacy stage values onto the simplified pipeline.
 export function normalizeStage(stage: string): DealStage {
-  if (stage === "NEGOTIATING") return "PITCHED";
-  return (STAGE_ORDER as string[]).includes(stage) ? (stage as DealStage) : "LEAD";
+  switch (stage) {
+    case "NEGOTIATING":
+      return "PITCHED";
+    case "BRIEF_RECEIVED":
+      return "CREATIVE_BRIEF";
+    case "CREATIVE_RESPONSE":
+    case "CLIENT_REVIEW":
+      return "CREATIVE_REVIEW";
+    case "CLIENT_APPROVED":
+      return "CREATIVE_APPROVED";
+    case "CONTRACTED":
+      return "DEAL_SIGNED";
+    case "BUDGET_SET":
+      return "IO_SIGNED";
+    default:
+      return (STAGE_ORDER as string[]).includes(stage) ? (stage as DealStage) : "LEAD";
+  }
 }
 
 // Workflow types — determine the PROCESS a deal goes through.
@@ -47,30 +71,72 @@ export const WORKFLOW_STYLES: Record<WorkflowType, { label: string; bg: string; 
   SUPPLIED_ASSETS: { label: "Supplied", bg: "bg-gray-200", text: "text-gray-600" },
 };
 
-// Creative pipeline stages — only CREATIVE_BRIEF deals pass through these.
+// Creative pipeline stages — only bespoke (CREATIVE_BRIEF) deals pass through these.
 export const CREATIVE_STAGES: DealStage[] = [
-  "BRIEF_RECEIVED",
-  "CREATIVE_RESPONSE",
-  "CLIENT_REVIEW",
-  "CLIENT_APPROVED",
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
 ];
 
-// Stages a SUPPLIED_ASSETS deal can be in (skips creative + production).
-export const SUPPLIED_ASSETS_STAGES: DealStage[] = [
+// ── Per-job-type stage lists ────────────────────────────────────────────────
+export const BESPOKE_STAGES: DealStage[] = [
   "LEAD",
   "PITCHED",
-  "CONTRACTED",
-  "BUDGET_SET",
+  "DEAL_SIGNED",
+  "CREATIVE_BRIEF",
+  "CREATIVE_REVIEW",
+  "CREATIVE_APPROVED",
+  "IO_SIGNED",
+  "CLEARED_FOR_PRODUCTION",
   "LIVE",
   "COMPLETED",
   "PAID",
 ];
 
-export function stagesForWorkflow(workflowType: string | undefined): DealStage[] {
-  return workflowType === "SUPPLIED_ASSETS" ? SUPPLIED_ASSETS_STAGES : STAGE_ORDER;
+export const SUPPLIED_ASSETS_STAGES: DealStage[] = [
+  "LEAD",
+  "PITCHED",
+  "DEAL_SIGNED",
+  "APPROVAL",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
+export const PRINT_AD_STAGES: DealStage[] = [
+  "LEAD",
+  "PITCHED",
+  "DEAL_SIGNED",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+];
+
+export function stagesForJobType(jobType: string | undefined): DealStage[] {
+  switch (jobType) {
+    case "SUPPLIED_ASSETS":
+      return SUPPLIED_ASSETS_STAGES;
+    case "PRINT_AD":
+      return PRINT_AD_STAGES;
+    default:
+      return BESPOKE_STAGES;
+  }
 }
 
-// Kanban column groups, in pipeline order. Creative columns get a purple tint.
+export function stagesForWorkflow(workflowType: string | undefined): DealStage[] {
+  return workflowType === "SUPPLIED_ASSETS" ? SUPPLIED_ASSETS_STAGES : BESPOKE_STAGES;
+}
+
+// Valid stages for a deal — prefers jobType, falls back to workflowType.
+export function stagesForDeal(deal: { jobType?: string | null; workflowType?: string | null }): DealStage[] {
+  if (deal.jobType && ["CREATIVE_BRIEF", "SUPPLIED_ASSETS", "PRINT_AD"].includes(deal.jobType)) {
+    return stagesForJobType(deal.jobType);
+  }
+  return stagesForWorkflow(deal.workflowType ?? "CREATIVE_BRIEF");
+}
+
+// Kanban column groups, in pipeline order. Creative columns get a purple tint;
+// the approval column is shown for supplied/print deals only.
 export const STAGE_GROUPS: {
   key: string;
   label: string;
@@ -78,17 +144,21 @@ export const STAGE_GROUPS: {
   accent: string; // header text colour
   dot: string;
   creative?: boolean;
+  note?: string;
 }[] = [
   { key: "prospecting", label: "Prospecting", stages: ["LEAD", "PITCHED"], accent: "text-gray-500", dot: "bg-gray-400" },
+  { key: "deal", label: "Deal", stages: ["DEAL_SIGNED"], accent: "text-[#9C7424]", dot: "bg-[#ffd700]" },
   {
     key: "creative",
     label: "Creative",
-    stages: ["BRIEF_RECEIVED", "CREATIVE_RESPONSE", "CLIENT_REVIEW", "CLIENT_APPROVED"],
+    stages: ["CREATIVE_BRIEF", "CREATIVE_REVIEW", "CREATIVE_APPROVED"],
     accent: "text-purple-600",
     dot: "bg-purple-400",
     creative: true,
+    note: "creative brief jobs only",
   },
-  { key: "commercial", label: "Commercial", stages: ["CONTRACTED", "BUDGET_SET"], accent: "text-[#9C7424]", dot: "bg-[#ffd700]" },
+  { key: "approval", label: "Approval", stages: ["APPROVAL"], accent: "text-sky-600", dot: "bg-sky-400", note: "supplied assets only" },
+  { key: "commercial", label: "Commercial", stages: ["IO_SIGNED"], accent: "text-[#9C7424]", dot: "bg-[#ffd700]" },
   { key: "execution", label: "Execution", stages: ["CLEARED_FOR_PRODUCTION", "LIVE"], accent: "text-emerald-600", dot: "bg-emerald-400" },
   { key: "complete", label: "Complete", stages: ["COMPLETED", "PAID"], accent: "text-blue-600", dot: "bg-blue-400" },
 ];
@@ -99,50 +169,43 @@ export const STAGE_STYLES: Record<
 > = {
   LEAD: { label: "Lead", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", bar: "bg-gray-400" },
   PITCHED: { label: "Pitched", bg: "bg-sky-100", text: "text-sky-700", dot: "bg-sky-400", bar: "bg-sky-400" },
-  NEGOTIATING: {
-    label: "Negotiating",
+  DEAL_SIGNED: {
+    label: "Deal Signed",
     bg: "bg-amber-100",
     text: "text-amber-700",
     dot: "bg-[#ffd700]",
     bar: "bg-[#ffd700]",
   },
-  BRIEF_RECEIVED: {
-    label: "Brief Received",
+  CREATIVE_BRIEF: {
+    label: "Creative Brief",
     bg: "bg-purple-50",
     text: "text-purple-700",
     dot: "bg-purple-300",
     bar: "bg-purple-300",
   },
-  CREATIVE_RESPONSE: {
-    label: "Creative Response",
+  CREATIVE_REVIEW: {
+    label: "Creative Review",
     bg: "bg-purple-100",
     text: "text-purple-700",
     dot: "bg-purple-400",
     bar: "bg-purple-400",
   },
-  CLIENT_REVIEW: {
-    label: "Client Review",
-    bg: "bg-fuchsia-100",
-    text: "text-fuchsia-700",
-    dot: "bg-fuchsia-400",
-    bar: "bg-fuchsia-400",
-  },
-  CLIENT_APPROVED: {
-    label: "Client Approved",
+  CREATIVE_APPROVED: {
+    label: "Creative Approved",
     bg: "bg-violet-100",
     text: "text-violet-700",
     dot: "bg-violet-500",
     bar: "bg-violet-500",
   },
-  CONTRACTED: {
-    label: "Contracted",
-    bg: "bg-amber-100",
-    text: "text-amber-700",
-    dot: "bg-[#ffd700]",
-    bar: "bg-[#ffd700]",
+  APPROVAL: {
+    label: "Approval",
+    bg: "bg-sky-100",
+    text: "text-sky-700",
+    dot: "bg-sky-500",
+    bar: "bg-sky-500",
   },
-  BUDGET_SET: {
-    label: "Budget Set",
+  IO_SIGNED: {
+    label: "IO Signed",
     bg: "bg-yellow-100",
     text: "text-yellow-700",
     dot: "bg-yellow-500",
@@ -164,6 +227,14 @@ export const STAGE_STYLES: Record<
   },
   COMPLETED: { label: "Completed", bg: "bg-blue-100", text: "text-blue-700", dot: "bg-blue-400", bar: "bg-blue-400" },
   PAID: { label: "Paid", bg: "bg-green-100", text: "text-green-700", dot: "bg-green-500", bar: "bg-green-500" },
+  // ── legacy aliases (rendered only if a raw legacy value slips through) ──
+  NEGOTIATING: { label: "Pitched", bg: "bg-sky-100", text: "text-sky-700", dot: "bg-sky-400", bar: "bg-sky-400" },
+  BRIEF_RECEIVED: { label: "Creative Brief", bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-300", bar: "bg-purple-300" },
+  CREATIVE_RESPONSE: { label: "Creative Review", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
+  CLIENT_REVIEW: { label: "Creative Review", bg: "bg-fuchsia-100", text: "text-fuchsia-700", dot: "bg-fuchsia-400", bar: "bg-fuchsia-400" },
+  CLIENT_APPROVED: { label: "Creative Approved", bg: "bg-violet-100", text: "text-violet-700", dot: "bg-violet-500", bar: "bg-violet-500" },
+  CONTRACTED: { label: "Deal Signed", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-[#ffd700]", bar: "bg-[#ffd700]" },
+  BUDGET_SET: { label: "IO Signed", bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-yellow-500", bar: "bg-yellow-500" },
 };
 
 // Creative status — where the brief/response/approval loop is.
@@ -265,6 +336,7 @@ export interface Deal {
   type: string;
   dealTypes?: string[] | null;
   workflowType?: string;
+  jobType?: string | null;
   creativeStatus?: string | null;
   budgetLocked?: boolean;
   briefContent?: string | null;

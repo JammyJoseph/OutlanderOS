@@ -8,6 +8,7 @@ import {
   Newspaper,
   DollarSign,
   Lock,
+  Contact,
 } from 'lucide-react'
 
 interface PortalStats {
@@ -15,6 +16,7 @@ interface PortalStats {
   production?: number
   print?: number
   finance?: string
+  directory?: number
 }
 
 const PORTALS = [
@@ -55,6 +57,15 @@ const PORTALS = [
     statKey: 'print' as keyof PortalStats,
     statLabel: 'issues',
   },
+  {
+    name: 'Directory',
+    description: 'Contacts, collaborators & talent',
+    href: '/directory',
+    icon: Contact,
+    accent: '#e0e0e0',
+    statKey: 'directory' as keyof PortalStats,
+    statLabel: 'contacts',
+  },
 ]
 
 function StatBadge({ value, label, loading }: { value?: number | string; label: string | null; loading: boolean }) {
@@ -77,11 +88,12 @@ export default function HubPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [campaigns, productions, printIssues, dashboard] = await Promise.allSettled([
+        const [campaigns, productions, printIssues, dashboard, contacts] = await Promise.allSettled([
           fetch('/api/campaigns').then(r => r.json()),
           fetch('/api/productions').then(r => r.json()),
           fetch('/api/print-issues').then(r => r.json()),
           fetch('/api/dashboard').then(r => r.json()),
+          fetch('/api/contacts?radar=false').then(r => r.json()),
         ])
 
         const next: PortalStats = {}
@@ -97,6 +109,9 @@ export default function HubPage() {
         if (dashboard.status === 'fulfilled' && dashboard.value?.billingTracker?.bookedRevenue) {
           next.finance = dashboard.value.billingTracker.bookedRevenue
         }
+        if (contacts.status === 'fulfilled' && Array.isArray(contacts.value)) {
+          next.directory = contacts.value.length
+        }
         setStats(next)
       } catch {
         // Non-fatal — stats just won't show
@@ -109,7 +124,7 @@ export default function HubPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-full py-16 px-6">
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-5xl">
         <div className="text-center mb-10">
           <p className="text-xs font-semibold tracking-[0.3em] text-gray-400 uppercase mb-2">
             OutlanderOS
@@ -117,7 +132,7 @@ export default function HubPage() {
           <h1 className="text-3xl font-bold text-gray-900">Choose your workspace</h1>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {PORTALS.map((portal) => {
             const Icon = portal.icon
             const statValue = portal.statKey ? stats[portal.statKey] : undefined

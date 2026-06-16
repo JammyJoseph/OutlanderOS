@@ -1,0 +1,961 @@
+"use client";
+
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Search,
+  Plus,
+  Star,
+  Loader2,
+  X,
+  Mail,
+  AtSign,
+  MapPin,
+  Trash2,
+  Radar as RadarIcon,
+  Contact as ContactIcon,
+  Tags,
+  Clock,
+  ChevronRight,
+  ExternalLink,
+  Pencil,
+} from "lucide-react";
+import {
+  CONTACT_CATEGORIES,
+  RADAR_STATUSES,
+  RADAR_STATUS_LABELS,
+  DIRECTORY_ACCENT,
+} from "@/lib/directory";
+
+const ACCENT = DIRECTORY_ACCENT;
+
+interface ContactRecord {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  role: string | null;
+  category: string;
+  tags: string[];
+  instagram: string | null;
+  website: string | null;
+  location: string | null;
+  rating: number | null;
+  notes: string | null;
+  isRadar: boolean;
+  radarStatus: string | null;
+  radarLink: string | null;
+  createdAt: string;
+  updatedAt: string;
+  creator?: { id: string; name: string } | null;
+}
+
+type View = "contacts" | "categories" | "radar" | "recent";
+
+function isView(v: string | null): v is View {
+  return v === "contacts" || v === "categories" || v === "radar" || v === "recent";
+}
+
+// ── Shared bits ───────────────────────────────────────────────────────────────
+
+function Stars({
+  rating,
+  onChange,
+  size = 14,
+}: {
+  rating: number | null;
+  onChange?: (r: number) => void;
+  size?: number;
+}) {
+  // Read-only mode renders spans — these often sit inside a clickable card
+  // <button>, and nested buttons are invalid HTML.
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => {
+        const star = (
+          <Star
+            size={size}
+            className={i <= (rating ?? 0) ? "fill-[#ffd700] text-[#ffd700]" : "text-[#3a3a3a]"}
+          />
+        );
+        return onChange ? (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onChange(i)}
+            className="cursor-pointer"
+            title={`${i} star${i > 1 ? "s" : ""}`}
+          >
+            {star}
+          </button>
+        ) : (
+          <span key={i} className="cursor-default">
+            {star}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function CategoryBadge({ category }: { category: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-[#2a2a2a] bg-[#1c1c1c] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-300">
+      {category}
+    </span>
+  );
+}
+
+const inputCls =
+  "w-full rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#e0e0e0]/40 focus:outline-none focus:ring-2 focus:ring-[#e0e0e0]/10";
+const labelCls = "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1";
+
+// ── Page ───────────────────────────────────────────────────────────────────────
+
+export default function DirectoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="animate-spin text-gray-600" size={24} />
+        </div>
+      }
+    >
+      <Directory />
+    </Suspense>
+  );
+}
+
+function Directory() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const view: View = isView(searchParams.get("view")) ? (searchParams.get("view") as View) : "contacts";
+
+  const [contacts, setContacts] = useState<ContactRecord[]>([]);
+  const [radar, setRadar] = useState<ContactRecord[]>([]);
+  const [categories, setCategories] = useState<{ category: string; count: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<string>("");
+  const [radarStatusFilter, setRadarStatusFilter] = useState<string>("");
+
+  const [editing, setEditing] = useState<ContactRecord | null | undefined>(undefined); // undefined = closed
+  const [addingRadar, setAddingRadar] = useState<ContactRecord | null | undefined>(undefined);
+
+  const setView = useCallback(
+    (v: View) => router.push(v === "contacts" ? "/directory" : `/directory?view=${v}`),
+    [router]
+  );
+
+  const loadContacts = useCallback(async () => {
+    const params = new URLSearchParams({ radar: "false" });
+    if (search.trim()) params.set("search", search.trim());
+    if (category) params.set("category", category);
+    const res = await fetch(`/api/contacts?${params.toString()}`);
+    const data = await res.json();
+    setContacts(Array.isArray(data) ? data : []);
+  }, [search, category]);
+
+  const loadRadar = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (radarStatusFilter) params.set("status", radarStatusFilter);
+    const res = await fetch(`/api/directory/radar?${params.toString()}`);
+    const data = await res.json();
+    setRadar(Array.isArray(data) ? data : []);
+  }, [search, radarStatusFilter]);
+
+  const loadCategories = useCallback(async () => {
+    const res = await fetch("/api/directory/categories");
+    const data = await res.json();
+    setCategories(Array.isArray(data?.categories) ? data.categories : []);
+  }, []);
+
+  // (Re)load whatever the current view needs.
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    const jobs: Promise<unknown>[] = [];
+    if (view === "radar") jobs.push(loadRadar());
+    else jobs.push(loadContacts());
+    if (view === "categories") jobs.push(loadCategories());
+    Promise.all(jobs).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [view, loadContacts, loadRadar, loadCategories]);
+
+  async function saveContact(payload: Partial<ContactRecord>, id?: string) {
+    const res = await fetch(id ? `/api/contacts/${id}` : "/api/contacts", {
+      method: id ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      setEditing(undefined);
+      await loadContacts();
+      if (view === "categories") await loadCategories();
+    }
+    return res.ok;
+  }
+
+  async function deleteContact(id: string) {
+    if (!confirm("Delete this contact permanently?")) return;
+    const res = await fetch(`/api/contacts/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setEditing(undefined);
+      await loadContacts();
+      if (view === "radar") await loadRadar();
+    }
+  }
+
+  async function saveRadar(payload: Partial<ContactRecord>, id?: string) {
+    const res = await fetch(id ? `/api/contacts/${id}` : "/api/directory/radar", {
+      method: id ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      setAddingRadar(undefined);
+      await loadRadar();
+    }
+    return res.ok;
+  }
+
+  async function cycleRadarStatus(entry: ContactRecord) {
+    const idx = RADAR_STATUSES.indexOf((entry.radarStatus ?? "WATCHING") as never);
+    const next = RADAR_STATUSES[(idx + 1) % RADAR_STATUSES.length];
+    // optimistic
+    setRadar((prev) => prev.map((r) => (r.id === entry.id ? { ...r, radarStatus: next } : r)));
+    await fetch(`/api/contacts/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ radarStatus: next }),
+    });
+    if (radarStatusFilter) await loadRadar();
+  }
+
+  const recentContacts = useMemo(
+    () =>
+      [...contacts]
+        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+        .slice(0, 60),
+    [contacts]
+  );
+
+  const VIEW_TABS: { key: View; label: string; icon: React.ElementType }[] = [
+    { key: "contacts", label: "All Contacts", icon: ContactIcon },
+    { key: "categories", label: "By Category", icon: Tags },
+    { key: "radar", label: "Radar", icon: RadarIcon },
+    { key: "recent", label: "Recently Added", icon: Clock },
+  ];
+
+  return (
+    <div className="min-h-full px-6 py-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+          <div>
+            <p
+              className="text-xs font-semibold uppercase tracking-widest"
+              style={{ color: ACCENT }}
+            >
+              OutlanderOS · Directory
+            </p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
+              {view === "radar" ? "Outlander Radar" : "Contact Directory"}
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              {view === "radar"
+                ? "Emerging talent, creators & accounts we think will be big."
+                : "Outlander's network of contacts, collaborators & talent."}
+            </p>
+          </div>
+          {view === "radar" ? (
+            <button
+              onClick={() => setAddingRadar(null)}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+              style={{ backgroundColor: ACCENT }}
+            >
+              <Plus size={16} /> Add to Radar
+            </button>
+          ) : (
+            <button
+              onClick={() => setEditing(null)}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+              style={{ backgroundColor: ACCENT }}
+            >
+              <Plus size={16} /> Add Contact
+            </button>
+          )}
+        </div>
+
+        {/* View tabs */}
+        <div className="mb-5 flex flex-wrap gap-1 rounded-xl border border-[#2a2a2a] bg-[#141414] p-1 w-fit">
+          {VIEW_TABS.map((t) => {
+            const Icon = t.icon;
+            const isActive = view === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setView(t.key)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+                  isActive ? "text-black" : "text-gray-400 hover:text-gray-900"
+                }`}
+                style={isActive ? { backgroundColor: ACCENT } : undefined}
+              >
+                <Icon size={14} />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search + filters */}
+        {view !== "categories" && (
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={view === "radar" ? "Search radar…" : "Search name, company, anything…"}
+                className={`${inputCls} pl-8 w-72`}
+              />
+            </div>
+            {view !== "radar" && (
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className={`${inputCls} w-auto`}
+              >
+                <option value="">All categories</option>
+                {CONTACT_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            )}
+            {view === "radar" && (
+              <select
+                value={radarStatusFilter}
+                onChange={(e) => setRadarStatusFilter(e.target.value)}
+                className={`${inputCls} w-auto`}
+              >
+                <option value="">All statuses</option>
+                {RADAR_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {RADAR_STATUS_LABELS[s]}
+                  </option>
+                ))}
+              </select>
+            )}
+            {(search || category || radarStatusFilter) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setCategory("");
+                  setRadarStatusFilter("");
+                }}
+                className="px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-900"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Body */}
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="animate-spin text-gray-600" size={24} />
+          </div>
+        ) : view === "categories" ? (
+          <CategoriesGrid
+            categories={categories}
+            onPick={(c) => {
+              setCategory(c);
+              setView("contacts");
+            }}
+          />
+        ) : view === "radar" ? (
+          <RadarList
+            entries={radar}
+            onCycle={cycleRadarStatus}
+            onEdit={(e) => setAddingRadar(e)}
+            onAdd={() => setAddingRadar(null)}
+          />
+        ) : (
+          <ContactsGrid
+            contacts={view === "recent" ? recentContacts : contacts}
+            onOpen={(c) => setEditing(c)}
+            onAdd={() => setEditing(null)}
+          />
+        )}
+      </div>
+
+      {editing !== undefined && (
+        <ContactModal
+          contact={editing}
+          onClose={() => setEditing(undefined)}
+          onSave={saveContact}
+          onDelete={deleteContact}
+        />
+      )}
+      {addingRadar !== undefined && (
+        <RadarModal
+          entry={addingRadar}
+          onClose={() => setAddingRadar(undefined)}
+          onSave={saveRadar}
+          onDelete={deleteContact}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Contacts grid ───────────────────────────────────────────────────────────────
+
+function ContactsGrid({
+  contacts,
+  onOpen,
+  onAdd,
+}: {
+  contacts: ContactRecord[];
+  onOpen: (c: ContactRecord) => void;
+  onAdd: () => void;
+}) {
+  if (contacts.length === 0) {
+    return (
+      <EmptyState
+        icon={ContactIcon}
+        title="No contacts yet"
+        body="Build out Outlander's network — photographers, stylists, brand contacts and more."
+        action="Add your first contact"
+        onAction={onAdd}
+      />
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {contacts.map((c) => (
+        <button
+          key={c.id}
+          onClick={() => onOpen(c)}
+          className="group flex flex-col gap-2 rounded-xl border border-[#2a2a2a] bg-[#141414] p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#3a3a3a]"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
+              {(c.role || c.company) && (
+                <p className="truncate text-xs text-gray-500">
+                  {[c.role, c.company].filter(Boolean).join(" · ")}
+                </p>
+              )}
+            </div>
+            {c.rating ? <Stars rating={c.rating} /> : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <CategoryBadge category={c.category} />
+            {c.location && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-gray-500">
+                <MapPin size={10} /> {c.location}
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[11px] text-gray-500">
+            {c.email && (
+              <span className="inline-flex items-center gap-1 truncate">
+                <Mail size={11} /> {c.email}
+              </span>
+            )}
+            {c.instagram && (
+              <span className="inline-flex items-center gap-1">
+                <AtSign size={11} /> {c.instagram.replace(/^@/, "")}
+              </span>
+            )}
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Categories grid ─────────────────────────────────────────────────────────────
+
+function CategoriesGrid({
+  categories,
+  onPick,
+}: {
+  categories: { category: string; count: number }[];
+  onPick: (c: string) => void;
+}) {
+  const withCounts = categories.filter((c) => c.count > 0);
+  if (withCounts.length === 0) {
+    return (
+      <EmptyState
+        icon={Tags}
+        title="No categories yet"
+        body="Categories appear here as you add contacts to the directory."
+      />
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {withCounts.map((c) => (
+        <button
+          key={c.category}
+          onClick={() => onPick(c.category)}
+          className="flex items-center justify-between rounded-xl border border-[#2a2a2a] bg-[#141414] px-4 py-3.5 text-left transition-colors hover:border-[#3a3a3a]"
+        >
+          <span className="text-sm font-semibold text-gray-900">{c.category}</span>
+          <span className="inline-flex items-center gap-2 text-xs text-gray-500">
+            <span className="rounded-full border border-[#2a2a2a] px-2 py-0.5 font-semibold text-gray-300">
+              {c.count}
+            </span>
+            <ChevronRight size={14} />
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Radar list ──────────────────────────────────────────────────────────────────
+
+const RADAR_STATUS_STYLE: Record<string, string> = {
+  WATCHING: "border-gray-600 text-gray-300",
+  REACHED_OUT: "border-sky-700 text-sky-300",
+  CONNECTED: "border-violet-700 text-violet-300",
+  COLLABORATING: "border-emerald-700 text-emerald-300",
+};
+
+function RadarList({
+  entries,
+  onCycle,
+  onEdit,
+  onAdd,
+}: {
+  entries: ContactRecord[];
+  onCycle: (e: ContactRecord) => void;
+  onEdit: (e: ContactRecord) => void;
+  onAdd: () => void;
+}) {
+  if (entries.length === 0) {
+    return (
+      <EmptyState
+        icon={RadarIcon}
+        title="The radar is clear"
+        body="Track emerging talent, creators and accounts you think will be big — your scouting board."
+        action="Add the first one to watch"
+        onAction={onAdd}
+      />
+    );
+  }
+  return (
+    <div className="space-y-3">
+      {entries.map((e) => {
+        const status = e.radarStatus ?? "WATCHING";
+        const link = e.radarLink || e.instagram || e.website;
+        return (
+          <div
+            key={e.id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#2a2a2a] bg-[#141414] p-4"
+            style={{ boxShadow: `0 0 0 1px rgba(224,224,224,0.04), 0 0 24px -12px ${ACCENT}` }}
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <RadarIcon size={14} style={{ color: ACCENT }} />
+                <p className="truncate text-sm font-semibold text-gray-900">{e.name}</p>
+                <CategoryBadge category={e.category} />
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-gray-500">
+                {link && (
+                  <a
+                    href={link.startsWith("http") ? link : `https://${link.replace(/^@/, "instagram.com/")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(ev) => ev.stopPropagation()}
+                    className="inline-flex items-center gap-1 text-gray-400 hover:text-gray-900"
+                  >
+                    <ExternalLink size={11} /> {e.radarLink || e.instagram || e.website}
+                  </a>
+                )}
+                {e.location && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin size={11} /> {e.location}
+                  </span>
+                )}
+                {e.creator?.name && <span>Added by {e.creator.name}</span>}
+              </div>
+              {e.notes && <p className="mt-1.5 text-xs text-gray-400 line-clamp-2">{e.notes}</p>}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onCycle(e)}
+                title="Click to advance status"
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors hover:bg-white/5 ${
+                  RADAR_STATUS_STYLE[status] ?? "border-gray-600 text-gray-300"
+                }`}
+              >
+                {RADAR_STATUS_LABELS[status] ?? status}
+              </button>
+              <button
+                onClick={() => onEdit(e)}
+                className="rounded-lg border border-[#2a2a2a] p-1.5 text-gray-500 hover:text-gray-900"
+                title="Edit"
+              >
+                <Pencil size={13} />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Empty state ─────────────────────────────────────────────────────────────────
+
+function EmptyState({
+  icon: Icon,
+  title,
+  body,
+  action,
+  onAction,
+}: {
+  icon: React.ElementType;
+  title: string;
+  body: string;
+  action?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#2a2a2a] bg-[#101010] px-6 py-20 text-center">
+      <Icon size={28} className="mb-3 text-gray-600" />
+      <p className="text-sm font-semibold text-gray-900">{title}</p>
+      <p className="mt-1 max-w-md text-xs text-gray-500">{body}</p>
+      {action && onAction && (
+        <button
+          onClick={onAction}
+          className="mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-black"
+          style={{ backgroundColor: ACCENT }}
+        >
+          <Plus size={15} /> {action}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Modal shell ─────────────────────────────────────────────────────────────────
+
+function ModalShell({
+  title,
+  onClose,
+  children,
+  footer,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 py-10 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl border border-[#2a2a2a] bg-[#141414] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#2a2a2a] px-5 py-4">
+          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-900">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="max-h-[65vh] space-y-4 overflow-y-auto px-5 py-5">{children}</div>
+        <div className="flex items-center justify-between gap-2 border-t border-[#2a2a2a] px-5 py-4">
+          {footer}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Contact modal (add / edit) ───────────────────────────────────────────────────
+
+function ContactModal({
+  contact,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  contact: ContactRecord | null;
+  onClose: () => void;
+  onSave: (payload: Partial<ContactRecord>, id?: string) => Promise<boolean>;
+  onDelete: (id: string) => void;
+}) {
+  const [form, setForm] = useState({
+    name: contact?.name ?? "",
+    role: contact?.role ?? "",
+    company: contact?.company ?? "",
+    category: contact?.category ?? "Other",
+    email: contact?.email ?? "",
+    phone: contact?.phone ?? "",
+    instagram: contact?.instagram ?? "",
+    website: contact?.website ?? "",
+    location: contact?.location ?? "",
+    rating: contact?.rating ?? null as number | null,
+    notes: contact?.notes ?? "",
+    tags: (contact?.tags ?? []).join(", "),
+  });
+  const [saving, setSaving] = useState(false);
+
+  function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
+    setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  async function submit() {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    const payload: Partial<ContactRecord> = {
+      name: form.name.trim(),
+      role: form.role || null,
+      company: form.company || null,
+      category: form.category,
+      email: form.email || null,
+      phone: form.phone || null,
+      instagram: form.instagram || null,
+      website: form.website || null,
+      location: form.location || null,
+      rating: form.rating,
+      notes: form.notes || null,
+      tags: form.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+    };
+    const ok = await onSave(payload, contact?.id);
+    setSaving(false);
+    if (!ok) alert("Could not save contact — check the email address.");
+  }
+
+  return (
+    <ModalShell
+      title={contact ? "Edit contact" : "Add contact"}
+      onClose={onClose}
+      footer={
+        <>
+          {contact ? (
+            <button
+              onClick={() => onDelete(contact.id)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-400"
+            >
+              <Trash2 size={13} /> Delete
+            </button>
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-gray-900">
+              Cancel
+            </button>
+            <button
+              onClick={submit}
+              disabled={saving || !form.name.trim()}
+              className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+              style={{ backgroundColor: ACCENT }}
+            >
+              {saving && <Loader2 size={14} className="animate-spin" />}
+              {contact ? "Save changes" : "Add contact"}
+            </button>
+          </div>
+        </>
+      }
+    >
+      <div>
+        <label className={labelCls}>Name *</label>
+        <input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Role / title</label>
+          <input className={inputCls} value={form.role} onChange={(e) => set("role", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>Company</label>
+          <input className={inputCls} value={form.company} onChange={(e) => set("company", e.target.value)} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Category</label>
+          <select className={inputCls} value={form.category} onChange={(e) => set("category", e.target.value)}>
+            {CONTACT_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Location</label>
+          <input className={inputCls} value={form.location} onChange={(e) => set("location", e.target.value)} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Email</label>
+          <input className={inputCls} value={form.email} onChange={(e) => set("email", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>Phone</label>
+          <input className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Instagram</label>
+          <input className={inputCls} value={form.instagram} onChange={(e) => set("instagram", e.target.value)} placeholder="@handle" />
+        </div>
+        <div>
+          <label className={labelCls}>Website</label>
+          <input className={inputCls} value={form.website} onChange={(e) => set("website", e.target.value)} />
+        </div>
+      </div>
+      <div>
+        <label className={labelCls}>Rating</label>
+        <Stars rating={form.rating} onChange={(r) => set("rating", r === form.rating ? null : r)} size={18} />
+      </div>
+      <div>
+        <label className={labelCls}>Tags (comma-separated)</label>
+        <input className={inputCls} value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="editorial, london, reliable" />
+      </div>
+      <div>
+        <label className={labelCls}>Notes</label>
+        <textarea className={`${inputCls} min-h-[90px]`} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── Radar modal (add / edit) ─────────────────────────────────────────────────────
+
+function RadarModal({
+  entry,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  entry: ContactRecord | null;
+  onClose: () => void;
+  onSave: (payload: Partial<ContactRecord>, id?: string) => Promise<boolean>;
+  onDelete: (id: string) => void;
+}) {
+  const [form, setForm] = useState({
+    name: entry?.name ?? "",
+    category: entry?.category ?? "Talent",
+    radarLink: entry?.radarLink ?? entry?.instagram ?? "",
+    location: entry?.location ?? "",
+    radarStatus: entry?.radarStatus ?? "WATCHING",
+    notes: entry?.notes ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
+    setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  async function submit() {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    const payload: Partial<ContactRecord> = {
+      name: form.name.trim(),
+      category: form.category,
+      radarLink: form.radarLink || null,
+      location: form.location || null,
+      radarStatus: form.radarStatus,
+      notes: form.notes || null,
+      isRadar: true,
+    };
+    const ok = await onSave(payload, entry?.id);
+    setSaving(false);
+    if (!ok) alert("Could not save radar entry.");
+  }
+
+  return (
+    <ModalShell
+      title={entry ? "Edit radar entry" : "Add to radar"}
+      onClose={onClose}
+      footer={
+        <>
+          {entry ? (
+            <button
+              onClick={() => onDelete(entry.id)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-400"
+            >
+              <Trash2 size={13} /> Remove
+            </button>
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-gray-900">
+              Cancel
+            </button>
+            <button
+              onClick={submit}
+              disabled={saving || !form.name.trim()}
+              className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+              style={{ backgroundColor: ACCENT }}
+            >
+              {saving && <Loader2 size={14} className="animate-spin" />}
+              {entry ? "Save changes" : "Add to radar"}
+            </button>
+          </div>
+        </>
+      }
+    >
+      <div>
+        <label className={labelCls}>Name *</label>
+        <input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Category</label>
+          <select className={inputCls} value={form.category} onChange={(e) => set("category", e.target.value)}>
+            {CONTACT_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Status</label>
+          <select className={inputCls} value={form.radarStatus} onChange={(e) => set("radarStatus", e.target.value)}>
+            {RADAR_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {RADAR_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className={labelCls}>Handle / link</label>
+        <input className={inputCls} value={form.radarLink} onChange={(e) => set("radarLink", e.target.value)} placeholder="@handle or https://…" />
+      </div>
+      <div>
+        <label className={labelCls}>Location</label>
+        <input className={inputCls} value={form.location} onChange={(e) => set("location", e.target.value)} />
+      </div>
+      <div>
+        <label className={labelCls}>Why they&apos;re interesting</label>
+        <textarea className={`${inputCls} min-h-[100px]`} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="What makes them one to watch?" />
+      </div>
+    </ModalShell>
+  );
+}

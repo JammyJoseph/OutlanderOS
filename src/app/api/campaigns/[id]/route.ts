@@ -12,7 +12,8 @@ import {
   parseClientBrief,
   parseCreativeResponse,
   parseClientFeedback,
-  stagesForWorkflow,
+  stagesForDeal,
+  normalizeStage,
 } from "@/lib/deal-stages";
 import { archiveCampaign } from "@/lib/archive";
 
@@ -81,7 +82,7 @@ async function updateCampaign(
       where: { id },
       select: {
         id: true, stage: true, value: true, title: true, briefStatus: true,
-        workflowType: true, creativeStatus: true, clientFeedback: true,
+        workflowType: true, jobType: true, creativeStatus: true, clientFeedback: true,
       },
     });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -98,18 +99,18 @@ async function updateCampaign(
       return NextResponse.json({ error: `Invalid creativeStatus: ${creativeStatus}` }, { status: 400 });
     }
 
-    // Supplied-assets deals skip the creative + cleared-for-production stages.
+    // Validate the new stage against the deal's workflow. Each job type has its
+    // own stage list — bespoke has creative + IO, supplied has a single
+    // approval, print is sign-and-go. Legacy values are folded first.
     const effectiveWorkflow = workflowType ?? existing.workflowType;
-    if (
-      stage !== undefined &&
-      effectiveWorkflow === "SUPPLIED_ASSETS" &&
-      !(stagesForWorkflow("SUPPLIED_ASSETS") as string[]).includes(stage) &&
-      stage !== "NEGOTIATING"
-    ) {
-      return NextResponse.json(
-        { error: `Supplied-assets deals skip the ${stage} stage` },
-        { status: 400 }
-      );
+    if (stage !== undefined) {
+      const allowed = stagesForDeal({ jobType: existing.jobType, workflowType: effectiveWorkflow });
+      if (!(allowed as string[]).includes(normalizeStage(stage))) {
+        return NextResponse.json(
+          { error: `Stage ${stage} is not valid for this deal's workflow` },
+          { status: 400 }
+        );
+      }
     }
 
     // Normalise creative-workflow JSON payloads before persisting.

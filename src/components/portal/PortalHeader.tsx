@@ -12,6 +12,7 @@ const PORTALS = [
   { name: "Production", href: "/production" },
   { name: "Finance", href: "/finance", restricted: true },
   { name: "Print", href: "/print" },
+  { name: "Directory", href: "/directory" },
 ];
 
 // Sections that still route but live outside the main portal switcher.

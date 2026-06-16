@@ -286,7 +286,21 @@ export function CallSheetEditor(p: EditorProps) {
       </Section>
 
       {/* 7. Talent / Cast */}
-      <Section title="Talent / Cast" icon={<Users size={15} className={iconCls} />}>
+      <Section
+        title="Talent / Cast"
+        icon={<Users size={15} className={iconCls} />}
+        action={
+          <a
+            href="/directory"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-800"
+            title="Browse Outlander's directory for talent"
+          >
+            <ContactIcon size={12} /> Browse Directory
+          </a>
+        }
+      >
         <PeopleTable
           people={p.talent}
           setPeople={(v) => p.setTalent(v as TalentMember[])}

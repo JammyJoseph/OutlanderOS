@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2, Mail, Phone, Users } from "lucide-react";
+import Link from "next/link";
+import { Plus, Trash2, Mail, Phone, Users, Contact } from "lucide-react";
 import { TeamMember, TeamStatus, gbp } from "./types";
 
 interface Props {
@@ -99,6 +100,14 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
               Total crew cost:{" "}
               <span className="font-semibold text-gray-800">{gbp(totalCost)}</span>
             </span>
+            <Link
+              href="/directory"
+              target="_blank"
+              className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-800"
+              title="Browse Outlander's contact directory in a new tab"
+            >
+              <Contact size={13} /> Browse Directory
+            </Link>
             <button
               onClick={() => setShowAdd((v) => !v)}
               className="flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"

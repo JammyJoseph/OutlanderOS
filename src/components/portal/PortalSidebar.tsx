@@ -23,6 +23,10 @@ import {
   Receipt,
   Camera,
   FolderKanban,
+  Contact,
+  Radar,
+  Clock,
+  Tags,
 } from "lucide-react";
 
 type NavItem = {
@@ -69,6 +73,15 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Invoices & Approvals", href: "/finance?tab=invoices", icon: Receipt },
       { label: "Expenses", href: "/finance?tab=expenses", icon: Clipboard },
       { label: "P&L & History", href: "/finance?tab=pl", icon: BarChart2 },
+    ],
+  },
+  directory: {
+    title: "Directory",
+    items: [
+      { label: "All Contacts", href: "/directory", icon: Contact },
+      { label: "By Category", href: "/directory?view=categories", icon: Tags },
+      { label: "Radar", href: "/directory?view=radar", icon: Radar },
+      { label: "Recently Added", href: "/directory?view=recent", icon: Clock },
     ],
   },
   admin: {

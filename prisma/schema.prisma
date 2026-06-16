@@ -112,7 +112,13 @@ model Contact {
   tags            String[]
   instagram       String?
   website         String?
+  location        String?
+  rating          Int? // 1–5
   notes           String?
+  // ── Outlander Radar: emerging talent / accounts to watch ──
+  isRadar         Boolean   @default(false)
+  radarStatus     String? // WATCHING | REACHED_OUT | CONNECTED | COLLABORATING
+  radarLink       String? // handle / profile link for radar entries
   lastInteraction DateTime?
   createdBy       String
   creator         User      @relation(fields: [createdBy], references: [id])
@@ -206,19 +212,27 @@ model Campaign {
 }
 
 enum DealStage {
+  // ── current simplified pipeline ──
   LEAD
   PITCHED
-  NEGOTIATING // legacy — folded into PITCHED in the UI
+  DEAL_SIGNED
+  CREATIVE_BRIEF
+  CREATIVE_REVIEW
+  CREATIVE_APPROVED
+  APPROVAL
+  IO_SIGNED
+  CLEARED_FOR_PRODUCTION
+  LIVE
+  COMPLETED
+  PAID
+  // ── legacy — folded onto the above via normalizeStage() ──
+  NEGOTIATING
   BRIEF_RECEIVED
   CREATIVE_RESPONSE
   CLIENT_REVIEW
   CLIENT_APPROVED
   CONTRACTED
   BUDGET_SET
-  CLEARED_FOR_PRODUCTION
-  LIVE
-  COMPLETED
-  PAID
 }
 
 model DealActivity {

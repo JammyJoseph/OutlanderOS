@@ -12,6 +12,7 @@ export type PortalKey =
   | "finance"
   | "think-tank"
   | "contacts"
+  | "directory"
   | "admin";
 
 export const PORTAL_ACCENTS: Record<PortalKey, string> = {
@@ -22,6 +23,7 @@ export const PORTAL_ACCENTS: Record<PortalKey, string> = {
   finance: "#4d9fff",
   "think-tank": "#ffaa00",
   contacts: "#4d9fff",
+  directory: "#e0e0e0",
   admin: "#999999",
 };
 
