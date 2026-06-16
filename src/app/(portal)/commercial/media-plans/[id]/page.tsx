@@ -208,7 +208,7 @@ export default function MediaPlanEditPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#D4A853] border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#ffd700] border-t-transparent" />
       </div>
     );
   }
@@ -219,7 +219,7 @@ export default function MediaPlanEditPage() {
         <p className="text-sm text-gray-500">Media plan not found.</p>
         <Link
           href="/commercial/media-plans"
-          className="text-sm text-[#D4A853] hover:underline"
+          className="text-sm text-[#ffd700] hover:underline"
         >
           Back to Media Plans
         </Link>
@@ -238,7 +238,7 @@ export default function MediaPlanEditPage() {
   const monthGroups = groupByMonth(lineItems);
 
   const inputCls =
-    "w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:border-[#D4A853] focus:outline-none";
+    "w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:border-[#ffd700] focus:outline-none";
 
   return (
     <div className="flex h-full flex-col">
@@ -278,7 +278,7 @@ export default function MediaPlanEditPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg bg-[#D4A853] px-4 py-2 text-sm font-medium text-white hover:bg-[#C49843] disabled:opacity-50 transition-colors"
+            className="rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200] disabled:opacity-50 transition-colors"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -454,7 +454,7 @@ export default function MediaPlanEditPage() {
                             onChange={(e) =>
                               updateLine(li._key, "site", e.target.value)
                             }
-                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                             placeholder="e.g. Outlander IG"
                           />
                         </td>
@@ -465,7 +465,7 @@ export default function MediaPlanEditPage() {
                             onChange={(e) =>
                               updateLine(li._key, "startDate", e.target.value)
                             }
-                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                           />
                         </td>
                         <td className="px-3 py-2 min-w-[110px]">
@@ -475,7 +475,7 @@ export default function MediaPlanEditPage() {
                             onChange={(e) =>
                               updateLine(li._key, "endDate", e.target.value)
                             }
-                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                           />
                         </td>
                         <td className="px-3 py-2 min-w-[140px]">
@@ -484,7 +484,7 @@ export default function MediaPlanEditPage() {
                             onChange={(e) =>
                               updateLine(li._key, "placement", e.target.value)
                             }
-                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                             placeholder="Post type"
                           />
                         </td>
@@ -499,7 +499,7 @@ export default function MediaPlanEditPage() {
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                             placeholder="0"
                             min={0}
                           />
@@ -514,7 +514,7 @@ export default function MediaPlanEditPage() {
                                 e.target.value as LineItem["rateType"]
                               )
                             }
-                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                           >
                             <option>Flat Fee</option>
                             <option>CPM</option>
@@ -532,7 +532,7 @@ export default function MediaPlanEditPage() {
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                             placeholder="0"
                             min={0}
                             max={100}
@@ -549,7 +549,7 @@ export default function MediaPlanEditPage() {
                                 parseInt(e.target.value) || 1
                               )
                             }
-                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                             placeholder="1"
                             min={1}
                           />
@@ -570,7 +570,7 @@ export default function MediaPlanEditPage() {
                                 e.target.value
                               )
                             }
-                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                            className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                             placeholder="Creative brief"
                           />
                         </td>

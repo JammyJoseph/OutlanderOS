@@ -266,7 +266,7 @@ export default function PrintPortalPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#1D9E75]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#00ff88]" />
       </div>
     );
   }
@@ -284,7 +284,7 @@ export default function PrintPortalPage() {
         </p>
         <button
           onClick={() => load(true)}
-          className="mt-4 flex items-center gap-1.5 rounded-lg bg-[#1D9E75] px-4 py-2 text-xs font-semibold text-white hover:bg-[#178563]"
+          className="mt-4 flex items-center gap-1.5 rounded-lg bg-[#00ff88] px-4 py-2 text-xs font-semibold text-black hover:bg-[#00ff88]"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Retry
@@ -298,7 +298,7 @@ export default function PrintPortalPage() {
       {/* Header */}
       <div className="sticky top-0 z-30 glass-header flex items-center justify-between px-6 py-3">
         <div>
-          <h1 className="flex items-center gap-2 text-base font-semibold text-gray-900"><span className="h-2 w-2 rounded-full bg-[#1D9E75]" />Print — Outlander Magazine</h1>
+          <h1 className="flex items-center gap-2 text-base font-semibold text-gray-900"><span className="h-2 w-2 rounded-full bg-[#00ff88]" />Print — Outlander Magazine</h1>
           <p className="text-xs text-gray-500">
             {data.sheetTitle ?? "Master Planning"}
             {data.cached ? " · cached" : ""} · refreshed {new Date(data.fetchedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
@@ -353,11 +353,11 @@ export default function PrintPortalPage() {
                     {issue} · {timelineProgress.done} of {timelineProgress.total} milestones complete · Now: {timelineProgress.currentLabel}
                   </p>
                 </div>
-                <span className="text-xs font-bold text-[#1D9E75]">{timelineProgress.pct}%</span>
+                <span className="text-xs font-bold text-[#00ff88]">{timelineProgress.pct}%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-gray-100">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#1D9E75] to-emerald-400 transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-[#00ff88] to-emerald-400 transition-all"
                   style={{ width: `${timelineProgress.pct}%` }}
                 />
               </div>
@@ -415,12 +415,12 @@ export default function PrintPortalPage() {
                           m.status === "past"
                             ? "bg-emerald-500"
                             : m.status === "today"
-                              ? "bg-[#1D9E75]"
+                              ? "bg-[#00ff88]"
                               : "bg-gray-300"
                         }`}
                       >
                         {m.status === "today" && (
-                          <span className="absolute h-3.5 w-3.5 animate-ping rounded-full bg-[#1D9E75] opacity-50" />
+                          <span className="absolute h-3.5 w-3.5 animate-ping rounded-full bg-[#00ff88] opacity-50" />
                         )}
                       </span>
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -654,7 +654,7 @@ export default function PrintPortalPage() {
                   Paid features are tracked in the{" "}
                   <Link
                     href="/commercial/pipeline"
-                    className="font-semibold text-[#D4A853] hover:underline"
+                    className="font-semibold text-[#ffd700] hover:underline"
                   >
                     Commercial pipeline
                   </Link>
@@ -718,9 +718,9 @@ function QuickLink({
   return (
     <a
       href={href}
-      className="card-apple flex items-center gap-2 p-3 text-xs font-semibold text-gray-700 hover:text-[#1D9E75]"
+      className="card-apple flex items-center gap-2 p-3 text-xs font-semibold text-gray-700 hover:text-[#00ff88]"
     >
-      <span className="text-[#1D9E75]">{icon}</span>
+      <span className="text-[#00ff88]">{icon}</span>
       <span>{label}</span>
     </a>
   );

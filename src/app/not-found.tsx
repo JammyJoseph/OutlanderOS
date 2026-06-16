@@ -6,11 +6,11 @@ export default function NotFound() {
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-white px-6 text-center">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 -left-40 h-[480px] w-[480px] rounded-full bg-[#D4A853]/15 blur-3xl"
+        className="pointer-events-none absolute -top-40 -left-40 h-[480px] w-[480px] rounded-full bg-[#ffd700]/15 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-40 -right-40 h-[480px] w-[480px] rounded-full bg-[#7B5BD6]/10 blur-3xl"
+        className="pointer-events-none absolute -bottom-40 -right-40 h-[480px] w-[480px] rounded-full bg-[#c77dff]/10 blur-3xl"
       />
       <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-400">
         Outlander Magazine
@@ -24,7 +24,7 @@ export default function NotFound() {
       <div className="mt-6 flex items-center gap-3">
         <Link
           href="/me"
-          className="rounded-xl bg-[#D4A853] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#C49843]"
+          className="rounded-xl bg-[#ffd700] px-5 py-2.5 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-[#e6c200]"
         >
           Go to Dashboard
         </Link>

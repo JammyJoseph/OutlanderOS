@@ -9,7 +9,7 @@ export default function SignInPage() {
       <div className="flex flex-col items-center gap-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-white">
-            Outlander<span className="text-[#D4A853]">OS</span>
+            Outlander<span className="text-[#ffd700]">OS</span>
           </h1>
           <p className="mt-2 text-sm text-neutral-400">
             Internal operating system for Outlander Magazine

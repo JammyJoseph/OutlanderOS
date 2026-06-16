@@ -87,7 +87,7 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Stat label="Crew" value={String(counts.total)} icon={<Users size={14} />} />
         <Stat label="Suggested" value={String(counts.suggested)} dot="bg-gray-300" />
-        <Stat label="Confirmed" value={String(counts.confirmed)} dot="bg-[#D4A853]" />
+        <Stat label="Confirmed" value={String(counts.confirmed)} dot="bg-[#ffd700]" />
         <Stat label="Contracted" value={String(counts.contracted)} dot="bg-emerald-500" />
       </div>
 
@@ -101,7 +101,7 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
             </span>
             <button
               onClick={() => setShowAdd((v) => !v)}
-              className="flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:text-[#c49843]"
+              className="flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
             >
               <Plus size={13} /> Add member
             </button>
@@ -115,7 +115,7 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
             <p className="text-sm text-gray-500">No team members yet.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:text-[#c49843]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
             >
               <Plus size={12} /> Add your first member
             </button>
@@ -181,7 +181,7 @@ function MemberRow({
         {member.email && (
           <a
             href={`mailto:${member.email}`}
-            className="inline-flex items-center gap-1 hover:text-[#D4A853] truncate"
+            className="inline-flex items-center gap-1 hover:text-[#ffd700] truncate"
           >
             <Mail size={11} className="shrink-0" />
             <span className="truncate">{member.email}</span>
@@ -190,7 +190,7 @@ function MemberRow({
         {member.phone && (
           <a
             href={`tel:${member.phone}`}
-            className="inline-flex items-center gap-1 hover:text-[#D4A853] truncate"
+            className="inline-flex items-center gap-1 hover:text-[#ffd700] truncate"
           >
             <Phone size={11} className="shrink-0" />
             <span className="truncate">{member.phone}</span>
@@ -276,28 +276,28 @@ function AddMemberForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="text"
         value={role}
         onChange={(e) => setRole(e.target.value)}
         placeholder="Role (Director, DP, MUA…)"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="tel"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Phone"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <div className="md:col-span-2 flex items-center gap-1">
         <span className="text-xs text-gray-400">£</span>
@@ -306,7 +306,7 @@ function AddMemberForm({
           value={rate}
           onChange={(e) => setRate(e.target.value)}
           placeholder="Rate"
-          className="flex-1 px-2 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+          className="flex-1 px-2 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
         />
         <select
           value={ratePer}
@@ -321,7 +321,7 @@ function AddMemberForm({
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#D4A853] text-white text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#c49843] transition-colors"
+          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#e6c200] transition-colors"
         >
           Add
         </button>
@@ -351,7 +351,7 @@ function Stat({
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center gap-1.5 text-gray-400">
         {dot && <span className={`w-2 h-2 rounded-full ${dot}`} />}
-        {icon && <span className="text-[#D4A853]">{icon}</span>}
+        {icon && <span className="text-[#ffd700]">{icon}</span>}
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
       <p className="text-2xl font-semibold text-gray-900 mt-2">{value}</p>

@@ -33,7 +33,7 @@ type TeamMember = {
 }
 
 const INPUT_CLS =
-  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#D4A853] focus:ring-2 focus:ring-amber-200/60'
+  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
 
 function getInitials(name: string): string {
   if (!name) return '?'
@@ -244,7 +244,7 @@ export default function ProfilePage() {
               <button
                 onClick={save}
                 disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#D4A853] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50"
               >
                 <Check className="h-4 w-4" />
                 {saving ? 'Saving…' : 'Save changes'}
@@ -465,7 +465,7 @@ function EditUserModal({
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-          <button onClick={save} disabled={saving} className="rounded-xl bg-[#D4A853] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
+          <button onClick={save} disabled={saving} className="rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>

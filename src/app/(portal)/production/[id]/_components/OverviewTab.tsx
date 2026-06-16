@@ -110,7 +110,7 @@ export default function OverviewTab({
       {production.campaign?.id && (
         <Link
           href={`/commercial/deals/${production.campaign.id}`}
-          className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-[#D4A853] transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-[#ffd700] transition-colors"
         >
           From: <span className="text-gray-600 font-semibold">{production.campaign.title}</span> in
           Commercial <ArrowUpRight size={12} />
@@ -166,7 +166,7 @@ export default function OverviewTab({
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <ListChecks size={15} className="text-[#E24B4A]" />
+              <ListChecks size={15} className="text-[#ff4444]" />
               Shotlist Progress
             </h2>
             <span className="text-xs font-semibold text-gray-600">
@@ -175,7 +175,7 @@ export default function OverviewTab({
           </div>
           <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#E24B4A] rounded-full transition-all"
+              className="h-full bg-[#ff4444] rounded-full transition-all"
               style={{ width: `${Math.round((shots.done / shots.total) * 100)}%` }}
             />
           </div>
@@ -199,7 +199,7 @@ export default function OverviewTab({
                       {production.clientName || production.campaign?.client?.name}
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1 font-semibold text-[#9C7424] bg-amber-50 rounded-full px-2 py-0.5">
+                  <span className="inline-flex items-center gap-1 font-semibold text-[#e6c200] bg-amber-50 rounded-full px-2 py-0.5">
                     <Lock size={10} /> {gbp(production.budgetTotal ?? 0)} budget
                   </span>
                 </div>
@@ -228,7 +228,7 @@ export default function OverviewTab({
               }}
               rows={4}
               placeholder="What is this project about?"
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-100 text-sm resize-none bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853] transition-colors"
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-100 text-sm resize-none bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div>
@@ -238,7 +238,7 @@ export default function OverviewTab({
                     <span className="font-medium text-gray-900">
                       {gbp(production.budgetTotal ?? 0)}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#9C7424]">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#e6c200]">
                       <Lock size={10} /> Budget set in Commercial
                     </span>
                   </div>
@@ -252,7 +252,7 @@ export default function OverviewTab({
                       scheduleSave();
                     }}
                     placeholder="0"
-                    className="w-full px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853] transition-colors"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
                   />
                 )}
               </div>
@@ -266,7 +266,7 @@ export default function OverviewTab({
                     scheduleSave();
                   }}
                   placeholder="https://figma.com/file/…"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853] transition-colors"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
                 />
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function OverviewTab({
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <Label>Next up</Label>
               <div className="flex items-start gap-3 mt-1">
-                <Clock size={16} className="text-[#D4A853] mt-1 shrink-0" />
+                <Clock size={16} className="text-[#ffd700] mt-1 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900 truncate">{upcomingTask.title}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
@@ -298,12 +298,12 @@ export default function OverviewTab({
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <CalendarDays size={15} className="text-[#D4A853]" />
+              <CalendarDays size={15} className="text-[#ffd700]" />
               Shoot Dates
             </h2>
             <button
               onClick={addShoot}
-              className="text-xs font-medium text-[#D4A853] hover:text-[#c49843]"
+              className="text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
             >
               + Add
             </button>
@@ -318,7 +318,7 @@ export default function OverviewTab({
                     type="date"
                     value={d}
                     onChange={(e) => updateShoot(i, e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853] transition-colors"
+                    className="flex-1 px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
                   />
                   <button
                     onClick={() => removeShoot(i)}
@@ -380,7 +380,7 @@ function StatCard({
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center gap-2 text-gray-400">
-        <span className="text-[#D4A853]">{icon}</span>
+        <span className="text-[#ffd700]">{icon}</span>
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
       <p className="text-xl font-semibold text-gray-900 mt-2 truncate">{primary}</p>
@@ -389,7 +389,7 @@ function StatCard({
       {progress != null && (
         <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#D4A853] rounded-full transition-all"
+            className="h-full bg-[#ffd700] rounded-full transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>

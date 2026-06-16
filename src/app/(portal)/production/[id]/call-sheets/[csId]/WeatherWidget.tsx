@@ -19,7 +19,7 @@ import type { DailyForecast, WeatherData } from "./types";
 
 function ConditionIcon({ condition, size = 22 }: { condition: string; size?: number }) {
   const c = condition.toLowerCase();
-  const cls = "text-[#E24B4A]";
+  const cls = "text-[#ff4444]";
   if (c.includes("thunder")) return <CloudLightning size={size} className={cls} />;
   if (c.includes("drizzle")) return <CloudDrizzle size={size} className={cls} />;
   if (c.includes("rain")) return <CloudRain size={size} className={cls} />;
@@ -35,7 +35,7 @@ function DayCard({ day, highlight }: { day: DailyForecast; highlight: boolean })
   return (
     <div
       className={`flex-1 rounded-xl border p-3 text-center ${
-        highlight ? "border-[#E24B4A] bg-[#E24B4A]/5" : "border-gray-100 bg-gray-50/50"
+        highlight ? "border-[#ff4444] bg-[#ff4444]/5" : "border-gray-100 bg-gray-50/50"
       }`}
     >
       <p className="text-xs font-semibold text-gray-500">
@@ -156,7 +156,7 @@ export function WeatherEditor({
         <button
           onClick={fetchForecast}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs font-medium text-[#E24B4A] hover:text-[#C93D3C] transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors disabled:opacity-40"
         >
           {loading ? (
             <Loader2 size={13} className="animate-spin" />

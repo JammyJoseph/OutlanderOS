@@ -248,7 +248,7 @@ export default function CallSheetPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F9F9F7] flex items-center justify-center">
+      <div className="min-h-screen bg-[#141414] flex items-center justify-center">
         <Loader2 size={24} className="animate-spin text-gray-400" />
       </div>
     );
@@ -256,12 +256,12 @@ export default function CallSheetPage() {
 
   if (!sheet) {
     return (
-      <div className="min-h-screen bg-[#F9F9F7] flex items-center justify-center">
+      <div className="min-h-screen bg-[#141414] flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Call sheet not found.</p>
           <Link
             href={`/production/${id}`}
-            className="text-[#E24B4A] text-sm font-medium hover:underline"
+            className="text-[#ff4444] text-sm font-medium hover:underline"
           >
             Back to Project
           </Link>
@@ -289,7 +289,7 @@ export default function CallSheetPage() {
   const badge = STATUS_BADGES[sheet.status];
 
   return (
-    <div className="min-h-screen bg-[#F9F9F7]" data-callsheet-print>
+    <div className="min-h-screen bg-[#141414]" data-callsheet-print>
       <div className="max-w-4xl mx-auto px-6 py-10 print:px-0 print:py-0 print:max-w-none">
         <div className="flex items-center justify-between mb-6 print:hidden">
           <Link
@@ -320,7 +320,7 @@ export default function CallSheetPage() {
             <button
               onClick={manualSave}
               disabled={saving}
-              className="flex items-center gap-1.5 bg-[#E24B4A] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#C93D3C] transition-colors disabled:opacity-60 shadow-sm"
+              className="flex items-center gap-1.5 bg-[#ff4444] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#ff4444] transition-colors disabled:opacity-60 shadow-sm"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
               Save
@@ -397,7 +397,7 @@ export default function CallSheetPage() {
               <button
                 onClick={publishSheet}
                 disabled={saving}
-                className="flex items-center gap-2 bg-[#E24B4A] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#C93D3C] transition-colors disabled:opacity-60 shadow-sm"
+                className="flex items-center gap-2 bg-[#ff4444] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ff4444] transition-colors disabled:opacity-60 shadow-sm"
               >
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 Publish &amp; Share

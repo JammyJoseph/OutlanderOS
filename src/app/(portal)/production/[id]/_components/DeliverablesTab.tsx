@@ -103,12 +103,12 @@ export default function DeliverablesTab({
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-            <Package size={15} className="text-[#D4A853]" />
+            <Package size={15} className="text-[#ffd700]" />
             Deliverables
           </h2>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:text-[#c49843]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
           >
             <Plus size={13} /> Add deliverable
           </button>
@@ -121,7 +121,7 @@ export default function DeliverablesTab({
             <p className="text-sm text-gray-500">No deliverables tracked yet.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:text-[#c49843]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
             >
               <Plus size={12} /> Add your first deliverable
             </button>
@@ -220,7 +220,7 @@ function DeliverableRow({
             href={deliverable.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-[#D4A853]"
+            className="text-gray-400 hover:text-[#ffd700]"
           >
             <ExternalLink size={13} />
           </a>
@@ -270,7 +270,7 @@ function AddDeliverableForm({
       <select
         value={type}
         onChange={(e) => setType(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       >
         {(DELIVERABLE_TYPES ?? []).map((t) => (
           <option key={t.key} value={t.key}>
@@ -283,25 +283,25 @@ function AddDeliverableForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="date"
         value={dueDate}
         onChange={(e) => setDueDate(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="url"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="URL"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#D4A853] text-white text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#c49843] transition-colors"
+          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#e6c200] transition-colors"
         >
           Add
         </button>

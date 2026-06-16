@@ -23,7 +23,7 @@ const PORTALS = [
     description: 'Deal pipeline, clients & media plans',
     href: '/commercial',
     icon: TrendingUp,
-    accent: '#D4A853',
+    accent: '#ffd700',
     statKey: 'commercial' as keyof PortalStats,
     statLabel: 'campaigns',
   },
@@ -32,7 +32,7 @@ const PORTALS = [
     description: 'Briefs, call sheets & crew',
     href: '/production',
     icon: Film,
-    accent: '#E24B4A',
+    accent: '#ff4444',
     statKey: 'production' as keyof PortalStats,
     statLabel: 'productions',
   },
@@ -41,7 +41,7 @@ const PORTALS = [
     description: 'Deals, billing & cash flow',
     href: '/finance',
     icon: DollarSign,
-    accent: '#378ADD',
+    accent: '#4d9fff',
     restricted: true,
     statKey: 'finance' as keyof PortalStats,
     statLabel: 'booked',
@@ -51,7 +51,7 @@ const PORTALS = [
     description: 'Issues, flat plans & distribution',
     href: '/print',
     icon: Newspaper,
-    accent: '#1D9E75',
+    accent: '#00ff88',
     statKey: 'print' as keyof PortalStats,
     statLabel: 'issues',
   },
@@ -125,7 +125,7 @@ export default function HubPage() {
               <Link
                 key={portal.href}
                 href={portal.href}
-                className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-[#2a2a2a] bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                 style={{ borderTop: `3px solid ${portal.accent}` }}
               >
                 {portal.restricted && (

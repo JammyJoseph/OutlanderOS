@@ -140,11 +140,11 @@ export function taskTabFor(portal: string | null): Exclude<TaskTab, "all"> {
 
 // Portal accent colours — Commercial gold, Production red, Finance blue, Print green.
 export const PORTAL_COLORS: Record<string, { accent: string; bg: string; text: string }> = {
-  commercial: { accent: "#D4A853", bg: "#D4A8531A", text: "#9a7322" },
+  commercial: { accent: "#ffd700", bg: "#ffd7001A", text: "#9a7322" },
   production: { accent: "#DC4B4B", bg: "#DC4B4B1A", text: "#a83232" },
   finance: { accent: "#3B82F6", bg: "#3B82F61A", text: "#1d4ed8" },
   print: { accent: "#22A06B", bg: "#22A06B1A", text: "#15803d" },
-  followup: { accent: "#7B5BD6", bg: "#7B5BD61A", text: "#5b3fb0" },
+  followup: { accent: "#c77dff", bg: "#c77dff1A", text: "#5b3fb0" },
   personal: { accent: "#6B7280", bg: "#6B72801A", text: "#4b5563" },
 };
 

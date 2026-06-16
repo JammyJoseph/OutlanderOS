@@ -120,7 +120,7 @@ export function BusinessPulse() {
           value={pulse.activeProjects}
           sub={`${pulse.activeDealCount} deal${pulse.activeDealCount === 1 ? "" : "s"} · ${pulse.activeProductionCount} production${pulse.activeProductionCount === 1 ? "" : "s"}`}
           icon={<FolderKanban className="h-4 w-4" />}
-          accent="#D4A853"
+          accent="#ffd700"
           href="/commercial/pipeline"
         />
         <PulseCard
@@ -128,7 +128,7 @@ export function BusinessPulse() {
           value={pulse.upcomingDeliveries}
           sub="due in the next 14 days"
           icon={<PackageCheck className="h-4 w-4" />}
-          accent="#E24B4A"
+          accent="#ff4444"
         />
         <PulseCard
           label="Next Shoot"
@@ -148,7 +148,7 @@ export function BusinessPulse() {
   }
 
   const connectXero = (
-    <Link href="/finance" className="font-semibold text-[#3B82F6] hover:underline">
+    <Link href="/finance" className="font-semibold text-[#4d9fff] hover:underline">
       Connect Xero
     </Link>
   );
@@ -160,7 +160,7 @@ export function BusinessPulse() {
         value={formatGBP(pulse.pipelineValue)}
         sub={`${pulse.activeDealCount} active deal${pulse.activeDealCount === 1 ? "" : "s"}`}
         icon={<TrendingUp className="h-4 w-4" />}
-        accent="#D4A853"
+        accent="#ffd700"
       />
       <PulseCard
         label="Receivables"
@@ -171,7 +171,7 @@ export function BusinessPulse() {
             : "Xero not connected"
         }
         icon={<Banknote className="h-4 w-4" />}
-        accent="#3B82F6"
+        accent="#4d9fff"
       />
       <PulseCard
         label="Bank Balance"

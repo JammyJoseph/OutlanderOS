@@ -22,9 +22,9 @@ const ITEMS = [
 export function PersonalSidebar() {
   const pathname = usePathname();
   return (
-    <aside className="flex w-[200px] shrink-0 flex-col border-r border-[#E5E7EB] bg-white/80 backdrop-blur-md">
-      <div className="flex h-10 items-center gap-2 border-b border-[#E5E7EB] px-4">
-        <span className="h-2 w-2 rounded-full bg-[#D4A853]" />
+    <aside className="flex w-[200px] shrink-0 flex-col border-r border-[#2a2a2a] bg-white/80 backdrop-blur-md">
+      <div className="flex h-10 items-center gap-2 border-b border-[#2a2a2a] px-4">
+        <span className="h-2 w-2 rounded-full bg-[#ffd700]" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
           My Dashboard
         </span>
@@ -42,14 +42,14 @@ export function PersonalSidebar() {
                   className={cn(
                     "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all duration-150",
                     isActive
-                      ? "bg-[#D4A853]/10 font-semibold text-gray-900 shadow-sm"
+                      ? "bg-[#ffd700]/10 font-semibold text-gray-900 shadow-sm"
                       : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                   )}
                 >
                   <Icon
                     className={cn(
                       "h-4 w-4 shrink-0 transition-colors",
-                      isActive ? "text-[#D4A853]" : "text-gray-400"
+                      isActive ? "text-[#ffd700]" : "text-gray-400"
                     )}
                   />
                   <span className="truncate font-medium">{item.label}</span>

@@ -1,7 +1,7 @@
 /**
  * OutlanderOS design system tokens.
  *
- * Light mode only. Manrope. Sharp, glassy, bright — strong portal accents.
+ * Dark monochrome. Manrope. Editorial, magazine-quality — luminous portal accents.
  */
 
 export type PortalKey =
@@ -15,31 +15,31 @@ export type PortalKey =
   | "admin";
 
 export const PORTAL_ACCENTS: Record<PortalKey, string> = {
-  commercial: "#D4A853",
-  production: "#E24B4A",
-  print: "#1D9E75",
-  editorial: "#7B5BD6",
-  finance: "#378ADD",
-  "think-tank": "#E67E22",
-  contacts: "#2C3E50",
-  admin: "#6C757D",
+  commercial: "#ffd700",
+  production: "#ff4444",
+  print: "#00ff88",
+  editorial: "#c77dff",
+  finance: "#4d9fff",
+  "think-tank": "#ffaa00",
+  contacts: "#4d9fff",
+  admin: "#999999",
 };
 
 /** Resolve a portal accent from a pathname like "/finance/reports". */
 export function portalAccent(pathname: string): string {
   const segment = (pathname.split("/")[1] ?? "") as PortalKey;
-  return PORTAL_ACCENTS[segment] ?? "#D4A853";
+  return PORTAL_ACCENTS[segment] ?? "#ffd700";
 }
 
-/** Shared card surface — white, rounded, subtle border + shadow, lifts on hover. */
+/** Shared card surface — dark, rounded, subtle border; brightens on hover. */
 export const cardClass =
-  "rounded-xl border border-[#E5E7EB] bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5";
+  "rounded-xl border border-[#2a2a2a] bg-[#141414] transition-all duration-200 hover:border-[#3a3a3a] hover:-translate-y-0.5";
 
 /** Static card (no hover lift) for containers/tables. */
-export const panelClass = "rounded-xl border border-[#E5E7EB] bg-white shadow-sm";
+export const panelClass = "rounded-xl border border-[#2a2a2a] bg-[#141414]";
 
 /** Glass surface for key headers/banners. */
-export const glassClass = "bg-white/80 backdrop-blur-md border border-white/60 shadow-sm";
+export const glassClass = "bg-[#141414]/80 backdrop-blur-md border border-[#2a2a2a]";
 
 /** Small rounded-full status pill base — combine with a colour class. */
 export const pillClass =

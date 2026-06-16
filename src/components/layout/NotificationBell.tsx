@@ -67,7 +67,7 @@ export function NotificationBell({ tone = "light" }: { tone?: "light" | "dark" }
     counts.overdue > 0
       ? "bg-red-500 text-white"
       : counts.today > 0
-      ? "bg-[#D4A853] text-black"
+      ? "bg-[#ffd700] text-black"
       : "bg-gray-400 text-white";
 
   const buttonBase =

@@ -215,7 +215,7 @@ export function CallSheetEditor(p: EditorProps) {
               }}
               className={`grid grid-cols-[20px_100px_1fr_1fr_32px] gap-2 items-center rounded-lg transition-colors ${
                 dragOverIndex === i && dragIndex !== null && dragIndex !== i
-                  ? "bg-red-50/70 ring-1 ring-[#E24B4A]/30"
+                  ? "bg-red-50/70 ring-1 ring-[#ff4444]/30"
                   : dragIndex === i
                   ? "opacity-50"
                   : ""
@@ -275,7 +275,7 @@ export function CallSheetEditor(p: EditorProps) {
           (p.production.teamMembers ?? []).length > 0 ? (
             <button
               onClick={importTeam}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#E24B4A] hover:text-[#C93D3C] transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors"
             >
               <UserPlus size={13} /> Import from team
             </button>

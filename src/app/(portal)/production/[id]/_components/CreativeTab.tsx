@@ -73,7 +73,7 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
           <h2 className="text-sm font-semibold text-gray-800">Creative & References</h2>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:text-[#c49843]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
           >
             <Plus size={13} /> Add asset
           </button>
@@ -88,7 +88,7 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
             </p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:text-[#c49843]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
             >
               <Plus size={12} /> Add your first asset
             </button>
@@ -127,7 +127,7 @@ function AssetCard({
             title={asset.title}
           />
         ) : (
-          <Icon size={36} className="text-[#D4A853]/60" />
+          <Icon size={36} className="text-[#ffd700]/60" />
         )}
         <button
           onClick={onRemove}
@@ -153,7 +153,7 @@ function AssetCard({
             href={asset.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-[#D4A853] hover:underline"
+            className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-[#ffd700] hover:underline"
           >
             Open <ExternalLink size={11} />
           </a>
@@ -190,7 +190,7 @@ function AddAssetForm({
       <select
         value={type}
         onChange={(e) => setType(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       >
         {(CREATIVE_TYPES ?? []).map((t) => (
           <option key={t.key} value={t.key}>
@@ -203,26 +203,26 @@ function AddAssetForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="url"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://…"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="text"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Notes"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#D4A853] text-white text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#c49843] transition-colors"
+          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#e6c200] transition-colors"
         >
           Add
         </button>

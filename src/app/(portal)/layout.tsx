@@ -7,7 +7,7 @@ export default function PortalLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#F8F9FA]">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#0a0a0a]">
       <PortalHeader />
       <div className="flex flex-1 overflow-hidden">
         <PortalSidebar />

@@ -225,7 +225,7 @@ export default function SystemPage() {
             {/* Engine */}
             <div className="flex flex-col items-center justify-center w-44 shrink-0">
               <div className="w-full bg-gray-900 rounded-xl p-4 text-center shadow-lg">
-                <div className="w-8 h-8 rounded-full bg-[#D4A853] flex items-center justify-center mx-auto mb-2">
+                <div className="w-8 h-8 rounded-full bg-[#ffd700] flex items-center justify-center mx-auto mb-2">
                   <Bot size={16} className="text-white" />
                 </div>
                 <p className="text-white text-xs font-bold tracking-wide">OutlanderOS</p>
@@ -275,7 +275,7 @@ export default function SystemPage() {
                   >
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded bg-amber-50 flex items-center justify-center shrink-0">
-                        <Icon size={13} className="text-[#D4A853]" />
+                        <Icon size={13} className="text-[#ffd700]" />
                       </div>
                       <span className="text-xs font-semibold text-gray-800">{out.label}</span>
                     </div>
@@ -344,13 +344,13 @@ export default function SystemPage() {
                 className="flex items-start gap-4 px-5 py-4 hover:bg-amber-50 transition-colors group"
               >
                 <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-amber-100 transition-colors">
-                  <Icon size={15} className="text-[#D4A853]" />
+                  <Icon size={15} className="text-[#ffd700]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900">{action.title}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{action.detail}</p>
                 </div>
-                <ChevronRight size={14} className="text-gray-300 group-hover:text-[#D4A853] mt-1.5 shrink-0 transition-colors" />
+                <ChevronRight size={14} className="text-gray-300 group-hover:text-[#ffd700] mt-1.5 shrink-0 transition-colors" />
               </a>
             )
           })}
@@ -385,7 +385,7 @@ export default function SystemPage() {
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
-              <FileCheck size={13} className="text-[#D4A853]" />
+              <FileCheck size={13} className="text-[#ffd700]" />
               <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Connected</span>
             </div>
             <p className="text-sm font-semibold text-gray-900">

@@ -169,7 +169,7 @@ export const PRODUCTION_STATUS_STYLES: Record<
     dot: "bg-purple-400",
     label: "Pre-Production",
   },
-  SHOOTING: { bg: "bg-amber-100", text: "text-amber-700", dot: "bg-[#D4A853]", label: "Shooting" },
+  SHOOTING: { bg: "bg-amber-100", text: "text-amber-700", dot: "bg-[#ffd700]", label: "Shooting" },
   POST_PRODUCTION: {
     bg: "bg-orange-100",
     text: "text-orange-700",

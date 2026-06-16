@@ -348,7 +348,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           <p className="text-lg font-semibold text-gray-800">Deal not found</p>
           <Link
             href="/commercial/pipeline"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#D4A853] hover:text-[#c49843]"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#ffd700] hover:text-[#e6c200]"
           >
             <ArrowLeft size={14} /> Back to pipeline
           </Link>
@@ -395,7 +395,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   ];
 
   return (
-    <div className="min-h-screen bg-[#F9F9F7]">
+    <div className="min-h-screen bg-[#141414]">
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Breadcrumb + saved indicator */}
         <div className="flex items-center justify-between mb-4">
@@ -496,7 +496,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 {printRelated && (
                   <Link
                     href="/print"
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-[#1D9E75] hover:bg-teal-100 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-[#00ff88] hover:bg-teal-100 transition-colors"
                   >
                     <Newspaper size={11} /> Print: View in magazine planning{" "}
                     <ArrowUpRight size={11} />
@@ -650,7 +650,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               onClick={() => setTab(t.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 tab === t.key
-                  ? "bg-[#D4A853]/10 text-[#9C7424]"
+                  ? "bg-[#ffd700]/10 text-[#e6c200]"
                   : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
               }`}
             >
@@ -793,7 +793,7 @@ function EditableTitle({ title, onSave }: { title: string; onSave: (t: string) =
             setEditing(false);
           }
         }}
-        className="w-full text-2xl font-semibold text-gray-900 tracking-tight bg-transparent border-b-2 border-[#D4A853] focus:outline-none"
+        className="w-full text-2xl font-semibold text-gray-900 tracking-tight bg-transparent border-b-2 border-[#ffd700] focus:outline-none"
       />
     );
   }
@@ -845,7 +845,7 @@ function EditableValue({
               setEditing(false);
             }
           }}
-          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 tabular-nums rounded-xl border-2 border-[#D4A853] focus:outline-none"
+          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 tabular-nums rounded-xl border-2 border-[#ffd700] focus:outline-none"
         />
       </div>
     );
@@ -905,7 +905,7 @@ function TypePills({
           <button
             onClick={() => setAdding((a) => !a)}
             title="Add type"
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-[#D4A853] hover:text-[#9C7424] transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-[#ffd700] hover:text-[#e6c200] transition-colors"
           >
             <Plus size={11} /> Add
           </button>
@@ -985,7 +985,7 @@ function OverviewTab({
             onBlur={saveDescription}
             rows={4}
             placeholder="What's the deal? Scope, deliverables, context — saved automatically when you click away…"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
           />
         </div>
 
@@ -1001,7 +1001,7 @@ function OverviewTab({
             onBlur={saveNotes}
             rows={6}
             placeholder="Internal notes — saved automatically when you click away…"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
           />
         </div>
       </div>
@@ -1011,12 +1011,12 @@ function OverviewTab({
         {deal.production && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <Film size={15} className="text-[#E24B4A]" />
+              <Film size={15} className="text-[#ff4444]" />
               Production
             </h3>
             <Link
               href={`/production/${deal.production.id}`}
-              className="text-sm font-semibold text-gray-900 hover:text-[#E24B4A] transition-colors"
+              className="text-sm font-semibold text-gray-900 hover:text-[#ff4444] transition-colors"
             >
               {deal.production.title}
             </Link>
@@ -1038,7 +1038,7 @@ function OverviewTab({
             </p>
             <Link
               href={`/production/${deal.production.id}`}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#E24B4A] hover:text-red-600 transition-colors"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ff4444] hover:text-red-600 transition-colors"
             >
               Open in Production <ArrowUpRight size={12} />
             </Link>
@@ -1111,7 +1111,7 @@ function OverviewTab({
           <h3 className="text-sm font-semibold text-gray-800 mb-3">Client</h3>
           <Link
             href={`/commercial/clients/${deal.client.id}`}
-            className="text-sm font-semibold text-gray-900 hover:text-[#D4A853] transition-colors"
+            className="text-sm font-semibold text-gray-900 hover:text-[#ffd700] transition-colors"
           >
             {deal.client.name}
           </Link>
@@ -1162,7 +1162,7 @@ function LaunchChecklist({
     >
       <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
         <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <Rocket size={15} className={ready ? "text-emerald-600" : "text-[#D4A853]"} />
+          <Rocket size={15} className={ready ? "text-emerald-600" : "text-[#ffd700]"} />
           Production launch checklist
         </h3>
         {ready ? (
@@ -1792,7 +1792,7 @@ function DeliverablesTab({
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-2xl">
       <h3 className="text-sm font-semibold text-gray-800 mb-1 flex items-center gap-2">
-        <PackageCheck size={15} className="text-[#D4A853]" />
+        <PackageCheck size={15} className="text-[#ffd700]" />
         Deliverables
       </h3>
       <p className="text-xs text-gray-400 mb-5">What&apos;s included in this deal.</p>
@@ -1855,18 +1855,18 @@ function DeliverablesTab({
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           placeholder="Add a deliverable (e.g. 3x Instagram Reels)"
-          className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+          className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
         />
         <input
           type="date"
           value={newDue}
           onChange={(e) => setNewDue(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]"
+          className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
         />
         <button
           type="submit"
           disabled={!newItem.trim() || adding}
-          className="flex items-center gap-1.5 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors disabled:opacity-50"
         >
           {adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           Add
@@ -1883,7 +1883,7 @@ function ActivityTab({ activities }: { activities: ActivityEntry[] }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden max-w-2xl">
       <div className="px-6 py-4 border-b border-gray-50">
         <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <ActivityIcon size={15} className="text-[#D4A853]" />
+          <ActivityIcon size={15} className="text-[#ffd700]" />
           Activity
         </h3>
       </div>
@@ -1893,7 +1893,7 @@ function ActivityTab({ activities }: { activities: ActivityEntry[] }) {
         <div className="divide-y divide-gray-50">
           {activities.map((a) => (
             <div key={a.id} className="flex items-start gap-3 px-6 py-3.5">
-              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[#D4A853] flex items-center justify-center shrink-0">
+              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[#ffd700] flex items-center justify-center shrink-0">
                 {ACTIVITY_ICONS[a.type] ?? <ActivityIcon size={13} />}
               </div>
               <div className="min-w-0">

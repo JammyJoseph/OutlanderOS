@@ -77,7 +77,7 @@ export function CallSheetDocument({ data }: { data: CallSheetViewData }) {
           <span className="text-sm font-extrabold tracking-[0.3em] uppercase">
             Outlander
           </span>
-          <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#E24B4A]">
+          <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#ff4444]">
             Call Sheet
           </span>
         </div>
@@ -90,7 +90,7 @@ export function CallSheetDocument({ data }: { data: CallSheetViewData }) {
             </p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-[#E24B4A]">{callTime || "—"}</div>
+            <div className="text-2xl font-bold text-[#ff4444]">{callTime || "—"}</div>
             <div className="text-xs text-gray-400 uppercase tracking-wider print:text-gray-600">
               Call Time
             </div>
@@ -147,7 +147,7 @@ export function CallSheetDocument({ data }: { data: CallSheetViewData }) {
                     i % 2 === 0 ? "bg-gray-50/50" : "bg-white"
                   }`}
                 >
-                  <span className="text-xs font-mono font-semibold text-[#E24B4A] w-12 flex-shrink-0 pt-0.5">
+                  <span className="text-xs font-mono font-semibold text-[#ff4444] w-12 flex-shrink-0 pt-0.5">
                     {item.time}
                   </span>
                   <div className="flex-1">

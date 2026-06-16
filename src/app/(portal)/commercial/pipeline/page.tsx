@@ -194,15 +194,15 @@ function PipelineBoard() {
   }
 
   const inputCls =
-    "rounded-xl border border-gray-200 bg-white text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853]";
+    "rounded-xl border border-gray-200 bg-white text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
 
   return (
-    <div className="min-h-screen bg-[#F9F9F7]">
+    <div className="min-h-screen bg-[#141414]">
       <div className="max-w-full px-6 py-8">
         {/* Header */}
         <div className="flex items-end justify-between mb-5 max-w-6xl mx-auto">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A853]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#ffd700]">
               OutlanderOS · Commercial
             </p>
             <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">Pipeline</h1>
@@ -215,12 +215,12 @@ function PipelineBoard() {
               href="/commercial"
               className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
             >
-              <LayoutDashboard size={16} className="text-[#D4A853]" />
+              <LayoutDashboard size={16} className="text-[#ffd700]" />
               Dashboard
             </Link>
             <button
               onClick={() => setShowNewDeal(true)}
-              className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors shadow-sm"
             >
               <Plus size={16} />
               New Deal
@@ -346,9 +346,9 @@ function PipelineBoard() {
                             isOver && dropBlocked
                               ? "border-gray-300 ring-2 ring-gray-300/40 opacity-60"
                               : isOver
-                                ? "border-[#D4A853] ring-2 ring-[#D4A853]/30 bg-amber-50/60"
+                                ? "border-[#ffd700] ring-2 ring-[#ffd700]/30 bg-amber-50/60"
                                 : isFocused
-                                  ? "border-[#D4A853]/50 ring-1 ring-[#D4A853]/20"
+                                  ? "border-[#ffd700]/50 ring-1 ring-[#ffd700]/20"
                                   : group.creative
                                     ? "border-purple-200/60"
                                     : "border-gray-200/60"
@@ -459,7 +459,7 @@ function TypeFilterDropdown({
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-1.5 rounded-xl border bg-white text-sm px-3 py-2 transition-colors ${
           selected.length
-            ? "border-[#D4A853] text-[#9C7424] font-medium"
+            ? "border-[#ffd700] text-[#e6c200] font-medium"
             : "border-gray-200 text-gray-700"
         }`}
       >
@@ -483,7 +483,7 @@ function TypeFilterDropdown({
                   type="checkbox"
                   checked={selected.includes(t)}
                   onChange={() => toggle(t)}
-                  className="h-3.5 w-3.5 rounded border-gray-300 accent-[#D4A853]"
+                  className="h-3.5 w-3.5 rounded border-gray-300 accent-[#ffd700]"
                 />
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${TYPE_STYLES[t].bg} ${TYPE_STYLES[t].text}`}

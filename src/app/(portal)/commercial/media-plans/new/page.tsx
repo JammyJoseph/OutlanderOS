@@ -137,7 +137,7 @@ export default function NewMediaPlanPage() {
     currencySymbol + n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const inputCls =
-    "w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:border-[#D4A853] focus:outline-none";
+    "w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:border-[#ffd700] focus:outline-none";
 
   return (
     <div className="flex h-full flex-col">
@@ -155,7 +155,7 @@ export default function NewMediaPlanPage() {
         <button
           onClick={handleSave}
           disabled={saving || !header.clientName.trim() || !header.campaignName.trim()}
-          className="rounded-lg bg-[#D4A853] px-4 py-2 text-sm font-medium text-white hover:bg-[#C49843] disabled:opacity-50 transition-colors"
+          className="rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200] disabled:opacity-50 transition-colors"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -330,7 +330,7 @@ export default function NewMediaPlanPage() {
                       <input
                         value={li.site}
                         onChange={(e) => updateLine(li._key, "site", e.target.value)}
-                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                         placeholder="e.g. Outlander IG"
                       />
                     </td>
@@ -339,7 +339,7 @@ export default function NewMediaPlanPage() {
                         type="date"
                         value={li.startDate}
                         onChange={(e) => updateLine(li._key, "startDate", e.target.value)}
-                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                       />
                     </td>
                     <td className="px-3 py-2 min-w-[110px]">
@@ -347,14 +347,14 @@ export default function NewMediaPlanPage() {
                         type="date"
                         value={li.endDate}
                         onChange={(e) => updateLine(li._key, "endDate", e.target.value)}
-                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                       />
                     </td>
                     <td className="px-3 py-2 min-w-[140px]">
                       <input
                         value={li.placement}
                         onChange={(e) => updateLine(li._key, "placement", e.target.value)}
-                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                         placeholder="Post type"
                       />
                     </td>
@@ -363,7 +363,7 @@ export default function NewMediaPlanPage() {
                         type="number"
                         value={li.rate || ""}
                         onChange={(e) => updateLine(li._key, "rate", parseFloat(e.target.value) || 0)}
-                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                         placeholder="0"
                         min={0}
                       />
@@ -374,7 +374,7 @@ export default function NewMediaPlanPage() {
                         onChange={(e) =>
                           updateLine(li._key, "rateType", e.target.value as LineItem["rateType"])
                         }
-                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                       >
                         <option>Flat Fee</option>
                         <option>CPM</option>
@@ -388,7 +388,7 @@ export default function NewMediaPlanPage() {
                         onChange={(e) =>
                           updateLine(li._key, "discount", parseFloat(e.target.value) || 0)
                         }
-                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                         placeholder="0"
                         min={0}
                         max={100}
@@ -401,7 +401,7 @@ export default function NewMediaPlanPage() {
                         onChange={(e) =>
                           updateLine(li._key, "units", parseInt(e.target.value) || 1)
                         }
-                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs text-right focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                         placeholder="1"
                         min={1}
                       />
@@ -418,7 +418,7 @@ export default function NewMediaPlanPage() {
                         onChange={(e) =>
                           updateLine(li._key, "projectedCreative", e.target.value)
                         }
-                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#D4A853] focus:outline-none"
+                        className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-xs focus:bg-white focus:border focus:border-[#ffd700] focus:outline-none"
                         placeholder="Creative brief"
                       />
                     </td>

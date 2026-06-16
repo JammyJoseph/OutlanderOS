@@ -109,7 +109,7 @@ export default function PLHistoryTab() {
   const lastPL = lastYear.data?.profitAndLoss
   const yoy = lastPL && lastPL.revenue > 0 && thisPL ? ((thisPL.revenue - lastPL.revenue) / lastPL.revenue) * 100 : null
 
-  const selectCls = 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:border-[#D4A853] focus:outline-none'
+  const selectCls = 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:border-[#ffd700] focus:outline-none'
 
   return (
     <div className="space-y-5">
@@ -127,7 +127,7 @@ export default function PLHistoryTab() {
                 setGranularity(g)
                 setPeriod(periodOptions(g)[0].value)
               }}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${granularity === g ? 'bg-[#D4A853] text-gray-900' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${granularity === g ? 'bg-[#ffd700] text-gray-900' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
             >
               {g}
             </button>

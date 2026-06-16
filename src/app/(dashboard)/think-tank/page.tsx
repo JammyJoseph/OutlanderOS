@@ -120,7 +120,7 @@ export default function ThinkTankPage() {
   );
 
   return (
-    <div className="min-h-full bg-[#F8F9FA] p-6">
+    <div className="min-h-full bg-[#0a0a0a] p-6">
       <div className="mx-auto max-w-4xl space-y-5">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -193,10 +193,10 @@ export default function ThinkTankPage() {
                         href={s.sourceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group inline-flex items-start gap-1.5 text-sm font-semibold text-gray-900 hover:text-[#9a7322]"
+                        className="group inline-flex items-start gap-1.5 text-sm font-semibold text-gray-900 hover:text-[#e6c200]"
                       >
                         {s.title}
-                        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-gray-300 group-hover:text-[#9a7322]" />
+                        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-gray-300 group-hover:text-[#e6c200]" />
                       </a>
                     ) : (
                       <span className="text-sm font-semibold text-gray-900">{s.title}</span>
@@ -272,7 +272,7 @@ export default function ThinkTankPage() {
                                 href={m.sourceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:text-[#9a7322]"
+                                className="hover:text-[#e6c200]"
                               >
                                 {m.title}
                               </a>

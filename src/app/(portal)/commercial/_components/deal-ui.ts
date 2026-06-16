@@ -1,7 +1,7 @@
 // Shared UI constants + types for the Commercial deal pipeline pages.
 
-export const GOLD = "#D4A853";
-export const GOLD_DARK = "#c49843";
+export const GOLD = "#ffd700";
+export const GOLD_DARK = "#e6c200";
 
 export type DealStage =
   | "LEAD"
@@ -88,7 +88,7 @@ export const STAGE_GROUPS: {
     dot: "bg-purple-400",
     creative: true,
   },
-  { key: "commercial", label: "Commercial", stages: ["CONTRACTED", "BUDGET_SET"], accent: "text-[#9C7424]", dot: "bg-[#D4A853]" },
+  { key: "commercial", label: "Commercial", stages: ["CONTRACTED", "BUDGET_SET"], accent: "text-[#9C7424]", dot: "bg-[#ffd700]" },
   { key: "execution", label: "Execution", stages: ["CLEARED_FOR_PRODUCTION", "LIVE"], accent: "text-emerald-600", dot: "bg-emerald-400" },
   { key: "complete", label: "Complete", stages: ["COMPLETED", "PAID"], accent: "text-blue-600", dot: "bg-blue-400" },
 ];
@@ -103,8 +103,8 @@ export const STAGE_STYLES: Record<
     label: "Negotiating",
     bg: "bg-amber-100",
     text: "text-amber-700",
-    dot: "bg-[#D4A853]",
-    bar: "bg-[#D4A853]",
+    dot: "bg-[#ffd700]",
+    bar: "bg-[#ffd700]",
   },
   BRIEF_RECEIVED: {
     label: "Brief Received",
@@ -138,8 +138,8 @@ export const STAGE_STYLES: Record<
     label: "Contracted",
     bg: "bg-amber-100",
     text: "text-amber-700",
-    dot: "bg-[#D4A853]",
-    bar: "bg-[#D4A853]",
+    dot: "bg-[#ffd700]",
+    bar: "bg-[#ffd700]",
   },
   BUDGET_SET: {
     label: "Budget Set",

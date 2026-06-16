@@ -49,16 +49,16 @@ export function PortalHeader() {
 
   return (
     <header
-      className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white/80 backdrop-blur-md px-5 sticky top-0 z-30"
+      className="flex h-14 shrink-0 items-center justify-between border-b border-[#2a2a2a] bg-[#141414]/80 backdrop-blur-md px-5 sticky top-0 z-30"
       style={{ boxShadow: `inset 0 -2px 0 0 ${accent}` }}
     >
       {/* Left: Logo + breadcrumb */}
       <div className="flex items-center gap-3">
         <Link
           href="/me"
-          className="text-sm font-bold text-gray-900 hover:text-[#D4A853] transition-colors"
+          className="text-sm font-bold text-gray-900 hover:text-[#ffd700] transition-colors"
         >
-          Outlander<span className="text-[#D4A853]">OS</span>
+          Outlander<span className="text-[#ffd700]">OS</span>
         </Link>
         <span className="text-gray-300">/</span>
         <Link
@@ -81,7 +81,7 @@ export function PortalHeader() {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-white border border-gray-200 shadow-lg z-50 overflow-hidden">
+            <div className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-[#1e1e1e] border border-[#2a2a2a] shadow-lg shadow-black/40 z-50 overflow-hidden">
               {/* Back to My Dashboard */}
               <button
                 onClick={() => { router.push("/me"); setDropdownOpen(false); }}

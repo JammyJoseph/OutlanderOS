@@ -26,7 +26,7 @@ export function HolidayCard({ holiday }: Props) {
         <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
           Holiday
         </span>
-        <Plane className="h-4 w-4 text-[#D4A853] opacity-70" />
+        <Plane className="h-4 w-4 text-[#ffd700] opacity-70" />
       </div>
       <div className="mt-1.5 text-xl font-bold text-gray-900">
         {holiday.remaining}

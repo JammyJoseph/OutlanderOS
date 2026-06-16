@@ -98,12 +98,12 @@ export default function CommercialDashboard() {
   const totalDeals = stats?.stages.reduce((sum, s) => sum + s.count, 0) ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#F9F9F7]">
+    <div className="min-h-screen bg-[#141414]">
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Page header */}
         <div className="flex items-end justify-between mb-7">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A853]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#ffd700]">
               OutlanderOS · Commercial
             </p>
             <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">
@@ -118,12 +118,12 @@ export default function CommercialDashboard() {
               href="/commercial/pipeline"
               className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
             >
-              <Kanban size={16} className="text-[#D4A853]" />
+              <Kanban size={16} className="text-[#ffd700]" />
               Open Pipeline
             </Link>
             <button
               onClick={() => setShowNewDeal(true)}
-              className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors shadow-sm"
             >
               <Plus size={16} />
               New Deal
@@ -230,7 +230,7 @@ function HotDealBanner({
         </div>
         <button
           onClick={onCreate}
-          className="text-xs font-medium text-[#D4A853] hover:text-[#c49843] flex items-center gap-1"
+          className="text-xs font-medium text-[#ffd700] hover:text-[#e6c200] flex items-center gap-1"
         >
           <Plus size={13} /> New deal
         </button>
@@ -253,7 +253,7 @@ function HotDealBanner({
 
   return (
     <Link href={`/commercial/deals/${hot.id}`} className="block group">
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#D4A853] via-[#C9982F] to-[#9C7424] text-white rounded-2xl shadow-lg p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#ffd700] via-[#e6c200] to-[#e6c200] text-white rounded-2xl shadow-lg p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
         <div className="absolute right-0 top-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative flex items-start justify-between gap-6">
           <div className="flex-1 min-w-0">
@@ -316,7 +316,7 @@ function StatCard({
   subtitle?: string;
 }) {
   const TONE: Record<typeof tone, { bg: string; fg: string }> = {
-    amber: { bg: "bg-amber-50", fg: "text-[#D4A853]" },
+    amber: { bg: "bg-amber-50", fg: "text-[#ffd700]" },
     emerald: { bg: "bg-emerald-50", fg: "text-emerald-600" },
     blue: { bg: "bg-blue-50", fg: "text-blue-600" },
     green: { bg: "bg-green-50", fg: "text-green-600" },
@@ -354,12 +354,12 @@ function PipelineSummary({
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <Kanban size={15} className="text-[#D4A853]" />
+          <Kanban size={15} className="text-[#ffd700]" />
           Pipeline Summary
         </h2>
         <Link
           href="/commercial/pipeline"
-          className="text-xs font-medium text-[#D4A853] hover:text-[#c49843] flex items-center gap-1"
+          className="text-xs font-medium text-[#ffd700] hover:text-[#e6c200] flex items-center gap-1"
         >
           Open board <ArrowUpRight size={12} />
         </Link>
@@ -418,7 +418,7 @@ function RecentActivity({ items }: { items: ActivityItem[] }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50">
         <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <ActivityIcon size={15} className="text-[#D4A853]" />
+          <ActivityIcon size={15} className="text-[#ffd700]" />
           Recent Activity
         </h2>
       </div>
@@ -434,7 +434,7 @@ function RecentActivity({ items }: { items: ActivityItem[] }) {
               href={`/commercial/deals/${item.campaign.id}`}
               className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50/60 transition-colors group"
             >
-              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[#D4A853] flex items-center justify-center shrink-0">
+              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[#ffd700] flex items-center justify-center shrink-0">
                 {ACTIVITY_ICONS[item.type] ?? <ActivityIcon size={13} />}
               </div>
               <div className="min-w-0">

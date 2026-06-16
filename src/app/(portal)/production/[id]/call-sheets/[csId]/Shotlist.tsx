@@ -48,7 +48,7 @@ export function ShotlistEditor({
                   setShotlist(next);
                 }}
                 title="Duplicate shot"
-                className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-[#E24B4A] transition-colors"
+                className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-[#ff4444] transition-colors"
               >
                 <Copy size={13} />
               </button>
@@ -130,7 +130,7 @@ export function ShotlistDoc({ shotlist }: { shotlist: Shot[] }) {
             i % 2 === 0 ? "bg-white" : "bg-gray-50/50"
           }`}
         >
-          <span className="font-bold text-[#E24B4A]">{i + 1}</span>
+          <span className="font-bold text-[#ff4444]">{i + 1}</span>
           <span className="text-gray-800 font-medium pr-2">{shot.description || "—"}</span>
           <span className="text-gray-600 text-xs pr-2">{shot.setup}</span>
           <span className="text-gray-600 text-xs pr-2">{shot.talent}</span>

@@ -205,7 +205,7 @@ export default function ProjectDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F9F9F7] flex items-center justify-center">
+      <div className="min-h-screen bg-[#141414] flex items-center justify-center">
         <Loader2 size={24} className="animate-spin text-gray-400" />
       </div>
     );
@@ -213,12 +213,12 @@ export default function ProjectDetail() {
 
   if (!production) {
     return (
-      <div className="min-h-screen bg-[#F9F9F7] flex items-center justify-center">
+      <div className="min-h-screen bg-[#141414] flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Project not found.</p>
           <Link
             href="/production"
-            className="text-[#D4A853] text-sm font-medium hover:underline"
+            className="text-[#ffd700] text-sm font-medium hover:underline"
           >
             Back to Productions
           </Link>
@@ -237,7 +237,7 @@ export default function ProjectDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F9F7]">
+    <div className="min-h-screen bg-[#141414]">
       <div className="max-w-6xl mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-5">
           <Link
@@ -253,7 +253,7 @@ export default function ProjectDetail() {
               This project is managed from Commercial
               <Link
                 href={`/commercial/deals/${production.campaignId}`}
-                className="inline-flex items-center gap-0.5 font-medium text-[#D4A853] hover:text-[#c49843]"
+                className="inline-flex items-center gap-0.5 font-medium text-[#ffd700] hover:text-[#e6c200]"
               >
                 View deal <ArrowUpRight size={11} />
               </Link>

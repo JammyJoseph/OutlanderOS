@@ -75,8 +75,8 @@ function sortTasks(tasks: PanelTask[]): PanelTask[] {
 
 // Project context badge — Commercial gold, Production red, Print green.
 function badgeFor(task: PanelTask): { label: string; bg: string; text: string } | null {
-  if (task.production) return { label: task.production.title, bg: "#DC4B4B1A", text: "#a83232" };
-  if (task.project) return { label: task.project.title, bg: "#D4A8531A", text: "#9a7322" };
+  if (task.production) return { label: task.production.title, bg: "#ff44441A", text: "#ff4444" };
+  if (task.project) return { label: task.project.title, bg: "#ffd7001A", text: "#e6c200" };
   if (task.portal === "print") return { label: "Print", bg: "#22A06B1A", text: "#15803d" };
   return null;
 }
@@ -184,8 +184,8 @@ function TaskRow({
         aria-label={done ? "Mark as to do" : "Mark as done"}
         className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
           done || fading
-            ? "border-[#D4A853] bg-[#D4A853] text-white"
-            : "border-gray-300 bg-white hover:border-[#D4A853]"
+            ? "border-[#ffd700] bg-[#ffd700] text-black"
+            : "border-gray-300 bg-white hover:border-[#ffd700]"
         }`}
       >
         {(done || fading) && <Check className="h-3 w-3" strokeWidth={3} />}
@@ -448,16 +448,16 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
   return (
     <section className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
       {/* ACTION — amber/gold left border */}
-      <div className="border-l-[3px] border-[#D4A853]">
+      <div className="border-l-[3px] border-[#ffd700]">
         <div className="flex items-center gap-2 px-4 pb-1 pt-3">
           <h2 className="text-sm font-bold tracking-wide text-gray-900">ACTION</h2>
-          <span className="rounded-full bg-[#D4A853]/10 px-2 py-0.5 text-[11px] font-bold text-[#9a7322]">
+          <span className="rounded-full bg-[#ffd700]/10 px-2 py-0.5 text-[11px] font-bold text-[#e6c200]">
             {actions.length}
           </span>
         </div>
         <QuickAdd
           placeholder="Add an action… (Enter to save)"
-          accent="#D4A853"
+          accent="#ffd700"
           onAdd={(title, due) => addTask("ACTION", title, due)}
         />
         {actions.length === 0 ? (
@@ -472,7 +472,7 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
       <div className="h-px bg-gray-100" />
 
       {/* TRACK — blue left border */}
-      <div className="border-l-[3px] border-[#3B82F6]">
+      <div className="border-l-[3px] border-[#4d9fff]">
         <div className="flex items-center gap-2 px-4 pb-1 pt-3">
           <h2 className="text-sm font-bold tracking-wide text-gray-900">TRACK</h2>
           <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">
@@ -481,7 +481,7 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
         </div>
         <QuickAdd
           placeholder="Track something you're waiting on…"
-          accent="#3B82F6"
+          accent="#4d9fff"
           onAdd={(title, due) => addTask("TRACK", title, due)}
         />
         {tracks.length === 0 ? (

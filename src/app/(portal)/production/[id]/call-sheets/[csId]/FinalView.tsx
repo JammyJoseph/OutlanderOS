@@ -30,7 +30,7 @@ export function FinalView({
   onSaveDistributions: (d: DistributionEntry[]) => Promise<void>;
 }) {
   return (
-    <div className="min-h-screen bg-[#F9F9F7] print:bg-white" data-callsheet-print>
+    <div className="min-h-screen bg-[#141414] print:bg-white" data-callsheet-print>
       <div className="max-w-4xl mx-auto px-6 py-10 print:px-0 print:py-0 print:max-w-none">
         <div className="flex items-center justify-between mb-6 print:hidden">
           <Link
@@ -57,7 +57,7 @@ export function FinalView({
             </button>
             <button
               onClick={onCopy}
-              className="flex items-center gap-1.5 bg-[#E24B4A] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#C93D3C] transition-colors shadow-sm"
+              className="flex items-center gap-1.5 bg-[#ff4444] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#ff4444] transition-colors shadow-sm"
             >
               {copied ? <Check size={13} /> : <Link2 size={13} />}
               {copied ? "Copied!" : "Copy share link"}
@@ -157,7 +157,7 @@ function DistributionPanel({
     <div className="mt-6 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <Users size={15} className="text-[#E24B4A]" />
+          <Users size={15} className="text-[#ff4444]" />
           <h3 className="text-sm font-bold text-gray-800">Distribution</h3>
           {entries.length > 0 && (
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">

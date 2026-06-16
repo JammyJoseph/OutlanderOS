@@ -28,7 +28,7 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5">
-          <Film size={22} className="text-[#D4A853]" />
+          <Film size={22} className="text-[#ffd700]" />
         </div>
         <div className="flex-1 min-w-0">
           <input
@@ -79,7 +79,7 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
                           <span className={`w-2 h-2 rounded-full ${st.dot}`} />
                           {st.label}
                           {s === production.status && (
-                            <Check size={13} className="ml-auto text-[#D4A853]" />
+                            <Check size={13} className="ml-auto text-[#ffd700]" />
                           )}
                         </button>
                       );
@@ -98,7 +98,7 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
                 href={production.figmaUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:underline"
               >
                 Figma <ExternalLink size={11} />
               </a>

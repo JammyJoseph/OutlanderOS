@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 // ---- Team data ----
 
 const TEAM = [
-  { name: 'Joe Silver', role: 'Operations & Admin', email: 'silver@outlandermag.com', color: 'bg-[#D4A853]', initials: 'JS' },
+  { name: 'Joe Silver', role: 'Operations & Admin', email: 'silver@outlandermag.com', color: 'bg-[#ffd700]', initials: 'JS' },
   { name: 'Quinn Titsworth', role: 'CEO', email: 'q@outlandermag.com', color: 'bg-blue-500', initials: 'QT' },
   { name: 'Shreeya Patel', role: 'Sales & Partnerships', email: 'shreeya@outlandermag.com', color: 'bg-emerald-500', initials: 'SP' },
   { name: 'Callum', role: 'Content & Social', email: '', color: 'bg-purple-500', initials: 'CA' },
@@ -55,7 +55,7 @@ export default function TeamPage() {
           <h1 className="text-xl font-semibold text-gray-900">Team</h1>
           <p className="text-sm text-gray-500">{TEAM.length} members</p>
         </div>
-        <button className="flex items-center gap-1.5 rounded-lg bg-[#D4A853] px-3 py-1.5 text-xs font-medium text-black hover:bg-[#c49a47] transition-colors">
+        <button className="flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-medium text-black hover:bg-[#e6c200] transition-colors">
           <Plus className="h-3.5 w-3.5" />
           Add Member
         </button>
@@ -92,7 +92,7 @@ export default function TeamPage() {
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-[#D4A853]" />
+            <Calendar className="h-4 w-4 text-[#ffd700]" />
             <h2 className="text-sm font-semibold text-gray-800">Holiday Calendar</h2>
           </div>
           <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ export default function TeamPage() {
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-[#D4A853]" />
+            <Users className="h-4 w-4 text-[#ffd700]" />
             <h2 className="text-sm font-semibold text-gray-800">Holiday Allowance 2026</h2>
           </div>
           <button
@@ -168,7 +168,7 @@ export default function TeamPage() {
         </div>
 
         {holidayMsg && (
-          <div className="border-b border-gray-200 bg-[#D4A853]/10 px-4 py-2 text-xs text-[#D4A853]">
+          <div className="border-b border-gray-200 bg-[#ffd700]/10 px-4 py-2 text-xs text-[#ffd700]">
             {holidayMsg}
           </div>
         )}

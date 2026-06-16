@@ -31,7 +31,7 @@ function todayLabel(): string {
 
 function PageSkeleton() {
   return (
-    <div className="min-h-full bg-[#F8F9FA] p-6">
+    <div className="min-h-full bg-[#0a0a0a] p-6">
       <div className="mx-auto max-w-6xl space-y-4">
         <div className="h-8 w-72 animate-pulse rounded-lg bg-gray-100" />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -69,11 +69,11 @@ export default function MePage() {
 
   if (error && !data) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#F8F9FA]">
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#0a0a0a]">
         <p className="text-sm text-gray-500">{error}</p>
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 rounded-xl bg-[#D4A853] px-4 py-2 text-sm font-semibold text-white"
+          className="flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black"
         >
           <RefreshCw className="h-4 w-4" /> Retry
         </button>
@@ -86,7 +86,7 @@ export default function MePage() {
   const firstName = data.user.name.split(" ")[0] || data.user.name;
 
   return (
-    <div className="min-h-full bg-[#F8F9FA] p-6">
+    <div className="min-h-full bg-[#0a0a0a] p-6">
       <div className="mx-auto max-w-6xl space-y-4">
         {/* Top strip — greeting + date */}
         <div className="flex flex-wrap items-baseline justify-between gap-2">

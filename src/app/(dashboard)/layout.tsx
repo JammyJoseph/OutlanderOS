@@ -15,12 +15,12 @@ export default function DashboardLayout({
   const hideHeader = pathname?.startsWith("/me");
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#F8F9FA]">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#0a0a0a]">
       {!hideHeader && (
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white/80 px-6 backdrop-blur-md">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-[#2a2a2a] bg-[#141414]/80 px-6 backdrop-blur-md">
           <Link href="/me" className="flex items-center gap-2">
             <span className="text-lg font-bold tracking-tight text-gray-900">
-              Outlander<span className="text-[#D4A853]">OS</span>
+              Outlander<span className="text-[#ffd700]">OS</span>
             </span>
           </Link>
           <div className="flex items-center gap-1">

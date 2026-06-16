@@ -171,7 +171,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       {/* Connected Accounts */}
       <section>
         <div className="mb-3 flex items-center gap-2">
-          <Link2 className="h-4 w-4 text-[#D4A853]" />
+          <Link2 className="h-4 w-4 text-[#ffd700]" />
           <h2 className="text-sm font-semibold text-gray-800">Connected Accounts</h2>
         </div>
         <div className="space-y-3">
@@ -221,7 +221,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                       onClick={() =>
                         router.push(`/api/google/connect?label=${account.id}`)
                       }
-                      className="bg-[#D4A853] text-zinc-900 hover:bg-[#C49843]"
+                      className="bg-[#ffd700] text-zinc-900 hover:bg-[#e6c200]"
                     >
                       Connect
                     </Button>
@@ -236,7 +236,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       {/* Google Sheets */}
       <section>
         <div className="mb-3 flex items-center gap-2">
-          <TableProperties className="h-4 w-4 text-[#D4A853]" />
+          <TableProperties className="h-4 w-4 text-[#ffd700]" />
           <h2 className="text-sm font-semibold text-gray-800">Google Sheets</h2>
         </div>
 
@@ -325,7 +325,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             </Button>
             <Button
               size="sm"
-              className="bg-[#D4A853] text-black hover:bg-[#c49a47] disabled:opacity-40"
+              className="bg-[#ffd700] text-black hover:bg-[#e6c200] disabled:opacity-40"
               onClick={handleAddSheet}
               disabled={testStatus !== "ok"}
             >
@@ -338,7 +338,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       {/* Integrations */}
       <section>
         <div className="mb-3 flex items-center gap-2">
-          <Plug className="h-4 w-4 text-[#D4A853]" />
+          <Plug className="h-4 w-4 text-[#ffd700]" />
           <h2 className="text-sm font-semibold text-gray-800">Integrations</h2>
         </div>
         <div className="space-y-2">
@@ -377,7 +377,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                 <Button
                   size="sm"
                   onClick={() => router.push('/api/xero/connect')}
-                  className="bg-[#D4A853] text-zinc-900 hover:bg-[#C49843]"
+                  className="bg-[#ffd700] text-zinc-900 hover:bg-[#e6c200]"
                 >
                   <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                   Connect

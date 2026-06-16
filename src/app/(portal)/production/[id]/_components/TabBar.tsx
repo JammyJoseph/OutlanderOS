@@ -40,7 +40,7 @@ const TABS: { key: TabKey; label: string; Icon: React.ComponentType<{ size?: num
 
 export default function TabBar({ active, onSelect, counts }: Props) {
   return (
-    <div className="sticky top-0 z-30 bg-[#F9F9F7]/90 backdrop-blur supports-[backdrop-filter]:bg-[#F9F9F7]/70 -mx-6 px-6 border-b border-gray-100">
+    <div className="sticky top-0 z-30 bg-[#141414]/90 backdrop-blur supports-[backdrop-filter]:bg-[#141414]/70 -mx-6 px-6 border-b border-gray-100">
       <div className="flex gap-1 overflow-x-auto scrollbar-none py-2">
         {(TABS ?? []).map(({ key, label, Icon }) => {
           const isActive = active === key;
@@ -55,12 +55,12 @@ export default function TabBar({ active, onSelect, counts }: Props) {
                   : "text-gray-500 hover:text-gray-800 hover:bg-white/60"
               }`}
             >
-              <Icon size={15} className={isActive ? "text-[#D4A853]" : "text-gray-400"} />
+              <Icon size={15} className={isActive ? "text-[#ffd700]" : "text-gray-400"} />
               {label}
               {count != null && count > 0 && (
                 <span
                   className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                    isActive ? "bg-amber-50 text-[#D4A853]" : "bg-gray-100 text-gray-500"
+                    isActive ? "bg-amber-50 text-[#ffd700]" : "bg-gray-100 text-gray-500"
                   }`}
                 >
                   {count}

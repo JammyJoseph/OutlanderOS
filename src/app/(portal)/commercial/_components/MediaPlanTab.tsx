@@ -27,7 +27,7 @@ import {
 } from "@/lib/media-plan";
 import { type RateCardEntry, CUSTOM_PLACEMENT, RATE_TYPES, MEASUREMENTS } from "@/lib/rate-card";
 
-const GOLD = "#D4A853";
+const GOLD = "#ffd700";
 
 function gbp(n: number): string {
   return `£${(n || 0).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -328,7 +328,7 @@ export default function MediaPlanTab({
   const placementOptions = [...rateCard.map((r) => r.name), CUSTOM_PLACEMENT];
 
   const cell =
-    "px-2 py-1.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853] disabled:bg-transparent disabled:text-gray-600 rounded-md bg-white";
+    "px-2 py-1.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] disabled:bg-transparent disabled:text-gray-600 rounded-md bg-white";
   const autoCell = "px-2 py-1.5 text-sm bg-gray-50 text-gray-700 tabular-nums rounded-md border border-gray-100";
 
   return (
@@ -404,7 +404,7 @@ export default function MediaPlanTab({
             {editable && (
               <button
                 onClick={addPhase}
-                className="inline-flex items-center gap-1.5 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors"
+                className="inline-flex items-center gap-1.5 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors"
               >
                 <Plus size={15} /> Add Phase
               </button>
@@ -478,7 +478,7 @@ export default function MediaPlanTab({
           <div className="px-5 py-3.5 border-t border-gray-100">
             <button
               onClick={addPhase}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#D4A853] hover:text-[#c49843] transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#ffd700] hover:text-[#e6c200] transition-colors"
             >
               <Plus size={15} /> Add Phase
             </button>
@@ -488,10 +488,10 @@ export default function MediaPlanTab({
 
       {/* Prominent media plan total */}
       <div className="rounded-2xl px-5 py-4 bg-gradient-to-r from-amber-50 to-amber-50/30 border border-amber-200 flex items-center justify-between flex-wrap gap-2">
-        <p className="text-sm font-semibold text-[#9C7424]">
+        <p className="text-sm font-semibold text-[#e6c200]">
           Media Plan Total: <span className="text-lg tabular-nums">{gbp0(total)}</span>
         </p>
-        <p className="text-xs text-[#9C7424]/80">This is the deal budget.</p>
+        <p className="text-xs text-[#e6c200]/80">This is the deal budget.</p>
       </div>
 
       {/* ── Deal Economics ────────────────────────────────────────────────── */}
@@ -542,7 +542,7 @@ export default function MediaPlanTab({
             onClick={() => (locked ? save() : setShowLockConfirm(true))}
             disabled={saving || lockBusy || !balanced}
             title={balanced ? "Lock the media plan" : "Margin + allocations must equal the media plan total"}
-            className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving || lockBusy ? <Loader2 size={14} className="animate-spin" /> : <LockIcon size={14} />}
             {locked ? "Update & Re-lock" : "Lock Media Plan"}
@@ -640,7 +640,7 @@ function PhaseBlock({
               value={phase.name}
               onChange={(e) => onRename(e.target.value)}
               disabled={!editable}
-              className="bg-transparent text-sm font-bold text-gray-900 px-1 py-0.5 rounded focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 disabled:text-gray-800 w-48"
+              className="bg-transparent text-sm font-bold text-gray-900 px-1 py-0.5 rounded focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 disabled:text-gray-800 w-48"
             />
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold text-gray-500 tabular-nums">
@@ -828,7 +828,7 @@ function PhaseBlock({
           <td colSpan={15} className="px-1 py-1.5">
             <button
               onClick={onAddLine}
-              className="inline-flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:text-[#c49843] transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200] transition-colors"
             >
               <Plus size={12} /> Add Line
             </button>
@@ -903,7 +903,7 @@ function DealEconomics({
   productionCount: number;
 }) {
   const inputCls =
-    "px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A853]/30 focus:border-[#D4A853] disabled:bg-gray-50 disabled:text-gray-500";
+    "px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] disabled:bg-gray-50 disabled:text-gray-500";
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-3xl">
@@ -994,7 +994,7 @@ function DealEconomics({
               title={a.isProductionBudget ? "This is the production budget" : "Mark as the production budget"}
               className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1.5 rounded-lg border transition-colors disabled:cursor-not-allowed ${
                 a.isProductionBudget
-                  ? "bg-red-50 border-red-200 text-[#E24B4A]"
+                  ? "bg-red-50 border-red-200 text-[#ff4444]"
                   : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
               }`}
             >
@@ -1015,7 +1015,7 @@ function DealEconomics({
       {editable && (
         <button
           onClick={() => setAllocations((prev) => [...prev, { name: "", amount: "", isProductionBudget: false }])}
-          className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#D4A853] hover:text-[#c49843] transition-colors"
+          className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:text-[#e6c200] transition-colors"
         >
           <Plus size={13} /> Add allocation
         </button>
@@ -1110,7 +1110,7 @@ function ConfirmModal({
               onClick={onConfirm}
               disabled={busy}
               className={`flex-1 flex items-center justify-center gap-2 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${
-                confirmTone === "dark" ? "bg-gray-900 hover:bg-gray-800" : "bg-[#D4A853] hover:bg-[#c49843]"
+                confirmTone === "dark" ? "bg-gray-900 hover:bg-gray-800" : "bg-[#ffd700] hover:bg-[#e6c200]"
               }`}
             >
               {busy && <Loader2 size={15} className="animate-spin" />}
@@ -1140,7 +1140,7 @@ function DeleteRowConfirm({ label, onConfirm, onClose }: { label: string; onConf
                 </button>
                 <button
                   onClick={onConfirm}
-                  className="flex-1 bg-[#E24B4A] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#d13e3d] transition-colors"
+                  className="flex-1 bg-[#ff4444] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ff4444] transition-colors"
                 >
                   Delete
                 </button>

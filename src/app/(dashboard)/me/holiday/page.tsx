@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Calendar, Plus, X, Check, AlertTriangle, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 
 const INPUT_CLS =
-  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#D4A853] focus:ring-2 focus:ring-amber-200/60'
+  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
 
 type HolidayStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 type HolidayType = 'ANNUAL' | 'SICK' | 'PERSONAL' | 'OTHER'
@@ -172,7 +172,7 @@ export default function HolidayPage() {
             </div>
             <button
               onClick={() => setShowForm((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#D4A853] px-3.5 py-2 text-sm font-semibold text-black hover:brightness-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-3.5 py-2 text-sm font-semibold text-black hover:brightness-95"
             >
               <Plus className="h-4 w-4" /> Request time off
             </button>
@@ -233,7 +233,7 @@ export default function HolidayPage() {
               <div className="mt-4 flex justify-end gap-2">
                 <button onClick={() => setShowForm(false)} className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
                 <button onClick={submitRequest} disabled={submitting}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#D4A853] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
                   <Check className="h-4 w-4" /> {submitting ? 'Submitting…' : 'Submit'}
                 </button>
               </div>
@@ -352,7 +352,7 @@ function BalanceTile({ label, value, suffix, tone }: { label: string; value: str
   const toneClass =
     tone === 'green' ? 'text-emerald-600' :
     tone === 'amber' ? 'text-amber-600' :
-    tone === 'primary' ? 'text-[#D4A853]' :
+    tone === 'primary' ? 'text-[#ffd700]' :
     'text-gray-900'
   return (
     <div className="rounded-xl border border-gray-100 bg-gray-50/40 p-4">
@@ -403,11 +403,11 @@ function prettyType(t: HolidayType): string {
 
 // Per-person colour palette for the team calendar rows.
 const TEAM_COLORS = [
-  { bar: 'bg-[#D4A853]', text: 'text-[#9a7322]', dot: 'bg-[#D4A853]' },
-  { bar: 'bg-[#378ADD]', text: 'text-[#1d5fa8]', dot: 'bg-[#378ADD]' },
-  { bar: 'bg-[#1D9E75]', text: 'text-[#15745a]', dot: 'bg-[#1D9E75]' },
-  { bar: 'bg-[#E24B4A]', text: 'text-[#a83232]', dot: 'bg-[#E24B4A]' },
-  { bar: 'bg-[#7B5BD6]', text: 'text-[#5b3fb0]', dot: 'bg-[#7B5BD6]' },
+  { bar: 'bg-[#ffd700]', text: 'text-[#e6c200]', dot: 'bg-[#ffd700]' },
+  { bar: 'bg-[#4d9fff]', text: 'text-[#4d9fff]', dot: 'bg-[#4d9fff]' },
+  { bar: 'bg-[#00ff88]', text: 'text-[#00ff88]', dot: 'bg-[#00ff88]' },
+  { bar: 'bg-[#ff4444]', text: 'text-[#ff4444]', dot: 'bg-[#ff4444]' },
+  { bar: 'bg-[#c77dff]', text: 'text-[#c77dff]', dot: 'bg-[#c77dff]' },
   { bar: 'bg-pink-400', text: 'text-pink-700', dot: 'bg-pink-400' },
 ]
 
@@ -510,7 +510,7 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
                     <th
                       key={i}
                       className={`min-w-5 pb-1 text-center text-[9px] font-medium ${
-                        isToday ? 'text-[#D4A853] font-bold' : isWeekend ? 'text-gray-300' : 'text-gray-400'
+                        isToday ? 'text-[#ffd700] font-bold' : isWeekend ? 'text-gray-300' : 'text-gray-400'
                       }`}
                     >
                       {i + 1}
@@ -592,7 +592,7 @@ function MiniCalendar({ dateMap }: { dateMap: Map<string, HolidayStatus> }) {
           if (status === 'APPROVED') cls += 'bg-emerald-100 text-emerald-800'
           else if (status === 'PENDING') cls += 'bg-amber-100 text-amber-800'
           else cls += 'text-gray-600 hover:bg-gray-100'
-          if (isToday) cls += ' ring-2 ring-[#D4A853]'
+          if (isToday) cls += ' ring-2 ring-[#ffd700]'
           return <div key={i} className={cls}>{c.day}</div>
         })}
       </div>

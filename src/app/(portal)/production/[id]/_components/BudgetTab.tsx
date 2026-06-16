@@ -250,7 +250,7 @@ export default function BudgetTab({
             {nextAction && (
               <button
                 onClick={() => setConfirmStatus(nextAction.next)}
-                className="flex items-center gap-2 bg-[#D4A853] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors shadow-sm"
               >
                 <Lock size={13} />
                 {nextAction.label}
@@ -297,7 +297,7 @@ export default function BudgetTab({
         >
           <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
             {locked ? "Production Budget" : "Total Campaign Budget"}
-            {locked && <Lock size={11} className="text-[#D4A853]" />}
+            {locked && <Lock size={11} className="text-[#ffd700]" />}
           </p>
           {locked ? (
             <>
@@ -309,7 +309,7 @@ export default function BudgetTab({
                   From deal:{" "}
                   <Link
                     href={`/commercial/deals/${production.campaignId}`}
-                    className="font-medium text-[#D4A853] hover:text-[#c49843] inline-flex items-center gap-0.5"
+                    className="font-medium text-[#ffd700] hover:text-[#e6c200] inline-flex items-center gap-0.5"
                   >
                     <Briefcase size={10} /> {deal.title} <ArrowUpRight size={10} />
                   </Link>
@@ -338,7 +338,7 @@ export default function BudgetTab({
                   <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
                     <div
                       className={`h-full rounded-full transition-all ${
-                        overSpent ? "bg-red-500" : "bg-[#D4A853]"
+                        overSpent ? "bg-red-500" : "bg-[#ffd700]"
                       }`}
                       style={{ width: `${spentPct}%` }}
                     />
@@ -477,7 +477,7 @@ export default function BudgetTab({
                   {canEditBudgeted && (
                     <button
                       onClick={() => addLine(cat.key)}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:text-[#c49843]"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
                     >
                       <Plus size={12} /> Add
                     </button>
@@ -551,7 +551,7 @@ export default function BudgetTab({
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div className="border-b border-gray-50 px-6 py-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Lock size={16} className="text-[#D4A853]" /> {nextAction.label}
+                <Lock size={16} className="text-[#ffd700]" /> {nextAction.label}
               </h2>
               <button
                 onClick={() => setConfirmStatus(null)}
@@ -587,7 +587,7 @@ export default function BudgetTab({
                 <button
                   onClick={() => setBudgetStatus(confirmStatus)}
                   disabled={statusBusy}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#D4A853] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#c49843] transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors disabled:opacity-50"
                 >
                   {statusBusy ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
                   Confirm

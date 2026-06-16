@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Check, AlertTriangle, Loader2, Mail } from 'lucide-react'
 
 const INPUT_CLS =
-  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#D4A853] focus:ring-2 focus:ring-amber-200/60'
+  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
 
 // Accepts either a raw authorization code or the full callback URL the user
 // pasted from their browser, and returns just the code.
@@ -105,7 +105,7 @@ export function GoogleAccountSection() {
   return (
     <section className="mb-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-[#D4A853]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-[#ffd700]">
           <Mail className="h-4 w-4" />
         </div>
         <div>
@@ -154,7 +154,7 @@ export function GoogleAccountSection() {
             <button
               onClick={startConnect}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#D4A853] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Connect Google Account

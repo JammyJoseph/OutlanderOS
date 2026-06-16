@@ -62,7 +62,7 @@ export default function MediaPlansListPage() {
         </div>
         <Link
           href="/commercial/media-plans/new"
-          className="flex items-center gap-2 rounded-lg bg-[#D4A853] px-4 py-2 text-sm font-medium text-white hover:bg-[#C49843] transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200] transition-colors"
         >
           <Plus className="h-4 w-4" />
           New Media Plan
@@ -85,7 +85,7 @@ export default function MediaPlansListPage() {
             </p>
             <Link
               href="/commercial/media-plans/new"
-              className="mt-4 rounded-lg bg-[#D4A853] px-4 py-2 text-sm font-medium text-white hover:bg-[#C49843] transition-colors"
+              className="mt-4 rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200] transition-colors"
             >
               New Media Plan
             </Link>

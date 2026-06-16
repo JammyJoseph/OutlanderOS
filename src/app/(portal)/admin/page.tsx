@@ -12,7 +12,7 @@ export default function AdminPage() {
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center gap-3">
-        <Shield className="h-6 w-6 text-[#D4A853]" />
+        <Shield className="h-6 w-6 text-[#ffd700]" />
         <div>
           <h1 className="text-xl font-bold text-gray-900">Admin</h1>
           <p className="text-sm text-gray-500">Team, system, and settings</p>
@@ -25,7 +25,7 @@ export default function AdminPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:border-[#D4A853]/40 hover:shadow-md"
+              className="flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-5 transition-all hover:border-[#ffd700]/40 hover:shadow-md"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100">
                 <Icon className="h-5 w-5 text-gray-500" />

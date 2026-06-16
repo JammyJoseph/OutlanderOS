@@ -85,13 +85,13 @@ export default function LinkedDeal({ campaignId }: Props) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
       <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
-        <Link2 size={15} className="text-[#D4A853]" />
+        <Link2 size={15} className="text-[#ffd700]" />
         Linked Deal
       </h2>
       <div className="space-y-2">
         <Link
           href={`/commercial/deals/${campaign.id}`}
-          className="text-sm font-medium text-gray-900 hover:text-[#D4A853] transition-colors"
+          className="text-sm font-medium text-gray-900 hover:text-[#ffd700] transition-colors"
         >
           {campaign.title}
         </Link>
@@ -112,7 +112,7 @@ export default function LinkedDeal({ campaignId }: Props) {
         </div>
         <Link
           href={`/commercial/deals/${campaign.id}`}
-          className="inline-flex items-center gap-1 text-xs font-medium text-[#D4A853] hover:text-[#c49843] pt-1"
+          className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200] pt-1"
         >
           View deal in Commercial <ArrowUpRight size={12} />
         </Link>

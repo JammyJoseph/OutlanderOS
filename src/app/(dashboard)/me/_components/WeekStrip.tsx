@@ -57,7 +57,7 @@ export function WeekStrip({ tasks, shoots, culturalEvents }: Props) {
           <div
             key={i}
             className={`flex flex-col items-center rounded-lg px-1 py-2 ${
-              d.isToday ? "bg-[#D4A853]/10 ring-1 ring-[#D4A853]" : ""
+              d.isToday ? "bg-[#ffd700]/10 ring-1 ring-[#ffd700]" : ""
             }`}
           >
             <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">
@@ -65,7 +65,7 @@ export function WeekStrip({ tasks, shoots, culturalEvents }: Props) {
             </span>
             <span
               className={`mt-0.5 text-sm font-bold ${
-                d.isToday ? "text-[#9a7322]" : "text-gray-700"
+                d.isToday ? "text-[#e6c200]" : "text-gray-700"
               }`}
             >
               {d.date.getDate()}
@@ -73,13 +73,13 @@ export function WeekStrip({ tasks, shoots, culturalEvents }: Props) {
             <div className="mt-1 flex h-1.5 items-center gap-0.5">
               {d.taskCount > 0 && (
                 <span
-                  className="h-1.5 w-1.5 rounded-full bg-[#D4A853]"
+                  className="h-1.5 w-1.5 rounded-full bg-[#ffd700]"
                   title={d.taskTitle || `${d.taskCount} due`}
                 />
               )}
               {d.shootCount > 0 && (
                 <span
-                  className="h-1.5 w-1.5 rounded-full bg-[#DC4B4B]"
+                  className="h-1.5 w-1.5 rounded-full bg-[#ff4444]"
                   title={d.shootTitle || `${d.shootCount} shoot`}
                 />
               )}

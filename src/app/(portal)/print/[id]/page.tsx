@@ -117,7 +117,7 @@ export default function PrintIssuePage() {
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <p className="text-sm font-semibold text-gray-700">Issue not found</p>
-          <Link href="/print" className="mt-2 block text-xs text-[#D4A853] hover:underline">
+          <Link href="/print" className="mt-2 block text-xs text-[#ffd700] hover:underline">
             Back to Issues
           </Link>
         </div>
@@ -177,7 +177,7 @@ export default function PrintIssuePage() {
             </div>
             <button
               onClick={() => setAddPageOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-[#D4A853] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#C49843]"
+              className="flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-semibold text-black hover:bg-[#e6c200]"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Page
@@ -303,7 +303,7 @@ export default function PrintIssuePage() {
                   min="1"
                   value={newPage.pageNumber}
                   onChange={(e) => setNewPage((p) => ({ ...p, pageNumber: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#D4A853] focus:outline-none"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#ffd700] focus:outline-none"
                 />
               </div>
               <div>
@@ -311,7 +311,7 @@ export default function PrintIssuePage() {
                 <select
                   value={newPage.type}
                   onChange={(e) => setNewPage((p) => ({ ...p, type: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#D4A853] focus:outline-none"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#ffd700] focus:outline-none"
                 >
                   <option value="editorial">Editorial</option>
                   <option value="ad">Ad</option>
@@ -323,7 +323,7 @@ export default function PrintIssuePage() {
                 <input
                   value={newPage.assignedTo}
                   onChange={(e) => setNewPage((p) => ({ ...p, assignedTo: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#D4A853] focus:outline-none"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#ffd700] focus:outline-none"
                   placeholder="Name or team"
                 />
               </div>
@@ -338,7 +338,7 @@ export default function PrintIssuePage() {
                 <button
                   type="submit"
                   disabled={savingPage}
-                  className="rounded-lg bg-[#D4A853] px-4 py-2 text-xs font-semibold text-white hover:bg-[#C49843] disabled:opacity-50"
+                  className="rounded-lg bg-[#ffd700] px-4 py-2 text-xs font-semibold text-black hover:bg-[#e6c200] disabled:opacity-50"
                 >
                   {savingPage ? "Adding…" : "Add"}
                 </button>

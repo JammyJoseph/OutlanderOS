@@ -5,7 +5,7 @@ import { Lock, Bell, Sun, Check, AlertTriangle } from 'lucide-react'
 import { GoogleAccountSection } from './_components/GoogleAccountSection'
 
 const INPUT_CLS =
-  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#D4A853] focus:ring-2 focus:ring-amber-200/60'
+  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
 
 export default function MeSettingsPage() {
   const [form, setForm] = useState({ current: '', next: '', confirm: '' })
@@ -81,7 +81,7 @@ export default function MeSettingsPage() {
         )}
         <div className="mt-5 flex justify-end">
           <button onClick={changePassword} disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#D4A853] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
             {saving ? 'Updating…' : 'Update password'}
           </button>
         </div>
@@ -123,7 +123,7 @@ function Section({
   return (
     <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-[#D4A853]">{icon}</div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-[#ffd700]">{icon}</div>
         <div>
           <h2 className="text-base font-semibold text-gray-900">{title}</h2>
           {subtitle && <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>}
@@ -151,7 +151,7 @@ function Toggle({ label, defaultChecked }: { label: string; defaultChecked?: boo
       <button
         type="button"
         onClick={() => setOn((v) => !v)}
-        className={`relative h-5 w-9 rounded-full transition-colors ${on ? 'bg-[#D4A853]' : 'bg-gray-300'}`}
+        className={`relative h-5 w-9 rounded-full transition-colors ${on ? 'bg-[#ffd700]' : 'bg-gray-300'}`}
       >
         <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? 'left-[calc(100%-1.125rem)]' : 'left-0.5'}`} />
       </button>

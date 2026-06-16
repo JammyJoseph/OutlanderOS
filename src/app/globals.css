@@ -49,51 +49,80 @@
   --color-amber: #D4A853;
 }
 
-/* Light theme */
+/* Dark monochrome theme — luminous accents */
 :root {
-  --background: #ffffff;
-  --foreground: #1a1a1a;
-  --card: #ffffff;
-  --card-foreground: #1a1a1a;
-  --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #D4A853;
-  --primary-foreground: #ffffff;
-  --secondary: #f8f9fa;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f8f9fa;
-  --muted-foreground: #737373;
-  --accent: #D4A853;
-  --accent-foreground: #ffffff;
-  --destructive: #e53e3e;
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --card: #141414;
+  --card-foreground: #ffffff;
+  --popover: #1e1e1e;
+  --popover-foreground: #ffffff;
+  --primary: #ffd700;
+  --primary-foreground: #000000;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #999999;
+  --accent: #ffd700;
+  --accent-foreground: #000000;
+  --destructive: #ff6b6b;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #D4A853;
+  --border: #2a2a2a;
+  --input: #1a1a1a;
+  --ring: #4d9fff;
 
-  /* Portal accents */
-  --portal-commercial: #D4A853;
-  --portal-production: #E24B4A;
-  --portal-print: #1D9E75;
-  --portal-editorial: #7B5BD6;
-  --portal-finance: #378ADD;
-  --portal-think-tank: #E67E22;
-  --portal-contacts: #2C3E50;
-  --portal-admin: #6C757D;
-  --chart-1: #D4A853;
-  --chart-2: #60a5fa;
-  --chart-3: #34d399;
-  --chart-4: #f472b6;
-  --chart-5: #a78bfa;
+  /* Portal accents — luminous */
+  --portal-commercial: #ffd700;
+  --portal-production: #ff4444;
+  --portal-print: #00ff88;
+  --portal-editorial: #c77dff;
+  --portal-finance: #4d9fff;
+  --portal-think-tank: #ffaa00;
+  --portal-contacts: #4d9fff;
+  --portal-admin: #999999;
+  --chart-1: #ffd700;
+  --chart-2: #4d9fff;
+  --chart-3: #00ff88;
+  --chart-4: #c77dff;
+  --chart-5: #ff4444;
   --radius: 0.5rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #D4A853;
-  --sidebar-primary-foreground: #1a1a1a;
-  --sidebar-accent: #f8f9fa;
-  --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #D4A853;
+  --sidebar: #0f0f0f;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffd700;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #4d9fff;
+}
+
+/* Remap the Tailwind palette tint-shades (50/100/200) to dark/luminous values.
+   This flips OPACITY variants too (bg-gray-50/60, bg-amber-50/40, …) which the
+   utility safety net below can't reach, since those reference these vars via
+   color-mix. Bright text shades (500–900) are left untouched.
+   Call-sheet printing resets these to light values in the @media print block. */
+:root {
+  --color-gray-50: #1a1a1a;   --color-gray-100: #1c1c1c;   --color-gray-200: #2a2a2a;
+  --color-slate-50: #1a1a1a;  --color-slate-100: #1c1c1c;  --color-slate-200: #2a2a2a;
+  --color-neutral-50: #1a1a1a;--color-neutral-100: #1c1c1c;--color-neutral-200: #2a2a2a;
+  --color-zinc-50: #1a1a1a;   --color-zinc-100: #1c1c1c;   --color-zinc-200: #2a2a2a;
+  --color-stone-50: #1a1a1a;  --color-stone-100: #1c1c1c;  --color-stone-200: #2a2a2a;
+
+  --color-amber-50: #ffd700;  --color-amber-100: #ffd700;
+  --color-yellow-50: #ffd700; --color-yellow-100: #ffd700;
+  --color-orange-50: #ffaa00; --color-orange-100: #ffaa00;
+  --color-green-50: #00ff88;  --color-green-100: #00ff88;
+  --color-emerald-50: #00ff88;--color-emerald-100: #00ff88;
+  --color-teal-50: #00ff88;   --color-teal-100: #00ff88;
+  --color-red-50: #ff6b6b;    --color-red-100: #ff6b6b;
+  --color-rose-50: #ff6b6b;   --color-rose-100: #ff6b6b;
+  --color-pink-50: #ff6b6b;   --color-pink-100: #ff6b6b;
+  --color-blue-50: #4d9fff;   --color-blue-100: #4d9fff;
+  --color-sky-50: #4d9fff;    --color-sky-100: #4d9fff;
+  --color-indigo-50: #4d9fff; --color-indigo-100: #4d9fff;
+  --color-cyan-50: #4d9fff;   --color-cyan-100: #4d9fff;
+  --color-purple-50: #c77dff; --color-purple-100: #c77dff;
+  --color-violet-50: #c77dff; --color-violet-100: #c77dff;
 }
 
 @layer base {
@@ -114,22 +143,23 @@
   font-feature-settings: "tnum";
 }
 
-/* OutlanderOS surfaces */
+/* OutlanderOS surfaces — dark */
 .os-card {
-  background: white;
+  background: #141414;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  border: 1px solid #2a2a2a;
+  box-shadow: none;
   transition: all 0.2s ease;
 }
 .os-card-hover:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: #3a3a3a;
+  filter: brightness(1.15);
   transform: translateY(-2px);
 }
 .os-glass {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(255,255,255,0.8);
+  background: rgba(20,20,20,0.8);
 }
 .os-pill {
   display: inline-flex;
@@ -142,37 +172,36 @@
   line-height: 1.5;
 }
 
-/* Apple design utilities */
+/* Apple design utilities — dark */
 .card-apple {
-  background: white;
+  background: #141414;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
-  border: 1px solid rgba(0,0,0,0.06);
-  transition: box-shadow 0.2s ease;
+  box-shadow: none;
+  border: 1px solid #2a2a2a;
+  transition: all 0.2s ease;
 }
 .card-apple:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+  border-color: #3a3a3a;
+  filter: brightness(1.15);
 }
 .glass-header {
   backdrop-filter: blur(20px);
-  background: rgba(255,255,255,0.85);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  background: rgba(20,20,20,0.85);
+  border-bottom: 1px solid #2a2a2a;
 }
 .btn-primary {
-  background: #D4A853;
-  color: white;
+  background: #ffd700;
+  color: #000000;
   border-radius: 10px;
   padding: 10px 20px;
   font-weight: 600;
   transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(212,168,83,0.3);
 }
 .btn-primary:hover {
-  background: #C49843;
-  box-shadow: 0 2px 8px rgba(212,168,83,0.4);
+  filter: brightness(1.1);
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling — dark */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -181,11 +210,110 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: #2a2a2a;
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
+  background: #3a3a3a;
+}
+
+/* ── Dark-theme safety net ───────────────────────────────────────────────────
+   Remaps the common light Tailwind utilities still scattered across pages to
+   their dark-monochrome equivalents. Unlayered, so these win over Tailwind's
+   @layer utilities. Per-file edits using arbitrary values (e.g. bg-[#141414])
+   replace the class entirely, so they never conflict. Scoped out of print. */
+@media not print {
+  /* Surfaces */
+  .bg-white { background-color: #141414; }
+  /* White glass / overlay opacity variants (can't remap --color-white) */
+  .bg-white\/95, .bg-white\/90, .bg-white\/85, .bg-white\/80,
+  .bg-white\/75, .bg-white\/70, .bg-white\/60 { background-color: rgba(20,20,20,0.82); }
+  .bg-white\/50, .bg-white\/40, .bg-white\/30 { background-color: rgba(30,30,30,0.55); }
+  .bg-white\/20, .bg-white\/10, .bg-white\/5 { background-color: rgba(255,255,255,0.06); }
+  .border-white\/60, .border-white\/50, .border-white\/40, .border-white\/20, .border-white\/10 { border-color: rgba(255,255,255,0.08); }
+  .bg-gray-50, .bg-slate-50, .bg-neutral-50 { background-color: #1a1a1a; }
+  .bg-gray-100, .bg-slate-100, .bg-neutral-100 { background-color: #1a1a1a; }
+  .bg-gray-200, .bg-slate-200, .bg-neutral-200 { background-color: #222222; }
+
+  /* Hover surfaces */
+  .hover\:bg-white:hover { background-color: #1e1e1e; }
+  .hover\:bg-gray-50:hover, .hover\:bg-slate-50:hover, .hover\:bg-neutral-50:hover { background-color: #222222; }
+  .hover\:bg-gray-100:hover, .hover\:bg-slate-100:hover, .hover\:bg-neutral-100:hover { background-color: #222222; }
+  .hover\:bg-gray-200:hover { background-color: #2a2a2a; }
+
+  /* Text */
+  .text-gray-900, .text-slate-900, .text-neutral-900,
+  .text-gray-800, .text-slate-800, .text-neutral-800 { color: #ffffff; }
+  .text-gray-700, .text-slate-700, .text-neutral-700 { color: #e5e5e5; }
+  .text-gray-600, .text-slate-600, .text-neutral-600,
+  .text-gray-500, .text-slate-500, .text-neutral-500 { color: #999999; }
+  .text-gray-400, .text-slate-400, .text-neutral-400,
+  .text-gray-300, .text-slate-300, .text-neutral-300 { color: #666666; }
+
+  .hover\:text-gray-900:hover, .hover\:text-gray-800:hover { color: #ffffff; }
+  .hover\:text-gray-700:hover, .hover\:text-gray-600:hover { color: #cccccc; }
+
+  /* Borders */
+  .border-gray-100, .border-slate-100, .border-neutral-100 { border-color: #1e1e1e; }
+  .border-gray-200, .border-slate-200, .border-neutral-200 { border-color: #2a2a2a; }
+  .border-gray-300, .border-slate-300, .border-neutral-300 { border-color: #3a3a3a; }
+  .hover\:border-gray-200:hover, .hover\:border-gray-300:hover { border-color: #3a3a3a; }
+
+  /* Divide */
+  .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+  .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #2a2a2a; }
+
+  /* Inputs */
+  .placeholder\:text-gray-400::placeholder,
+  .placeholder\:text-gray-500::placeholder { color: #666666; }
+}
+
+/* ── Status pill / accent remap ──────────────────────────────────────────────
+   Light pastel utilities (bg-amber-50, text-emerald-700, …) become luminous
+   low-opacity pills on the dark surface. Screen only — print falls back. */
+@media not print {
+  /* GOLD — amber / yellow */
+  .bg-amber-50, .bg-amber-100, .bg-yellow-50, .bg-yellow-100 { background-color: rgba(255,215,0,0.10); }
+  .hover\:bg-amber-50:hover, .hover\:bg-amber-100:hover { background-color: rgba(255,215,0,0.16); }
+  .text-amber-500, .text-amber-600, .text-amber-700, .text-amber-800, .text-amber-900,
+  .text-yellow-500, .text-yellow-600, .text-yellow-700, .text-yellow-800 { color: #ffd700; }
+  .border-amber-100, .border-amber-200, .border-amber-300, .border-yellow-200 { border-color: rgba(255,215,0,0.25); }
+
+  /* AMBER WARN — orange */
+  .bg-orange-50, .bg-orange-100 { background-color: rgba(255,170,0,0.10); }
+  .text-orange-500, .text-orange-600, .text-orange-700, .text-orange-800 { color: #ffaa00; }
+  .border-orange-200, .border-orange-300 { border-color: rgba(255,170,0,0.25); }
+
+  /* GREEN — green / emerald / teal */
+  .bg-green-50, .bg-green-100, .bg-emerald-50, .bg-emerald-100, .bg-teal-50, .bg-teal-100 { background-color: rgba(0,255,136,0.10); }
+  .hover\:bg-emerald-50:hover, .hover\:bg-green-50:hover { background-color: rgba(0,255,136,0.16); }
+  .text-green-500, .text-green-600, .text-green-700, .text-green-800,
+  .text-emerald-500, .text-emerald-600, .text-emerald-700, .text-emerald-800,
+  .text-teal-500, .text-teal-600, .text-teal-700 { color: #00ff88; }
+  .border-green-200, .border-emerald-100, .border-emerald-200, .border-emerald-300, .border-teal-200 { border-color: rgba(0,255,136,0.25); }
+
+  /* RED — red / rose / pink */
+  .bg-red-50, .bg-red-100, .bg-rose-50, .bg-rose-100, .bg-pink-50, .bg-pink-100 { background-color: rgba(255,107,107,0.10); }
+  .hover\:bg-red-50:hover, .hover\:bg-rose-50:hover { background-color: rgba(255,107,107,0.16); }
+  .text-red-500, .text-red-600, .text-red-700, .text-red-800,
+  .text-rose-500, .text-rose-600, .text-rose-700,
+  .text-pink-500, .text-pink-600, .text-pink-700 { color: #ff6b6b; }
+  .border-red-100, .border-red-200, .border-red-300, .border-rose-200, .border-pink-200 { border-color: rgba(255,107,107,0.25); }
+
+  /* BLUE — blue / sky / cyan / indigo */
+  .bg-blue-50, .bg-blue-100, .bg-sky-50, .bg-sky-100, .bg-cyan-50, .bg-cyan-100, .bg-indigo-50, .bg-indigo-100 { background-color: rgba(77,159,255,0.10); }
+  .hover\:bg-blue-50:hover, .hover\:bg-sky-50:hover { background-color: rgba(77,159,255,0.16); }
+  .text-blue-500, .text-blue-600, .text-blue-700, .text-blue-800,
+  .text-sky-500, .text-sky-600, .text-sky-700,
+  .text-cyan-600, .text-cyan-700, .text-indigo-500, .text-indigo-600, .text-indigo-700 { color: #4d9fff; }
+  .border-blue-100, .border-blue-200, .border-blue-300, .border-sky-200, .border-indigo-200 { border-color: rgba(77,159,255,0.25); }
+
+  /* PURPLE — purple / violet */
+  .bg-purple-50, .bg-purple-100, .bg-violet-50, .bg-violet-100 { background-color: rgba(199,125,255,0.10); }
+  .hover\:bg-purple-50:hover { background-color: rgba(199,125,255,0.16); }
+  .text-purple-500, .text-purple-600, .text-purple-700, .text-purple-800,
+  .text-violet-500, .text-violet-600, .text-violet-700 { color: #c77dff; }
+  .border-purple-100, .border-purple-200, .border-purple-300, .border-violet-200 { border-color: rgba(199,125,255,0.25); }
 }
 
 /* ── Call sheet print / PDF export ──────────────────────────────────────────
@@ -211,7 +339,34 @@
   body:has([data-callsheet-print]) [data-callsheet-print] {
     min-height: 0 !important;
   }
+  /* Restore the light Tailwind palette for the printed call sheet so it reads
+     as paper. Set on the call-sheet body (not :root — PostCSS rejects :root in
+     @media), cascading the original tint shades back to the document. */
+  body:has([data-callsheet-print]) {
+    --color-gray-50: #f9fafb;   --color-gray-100: #f3f4f6;   --color-gray-200: #e5e7eb;
+    --color-slate-50: #f8fafc;  --color-slate-100: #f1f5f9;  --color-slate-200: #e2e8f0;
+    --color-neutral-50: #fafafa;--color-neutral-100: #f5f5f5;--color-neutral-200: #e5e5e5;
+    --color-zinc-50: #fafafa;   --color-zinc-100: #f4f4f5;   --color-zinc-200: #e4e4e7;
+    --color-stone-50: #fafaf9;  --color-stone-100: #f5f5f4;  --color-stone-200: #e7e5e4;
+    --color-amber-50: #fffbeb;  --color-amber-100: #fef3c7;
+    --color-yellow-50: #fefce8; --color-yellow-100: #fef9c3;
+    --color-orange-50: #fff7ed; --color-orange-100: #ffedd5;
+    --color-green-50: #f0fdf4;  --color-green-100: #dcfce7;
+    --color-emerald-50: #ecfdf5;--color-emerald-100: #d1fae5;
+    --color-teal-50: #f0fdfa;   --color-teal-100: #ccfbf1;
+    --color-red-50: #fef2f2;    --color-red-100: #fee2e2;
+    --color-rose-50: #fff1f2;   --color-rose-100: #ffe4e6;
+    --color-pink-50: #fdf2f8;   --color-pink-100: #fce7f3;
+    --color-blue-50: #eff6ff;   --color-blue-100: #dbeafe;
+    --color-sky-50: #f0f9ff;    --color-sky-100: #e0f2fe;
+    --color-indigo-50: #eef2ff; --color-indigo-100: #e0e7ff;
+    --color-cyan-50: #ecfeff;   --color-cyan-100: #cffafe;
+    --color-purple-50: #faf5ff; --color-purple-100: #f3e8ff;
+    --color-violet-50: #f5f3ff; --color-violet-100: #ede9fe;
+  }
   @page {
     margin: 12mm;
   }
 }
+
+

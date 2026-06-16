@@ -60,7 +60,7 @@ export default function ClientsPage() {
         </div>
         <button
           disabled
-          className="flex items-center gap-2 rounded-lg bg-[#D4A853] px-4 py-2 text-sm font-medium text-white hover:bg-[#C49843] transition-colors disabled:opacity-60"
+          className="flex items-center gap-2 rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200] transition-colors disabled:opacity-60"
         >
           <Plus className="h-4 w-4" />
           Add Client
@@ -88,18 +88,18 @@ export default function ClientsPage() {
               <Link
                 key={client.id}
                 href={`/commercial/clients/${client.id}`}
-                className="group rounded-xl border border-gray-200 bg-white p-5 transition-all hover:border-[#D4A853]/50 hover:shadow-md"
+                className="group rounded-xl border border-gray-200 bg-white p-5 transition-all hover:border-[#ffd700]/50 hover:shadow-md"
               >
                 {/* Logo + name row */}
                 <div className="flex items-center gap-3 mb-4">
                   <div
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white font-bold text-sm"
-                    style={{ backgroundColor: client.brandColor ?? "#D4A853" }}
+                    style={{ backgroundColor: client.brandColor ?? "#ffd700" }}
                   >
                     {initials(client.name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900 truncate group-hover:text-[#D4A853] transition-colors">
+                    <p className="font-semibold text-gray-900 truncate group-hover:text-[#ffd700] transition-colors">
                       {client.name}
                     </p>
                     {client.industry && (
