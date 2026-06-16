@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, isAdminInDb } from "@/lib/auth";
-import {
-  parseAllocations,
-  productionAllocationOf,
-  mapSplitsToCampaignBudget,
-  PIPELINE_STAGES,
-  normalizeStage,
-} from "@/lib/deal-stages";
-import { parseMediaPlan, mediaPlanTotals } from "@/lib/media-plan";
+import { PIPELINE_STAGES, normalizeStage } from "@/lib/deal-stages";
+import { computeEconomics, DEFAULT_PRODUCTION_MARGIN_PCT } from "@/lib/deal-economics";
 
 // POST /api/commercial/deals/[id]/media-plan/lock — lock or unlock the plan.
 // Body: { locked: boolean }. Anyone can lock; only an admin can unlock.
-// Locking validates margin + allocations equal the plan total, advances the
-// deal to BUDGET_SET, and pushes the finalised numbers into Finance.
+// Locking finalises the deal value + media/production split for the Production
+// team and Finance, and pushes the numbers into the linked Finance project.
 export const POST = withAuth(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -30,10 +24,9 @@ export const POST = withAuth(async (
         id: true,
         title: true,
         value: true,
-        mediaPlan: true,
-        marginAmount: true,
-        marginPercent: true,
-        allocations: true,
+        dealValue: true,
+        mediaSpend: true,
+        productionMarginPct: true,
         stage: true,
       },
     });
@@ -67,24 +60,16 @@ export const POST = withAuth(async (
       return NextResponse.json({ campaignId: id, locked: false });
     }
 
-    // Locking: balance check against the plan's net total.
-    const plan = parseMediaPlan(deal.mediaPlan);
-    const total = mediaPlanTotals(plan).net;
-    const allocations = parseAllocations(deal.allocations);
-    const allocated = allocations.reduce((sum, a) => sum + a.amount, 0);
-    const margin = deal.marginAmount ?? 0;
+    // Locking: the deal value must be set.
+    const eco = computeEconomics({
+      dealValue: deal.dealValue ?? deal.value,
+      mediaSpend: deal.mediaSpend,
+      productionMarginPct: deal.productionMarginPct ?? DEFAULT_PRODUCTION_MARGIN_PCT,
+    });
 
-    if (total <= 0) {
+    if (eco.dealValue <= 0) {
       return NextResponse.json(
-        { error: "Add placements to the media plan before locking — the total is £0." },
-        { status: 400 }
-      );
-    }
-    if (Math.abs(allocated + margin - total) > 0.01) {
-      return NextResponse.json(
-        {
-          error: `Allocations (£${allocated.toLocaleString()}) + margin (£${margin.toLocaleString()}) must equal the media plan total (£${total.toLocaleString()}) before locking.`,
-        },
+        { error: "Set the deal value before locking the media plan — it's £0." },
         { status: 400 }
       );
     }
@@ -97,12 +82,11 @@ export const POST = withAuth(async (
       );
     }
 
-    // Locking just freezes the plan total — stage progression is explicit
-    // (deal sign-off is separate from the commercial/IO sign-off).
     await prisma.campaign.update({
       where: { id },
       data: {
-        value: total,
+        value: eco.dealValue,
+        dealValue: eco.dealValue,
         budgetLocked: true,
         budgetLockedAt: new Date(),
         budgetLockedBy: user.userId,
@@ -113,35 +97,35 @@ export const POST = withAuth(async (
     // Push the finalised numbers into the Finance project folder if one exists.
     const financeBudget = await prisma.campaignBudget.findFirst({ where: { campaignId: id } });
     if (financeBudget) {
-      const productionAllocation = productionAllocationOf(allocations);
-      const mapped = mapSplitsToCampaignBudget(
-        allocations.filter((a) => !a.isProductionBudget).map((a) => ({ category: a.name, amount: a.amount }))
-      );
       await prisma.campaignBudget.update({
         where: { id: financeBudget.id },
         data: {
-          totalBudget: total,
-          productionBudget: productionAllocation + mapped.productionBudget,
-          mediaBudget: mapped.mediaBudget,
-          internalBudget: mapped.internalBudget,
-          otherBudget: mapped.otherBudget,
+          totalBudget: eco.dealValue,
+          productionBudget: eco.hardCostBudget,
+          mediaBudget: eco.mediaSpend,
+          internalBudget: 0,
+          otherBudget: 0,
         },
       });
     }
 
-    const productionAllocation = productionAllocationOf(allocations);
     await prisma.dealActivity.create({
       data: {
         campaignId: id,
         type: "budget_update",
-        message: `Media plan on "${deal.title}" locked — margin £${margin.toLocaleString()}${deal.marginPercent != null ? ` (${deal.marginPercent}%)` : ""} | production £${productionAllocation.toLocaleString()} | total £${total.toLocaleString()}`,
-        meta: { marginAmount: margin, marginPercent: deal.marginPercent, allocations, total },
+        message: `Media plan on "${deal.title}" locked — deal £${eco.dealValue.toLocaleString()} | media £${eco.mediaSpend.toLocaleString()} | production margin £${eco.companyMargin.toLocaleString()} | hard costs £${eco.hardCostBudget.toLocaleString()}`,
+        meta: {
+          dealValue: eco.dealValue,
+          mediaSpend: eco.mediaSpend,
+          companyMargin: eco.companyMargin,
+          hardCostBudget: eco.hardCostBudget,
+        },
         userId: user.userId,
         userName: user.name,
       },
     });
 
-    return NextResponse.json({ campaignId: id, locked: true, total });
+    return NextResponse.json({ campaignId: id, locked: true, total: eco.dealValue });
   } catch (err) {
     console.error("POST /api/commercial/deals/[id]/media-plan/lock", err);
     return NextResponse.json({ error: "Failed to update media plan lock" }, { status: 500 });

@@ -47,3 +47,6 @@ next-env.d.ts
 .chat-history.json
 .claude/worktrees/
 .claude/launch.json
+
+# Runtime-uploaded media plan PDFs
+/public/uploads/

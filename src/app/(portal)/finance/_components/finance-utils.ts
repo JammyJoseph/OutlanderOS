@@ -302,6 +302,11 @@ export interface ProjectEconomics {
   targetMarginPercent: number | null
   allocations: BudgetAllocation[]
   budgetLocked: boolean
+  // Simplified media-vs-production breakdown (Noah's model).
+  mediaSpend: number
+  productionBudget: number
+  productionMarginPct: number
+  totalCompanyRevenue: number
   productionAllocation: number
   productionBudgeted: number
   productionActuals: number

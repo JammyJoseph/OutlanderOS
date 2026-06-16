@@ -684,7 +684,9 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
             </p>
           </div>
         )}
-        {tab === "mediaplan" && <MediaPlanTab dealId={deal.id} onSaved={reload} />}
+        {tab === "mediaplan" && (
+          <MediaPlanTab dealId={deal.id} workflowType={deal.workflowType} onSaved={reload} />
+        )}
         {tab === "deliverables" && (
           <DeliverablesTab dealId={deal.id} initial={deal.deliverables} onChanged={reload} />
         )}
@@ -1947,9 +1949,12 @@ function ClearForProductionModal({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ productionId: string } | null>(null);
 
+  // The deal value is the full deal; production only receives the hard-cost
+  // budget (the "Production" allocation), not the whole thing.
   const splits = Array.isArray(deal.budgetBreakdown) ? deal.budgetBreakdown : [];
-  const budgetTotal = splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
-  const effectiveBudget = budgetTotal > 0 ? budgetTotal : deal.value ?? 0;
+  const dealTotal = deal.value ?? splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+  const productionSplit = splits.find((s) => /production/i.test(String(s.category)));
+  const productionBudget = productionSplit ? Number(productionSplit.amount) || 0 : dealTotal;
 
   async function clear() {
     setClearing(true);
@@ -1996,7 +2001,8 @@ function ClearForProductionModal({
             <p className="text-base font-semibold text-gray-900">Cleared for production</p>
             <p className="text-sm text-gray-500 mt-1">
               &ldquo;{deal.title}&rdquo; is now with the production team — the brief and a{" "}
-              {formatMoney(effectiveBudget)} budget went across.
+              {formatMoney(productionBudget)} hard-cost budget went across (of{" "}
+              {formatMoney(dealTotal)} total deal).
             </p>
             <div className="flex gap-3 mt-6 justify-center">
               <button
@@ -2029,11 +2035,12 @@ function ClearForProductionModal({
                 <span className="font-medium text-gray-800">{deal.client.name}</span>
               </p>
               <p className="flex items-center justify-between">
-                <span className="text-gray-400">Budget</span>
-                <span className="font-medium text-gray-800 tabular-nums">
-                  {formatMoney(effectiveBudget)}
-                  {splits.length > 0 ? ` · ${splits.length} line${splits.length === 1 ? "" : "s"}` : ""}
-                </span>
+                <span className="text-gray-400">Deal value</span>
+                <span className="font-medium text-gray-800 tabular-nums">{formatMoney(dealTotal)}</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span className="text-gray-400">Production budget (hard costs)</span>
+                <span className="font-medium text-gray-800 tabular-nums">{formatMoney(productionBudget)}</span>
               </p>
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Brief</span>

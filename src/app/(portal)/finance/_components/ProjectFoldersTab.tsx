@@ -288,27 +288,36 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
               </div>
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-                  <span className="text-gray-600">Total Deal Budget</span>
+                  <span className="text-gray-600">Deal Value</span>
                   <span className="font-mono text-sm font-bold text-gray-900">{fmtGBP(eco.dealTotal)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Company Margin</span>
-                  <span className="font-mono font-semibold text-[#ffd700]">
-                    {fmtGBP(eco.targetMarginAmount)}
-                    {eco.targetMarginPercent != null && <span className="text-gray-400"> ({fmtPct(eco.targetMarginPercent)})</span>}
+                  <span className="flex items-center gap-1.5 text-gray-600">
+                    Media Spend
+                    <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600">100% MARGIN</span>
                   </span>
+                  <span className="font-mono font-semibold text-gray-900">{fmtGBP(eco.mediaSpend)}</span>
                 </div>
-                {eco.allocations.map((a) => (
-                  <div key={a.name} className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-gray-600">
-                      {a.name}
-                      {a.isProductionBudget && (
-                        <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[9px] font-semibold text-[#ff4444]">PRODUCTION</span>
-                      )}
-                    </span>
-                    <span className="font-mono font-semibold text-gray-900">{fmtGBP(a.amount)}</span>
-                  </div>
-                ))}
+                <div className="flex items-center justify-between border-t border-gray-50 pt-2">
+                  <span className="text-gray-600">Production Budget</span>
+                  <span className="font-mono font-semibold text-gray-900">{fmtGBP(eco.productionBudget)}</span>
+                </div>
+                <div className="flex items-center justify-between pl-3">
+                  <span className="text-gray-500">Production Margin{eco.productionMarginPct != null ? ` (${Math.round(eco.productionMarginPct)}%)` : ''}</span>
+                  <span className="font-mono font-semibold text-[#ffd700]">{fmtGBP(eco.targetMarginAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between pl-3">
+                  <span className="flex items-center gap-1.5 text-gray-500">
+                    Production Hard Costs
+                    <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[9px] font-semibold text-[#ff4444]">PRODUCTION</span>
+                  </span>
+                  <span className="font-mono font-semibold text-gray-900">{fmtGBP(eco.productionAllocation)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-2 mt-1">
+                  <span className="font-semibold text-gray-700">Total Company Revenue</span>
+                  <span className="font-mono text-sm font-bold text-emerald-600">{fmtGBP(eco.totalCompanyRevenue)}</span>
+                </div>
+                <p className="text-[10px] text-gray-400">media spend + production margin + production savings</p>
               </div>
             </div>
 

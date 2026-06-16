@@ -172,11 +172,17 @@ model Campaign {
   margin           Float?
   timelineStart    DateTime?
   timelineEnd      DateTime?
-  mediaPlan          Json? // { phases: [{ name, lines: [...] }], version, updatedAt, updatedBy } — the spreadsheet-style media plan; its net total is the deal value
+  mediaPlan          Json? // legacy spreadsheet-style media plan — kept for backwards compat, no longer built in the UI
   mediaPlanVersion   Int       @default(1)
   mediaPlanUpdatedAt DateTime?
   mediaPlanUpdatedBy String? // display name of the last editor
   mediaPlanLockedAt  DateTime?
+  // ── Simplified media plan (upload/link) + deal economics ──
+  mediaPlanLink      String? // Google Sheets URL — the externally-built media plan
+  mediaPlanFile      String? // path to an uploaded PDF of the final media plan
+  dealValue          Float? // total deal value taken from the media plan — feeds everything downstream
+  mediaSpend         Float? // portion of the deal value spent on media (100% margin, no hard costs)
+  productionMarginPct Float? // company side of the production margin split (e.g. 60 = 60/40)
   ioUrl            String?
   ioSigned         Boolean        @default(false)
   ioSignedAt       DateTime?

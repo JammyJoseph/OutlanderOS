@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/auth'
 import { getXeroInvoices, getXeroStatus } from '@/lib/xero-finance'
 import { overageStatusFor } from '@/lib/finance-projects'
 import { parseAllocations, productionAllocationOf } from '@/lib/deal-stages'
+import { computeEconomics, DEFAULT_PRODUCTION_MARGIN_PCT } from '@/lib/deal-economics'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +48,9 @@ export const GET = withAuth(async (request: NextRequest, context) => {
               marginPercent: true,
               marginAmount: true,
               allocations: true,
+              dealValue: true,
+              mediaSpend: true,
+              productionMarginPct: true,
               budgetLocked: true,
               budgetLockedAt: true,
               client: { select: { name: true } },
@@ -91,6 +95,22 @@ export const GET = withAuth(async (request: NextRequest, context) => {
     const productionActuals = (production?.budgetItems ?? []).reduce((s, i) => s + (i.actual || 0), 0)
     const productionSavings = productionAllocation - productionActuals
 
+    // Simplified split (media vs production) — Noah's model. Derived from the
+    // deal's stored inputs, falling back to the allocations for older deals.
+    const mediaAllocated = allocations
+      .filter((a) => !a.isProductionBudget)
+      .reduce((s, a) => s + a.amount, 0)
+    const eco = computeEconomics({
+      dealValue: deal?.dealValue ?? dealTotal,
+      mediaSpend: deal?.mediaSpend ?? mediaAllocated,
+      productionMarginPct: deal?.productionMarginPct ?? DEFAULT_PRODUCTION_MARGIN_PCT,
+    })
+    const mediaSpend = eco.mediaSpend
+    const productionBudget = eco.productionBudget // company margin + hard costs
+    const productionMarginPct = eco.productionMarginPct
+    // Total company revenue = media spend + production margin + production savings.
+    const totalCompanyRevenue = mediaSpend + (targetMarginAmount ?? eco.companyMargin) + productionSavings
+
     // Margin analysis: production savings flow straight into the margin.
     const actualMarginAmount = targetMarginAmount != null ? targetMarginAmount + productionSavings : null
     const actualMarginPercent =
@@ -129,6 +149,11 @@ export const GET = withAuth(async (request: NextRequest, context) => {
         targetMarginPercent,
         allocations,
         budgetLocked: deal?.budgetLocked ?? false,
+        // Simplified media-vs-production breakdown.
+        mediaSpend,
+        productionBudget,
+        productionMarginPct,
+        totalCompanyRevenue,
         productionAllocation,
         productionBudgeted,
         productionActuals,
