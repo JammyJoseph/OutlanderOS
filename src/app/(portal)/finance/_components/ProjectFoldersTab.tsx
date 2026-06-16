@@ -432,6 +432,47 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
             </div>
           )}
 
+          {/* Scope creep — additional deliverables billed on top of the deal */}
+          {eco.deliverables && (eco.deliverables.additionalCount > 0 || eco.deliverables.contractedCount > 0) && (
+            <div className="rounded-xl border border-amber-200 bg-white p-5 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Deliverables &amp; Scope Creep</p>
+                {eco.deliverables.additionalOverage > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                    +{fmtGBP(eco.deliverables.additionalOverage)} overage
+                  </span>
+                )}
+              </div>
+              <div className="mb-3 grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-lg bg-gray-50 px-3 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Contracted</p>
+                  <p className="font-mono text-lg font-bold text-gray-900">{eco.deliverables.contractedCount}</p>
+                </div>
+                <div className="rounded-lg bg-amber-50 px-3 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-500">Additional</p>
+                  <p className="font-mono text-lg font-bold text-amber-700">{eco.deliverables.additionalCount}</p>
+                </div>
+                <div className="rounded-lg bg-emerald-50 px-3 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-500">Total Overages</p>
+                  <p className="font-mono text-lg font-bold text-emerald-700">{fmtGBP(eco.deliverables.additionalOverage)}</p>
+                </div>
+              </div>
+              {eco.deliverables.additional.length > 0 && (
+                <table className="w-full text-[11px]">
+                  <tbody className="divide-y divide-gray-100">
+                    {eco.deliverables.additional.map((d) => (
+                      <tr key={d.id}>
+                        <td className="py-1.5 text-gray-700">{d.title}</td>
+                        <td className="py-1.5 text-gray-400">{d.approvedBy ? `approved by ${d.approvedBy}` : 'unapproved'}</td>
+                        <td className="py-1.5 text-right font-mono font-semibold text-emerald-600">+{fmtGBP(d.overageCost)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
           {/* Final P&L */}
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
@@ -448,8 +489,20 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
               <tbody className="divide-y divide-gray-50">
                 <tr>
                   <td className="py-2 text-gray-600">Revenue (deal budget)</td>
-                  <td className="py-2 text-right font-mono font-semibold text-gray-900">{fmtGBP(eco.finalPL.revenue)}</td>
+                  <td className="py-2 text-right font-mono font-semibold text-gray-900">{fmtGBP(eco.finalPL.dealValue)}</td>
                 </tr>
+                {eco.finalPL.additionalOverage > 0 && (
+                  <tr>
+                    <td className="py-2 pl-4 text-emerald-600">+ Scope creep (additional deliverables)</td>
+                    <td className="py-2 text-right font-mono font-semibold text-emerald-600">+{fmtGBP(eco.finalPL.additionalOverage)}</td>
+                  </tr>
+                )}
+                {eco.finalPL.additionalOverage > 0 && (
+                  <tr className="bg-emerald-50/40">
+                    <td className="py-2 font-semibold text-gray-700">Total Revenue</td>
+                    <td className="py-2 text-right font-mono font-semibold text-gray-900">{fmtGBP(eco.finalPL.revenue)}</td>
+                  </tr>
+                )}
                 {eco.allocations.filter((a) => !a.isProductionBudget).map((a) => (
                   <tr key={a.name}>
                     <td className="py-2 pl-4 text-gray-500">{a.name}</td>

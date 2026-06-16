@@ -282,14 +282,25 @@ model Deliverable {
   id          String    @id @default(cuid())
   campaignId  String
   campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title       String? // explicit title — falls back to `type` for legacy rows
   type        String
+  quantity    Int       @default(1)
   description String?
   dueDate     DateTime?
   status      String    @default("PENDING") // PENDING, IN_PROGRESS, DELIVERED
   completed   Boolean   @default(false)
   completedAt DateTime?
-  postedUrl   String?
+  postedUrl   String? // "Live Link" — pasted when the post/asset goes live
   performance Json?
+  // ── Scope creep: deliverables added AFTER the deal is signed ──
+  isAdditional Boolean  @default(false)
+  overageCost  Float? // extra charge to the client for this additional deliverable
+  approvedBy   String? // who signed off the overage
+  approvedAt   DateTime?
+  // Live-go-live scheduling status for the supplied-asset campaign tracker:
+  // PENDING | SCHEDULED | LIVE | LATE — distinct from the delivery `status`.
+  scheduleStatus String @default("PENDING")
+  createdAt   DateTime  @default(now())
 }
 
 model CampaignAsset {

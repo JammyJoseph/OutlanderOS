@@ -12,7 +12,14 @@ export const GET = withAuth(async (
     const production = await prisma.production.findUnique({
       where: { id },
       include: {
-        campaign: { include: { client: true } },
+        campaign: {
+          include: {
+            client: true,
+            // Commercial deliverables (contracted + additional/scope-creep) so
+            // the Production deliverables view can surface what was sold.
+            deliverables: { orderBy: [{ isAdditional: "asc" }, { dueDate: { sort: "asc", nulls: "last" } }] },
+          },
+        },
         crew: { include: { contact: true } },
         callSheets: {
           orderBy: { shootDate: "asc" },

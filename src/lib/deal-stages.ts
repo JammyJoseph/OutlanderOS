@@ -269,6 +269,9 @@ export type ClientBrief = {
   references: string[];
   receivedDate: string | null;
   responseDueDate: string | null;
+  // Set when the brief is "sent to the creative team" — drives the production
+  // portal's "Creative in Progress" visibility.
+  sentToCreativeAt: string | null;
 };
 
 export function parseClientBrief(value: unknown): ClientBrief | null {
@@ -282,13 +285,17 @@ export function parseClientBrief(value: unknown): ClientBrief | null {
     receivedDate: typeof v.receivedDate === "string" && v.receivedDate ? v.receivedDate : null,
     responseDueDate:
       typeof v.responseDueDate === "string" && v.responseDueDate ? v.responseDueDate : null,
+    sentToCreativeAt:
+      typeof v.sentToCreativeAt === "string" && v.sentToCreativeAt ? v.sentToCreativeAt : null,
   };
 }
 
 export type CreativeRevision = {
   treatment: string;
+  figmaUrl: string | null; // Figma deck link for this version
   moodBoardLinks: string[];
   sentDate: string | null;
+  submittedBy: string | null; // who submitted this version
 };
 
 export type CreativeResponse = CreativeRevision & {
@@ -303,10 +310,12 @@ export function parseCreativeResponse(value: unknown): CreativeResponse | null {
     const x = r as Record<string, unknown>;
     return {
       treatment: typeof x.treatment === "string" ? x.treatment : "",
+      figmaUrl: typeof x.figmaUrl === "string" && x.figmaUrl ? x.figmaUrl : null,
       moodBoardLinks: Array.isArray(x.moodBoardLinks)
         ? x.moodBoardLinks.filter((l): l is string => typeof l === "string" && l.trim().length > 0)
         : [],
       sentDate: typeof x.sentDate === "string" && x.sentDate ? x.sentDate : null,
+      submittedBy: typeof x.submittedBy === "string" && x.submittedBy ? x.submittedBy : null,
     };
   };
   const base = parseRevision(value);

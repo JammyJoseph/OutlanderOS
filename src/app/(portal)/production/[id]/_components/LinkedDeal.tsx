@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Link2 } from "lucide-react";
+import { ArrowUpRight, Link2, Palette, FileText, CheckCircle2 } from "lucide-react";
 
 interface Campaign {
   id: string;
@@ -12,7 +12,20 @@ interface Campaign {
   value: number | null;
   currency: string;
   client: { id: string; name: string } | null;
+  workflowType?: string;
+  creativeStatus?: string | null;
+  creativeResponse?: { figmaUrl?: string | null; treatment?: string | null } | null;
+  clientBrief?: { content?: string | null } | null;
+  briefContent?: string | null;
 }
+
+const CREATIVE_STATUS_LABELS: Record<string, { label: string; cls: string }> = {
+  AWAITING_RESPONSE: { label: "Awaiting Response", cls: "bg-amber-50 text-amber-700" },
+  RESPONSE_SENT: { label: "Response Sent", cls: "bg-sky-50 text-sky-700" },
+  IN_REVIEW: { label: "In Review", cls: "bg-blue-50 text-blue-700" },
+  REVISIONS_REQUESTED: { label: "Revisions Requested", cls: "bg-orange-50 text-orange-700" },
+  APPROVED: { label: "Approved", cls: "bg-emerald-50 text-emerald-700" },
+};
 
 interface Props {
   campaignId: string | null;
@@ -131,6 +144,46 @@ export default function LinkedDeal({ campaignId }: Props) {
           View deal in Commercial <ArrowUpRight size={12} />
         </Link>
       </div>
+
+      {/* Creative — in-progress indicator, or the approved deck + brief */}
+      {campaign.workflowType !== "SUPPLIED_ASSETS" && campaign.creativeStatus && (
+        <div className="mt-3 pt-3 border-t border-gray-50">
+          {campaign.creativeStatus === "APPROVED" ? (
+            <>
+              <p className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1.5 mb-2">
+                <CheckCircle2 size={13} /> Creative approved
+              </p>
+              <div className="space-y-1.5">
+                {campaign.creativeResponse?.figmaUrl && (
+                  <a
+                    href={campaign.creativeResponse.figmaUrl.startsWith("http") ? campaign.creativeResponse.figmaUrl : `https://${campaign.creativeResponse.figmaUrl}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-purple-600 hover:text-purple-800"
+                  >
+                    <Palette size={12} /> Approved Figma deck <ArrowUpRight size={11} />
+                  </a>
+                )}
+                {(campaign.clientBrief?.content || campaign.briefContent) && (
+                  <p className="text-[11px] text-gray-500 flex items-start gap-1.5">
+                    <FileText size={12} className="mt-0.5 shrink-0 text-gray-400" />
+                    <span className="line-clamp-3">{campaign.clientBrief?.content || campaign.briefContent}</span>
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <span
+              className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                CREATIVE_STATUS_LABELS[campaign.creativeStatus]?.cls ?? "bg-purple-50 text-purple-700"
+              }`}
+            >
+              <Palette size={11} /> Creative in Progress ·{" "}
+              {CREATIVE_STATUS_LABELS[campaign.creativeStatus]?.label ?? campaign.creativeStatus}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -117,6 +117,20 @@ export interface ProductionDeliverable {
   notes: string | null;
 }
 
+// Commercial-side deliverable (contracted + additional/scope-creep) surfaced
+// read-only in the Production deliverables view.
+export interface CampaignDeliverable {
+  id: string;
+  title: string | null;
+  type: string;
+  quantity: number;
+  description: string | null;
+  dueDate: string | null;
+  status: string; // PENDING | IN_PROGRESS | DELIVERED
+  isAdditional: boolean;
+  overageCost: number | null;
+}
+
 export type ProductionBudgetStatus = "BUDGETING" | "LOCKED" | "IN_PROGRESS" | "FINAL";
 
 export interface ProductionFull {
@@ -146,6 +160,11 @@ export interface ProductionFull {
     marginPercent?: number | null;
     marginAmount?: number | null;
     budgetLocked?: boolean;
+    creativeStatus?: string | null;
+    creativeResponse?: { figmaUrl?: string | null; treatment?: string | null } | null;
+    clientBrief?: { content?: string | null } | null;
+    briefContent?: string | null;
+    deliverables?: CampaignDeliverable[];
   } | null;
   callSheets: CallSheet[];
   crew: CrewMember[];

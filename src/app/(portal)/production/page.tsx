@@ -53,6 +53,28 @@ type ProductionStatus =
 
 type CallSheetStatus = "DRAFT" | "SAVED" | "PUBLISHED";
 
+// Creative-brief deals in flight before they're cleared for production.
+interface CreativeDeal {
+  id: string;
+  title: string;
+  stage: string;
+  clientName: string | null;
+  assignedTo: string | null;
+  creativeStatus: string | null;
+  sentToCreativeAt: string | null;
+  figmaUrl: string | null;
+  briefExcerpt: string;
+  updatedAt: string;
+}
+
+const CREATIVE_STATUS_META: Record<string, { label: string; cls: string }> = {
+  AWAITING_RESPONSE: { label: "Awaiting Response", cls: "bg-amber-100 text-amber-700" },
+  RESPONSE_SENT: { label: "Response Sent", cls: "bg-sky-100 text-sky-700" },
+  IN_REVIEW: { label: "In Review", cls: "bg-blue-100 text-blue-700" },
+  REVISIONS_REQUESTED: { label: "Revisions Requested", cls: "bg-orange-100 text-orange-700" },
+  APPROVED: { label: "Creative Approved", cls: "bg-emerald-100 text-emerald-700" },
+};
+
 const STATUS_STYLES: Record<
   ProductionStatus,
   { bg: string; text: string; dot: string; label: string }
@@ -198,6 +220,7 @@ function countdownTone(date: Date): { bg: string; text: string } {
 
 export default function ProductionDashboard() {
   const [allProductions, setAllProductions] = useState<Production[]>([]);
+  const [creativeDeals, setCreativeDeals] = useState<CreativeDeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -208,6 +231,13 @@ export default function ProductionDashboard() {
       .then((d) => setAllProductions(d.productions ?? []))
       .finally(() => setLoading(false));
   }, [showArchived]);
+
+  useEffect(() => {
+    fetch("/api/production/creative-pipeline")
+      .then((r) => r.json())
+      .then((d) => setCreativeDeals(d.deals ?? []))
+      .catch(() => {});
+  }, []);
 
   // Everything except the dedicated archived section works off live projects.
   const productions = useMemo(
@@ -385,6 +415,9 @@ export default function ProductionDashboard() {
                 <UpcomingList productions={list} />
               </div>
             </div>
+
+            {/* Creative in progress — incoming work still in the creative loop */}
+            {creativeDeals.length > 0 && <CreativeInProgress deals={creativeDeals} />}
 
             {/* Projects */}
             <section id="projects">
@@ -867,6 +900,58 @@ function UpcomingList({ productions }: { productions: Production[] }) {
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Creative in progress ───────────────────────────────────────────────────
+
+function CreativeInProgress({ deals }: { deals: CreativeDeal[] }) {
+  return (
+    <section className="mb-8">
+      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <Sparkles size={13} className="text-purple-500" />
+        Creative in Progress — {deals.length}
+        <span className="font-normal normal-case tracking-normal text-gray-400">· incoming work, not yet cleared for production</span>
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {deals.map((d) => {
+          const meta = CREATIVE_STATUS_META[d.creativeStatus ?? ""] ?? {
+            label: d.creativeStatus ?? "In Progress",
+            cls: "bg-purple-100 text-purple-700",
+          };
+          const approved = d.creativeStatus === "APPROVED";
+          return (
+            <Link
+              key={d.id}
+              href={`/commercial/deals/${d.id}`}
+              className={`block rounded-2xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                approved ? "border-emerald-200" : "border-purple-100"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.cls}`}>
+                  {meta.label}
+                </span>
+                <ArrowUpRight size={14} className="text-gray-300" />
+              </div>
+              <p className="text-sm font-semibold text-gray-900 truncate">{d.title}</p>
+              {d.clientName && <p className="text-xs text-gray-500 mt-0.5">{d.clientName}</p>}
+              {d.briefExcerpt && (
+                <p className="text-[11px] text-gray-400 mt-2 line-clamp-2">{d.briefExcerpt}</p>
+              )}
+              <div className="mt-3 flex items-center gap-3 flex-wrap">
+                {approved && d.figmaUrl && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-purple-600">
+                    <CheckCircle2 size={12} /> Approved deck attached
+                  </span>
+                )}
+                {d.assignedTo && <span className="text-[11px] text-gray-400">{d.assignedTo}</span>}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

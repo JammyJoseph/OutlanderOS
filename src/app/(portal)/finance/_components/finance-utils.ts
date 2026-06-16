@@ -314,8 +314,17 @@ export interface ProjectEconomics {
   productionBudgetStatus: string | null
   actualMarginAmount: number | null
   actualMarginPercent: number | null
+  // Scope-creep deliverables billed on top of the contracted deal.
+  deliverables: {
+    contractedCount: number
+    additionalCount: number
+    additionalOverage: number
+    additional: { id: string; title: string; overageCost: number; approvedBy: string | null; status: string }[]
+  }
   finalPL: {
     revenue: number
+    dealValue: number
+    additionalOverage: number
     nonProductionAllocated: number
     productionActuals: number
     costs: number

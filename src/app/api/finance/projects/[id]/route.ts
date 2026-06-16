@@ -61,6 +61,19 @@ export const GET = withAuth(async (request: NextRequest, context) => {
       getXeroInvoices().catch(() => []),
     ])
 
+    // Deliverables on the linked deal — contracted vs additional (scope creep).
+    // Additional deliverables carry an overage cost billed on top of the deal,
+    // which flows through to revenue in the P&L.
+    const deliverables = budget.campaignId
+      ? await prisma.deliverable.findMany({
+          where: { campaignId: budget.campaignId },
+          orderBy: [{ isAdditional: 'asc' }, { dueDate: { sort: 'asc', nulls: 'last' } }],
+        })
+      : []
+    const contractedDeliverables = deliverables.filter((d) => !d.isAdditional)
+    const additionalDeliverables = deliverables.filter((d) => d.isAdditional)
+    const additionalOverage = additionalDeliverables.reduce((s, d) => s + (d.overageCost ?? 0), 0)
+
     const totalCosts = costs.reduce((s, c) => s + c.amount, 0)
 
     // Cost line items grouped by category.
@@ -122,8 +135,10 @@ export const GET = withAuth(async (request: NextRequest, context) => {
       .filter((a) => !a.isProductionBudget)
       .reduce((s, a) => s + a.amount, 0)
     const plCosts = nonProductionAllocated + productionActuals
-    const grossProfit = dealTotal - plCosts
-    const grossMarginPercent = dealTotal > 0 ? (grossProfit / dealTotal) * 100 : null
+    // Scope-creep overages are extra revenue from the client.
+    const plRevenue = dealTotal + additionalOverage
+    const grossProfit = plRevenue - plCosts
+    const grossMarginPercent = plRevenue > 0 ? (grossProfit / plRevenue) * 100 : null
 
     // Invoice tracking: supplier invoices vs what production reported.
     const settledStatuses = ['PAID', 'REJECTED']
@@ -161,8 +176,23 @@ export const GET = withAuth(async (request: NextRequest, context) => {
         productionBudgetStatus: production?.productionBudgetStatus ?? null,
         actualMarginAmount,
         actualMarginPercent,
+        // Scope-creep deliverables: contracted vs additional + overage revenue.
+        deliverables: {
+          contractedCount: contractedDeliverables.length,
+          additionalCount: additionalDeliverables.length,
+          additionalOverage,
+          additional: additionalDeliverables.map((d) => ({
+            id: d.id,
+            title: d.title ?? d.type,
+            overageCost: d.overageCost ?? 0,
+            approvedBy: d.approvedBy,
+            status: d.status,
+          })),
+        },
         finalPL: {
-          revenue: dealTotal,
+          revenue: plRevenue,
+          dealValue: dealTotal,
+          additionalOverage,
           nonProductionAllocated,
           productionActuals,
           costs: plCosts,

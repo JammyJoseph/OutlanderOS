@@ -1,18 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, ExternalLink, Package } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Package, AlertTriangle, CalendarDays } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import {
   ProductionDeliverable,
   DeliverableStatus,
   DELIVERABLE_TYPES,
+  CampaignDeliverable,
 } from "./types";
 
 interface Props {
   productionId: string;
   deliverables: ProductionDeliverable[];
+  campaignId?: string | null;
+  campaignDeliverables?: CampaignDeliverable[];
   refresh: () => void;
+}
+
+const COMMERCIAL_STATUSES = [
+  { key: "PENDING", label: "Pending", bg: "bg-gray-100", text: "text-gray-600" },
+  { key: "IN_PROGRESS", label: "In Progress", bg: "bg-amber-100", text: "text-amber-700" },
+  { key: "DELIVERED", label: "Delivered", bg: "bg-emerald-100", text: "text-emerald-700" },
+];
+
+function commercialStatusStyle(s: string) {
+  return COMMERCIAL_STATUSES.find((x) => x.key === s) ?? COMMERCIAL_STATUSES[0];
 }
 
 const STATUS_CYCLE: DeliverableStatus[] = [
@@ -39,9 +52,23 @@ function getTypeMeta(type: string) {
 export default function DeliverablesTab({
   productionId,
   deliverables,
+  campaignId,
+  campaignDeliverables = [],
   refresh,
 }: Props) {
   const [showAdd, setShowAdd] = useState(false);
+
+  // Production can update status on the Commercial deliverables but can't
+  // add/remove them — that's Commercial's job.
+  async function updateCommercialStatus(id: string, status: string) {
+    if (!campaignId) return;
+    await fetch(`/api/commercial/deals/${campaignId}/deliverables/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    refresh();
+  }
 
   async function add(form: Partial<ProductionDeliverable>) {
     await fetch(`/api/productions/${productionId}/deliverables`, {
@@ -76,8 +103,72 @@ export default function DeliverablesTab({
     update(d.id, { status: next });
   }
 
+  const contractedCampaign = campaignDeliverables.filter((d) => !d.isAdditional);
+  const additionalCampaign = campaignDeliverables.filter((d) => d.isAdditional);
+
   return (
     <div className="space-y-5">
+      {/* Commercial deliverables — what was sold to the client (read-only here,
+          status is editable). Contracted + additional/scope-creep. */}
+      {campaignDeliverables.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-50">
+            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Package size={15} className="text-[#ffd700]" />
+              Sold Deliverables
+              <span className="text-[11px] font-normal text-gray-400">from the deal</span>
+            </h2>
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              Set by Commercial — you can update status but not add or remove them.
+            </p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {[...contractedCampaign, ...additionalCampaign].map((d) => {
+              const st = commercialStatusStyle(d.status);
+              return (
+                <div
+                  key={d.id}
+                  className={`flex items-center gap-3 px-5 py-3 ${d.isAdditional ? "border-l-4 border-l-amber-400 bg-amber-50/30" : ""}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      {d.title || d.type}
+                      {d.quantity > 1 && <span className="text-gray-400 font-normal"> ×{d.quantity}</span>}
+                      {d.isAdditional && (
+                        <span className="ml-2 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">
+                          <AlertTriangle size={9} /> Additional
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+                        {d.type}
+                      </span>
+                      {d.dueDate && (
+                        <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                          <CalendarDays size={11} /> {format(parseISO(d.dueDate), "d MMM yyyy")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <select
+                    value={d.status}
+                    onChange={(e) => updateCommercialStatus(d.id, e.target.value)}
+                    className={`text-[11px] font-semibold rounded-full px-2.5 py-1 cursor-pointer focus:outline-none ${st.bg} ${st.text}`}
+                  >
+                    {COMMERCIAL_STATUSES.map((s) => (
+                      <option key={s.key} value={s.key}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {(STATUS_CYCLE ?? []).map((s) => {
           const count = deliverables.filter((d) => d.status === s).length;

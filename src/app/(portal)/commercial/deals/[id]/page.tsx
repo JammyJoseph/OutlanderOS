@@ -1,4 +1,5 @@
 "use client";
+// Builds 4+5+6: creative briefing flow, scope-creep deliverables, campaign tracker.
 
 import { useState, useEffect, useCallback, useRef, use } from "react";
 import Link from "next/link";
@@ -8,7 +9,6 @@ import {
   Rocket,
   X,
   Plus,
-  Trash2,
   CalendarDays,
   User as UserIcon,
   Film,
@@ -33,6 +33,8 @@ import {
   History,
   RefreshCw,
   Circle,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import {
@@ -52,14 +54,8 @@ import {
 } from "../../_components/deal-ui";
 import { ActionTrackPanel } from "@/components/tasks/ActionTrackPanel";
 import MediaPlanTab from "../../_components/MediaPlanTab";
-
-interface Deliverable {
-  id: string;
-  type: string;
-  description: string | null;
-  dueDate: string | null;
-  status: string;
-}
+import DeliverablesTab, { type Deliverable } from "./DeliverablesTab";
+import CampaignTrackerTab from "./CampaignTrackerTab";
 
 interface ActivityEntry {
   id: string;
@@ -75,12 +71,15 @@ interface ClientBriefData {
   references: string[];
   receivedDate: string | null;
   responseDueDate: string | null;
+  sentToCreativeAt: string | null;
 }
 
 interface CreativeRevisionData {
   treatment: string;
+  figmaUrl: string | null;
   moodBoardLinks: string[];
   sentDate: string | null;
+  submittedBy: string | null;
 }
 
 interface CreativeResponseData extends CreativeRevisionData {
@@ -157,7 +156,7 @@ interface ClientOption {
   name: string;
 }
 
-type Tab = "overview" | "brief" | "mediaplan" | "deliverables" | "tasks" | "activity";
+type Tab = "overview" | "brief" | "mediaplan" | "deliverables" | "tracker" | "tasks" | "activity";
 
 // Deal sign-off onward counts as "won".
 const WON_STAGES: DealStage[] = [
@@ -239,6 +238,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
   const [showMarkLive, setShowMarkLive] = useState(false);
   const [showClearProduction, setShowClearProduction] = useState(false);
@@ -268,6 +268,10 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       fetch("/api/clients")
         .then((r) => r.json())
         .then((c) => setClients(Array.isArray(c) ? c : [])),
+      fetch("/api/me")
+        .then((r) => r.json())
+        .then((d) => setIsAdmin(d.user?.role === "ADMIN"))
+        .catch(() => {}),
     ]).finally(() => setLoading(false));
   }, [reload]);
 
@@ -396,11 +400,18 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       /print|magazine|advertorial|flat\s*plan/i.test(`${d.type} ${d.description ?? ""}`)
     );
 
+  // Contracted deliverables freeze once the IO is signed (admin can override).
+  const contractedLocked =
+    STAGE_ORDER.indexOf(normalizedStage) >= STAGE_ORDER.indexOf("IO_SIGNED");
+  // Supplied-asset deals get a media-calendar / link-banking Campaign Tracker.
+  const suppliedWorkflow = !creativeWorkflow;
+
   const TABS: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
     ...(creativeUnlocked ? [{ key: "brief" as Tab, label: "Brief & Creative" }] : []),
     { key: "mediaplan", label: "Media Plan" },
     { key: "deliverables", label: `Deliverables (${deal.deliverables.length})` },
+    ...(suppliedWorkflow ? [{ key: "tracker" as Tab, label: "Campaign Tracker" }] : []),
     { key: "tasks", label: "Tasks" },
     { key: "activity", label: "Activity" },
   ];
@@ -688,7 +699,18 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           <MediaPlanTab dealId={deal.id} workflowType={deal.workflowType} onSaved={reload} />
         )}
         {tab === "deliverables" && (
-          <DeliverablesTab dealId={deal.id} initial={deal.deliverables} onChanged={reload} />
+          <DeliverablesTab
+            dealId={deal.id}
+            initial={deal.deliverables}
+            dealValue={deal.value}
+            contractedLocked={contractedLocked}
+            dealSigned={dealSigned}
+            isAdmin={isAdmin}
+            onChanged={reload}
+          />
+        )}
+        {tab === "tracker" && (
+          <CampaignTrackerTab dealId={deal.id} initial={deal.deliverables} onChanged={reload} />
         )}
         {tab === "tasks" && <ActionTrackPanel projectId={deal.id} />}
         {tab === "activity" && <ActivityTab activities={deal.activities} />}
@@ -1240,11 +1262,21 @@ function LaunchChecklist({
 // ─── Brief & Creative tab — the case builder document workspace ──────────────
 
 function emptyBrief(): ClientBriefData {
-  return { content: "", references: [], receivedDate: null, responseDueDate: null };
+  return { content: "", references: [], receivedDate: null, responseDueDate: null, sentToCreativeAt: null };
 }
 
 function emptyResponse(): CreativeResponseData {
-  return { treatment: "", moodBoardLinks: [], sentDate: null, revisions: [] };
+  return { treatment: "", figmaUrl: null, moodBoardLinks: [], sentDate: null, submittedBy: null, revisions: [] };
+}
+
+// Turn a Figma file/proto URL into its embeddable form. Returns null for
+// non-Figma URLs (we just render those as a plain link).
+function figmaEmbedUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const u = url.trim();
+  if (!/figma\.com\/(file|design|proto|board)\//i.test(u)) return null;
+  const full = u.startsWith("http") ? u : `https://${u}`;
+  return `https://www.figma.com/embed?embed_host=outlanderos&url=${encodeURIComponent(full)}`;
 }
 
 function BriefCreativeTab({
@@ -1260,12 +1292,19 @@ function BriefCreativeTab({
 
   const [briefContent, setBriefContent] = useState(brief.content);
   const [treatment, setTreatment] = useState(response.treatment);
+  const [figmaUrl, setFigmaUrl] = useState(response.figmaUrl ?? "");
+  const [submittedBy, setSubmittedBy] = useState(response.submittedBy ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => setBriefContent(deal.clientBrief?.content ?? ""), [deal.clientBrief?.content]);
   useEffect(
     () => setTreatment(deal.creativeResponse?.treatment ?? ""),
     [deal.creativeResponse?.treatment]
+  );
+  useEffect(() => setFigmaUrl(deal.creativeResponse?.figmaUrl ?? ""), [deal.creativeResponse?.figmaUrl]);
+  useEffect(
+    () => setSubmittedBy(deal.creativeResponse?.submittedBy ?? ""),
+    [deal.creativeResponse?.submittedBy]
   );
 
   const statusStyle =
@@ -1283,7 +1322,26 @@ function BriefCreativeTab({
   }
 
   function saveResponse(partial: Partial<CreativeResponseData>) {
-    return patch({ creativeResponse: { ...response, treatment, ...partial } });
+    return patch({
+      creativeResponse: {
+        ...response,
+        treatment,
+        figmaUrl: figmaUrl.trim() || null,
+        submittedBy: submittedBy.trim() || null,
+        ...partial,
+      },
+    });
+  }
+
+  // Commercial flags the brief as sent to the creative/production team —
+  // this is what surfaces the deal in the Production portal's "Creative in
+  // Progress" list.
+  async function sendToCreative() {
+    await patch({
+      clientBrief: { ...brief, content: briefContent, sentToCreativeAt: new Date().toISOString() },
+      creativeStatus: deal.creativeStatus ?? "AWAITING_RESPONSE",
+      briefStatus: "SENT_TO_PRODUCTION",
+    });
   }
 
   async function sendResponse() {
@@ -1295,8 +1353,10 @@ function BriefCreativeTab({
             ...response.revisions,
             {
               treatment: response.treatment,
+              figmaUrl: response.figmaUrl,
               moodBoardLinks: response.moodBoardLinks,
               sentDate: response.sentDate,
+              submittedBy: response.submittedBy,
             },
           ]
         : response.revisions;
@@ -1304,6 +1364,8 @@ function BriefCreativeTab({
       creativeResponse: {
         ...response,
         treatment,
+        figmaUrl: figmaUrl.trim() || null,
+        submittedBy: submittedBy.trim() || null,
         sentDate: new Date().toISOString(),
         revisions,
       },
@@ -1408,6 +1470,28 @@ function BriefCreativeTab({
             />
           </div>
         </div>
+
+        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+          {brief.sentToCreativeAt ? (
+            <p className="text-[11px] text-emerald-600 font-medium inline-flex items-center gap-1.5">
+              <CheckCircle2 size={13} /> Sent to creative team{" "}
+              {format(parseISO(brief.sentToCreativeAt), "d MMM yyyy")} — visible in Production
+            </p>
+          ) : (
+            <p className="text-[11px] text-gray-400">
+              Send the brief to kick off the creative response.
+            </p>
+          )}
+          <button
+            onClick={sendToCreative}
+            disabled={!briefContent.trim() || saving}
+            title={briefContent.trim() ? "Make the brief visible to the creative/production team" : "Write the brief first"}
+            className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send size={14} />
+            {brief.sentToCreativeAt ? "Re-send to Creative Team" : "Send to Creative Team"}
+          </button>
+        </div>
       </div>
 
       {/* Creative Response */}
@@ -1439,6 +1523,66 @@ function BriefCreativeTab({
           }
           className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
         />
+
+        {/* Figma deck link + embedded preview */}
+        <div className="mt-4">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+            Figma deck link
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="url"
+              value={figmaUrl}
+              onChange={(e) => setFigmaUrl(e.target.value)}
+              onBlur={() => {
+                if (figmaUrl.trim() !== (response.figmaUrl ?? "")) saveResponse({ figmaUrl: figmaUrl.trim() || null });
+              }}
+              placeholder="https://www.figma.com/… — the creative deck"
+              className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+            />
+            {figmaUrl.trim() && (
+              <a
+                href={figmaUrl.startsWith("http") ? figmaUrl : `https://${figmaUrl}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium text-purple-600 hover:text-purple-800 px-2.5 py-2 rounded-lg border border-purple-200 hover:bg-purple-50 transition-colors shrink-0"
+              >
+                Open <ArrowUpRight size={12} />
+              </a>
+            )}
+          </div>
+          {figmaEmbedUrl(response.figmaUrl) ? (
+            <div className="mt-3 rounded-xl border border-gray-800 bg-[#1a1a1a] overflow-hidden">
+              <iframe
+                title="Figma deck"
+                src={figmaEmbedUrl(response.figmaUrl)!}
+                className="w-full"
+                style={{ height: 420, border: "none" }}
+                allowFullScreen
+              />
+            </div>
+          ) : response.figmaUrl ? (
+            <p className="mt-2 text-[11px] text-gray-400">
+              Not a recognised Figma URL — it&apos;ll show as a link only.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="mt-4">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+            Submitted by
+          </p>
+          <input
+            type="text"
+            value={submittedBy}
+            onChange={(e) => setSubmittedBy(e.target.value)}
+            onBlur={() => {
+              if (submittedBy.trim() !== (response.submittedBy ?? "")) saveResponse({ submittedBy: submittedBy.trim() || null });
+            }}
+            placeholder="Who from the creative team is sending this?"
+            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+          />
+        </div>
 
         <LinkListEditor
           label="Mood board links"
@@ -1476,40 +1620,99 @@ function BriefCreativeTab({
         onApprove={approveCreative}
       />
 
-      {/* Revision History */}
-      {response.revisions.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
-            <History size={15} className="text-purple-500" />
-            Revision History
-          </h3>
-          <p className="text-xs text-gray-400 mb-4">
-            Earlier versions of the creative response, newest first.
-          </p>
-          <div className="space-y-3">
-            {[...response.revisions].reverse().map((rev, i) => (
-              <div key={i} className="rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-xs font-semibold text-gray-600">
-                    Version {response.revisions.length - i}
-                  </p>
-                  {rev.sentDate && (
-                    <p className="text-[11px] text-gray-400">
-                      Sent {format(parseISO(rev.sentDate), "d MMM yyyy")}
+      {/* Version History — timeline of each creative response version */}
+      {responseSent && (
+        <VersionHistory current={response} />
+      )}
+    </div>
+  );
+}
+
+// ─── Version history timeline ─────────────────────────────────────────────────
+
+function VersionHistory({ current }: { current: CreativeResponseData }) {
+  const [open, setOpen] = useState(true);
+  // Newest first: current sent version, then archived revisions (most recent first).
+  const versions: CreativeRevisionData[] = [
+    { treatment: current.treatment, figmaUrl: current.figmaUrl, moodBoardLinks: current.moodBoardLinks, sentDate: current.sentDate, submittedBy: current.submittedBy },
+    ...[...current.revisions].reverse(),
+  ];
+  const total = versions.length;
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-2 text-left"
+      >
+        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <History size={15} className="text-purple-500" />
+          Version History
+          <span className="text-[11px] font-normal text-gray-400">({total})</span>
+        </h3>
+        <span className="text-gray-400">{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
+      </button>
+
+      {open && (
+        <div className="relative mt-4 pl-5">
+          {/* connecting line */}
+          <div className="absolute left-[6px] top-1.5 bottom-1.5 w-px bg-gray-200" />
+          <div className="space-y-4">
+            {versions.map((rev, i) => {
+              const versionNo = total - i;
+              const isCurrent = i === 0;
+              return (
+                <div key={i} className="relative">
+                  <span
+                    className={`absolute -left-5 top-1 w-3 h-3 rounded-full border-2 border-white ${
+                      isCurrent ? "bg-purple-500 ring-2 ring-purple-200" : "bg-gray-300"
+                    }`}
+                  />
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="text-xs font-semibold text-gray-700">
+                      Version {versionNo}
+                      {isCurrent && (
+                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-purple-600">
+                          Current
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-3">
+                      {rev.submittedBy && (
+                        <span className="text-[11px] text-gray-400">by {rev.submittedBy}</span>
+                      )}
+                      {rev.sentDate && (
+                        <span className="text-[11px] text-gray-400">
+                          {format(parseISO(rev.sentDate), "d MMM yyyy")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {rev.treatment && (
+                    <p className="text-[13px] text-gray-600 whitespace-pre-wrap line-clamp-3 mt-1">
+                      {rev.treatment}
                     </p>
                   )}
+                  <div className="flex items-center gap-3 mt-1.5">
+                    {rev.figmaUrl && (
+                      <a
+                        href={rev.figmaUrl.startsWith("http") ? rev.figmaUrl : `https://${rev.figmaUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-purple-600 hover:text-purple-800"
+                      >
+                        <LinkIcon size={11} /> Figma deck <ArrowUpRight size={10} />
+                      </a>
+                    )}
+                    {rev.moodBoardLinks.length > 0 && (
+                      <span className="text-[11px] text-gray-400">
+                        {rev.moodBoardLinks.length} mood board link{rev.moodBoardLinks.length === 1 ? "" : "s"}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap line-clamp-4">
-                  {rev.treatment || "—"}
-                </p>
-                {rev.moodBoardLinks.length > 0 && (
-                  <p className="text-[11px] text-gray-400 mt-1.5">
-                    {rev.moodBoardLinks.length} mood board link
-                    {rev.moodBoardLinks.length === 1 ? "" : "s"}
-                  </p>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -1750,154 +1953,6 @@ function FeedbackLog({
   );
 }
 
-// ─── Deliverables tab ─────────────────────────────────────────────────────────
-
-const DELIVERABLE_STATUSES = [
-  { key: "PENDING", label: "Pending", bg: "bg-gray-100", text: "text-gray-600" },
-  { key: "IN_PROGRESS", label: "In Progress", bg: "bg-amber-100", text: "text-amber-700" },
-  { key: "DELIVERED", label: "Delivered", bg: "bg-emerald-100", text: "text-emerald-700" },
-];
-
-function DeliverablesTab({
-  dealId,
-  initial,
-  onChanged,
-}: {
-  dealId: string;
-  initial: Deliverable[];
-  onChanged: () => Promise<void>;
-}) {
-  const [items, setItems] = useState<Deliverable[]>(initial);
-  const [newItem, setNewItem] = useState("");
-  const [newDue, setNewDue] = useState("");
-  const [adding, setAdding] = useState(false);
-
-  async function add(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newItem.trim()) return;
-    setAdding(true);
-    try {
-      const res = await fetch(`/api/commercial/deals/${dealId}/deliverables`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: newItem.trim(), dueDate: newDue || null }),
-      });
-      if (res.ok) {
-        const created = await res.json();
-        setItems((prev) => [...prev, created]);
-        setNewItem("");
-        setNewDue("");
-        onChanged();
-      }
-    } finally {
-      setAdding(false);
-    }
-  }
-
-  async function setStatus(item: Deliverable, status: string) {
-    setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, status } : x)));
-    await fetch(`/api/commercial/deals/${dealId}/deliverables/${item.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    onChanged();
-  }
-
-  async function remove(item: Deliverable) {
-    setItems((prev) => prev.filter((x) => x.id !== item.id));
-    await fetch(`/api/commercial/deals/${dealId}/deliverables/${item.id}`, {
-      method: "DELETE",
-    });
-    onChanged();
-  }
-
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-2xl">
-      <h3 className="text-sm font-semibold text-gray-800 mb-1 flex items-center gap-2">
-        <PackageCheck size={15} className="text-[#ffd700]" />
-        Deliverables
-      </h3>
-      <p className="text-xs text-gray-400 mb-5">What&apos;s included in this deal.</p>
-
-      {items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-200 py-8 text-center text-sm text-gray-400 mb-4">
-          No deliverables yet — add what&apos;s included below.
-        </div>
-      ) : (
-        <div className="space-y-2 mb-4">
-          {items.map((item) => {
-            const status =
-              DELIVERABLE_STATUSES.find((s) => s.key === item.status) ?? DELIVERABLE_STATUSES[0];
-            return (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 rounded-xl border border-gray-100 px-4 py-3 hover:bg-gray-50/60 transition-colors group"
-              >
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-sm font-medium ${
-                      item.status === "DELIVERED" ? "text-gray-400 line-through" : "text-gray-800"
-                    }`}
-                  >
-                    {item.type}
-                  </p>
-                  {item.dueDate && (
-                    <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
-                      <CalendarDays size={11} /> Due {format(parseISO(item.dueDate), "d MMM yyyy")}
-                    </p>
-                  )}
-                </div>
-                <select
-                  value={item.status}
-                  onChange={(e) => setStatus(item, e.target.value)}
-                  className={`text-[11px] font-semibold rounded-full px-2.5 py-1 cursor-pointer focus:outline-none ${status.bg} ${status.text}`}
-                >
-                  {DELIVERABLE_STATUSES.map((s) => (
-                    <option key={s.key} value={s.key}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => remove(item)}
-                  className="p-1.5 rounded-lg text-gray-200 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  title="Remove"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <form onSubmit={add} className="flex items-center gap-2">
-        <input
-          type="text"
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          placeholder="Add a deliverable (e.g. 3x Instagram Reels)"
-          className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
-        />
-        <input
-          type="date"
-          value={newDue}
-          onChange={(e) => setNewDue(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
-        />
-        <button
-          type="submit"
-          disabled={!newItem.trim() || adding}
-          className="flex items-center gap-1.5 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors disabled:opacity-50"
-        >
-          {adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-          Add
-        </button>
-      </form>
-    </div>
-  );
-}
 
 // ─── Activity tab ─────────────────────────────────────────────────────────────
 

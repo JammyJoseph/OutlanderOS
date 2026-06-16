@@ -375,6 +375,8 @@ export default function ProjectDetail() {
             <DeliverablesTab
               productionId={production.id}
               deliverables={production.prodDeliverables ?? []}
+              campaignId={production.campaign?.id ?? production.campaignId}
+              campaignDeliverables={production.campaign?.deliverables ?? []}
               refresh={refresh}
             />
           )}
