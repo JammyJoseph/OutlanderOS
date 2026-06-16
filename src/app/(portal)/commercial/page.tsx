@@ -1,56 +1,98 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Plus,
   Loader2,
   TrendingUp,
-  CalendarDays,
-  Trophy,
-  Banknote,
-  ArrowUpRight,
+  Film,
+  CheckCircle2,
+  Briefcase,
   Kanban,
-  Flame,
   Activity as ActivityIcon,
   ArrowRightLeft,
+  Banknote,
   Sparkles,
   PenLine,
   Rocket,
   PackageCheck,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUp,
+  ArrowDown,
+  Clock,
+  User as UserIcon,
+  CalendarDays,
 } from "lucide-react";
 import {
   format,
   parseISO,
   formatDistanceToNow,
   differenceInCalendarDays,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameDay,
+  isSameMonth,
+  addMonths,
+  subMonths,
 } from "date-fns";
 import {
   STAGE_ORDER,
   STAGE_STYLES,
   typeStyle,
+  dealTypesOf,
   formatMoney,
   type Deal,
   type DealStage,
 } from "./_components/deal-ui";
 import NewDealModal from "./_components/NewDealModal";
 
-interface Stats {
-  totalPipelineValue: number;
-  dealsThisMonth: number;
-  wonThisQuarter: number;
-  revenueBooked: number;
-  stages: { stage: DealStage; count: number; value: number }[];
-  hotDeal: {
+const PRODUCTION_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Planning",
+  BRIEFED: "Briefed",
+  PRE_PRODUCTION: "Pre-Production",
+  SHOOTING: "Shooting",
+  POST_PRODUCTION: "Post-production",
+  DELIVERED: "Delivered",
+  ARCHIVED: "Archived",
+};
+
+interface DashboardDeal {
+  id: string;
+  title: string;
+  client: { id: string; name: string };
+  stage: DealStage;
+  jobType: string | null;
+  workflowType: string;
+  type: string;
+  dealTypes: string[];
+  value: number | null;
+  dueDate: string | null;
+  briefDueDate: string | null;
+  stageUpdatedAt: string;
+  updatedAt: string;
+  assignedTo: { id: string; name: string } | null;
+  production: {
     id: string;
-    title: string;
-    stage: DealStage;
-    value: number | null;
-    type: string;
-    dueDate: string | null;
-    client: { id: string; name: string };
+    status: string;
+    nextShoot: string | null;
+    budgetTotal: number | null;
+    budgetActual: number | null;
+    updatedAt: string;
   } | null;
+}
+
+interface CalEvent {
+  date: string;
+  type: "shoot" | "live" | "brief" | "payment";
+  dealId: string;
+  dealTitle: string;
+  label: string;
 }
 
 interface ActivityItem {
@@ -59,47 +101,72 @@ interface ActivityItem {
   message: string;
   userName: string | null;
   createdAt: string;
-  campaign: {
-    id: string;
-    title: string;
-    stage: DealStage;
-    client: { id: string; name: string };
-  };
+  campaign: { id: string; title: string; stage: DealStage; client: { id: string; name: string } };
+}
+
+interface DashboardData {
+  metrics: { activeDeals: number; pipelineValue: number; inProduction: number; completedThisMonth: number };
+  activeDeals: DashboardDeal[];
+  stageCounts: { stage: DealStage; count: number; value: number }[];
+  calendar: CalEvent[];
+  recentActivity: ActivityItem[];
 }
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   created: <Sparkles size={13} />,
   stage_change: <ArrowRightLeft size={13} />,
   budget_update: <Banknote size={13} />,
+  field_update: <PenLine size={13} />,
   note: <PenLine size={13} />,
   deliverable: <PackageCheck size={13} />,
   project_started: <Rocket size={13} />,
 };
 
+const EVENT_STYLES: Record<CalEvent["type"], { dot: string; label: string }> = {
+  shoot: { dot: "bg-red-500", label: "Shoot" },
+  live: { dot: "bg-emerald-400", label: "Content live" },
+  brief: { dot: "bg-amber-400", label: "Brief deadline" },
+  payment: { dot: "bg-blue-500", label: "Payment due" },
+};
+
+type SortMode = "stage" | "days";
+
 export default function CommercialDashboard() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNewDeal, setShowNewDeal] = useState(false);
+  const [stageFilter, setStageFilter] = useState<DealStage | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("stage");
   const router = useRouter();
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/commercial/stats").then((r) => r.json()),
-      fetch("/api/commercial/activity").then((r) => r.json()),
-    ])
-      .then(([s, a]) => {
-        if (s && !s.error) setStats(s);
-        setActivity(a?.activities ?? []);
+    fetch("/api/commercial/dashboard")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d && !d.error) setData(d);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const totalDeals = stats?.stages.reduce((sum, s) => sum + s.count, 0) ?? 0;
+  const deals = data?.activeDeals ?? [];
+
+  const filteredSorted = useMemo(() => {
+    let list = stageFilter ? deals.filter((d) => d.stage === stageFilter) : [...deals];
+    if (sortMode === "stage") {
+      list.sort(
+        (a, b) =>
+          STAGE_ORDER.indexOf(b.stage) - STAGE_ORDER.indexOf(a.stage) ||
+          daysInStage(b) - daysInStage(a)
+      );
+    } else {
+      list.sort((a, b) => daysInStage(b) - daysInStage(a));
+    }
+    return list;
+  }, [deals, stageFilter, sortMode]);
 
   return (
     <div className="min-h-screen bg-[#141414]">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Page header */}
         <div className="flex items-end justify-between mb-7">
           <div>
@@ -107,10 +174,11 @@ export default function CommercialDashboard() {
               OutlanderOS · Commercial
             </p>
             <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">
-              Deal Pipeline
+              Operations Dashboard
             </h1>
             <p className="text-gray-500 mt-1 text-sm">
-              {totalDeals} deal{totalDeals !== 1 ? "s" : ""} · live overview
+              {data?.metrics.activeDeals ?? 0} active job
+              {(data?.metrics.activeDeals ?? 0) !== 1 ? "s" : ""} across the pipeline
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -137,57 +205,71 @@ export default function CommercialDashboard() {
           </div>
         )}
 
-        {!loading && (
+        {!loading && data && (
           <>
-            {/* Hot deal banner */}
-            <section className="mb-6">
-              <HotDealBanner hot={stats?.hotDeal ?? null} onCreate={() => setShowNewDeal(true)} />
-            </section>
-
-            {/* Stats row */}
+            {/* Top metrics */}
             <section className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <StatCard
-                label="Total Pipeline Value"
-                value={formatMoney(stats?.totalPipelineValue ?? 0)}
-                icon={<TrendingUp size={15} />}
+                label="Active Deals"
+                value={String(data.metrics.activeDeals)}
+                icon={<Briefcase size={15} />}
                 tone="amber"
+                subtitle="in flight"
+              />
+              <StatCard
+                label="Pipeline Value"
+                value={formatMoney(data.metrics.pipelineValue)}
+                icon={<TrendingUp size={15} />}
+                tone="green"
                 subtitle="active deals"
               />
               <StatCard
-                label="Deals This Month"
-                value={String(stats?.dealsThisMonth ?? 0)}
-                icon={<CalendarDays size={15} />}
+                label="In Production"
+                value={String(data.metrics.inProduction)}
+                icon={<Film size={15} />}
+                tone="red"
+                subtitle="jobs shooting"
+              />
+              <StatCard
+                label="Completed This Month"
+                value={String(data.metrics.completedThisMonth)}
+                icon={<CheckCircle2 size={15} />}
                 tone="blue"
-                subtitle="created"
-              />
-              <StatCard
-                label="Won This Quarter"
-                value={String(stats?.wonThisQuarter ?? 0)}
-                icon={<Trophy size={15} />}
-                tone="emerald"
-                subtitle="contracted+"
-              />
-              <StatCard
-                label="Revenue Booked"
-                value={formatMoney(stats?.revenueBooked ?? 0)}
-                icon={<Banknote size={15} />}
-                tone="green"
-                subtitle="contracted → paid"
+                subtitle="delivered / paid"
               />
             </section>
 
-            {/* Pipeline summary + activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            {/* Active jobs + stage sidebar */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 mb-6">
               <div className="lg:col-span-3">
-                <PipelineSummary
-                  stages={stats?.stages ?? []}
-                  onStageClick={(stage) => router.push(`/commercial/pipeline?stage=${stage}`)}
+                <ActiveJobs
+                  deals={filteredSorted}
+                  total={deals.length}
+                  stageFilter={stageFilter}
+                  onClearFilter={() => setStageFilter(null)}
+                  sortMode={sortMode}
+                  onToggleSort={() => setSortMode((m) => (m === "stage" ? "days" : "stage"))}
+                  onRowClick={(id) => router.push(`/commercial/deals/${id}`)}
                 />
               </div>
-              <div className="lg:col-span-2">
-                <RecentActivity items={activity.slice(0, 10)} />
+              <div className="lg:col-span-1">
+                <StageSummary
+                  stageCounts={data.stageCounts}
+                  active={stageFilter}
+                  onPick={(s) => setStageFilter((cur) => (cur === s ? null : s))}
+                />
               </div>
             </div>
+
+            {/* Universal campaign calendar */}
+            <section className="mb-6">
+              <CampaignCalendar events={data.calendar} onPick={(id) => router.push(`/commercial/deals/${id}`)} />
+            </section>
+
+            {/* Recent activity */}
+            <section>
+              <RecentActivity items={data.recentActivity} />
+            </section>
           </>
         )}
       </div>
@@ -205,99 +287,8 @@ export default function CommercialDashboard() {
   );
 }
 
-// ─── Hot deal banner ──────────────────────────────────────────────────────────
-
-function HotDealBanner({
-  hot,
-  onCreate,
-}: {
-  hot: Stats["hotDeal"];
-  onCreate: () => void;
-}) {
-  if (!hot) {
-    return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center">
-            <Flame size={20} className="text-gray-300" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-700">No active deals</p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Your most urgent deal will appear here once the pipeline has deals.
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={onCreate}
-          className="text-xs font-medium text-[#ffd700] hover:text-[#e6c200] flex items-center gap-1"
-        >
-          <Plus size={13} /> New deal
-        </button>
-      </div>
-    );
-  }
-
-  const stage = STAGE_STYLES[hot.stage] ?? STAGE_STYLES.LEAD;
-  const type = typeStyle(hot.type);
-  const due = hot.dueDate ? parseISO(hot.dueDate) : null;
-  const daysLeft = due ? differenceInCalendarDays(due, new Date()) : null;
-  const deadlineLabel =
-    daysLeft === null
-      ? null
-      : daysLeft < 0
-        ? `${Math.abs(daysLeft)}d overdue`
-        : daysLeft === 0
-          ? "Due today"
-          : `${daysLeft}d until deadline`;
-
-  return (
-    <Link href={`/commercial/deals/${hot.id}`} className="block group">
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#ffd700] via-[#e6c200] to-[#e6c200] text-white rounded-2xl shadow-lg p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative flex items-start justify-between gap-6">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
-                Hot Deal — Most Urgent
-              </span>
-              {deadlineLabel && (
-                <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-sm">
-                  {deadlineLabel}
-                </span>
-              )}
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight truncate">{hot.title}</h2>
-            <p className="text-sm text-white/70 mt-0.5 truncate">{hot.client.name}</p>
-
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 text-sm">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-sm">
-                {stage.label}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-sm">
-                {type.label}
-              </span>
-              <span className="flex items-center gap-1.5 text-white/90 font-semibold">
-                {formatMoney(hot.value)}
-              </span>
-              {due && (
-                <span className="flex items-center gap-1.5 text-white/90">
-                  <CalendarDays size={14} className="text-white/70" />
-                  {format(due, "EEE d MMM yyyy")}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-end shrink-0">
-            <div className="flex items-center gap-1 text-xs text-white/80 group-hover:text-white transition-colors">
-              Open deal
-              <ArrowUpRight size={14} />
-            </div>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
+function daysInStage(d: DashboardDeal): number {
+  return differenceInCalendarDays(new Date(), parseISO(d.stageUpdatedAt));
 }
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
@@ -312,12 +303,12 @@ function StatCard({
   label: string;
   value: string;
   icon: React.ReactNode;
-  tone: "amber" | "emerald" | "blue" | "green";
+  tone: "amber" | "red" | "blue" | "green";
   subtitle?: string;
 }) {
   const TONE: Record<typeof tone, { bg: string; fg: string }> = {
     amber: { bg: "bg-amber-50", fg: "text-[#ffd700]" },
-    emerald: { bg: "bg-emerald-50", fg: "text-emerald-600" },
+    red: { bg: "bg-red-50", fg: "text-red-600" },
     blue: { bg: "bg-blue-50", fg: "text-blue-600" },
     green: { bg: "bg-green-50", fg: "text-green-600" },
   };
@@ -338,75 +329,315 @@ function StatCard({
   );
 }
 
-// ─── Pipeline summary ─────────────────────────────────────────────────────────
+// ─── Active jobs table ──────────────────────────────────────────────────────
 
-function PipelineSummary({
-  stages,
-  onStageClick,
+function ActiveJobs({
+  deals,
+  total,
+  stageFilter,
+  onClearFilter,
+  sortMode,
+  onToggleSort,
+  onRowClick,
 }: {
-  stages: { stage: DealStage; count: number; value: number }[];
-  onStageClick: (stage: DealStage) => void;
+  deals: DashboardDeal[];
+  total: number;
+  stageFilter: DealStage | null;
+  onClearFilter: () => void;
+  sortMode: SortMode;
+  onToggleSort: () => void;
+  onRowClick: (id: string) => void;
 }) {
-  const maxValue = Math.max(1, ...stages.map((s) => s.value));
-  const empty = stages.every((s) => s.count === 0);
-
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <Kanban size={15} className="text-[#ffd700]" />
-          Pipeline Summary
+          <Briefcase size={15} className="text-[#ffd700]" />
+          Active Jobs
+          <span className="text-gray-400 font-normal">
+            {deals.length}
+            {stageFilter ? ` of ${total}` : ""}
+          </span>
+          {stageFilter && (
+            <button
+              onClick={onClearFilter}
+              className="ml-1 text-[11px] font-medium text-[#ffd700] hover:text-[#e6c200]"
+            >
+              · {STAGE_STYLES[stageFilter]?.label} ✕
+            </button>
+          )}
         </h2>
-        <Link
-          href="/commercial/pipeline"
-          className="text-xs font-medium text-[#ffd700] hover:text-[#e6c200] flex items-center gap-1"
+        <button
+          onClick={onToggleSort}
+          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-500 hover:text-gray-800 rounded-lg border border-gray-200 px-2.5 py-1.5"
+          title="Toggle sort"
         >
-          Open board <ArrowUpRight size={12} />
-        </Link>
+          {sortMode === "stage" ? <ArrowDown size={12} /> : <ArrowUp size={12} />}
+          Sort: {sortMode === "stage" ? "Stage" : "Days in stage"}
+        </button>
       </div>
 
-      {empty ? (
+      {deals.length === 0 ? (
         <div className="px-5 py-12 text-center">
-          <p className="text-sm text-gray-500 font-medium">No deals in the pipeline yet</p>
+          <p className="text-sm text-gray-500 font-medium">No active jobs</p>
           <p className="text-xs text-gray-400 mt-1">
-            Create your first deal and it will show up across these stages.
+            {stageFilter ? "No deals in this stage." : "Create a deal to get started."}
           </p>
         </div>
       ) : (
-        <div className="px-5 py-4 space-y-2.5">
-          {STAGE_ORDER.map((stage) => {
-            const s = stages.find((x) => x.stage === stage) ?? { stage, count: 0, value: 0 };
-            const style = STAGE_STYLES[stage];
-            const pct = s.value > 0 ? Math.max(4, (s.value / maxValue) * 100) : 0;
-            return (
-              <button
-                key={stage}
-                onClick={() => onStageClick(stage)}
-                className="w-full text-left group"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="flex items-center gap-2 text-xs font-medium text-gray-700 group-hover:text-gray-900">
-                    <span className={`w-2 h-2 rounded-full ${style.dot}`} />
-                    {style.label}
-                    <span className="text-gray-400 font-normal">
-                      {s.count} deal{s.count !== 1 ? "s" : ""}
-                    </span>
-                  </span>
-                  <span className="text-xs font-semibold text-gray-800 tabular-nums">
-                    {formatMoney(s.value)}
-                  </span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${style.bar} transition-all duration-300 group-hover:opacity-80`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </button>
-            );
-          })}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-50">
+                <th className="px-5 py-2.5 font-semibold">Deal</th>
+                <th className="px-3 py-2.5 font-semibold">Type</th>
+                <th className="px-3 py-2.5 font-semibold">Stage</th>
+                <th className="px-3 py-2.5 font-semibold text-right">Value</th>
+                <th className="px-3 py-2.5 font-semibold text-right">In stage</th>
+                <th className="px-3 py-2.5 font-semibold">Production</th>
+                <th className="px-3 py-2.5 font-semibold">Owner</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {deals.map((d) => {
+                const style = STAGE_STYLES[d.stage] ?? STAGE_STYLES.NEW_BRIEF;
+                const days = daysInStage(d);
+                const types = dealTypesOf(d);
+                const primaryType = types[0];
+                const stuck = days >= 14;
+                return (
+                  <tr
+                    key={d.id}
+                    onClick={() => onRowClick(d.id)}
+                    className="cursor-pointer hover:bg-gray-50/60 transition-colors"
+                  >
+                    <td className="px-5 py-3">
+                      <p className="font-semibold text-gray-900 leading-tight truncate max-w-[220px]">
+                        {d.title}
+                      </p>
+                      <p className="text-[11px] text-gray-400 truncate">{d.client.name}</p>
+                    </td>
+                    <td className="px-3 py-3">
+                      {primaryType ? (
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${typeStyle(primaryType).bg} ${typeStyle(primaryType).text}`}
+                        >
+                          {typeStyle(primaryType).label}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                        {style.label}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-right font-semibold text-gray-900 tabular-nums">
+                      {formatMoney(d.value)}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <span
+                        className={`inline-flex items-center gap-1 tabular-nums ${stuck ? "text-red-500 font-semibold" : "text-gray-500"}`}
+                        title={stuck ? "Stuck — over 2 weeks in this stage" : "Days in current stage"}
+                      >
+                        <Clock size={11} />
+                        {days}d
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      {d.production ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600">
+                          <Film size={11} />
+                          {PRODUCTION_STATUS_LABELS[d.production.status] ?? d.production.status}
+                          {d.production.nextShoot && (
+                            <span className="text-gray-400">
+                              · {format(parseISO(d.production.nextShoot), "d MMM")}
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      {d.assignedTo ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-gray-500 truncate max-w-[90px]">
+                          <UserIcon size={11} />
+                          {d.assignedTo.name.split(" ")[0]}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 text-xs">Unassigned</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Stage summary sidebar ──────────────────────────────────────────────────
+
+function StageSummary({
+  stageCounts,
+  active,
+  onPick,
+}: {
+  stageCounts: { stage: DealStage; count: number; value: number }[];
+  active: DealStage | null;
+  onPick: (s: DealStage) => void;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full overflow-hidden">
+      <div className="px-4 py-4 border-b border-gray-50">
+        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Kanban size={15} className="text-[#ffd700]" />
+          By Stage
+        </h2>
+      </div>
+      <div className="p-2 space-y-0.5">
+        {stageCounts.map((s) => {
+          const style = STAGE_STYLES[s.stage];
+          const isActive = active === s.stage;
+          return (
+            <button
+              key={s.stage}
+              onClick={() => onPick(s.stage)}
+              className={`w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
+                isActive ? "bg-[#ffd700]/10" : "hover:bg-gray-50"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-xs font-medium text-gray-700 min-w-0">
+                <span className={`w-2 h-2 rounded-full ${style.dot} shrink-0`} />
+                <span className="truncate">{style.label}</span>
+              </span>
+              <span
+                className={`text-xs font-semibold tabular-nums shrink-0 ${isActive ? "text-[#e6c200]" : "text-gray-500"}`}
+              >
+                {s.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Universal campaign calendar ──────────────────────────────────────────────
+
+function CampaignCalendar({
+  events,
+  onPick,
+}: {
+  events: CalEvent[];
+  onPick: (dealId: string) => void;
+}) {
+  const [month, setMonth] = useState<Date>(() => startOfMonth(new Date()));
+
+  const days = useMemo(() => {
+    const gridStart = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
+    const gridEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
+    return eachDayOfInterval({ start: gridStart, end: gridEnd });
+  }, [month]);
+
+  const byDay = useMemo(() => {
+    const map = new Map<string, CalEvent[]>();
+    for (const e of events) {
+      const key = format(parseISO(e.date), "yyyy-MM-dd");
+      const arr = map.get(key) ?? [];
+      arr.push(e);
+      map.set(key, arr);
+    }
+    return map;
+  }, [events]);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <CalendarDays size={15} className="text-[#ffd700]" />
+          Campaign Calendar
+        </h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMonth((m) => subMonths(m, 1))}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-sm font-medium text-gray-700 w-32 text-center">
+            {format(month, "MMMM yyyy")}
+          </span>
+          <button
+            onClick={() => setMonth((m) => addMonths(m, 1))}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 mb-3 flex-wrap">
+        {(Object.keys(EVENT_STYLES) as CalEvent["type"][]).map((k) => (
+          <span key={k} className="inline-flex items-center gap-1.5 text-[11px] text-gray-500">
+            <span className={`w-2 h-2 rounded-full ${EVENT_STYLES[k].dot}`} /> {EVENT_STYLES[k].label}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 text-center mb-1">
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+          <div key={d} className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 py-1">
+            {d}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day) => {
+          const key = format(day, "yyyy-MM-dd");
+          const dayEvents = byDay.get(key) ?? [];
+          const inMonth = isSameMonth(day, month);
+          const today = isSameDay(day, new Date());
+          return (
+            <div
+              key={key}
+              className={`min-h-[84px] rounded-lg border p-1.5 ${
+                inMonth ? "border-gray-100 bg-white" : "border-gray-50 bg-gray-50/50"
+              } ${today ? "ring-1 ring-[#ffd700]" : ""}`}
+            >
+              <p className={`text-[10px] font-semibold ${inMonth ? "text-gray-500" : "text-gray-300"}`}>
+                {format(day, "d")}
+              </p>
+              <div className="space-y-1 mt-0.5">
+                {dayEvents.slice(0, 4).map((ev, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onPick(ev.dealId)}
+                    title={ev.label}
+                    className="w-full text-[10px] leading-tight px-1.5 py-0.5 rounded bg-gray-50 flex items-center gap-1 truncate hover:bg-gray-100"
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${EVENT_STYLES[ev.type].dot} shrink-0`} />
+                    <span className="truncate text-gray-600">{ev.dealTitle}</span>
+                  </button>
+                ))}
+                {dayEvents.length > 4 && (
+                  <p className="text-[9px] text-gray-400 pl-1">+{dayEvents.length - 4} more</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -415,7 +646,7 @@ function PipelineSummary({
 
 function RecentActivity({ items }: { items: ActivityItem[] }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50">
         <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
           <ActivityIcon size={15} className="text-[#ffd700]" />
@@ -424,7 +655,7 @@ function RecentActivity({ items }: { items: ActivityItem[] }) {
       </div>
       {items.length === 0 ? (
         <div className="px-5 py-10 text-center text-xs text-gray-400">
-          Deal updates will appear here.
+          Deal and production updates will appear here.
         </div>
       ) : (
         <div className="divide-y divide-gray-50">
@@ -437,7 +668,7 @@ function RecentActivity({ items }: { items: ActivityItem[] }) {
               <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[#ffd700] flex items-center justify-center shrink-0">
                 {ACTIVITY_ICONS[item.type] ?? <ActivityIcon size={13} />}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs text-gray-700 leading-snug group-hover:text-gray-900">
                   {item.message}
                 </p>

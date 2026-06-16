@@ -4,20 +4,25 @@
 // ones still present in the database. normalizeStage() maps the legacy values
 // onto the current set so the UI only ever deals with the new pipeline.
 export const DEAL_STAGES = [
-  // ── current pipeline ──
+  // ── current pipeline (simplified) ──
+  "NEW_BRIEF",
+  "PITCHING_FEEDBACK",
+  "APPROVAL",
+  "SIGN_OFF",
+  "IO_SIGNED_KICK_OFF",
+  "IN_PRODUCTION",
+  "LIVE",
+  "COMPLETED",
+  "PAID",
+  // ── legacy (kept for backwards compat — folded via normalizeStage) ──
   "LEAD",
   "PITCHED",
   "DEAL_SIGNED",
   "CREATIVE_BRIEF",
   "CREATIVE_REVIEW",
   "CREATIVE_APPROVED",
-  "APPROVAL",
   "IO_SIGNED",
   "CLEARED_FOR_PRODUCTION",
-  "LIVE",
-  "COMPLETED",
-  "PAID",
-  // ── legacy (kept for backwards compat — folded via normalizeStage) ──
   "NEGOTIATING",
   "BRIEF_RECEIVED",
   "CREATIVE_RESPONSE",
@@ -30,17 +35,16 @@ export const DEAL_STAGES = [
 export type DealStageValue = (typeof DEAL_STAGES)[number];
 
 // Canonical display order of the simplified pipeline. Supplied/print deals use a
-// subset of these — see stagesForJobType.
+// subset of these — see stagesForJobType. Order mirrors the kanban groups:
+// Pipeline (New Brief, Pitching, Approval) → Deal (Sign Off, IO/Kick Off) →
+// Active (In Production, Live) → Complete (Completed, Paid).
 export const PIPELINE_STAGES: DealStageValue[] = [
-  "LEAD",
-  "PITCHED",
-  "DEAL_SIGNED",
-  "CREATIVE_BRIEF",
-  "CREATIVE_REVIEW",
-  "CREATIVE_APPROVED",
+  "NEW_BRIEF",
+  "PITCHING_FEEDBACK",
   "APPROVAL",
-  "IO_SIGNED",
-  "CLEARED_FOR_PRODUCTION",
+  "SIGN_OFF",
+  "IO_SIGNED_KICK_OFF",
+  "IN_PRODUCTION",
   "LIVE",
   "COMPLETED",
   "PAID",
@@ -49,98 +53,121 @@ export const PIPELINE_STAGES: DealStageValue[] = [
 // Map any legacy stage value onto the simplified pipeline.
 export function normalizeStage(stage: string): DealStageValue {
   switch (stage) {
-    case "NEGOTIATING":
-      return "PITCHED";
+    // already-current values pass straight through
+    case "NEW_BRIEF":
+    case "PITCHING_FEEDBACK":
+    case "APPROVAL":
+    case "SIGN_OFF":
+    case "IO_SIGNED_KICK_OFF":
+    case "IN_PRODUCTION":
+    case "LIVE":
+    case "COMPLETED":
+    case "PAID":
+      return stage as DealStageValue;
+    // brief preparation
+    case "LEAD":
+    case "CREATIVE_BRIEF":
     case "BRIEF_RECEIVED":
-      return "CREATIVE_BRIEF";
+      return "NEW_BRIEF";
+    // pitching & creative back-and-forth
+    case "PITCHED":
+    case "NEGOTIATING":
+    case "CREATIVE_REVIEW":
     case "CREATIVE_RESPONSE":
     case "CLIENT_REVIEW":
-      return "CREATIVE_REVIEW";
-    case "CLIENT_APPROVED":
-      return "CREATIVE_APPROVED";
+      return "PITCHING_FEEDBACK";
+    // creative approved / deal confirmed
+    case "DEAL_SIGNED":
     case "CONTRACTED":
-      return "DEAL_SIGNED";
+    case "CREATIVE_APPROVED":
+    case "CLIENT_APPROVED":
+      return "SIGN_OFF";
+    // paperwork done
+    case "IO_SIGNED":
     case "BUDGET_SET":
-      return "IO_SIGNED";
+      return "IO_SIGNED_KICK_OFF";
+    // production team working
+    case "CLEARED_FOR_PRODUCTION":
+      return "IN_PRODUCTION";
     default:
-      return isDealStage(stage) ? (stage as DealStageValue) : "LEAD";
+      return "NEW_BRIEF";
   }
 }
 
-// Creative workflow stages — only bespoke (CREATIVE_BRIEF) deals pass through these.
+// Creative workflow stages — only bespoke deals pass through the creative
+// back-and-forth (now folded into NEW_BRIEF + PITCHING_FEEDBACK).
 export const CREATIVE_STAGES: DealStageValue[] = [
-  "CREATIVE_BRIEF",
-  "CREATIVE_REVIEW",
-  "CREATIVE_APPROVED",
+  "NEW_BRIEF",
+  "PITCHING_FEEDBACK",
 ];
 
 // ── Per-workflow stage lists ────────────────────────────────────────────────
-// Bespoke / Creative Brief: full creative + production path.
+// Bespoke / Creative Brief: brief → pitching/feedback → sign off → IO & kick
+// off → in production → completed → paid.
 export const BESPOKE_STAGES: DealStageValue[] = [
-  "LEAD",
-  "PITCHED",
-  "DEAL_SIGNED",
-  "CREATIVE_BRIEF",
-  "CREATIVE_REVIEW",
-  "CREATIVE_APPROVED",
-  "IO_SIGNED",
-  "CLEARED_FOR_PRODUCTION",
-  "LIVE",
+  "NEW_BRIEF",
+  "PITCHING_FEEDBACK",
+  "SIGN_OFF",
+  "IO_SIGNED_KICK_OFF",
+  "IN_PRODUCTION",
   "COMPLETED",
   "PAID",
 ];
 
-// Supplied assets: client provides content — single approval, no production.
+// Supplied assets: client provides content — single approval, then live.
 export const SUPPLIED_ASSETS_STAGES: DealStageValue[] = [
-  "LEAD",
-  "PITCHED",
-  "DEAL_SIGNED",
+  "NEW_BRIEF",
   "APPROVAL",
   "LIVE",
   "COMPLETED",
   "PAID",
 ];
 
-// Print ad: simplest path — sign the deal, go live.
+// Print ad: simplest path — brief, go live.
 export const PRINT_AD_STAGES: DealStageValue[] = [
-  "LEAD",
-  "PITCHED",
-  "DEAL_SIGNED",
+  "NEW_BRIEF",
   "LIVE",
   "COMPLETED",
   "PAID",
 ];
 
-// Stages counted as "won" / revenue booked — from deal sign-off onward.
+// Stages counted as "won" / revenue booked — from sign-off / approval onward.
 export const WON_STAGES: DealStageValue[] = [
-  "DEAL_SIGNED",
-  "CREATIVE_BRIEF",
-  "CREATIVE_REVIEW",
-  "CREATIVE_APPROVED",
+  "SIGN_OFF",
+  "IO_SIGNED_KICK_OFF",
+  "IN_PRODUCTION",
   "APPROVAL",
-  "IO_SIGNED",
-  "CLEARED_FOR_PRODUCTION",
   "LIVE",
   "COMPLETED",
   "PAID",
   // legacy raw values
+  "DEAL_SIGNED",
+  "CREATIVE_APPROVED",
+  "CLIENT_APPROVED",
   "CONTRACTED",
+  "IO_SIGNED",
   "BUDGET_SET",
+  "CLEARED_FOR_PRODUCTION",
 ];
 
 // Stages counted in active pipeline value (everything not yet completed/paid).
 export const ACTIVE_STAGES: DealStageValue[] = [
+  "NEW_BRIEF",
+  "PITCHING_FEEDBACK",
+  "APPROVAL",
+  "SIGN_OFF",
+  "IO_SIGNED_KICK_OFF",
+  "IN_PRODUCTION",
+  "LIVE",
+  // legacy raw values
   "LEAD",
   "PITCHED",
   "DEAL_SIGNED",
   "CREATIVE_BRIEF",
   "CREATIVE_REVIEW",
   "CREATIVE_APPROVED",
-  "APPROVAL",
   "IO_SIGNED",
   "CLEARED_FOR_PRODUCTION",
-  "LIVE",
-  // legacy raw values
   "NEGOTIATING",
   "BRIEF_RECEIVED",
   "CREATIVE_RESPONSE",
@@ -366,9 +393,10 @@ export function clearForProductionChecklist(deal: {
   const creative = deal.workflowType !== "SUPPLIED_ASSETS";
   const stage = normalizeStage(deal.stage);
   const stageIdx = PIPELINE_STAGES.indexOf(stage);
-  // Bespoke: creative must be approved (CREATIVE_APPROVED or later).
-  // Supplied/print: the deal just needs to be signed (DEAL_SIGNED or later).
-  const gateIdx = PIPELINE_STAGES.indexOf(creative ? "CREATIVE_APPROVED" : "DEAL_SIGNED");
+  // Bespoke: paperwork done — the deal must be at IO Signed & Kick Off (or
+  // later) before it can be cleared for production.
+  // Supplied/print: the deal just needs sign-off (Approval or later).
+  const gateIdx = PIPELINE_STAGES.indexOf(creative ? "IO_SIGNED_KICK_OFF" : "APPROVAL");
   const stageOk = stageIdx >= gateIdx;
 
   const brief = parseClientBrief(deal.clientBrief);
@@ -397,9 +425,9 @@ export function clearForProductionChecklist(deal: {
     },
     {
       key: "stage",
-      label: creative ? "Creative approved (deal at Creative Approved+)" : "Deal signed (Deal Signed or later)",
+      label: creative ? "IO signed & kicked off (deal at IO Signed & Kick Off)" : "Signed off (Approval or later)",
       ok: stageOk,
-      detail: !stageOk ? "Move the deal forward in the pipeline first" : undefined,
+      detail: !stageOk ? "Move the deal to IO Signed & Kick Off first" : undefined,
     },
   ];
 

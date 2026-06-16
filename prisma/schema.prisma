@@ -154,7 +154,7 @@ model Campaign {
   workflowType     String         @default("CREATIVE_BRIEF") // CREATIVE_BRIEF | SUPPLIED_ASSETS — determines the process, not the content type
   jobType          String         @default("CREATIVE_BRIEF") // CREATIVE_BRIEF | SUPPLIED_ASSETS | PRINT_AD — the user-facing job classifier set at deal creation; drives auto-tags + workflowType
   status           CampaignStatus @default(BRIEF_RECEIVED)
-  stage            DealStage      @default(LEAD)
+  stage            DealStage      @default(NEW_BRIEF)
   stageUpdatedAt   DateTime?
   description      String?
   dueDate          DateTime?
@@ -219,19 +219,24 @@ model Campaign {
 
 enum DealStage {
   // ── current simplified pipeline ──
+  NEW_BRIEF
+  PITCHING_FEEDBACK
+  APPROVAL
+  SIGN_OFF
+  IO_SIGNED_KICK_OFF
+  IN_PRODUCTION
+  LIVE
+  COMPLETED
+  PAID
+  // ── legacy — folded onto the above via normalizeStage() ──
   LEAD
   PITCHED
   DEAL_SIGNED
   CREATIVE_BRIEF
   CREATIVE_REVIEW
   CREATIVE_APPROVED
-  APPROVAL
   IO_SIGNED
   CLEARED_FOR_PRODUCTION
-  LIVE
-  COMPLETED
-  PAID
-  // ── legacy — folded onto the above via normalizeStage() ──
   NEGOTIATING
   BRIEF_RECEIVED
   CREATIVE_RESPONSE

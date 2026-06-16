@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, isAdminInDb } from "@/lib/auth";
-import { PIPELINE_STAGES, normalizeStage } from "@/lib/deal-stages";
+import { normalizeStage } from "@/lib/deal-stages";
 import { computeEconomics, DEFAULT_PRODUCTION_MARGIN_PCT } from "@/lib/deal-economics";
 
 // POST /api/commercial/deals/[id]/media-plan/lock — lock or unlock the plan.
@@ -74,10 +74,10 @@ export const POST = withAuth(async (
       );
     }
 
-    // The media plan can only be locked once the deal is signed off.
-    if (PIPELINE_STAGES.indexOf(normalizeStage(deal.stage)) < PIPELINE_STAGES.indexOf("DEAL_SIGNED")) {
+    // The media plan can only be locked once the deal moves past the brief.
+    if (normalizeStage(deal.stage) === "NEW_BRIEF") {
       return NextResponse.json(
-        { error: "Sign the deal off (move it to Deal Signed) before locking the media plan." },
+        { error: "Move the deal past New Brief before locking the media plan." },
         { status: 400 }
       );
     }

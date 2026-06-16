@@ -5,7 +5,6 @@ import {
   parseAllocations,
   productionAllocationOf,
   mapSplitsToCampaignBudget,
-  PIPELINE_STAGES,
   normalizeStage,
 } from "@/lib/deal-stages";
 
@@ -84,10 +83,10 @@ export const POST = withAuth(async (
       );
     }
 
-    // The budget can only be locked once the deal is signed off.
-    if (PIPELINE_STAGES.indexOf(normalizeStage(deal.stage)) < PIPELINE_STAGES.indexOf("DEAL_SIGNED")) {
+    // The budget can only be locked once the deal moves past the initial brief.
+    if (normalizeStage(deal.stage) === "NEW_BRIEF") {
       return NextResponse.json(
-        { error: "Sign the deal off (move it to Deal Signed) before locking the budget." },
+        { error: "Move the deal past New Brief before locking the budget." },
         { status: 400 }
       );
     }

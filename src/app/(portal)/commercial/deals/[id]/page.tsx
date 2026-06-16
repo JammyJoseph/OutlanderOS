@@ -36,7 +36,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
-import { format, parseISO, formatDistanceToNow } from "date-fns";
+import { format, parseISO, formatDistanceToNow, differenceInCalendarDays } from "date-fns";
 import {
   STAGE_ORDER,
   STAGE_STYLES,
@@ -128,7 +128,9 @@ interface DealDetail {
     status: string;
     title: string;
     budgetTotal: number | null;
+    budgetActual: number | null;
     shootDates: string[];
+    updatedAt: string;
     _count?: { teamMembers: number };
   } | null;
   financeBudget: { id: string; status: string; totalBudget: number } | null;
@@ -158,15 +160,12 @@ interface ClientOption {
 
 type Tab = "overview" | "brief" | "mediaplan" | "deliverables" | "tracker" | "tasks" | "activity";
 
-// Deal sign-off onward counts as "won".
+// Sign-off / approval onward counts as "won".
 const WON_STAGES: DealStage[] = [
-  "DEAL_SIGNED",
-  "CREATIVE_BRIEF",
-  "CREATIVE_REVIEW",
-  "CREATIVE_APPROVED",
+  "SIGN_OFF",
   "APPROVAL",
-  "IO_SIGNED",
-  "CLEARED_FOR_PRODUCTION",
+  "IO_SIGNED_KICK_OFF",
+  "IN_PRODUCTION",
   "LIVE",
   "COMPLETED",
   "PAID",
@@ -184,8 +183,8 @@ interface ChecklistItem {
 function buildLaunchChecklist(deal: DealDetail): { items: ChecklistItem[]; ready: boolean } {
   const creative = deal.workflowType !== "SUPPLIED_ASSETS";
   const stageIdx = STAGE_ORDER.indexOf(normalizeStage(deal.stage));
-  // Bespoke needs creative approved; supplied/print just need the deal signed.
-  const gateIdx = STAGE_ORDER.indexOf(creative ? "CREATIVE_APPROVED" : "DEAL_SIGNED");
+  // Bespoke needs IO signed & kicked off; supplied/print just need sign-off.
+  const gateIdx = STAGE_ORDER.indexOf(creative ? "IO_SIGNED_KICK_OFF" : "APPROVAL");
   const stageOk = stageIdx >= gateIdx;
   const briefOk = Boolean(deal.clientBrief?.content?.trim() || deal.briefContent?.trim());
 
@@ -213,9 +212,9 @@ function buildLaunchChecklist(deal: DealDetail): { items: ChecklistItem[]; ready
     },
     {
       key: "stage",
-      label: creative ? "Creative approved (deal at Creative Approved+)" : "Deal signed (Deal Signed or later)",
+      label: creative ? "IO signed & kicked off (deal at IO Signed & Kick Off)" : "Signed off (Approval or later)",
       ok: stageOk,
-      detail: !stageOk ? "Move the deal forward in the pipeline first" : undefined,
+      detail: !stageOk ? "Move the deal to IO Signed & Kick Off first" : undefined,
     },
   ];
   return { items, ready: items.every((i) => i.ok) };
@@ -374,11 +373,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const workflowStyle = WORKFLOW_STYLES[creativeWorkflow ? "CREATIVE_BRIEF" : "SUPPLIED_ASSETS"];
   const normalizedStage = normalizeStage(deal.stage);
   const stageWon = WON_STAGES.includes(normalizedStage);
-  // The creative loop + budget/media-plan lock only unlock once the deal is
-  // signed off — deal sign-off is separate from creative sign-off.
-  const dealSigned =
-    STAGE_ORDER.indexOf(normalizedStage) >= STAGE_ORDER.indexOf("DEAL_SIGNED");
-  const creativeUnlocked = creativeWorkflow && dealSigned;
+  // "Deal confirmed" — sign-off / approval onward. Gates scope-creep
+  // deliverables and counts as a won deal.
+  const dealSigned = stageWon;
+  // Bespoke deals always show the Brief & Creative workspace — the brief is
+  // prepared from New Brief and the back-and-forth happens during pitching.
+  const creativeUnlocked = creativeWorkflow;
   const projectStarted = Boolean(deal.production);
   const checklist = buildLaunchChecklist(deal);
   const showClearButton = creativeWorkflow && !projectStarted;
@@ -400,18 +400,18 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       /print|magazine|advertorial|flat\s*plan/i.test(`${d.type} ${d.description ?? ""}`)
     );
 
-  // Contracted deliverables freeze once the IO is signed (admin can override).
+  // Contracted deliverables freeze once IO is signed & kicked off (admin can override).
   const contractedLocked =
-    STAGE_ORDER.indexOf(normalizedStage) >= STAGE_ORDER.indexOf("IO_SIGNED");
-  // Supplied-asset deals get a media-calendar / link-banking Campaign Tracker.
-  const suppliedWorkflow = !creativeWorkflow;
+    STAGE_ORDER.indexOf(normalizedStage) >= STAGE_ORDER.indexOf("IO_SIGNED_KICK_OFF");
 
+  // Every deal gets a Campaign Tracker — supplied/print see the media calendar
+  // + link banking, bespoke see their production milestones.
   const TABS: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
     ...(creativeUnlocked ? [{ key: "brief" as Tab, label: "Brief & Creative" }] : []),
     { key: "mediaplan", label: "Media Plan" },
     { key: "deliverables", label: `Deliverables (${deal.deliverables.length})` },
-    ...(suppliedWorkflow ? [{ key: "tracker" as Tab, label: "Campaign Tracker" }] : []),
+    { key: "tracker", label: "Campaign Tracker" },
     { key: "tasks", label: "Tasks" },
     { key: "activity", label: "Activity" },
   ];
@@ -710,7 +710,23 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           />
         )}
         {tab === "tracker" && (
-          <CampaignTrackerTab dealId={deal.id} initial={deal.deliverables} onChanged={reload} />
+          <CampaignTrackerTab
+            dealId={deal.id}
+            initial={deal.deliverables}
+            workflowType={deal.workflowType}
+            dueDate={deal.dueDate}
+            production={
+              deal.production
+                ? {
+                    id: deal.production.id,
+                    title: deal.production.title,
+                    status: deal.production.status,
+                    shootDates: deal.production.shootDates,
+                  }
+                : null
+            }
+            onChanged={reload}
+          />
         )}
         {tab === "tasks" && <ActionTrackPanel projectId={deal.id} />}
         {tab === "activity" && <ActivityTab activities={deal.activities} />}
@@ -1052,43 +1068,79 @@ function OverviewTab({
       </div>
 
       <div className="space-y-5">
-        {/* Production — appears once the deal is cleared for production */}
-        {deal.production && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <Film size={15} className="text-[#ff4444]" />
-              Production
-            </h3>
-            <Link
-              href={`/production/${deal.production.id}`}
-              className="text-sm font-semibold text-gray-900 hover:text-[#ff4444] transition-colors"
-            >
-              {deal.production.title}
-            </Link>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-[11px] font-medium text-gray-600">
-                {PRODUCTION_STATUS_LABELS[deal.production.status] ?? deal.production.status}
-              </span>
-              <span className="text-xs text-gray-500">
-                {deal.production._count?.teamMembers ?? 0} crew
-              </span>
+        {/* Production status — live cross-portal view once the deal is cleared */}
+        {deal.production && (() => {
+          const prod = deal.production;
+          const utilisation =
+            prod.budgetTotal && prod.budgetTotal > 0
+              ? Math.round(((prod.budgetActual ?? 0) / prod.budgetTotal) * 100)
+              : null;
+          const nextShoot = prod.shootDates
+            .map((d) => parseISO(d))
+            .filter((d) => differenceInCalendarDays(d, new Date()) >= 0)
+            .sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
+          return (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <Film size={15} className="text-[#ff4444]" />
+                Production Status
+              </h3>
+              <Link
+                href={`/production/${prod.id}`}
+                className="text-sm font-semibold text-gray-900 hover:text-[#ff4444] transition-colors"
+              >
+                {prod.title}
+              </Link>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-[11px] font-medium text-red-600">
+                  {PRODUCTION_STATUS_LABELS[prod.status] ?? prod.status}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {prod._count?.teamMembers ?? 0} crew
+                </span>
+              </div>
+              <dl className="mt-3 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <dt className="text-gray-400 flex items-center gap-1.5">
+                    <CalendarDays size={12} /> Next shoot
+                  </dt>
+                  <dd className="font-medium text-gray-700">
+                    {nextShoot ? format(nextShoot, "EEE d MMM") : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <dt className="text-gray-400">Budget used</dt>
+                    <dd className="font-medium text-gray-700 tabular-nums">
+                      {formatMoney(prod.budgetActual ?? 0)} / {formatMoney(prod.budgetTotal ?? 0)}
+                      {utilisation !== null ? ` · ${utilisation}%` : ""}
+                    </dd>
+                  </div>
+                  {utilisation !== null && (
+                    <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${utilisation > 100 ? "bg-red-500" : "bg-emerald-400"}`}
+                        style={{ width: `${Math.min(100, utilisation)}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-gray-400">Last update</dt>
+                  <dd className="font-medium text-gray-700">
+                    {formatDistanceToNow(parseISO(prod.updatedAt), { addSuffix: true })}
+                  </dd>
+                </div>
+              </dl>
+              <Link
+                href={`/production/${prod.id}`}
+                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ff4444] hover:text-red-600 transition-colors"
+              >
+                Open in Production <ArrowUpRight size={12} />
+              </Link>
             </div>
-            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
-              <CalendarDays size={12} className="text-gray-400" />
-              {deal.production.shootDates.length > 0
-                ? deal.production.shootDates
-                    .map((d) => format(parseISO(d), "d MMM"))
-                    .join(" · ")
-                : "No shoot dates yet"}
-            </p>
-            <Link
-              href={`/production/${deal.production.id}`}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ff4444] hover:text-red-600 transition-colors"
-            >
-              Open in Production <ArrowUpRight size={12} />
-            </Link>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Dates */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -1370,7 +1422,7 @@ function BriefCreativeTab({
         revisions,
       },
       creativeStatus: "RESPONSE_SENT",
-      stage: "CREATIVE_REVIEW",
+      stage: "PITCHING_FEEDBACK",
     });
   }
 
@@ -1385,7 +1437,7 @@ function BriefCreativeTab({
   }
 
   async function approveCreative() {
-    await patch({ creativeStatus: "APPROVED", stage: "CREATIVE_APPROVED" });
+    await patch({ creativeStatus: "APPROVED", stage: "SIGN_OFF" });
   }
 
   const responseSent = Boolean(response.sentDate);

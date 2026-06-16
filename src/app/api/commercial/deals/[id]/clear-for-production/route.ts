@@ -171,7 +171,7 @@ export const POST = withAuth(async (
       where: { id: deal.id },
       data: {
         briefStatus: "SENT_TO_PRODUCTION",
-        stage: "CLEARED_FOR_PRODUCTION",
+        stage: "IN_PRODUCTION",
         stageUpdatedAt: new Date(),
         lastSyncedToProduction: new Date(),
       },

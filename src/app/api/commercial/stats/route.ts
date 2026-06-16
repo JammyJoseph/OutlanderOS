@@ -63,7 +63,7 @@ export const GET = withAuth(async () => {
     if (!hotDeal) {
       const inMotion = active
         .filter((d) =>
-          ["DEAL_SIGNED", "CREATIVE_REVIEW", "CREATIVE_APPROVED", "APPROVAL", "IO_SIGNED"].includes(
+          ["PITCHING_FEEDBACK", "SIGN_OFF", "APPROVAL", "IO_SIGNED_KICK_OFF", "IN_PRODUCTION"].includes(
             normalizeStage(d.stage)
           )
         )

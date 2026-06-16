@@ -4,10 +4,10 @@ import { withAuth, isAdminInDb } from "@/lib/auth";
 import { validateRequired, sanitizeString } from "@/lib/validate";
 import { normalizeStage, PIPELINE_STAGES } from "@/lib/deal-stages";
 
-// Contracted deliverables lock once the deal reaches IO_SIGNED. Additional
-// (scope-creep) deliverables can be added at any point after sign-off.
+// Contracted deliverables lock once the deal reaches IO Signed & Kick Off.
+// Additional (scope-creep) deliverables can be added at any point after sign-off.
 function contractedLocked(stage: string): boolean {
-  return PIPELINE_STAGES.indexOf(normalizeStage(stage)) >= PIPELINE_STAGES.indexOf("IO_SIGNED");
+  return PIPELINE_STAGES.indexOf(normalizeStage(stage)) >= PIPELINE_STAGES.indexOf("IO_SIGNED_KICK_OFF");
 }
 
 // GET /api/commercial/deals/[id]/deliverables

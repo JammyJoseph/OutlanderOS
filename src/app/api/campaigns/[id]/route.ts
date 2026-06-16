@@ -37,7 +37,9 @@ export const GET = withAuth(async (
             status: true,
             title: true,
             budgetTotal: true,
+            budgetActual: true,
             shootDates: true,
+            updatedAt: true,
             _count: { select: { teamMembers: true } },
           },
         },
@@ -199,11 +201,12 @@ async function updateCampaign(
       },
     });
 
-    // Stage sync: deal goes Live → kick the linked production into motion
-    // (SHOOTING is the portal's "in progress" status) if it hasn't started.
+    // Stage sync: deal moves to In Production / Live → kick the linked
+    // production into motion (SHOOTING is the portal's "in progress" status)
+    // if it hasn't started.
     if (
       stageChanged &&
-      stage === "LIVE" &&
+      (stage === "IN_PRODUCTION" || stage === "LIVE") &&
       campaign.production &&
       ["DRAFT", "BRIEFED", "PRE_PRODUCTION"].includes(campaign.production.status)
     ) {

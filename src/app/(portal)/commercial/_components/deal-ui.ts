@@ -5,19 +5,24 @@ export const GOLD_DARK = "#e6c200";
 
 export type DealStage =
   // ── current pipeline ──
+  | "NEW_BRIEF"
+  | "PITCHING_FEEDBACK"
+  | "APPROVAL"
+  | "SIGN_OFF"
+  | "IO_SIGNED_KICK_OFF"
+  | "IN_PRODUCTION"
+  | "LIVE"
+  | "COMPLETED"
+  | "PAID"
+  // ── legacy — folded via normalizeStage ──
   | "LEAD"
   | "PITCHED"
   | "DEAL_SIGNED"
   | "CREATIVE_BRIEF"
   | "CREATIVE_REVIEW"
   | "CREATIVE_APPROVED"
-  | "APPROVAL"
   | "IO_SIGNED"
   | "CLEARED_FOR_PRODUCTION"
-  | "LIVE"
-  | "COMPLETED"
-  | "PAID"
-  // ── legacy — folded via normalizeStage ──
   | "NEGOTIATING"
   | "BRIEF_RECEIVED"
   | "CREATIVE_RESPONSE"
@@ -28,15 +33,12 @@ export type DealStage =
 
 // Canonical display order of the simplified pipeline.
 export const STAGE_ORDER: DealStage[] = [
-  "LEAD",
-  "PITCHED",
-  "DEAL_SIGNED",
-  "CREATIVE_BRIEF",
-  "CREATIVE_REVIEW",
-  "CREATIVE_APPROVED",
+  "NEW_BRIEF",
+  "PITCHING_FEEDBACK",
   "APPROVAL",
-  "IO_SIGNED",
-  "CLEARED_FOR_PRODUCTION",
+  "SIGN_OFF",
+  "IO_SIGNED_KICK_OFF",
+  "IN_PRODUCTION",
   "LIVE",
   "COMPLETED",
   "PAID",
@@ -45,21 +47,38 @@ export const STAGE_ORDER: DealStage[] = [
 // Fold legacy stage values onto the simplified pipeline.
 export function normalizeStage(stage: string): DealStage {
   switch (stage) {
-    case "NEGOTIATING":
-      return "PITCHED";
+    case "NEW_BRIEF":
+    case "PITCHING_FEEDBACK":
+    case "APPROVAL":
+    case "SIGN_OFF":
+    case "IO_SIGNED_KICK_OFF":
+    case "IN_PRODUCTION":
+    case "LIVE":
+    case "COMPLETED":
+    case "PAID":
+      return stage as DealStage;
+    case "LEAD":
+    case "CREATIVE_BRIEF":
     case "BRIEF_RECEIVED":
-      return "CREATIVE_BRIEF";
+      return "NEW_BRIEF";
+    case "PITCHED":
+    case "NEGOTIATING":
+    case "CREATIVE_REVIEW":
     case "CREATIVE_RESPONSE":
     case "CLIENT_REVIEW":
-      return "CREATIVE_REVIEW";
-    case "CLIENT_APPROVED":
-      return "CREATIVE_APPROVED";
+      return "PITCHING_FEEDBACK";
+    case "DEAL_SIGNED":
     case "CONTRACTED":
-      return "DEAL_SIGNED";
+    case "CREATIVE_APPROVED":
+    case "CLIENT_APPROVED":
+      return "SIGN_OFF";
+    case "IO_SIGNED":
     case "BUDGET_SET":
-      return "IO_SIGNED";
+      return "IO_SIGNED_KICK_OFF";
+    case "CLEARED_FOR_PRODUCTION":
+      return "IN_PRODUCTION";
     default:
-      return (STAGE_ORDER as string[]).includes(stage) ? (stage as DealStage) : "LEAD";
+      return "NEW_BRIEF";
   }
 }
 
@@ -71,32 +90,25 @@ export const WORKFLOW_STYLES: Record<WorkflowType, { label: string; bg: string; 
   SUPPLIED_ASSETS: { label: "Supplied", bg: "bg-gray-200", text: "text-gray-600" },
 };
 
-// Creative pipeline stages — only bespoke (CREATIVE_BRIEF) deals pass through these.
+// Creative pipeline stages — only bespoke deals pass through the creative loop.
 export const CREATIVE_STAGES: DealStage[] = [
-  "CREATIVE_BRIEF",
-  "CREATIVE_REVIEW",
-  "CREATIVE_APPROVED",
+  "NEW_BRIEF",
+  "PITCHING_FEEDBACK",
 ];
 
 // ── Per-job-type stage lists ────────────────────────────────────────────────
 export const BESPOKE_STAGES: DealStage[] = [
-  "LEAD",
-  "PITCHED",
-  "DEAL_SIGNED",
-  "CREATIVE_BRIEF",
-  "CREATIVE_REVIEW",
-  "CREATIVE_APPROVED",
-  "IO_SIGNED",
-  "CLEARED_FOR_PRODUCTION",
-  "LIVE",
+  "NEW_BRIEF",
+  "PITCHING_FEEDBACK",
+  "SIGN_OFF",
+  "IO_SIGNED_KICK_OFF",
+  "IN_PRODUCTION",
   "COMPLETED",
   "PAID",
 ];
 
 export const SUPPLIED_ASSETS_STAGES: DealStage[] = [
-  "LEAD",
-  "PITCHED",
-  "DEAL_SIGNED",
+  "NEW_BRIEF",
   "APPROVAL",
   "LIVE",
   "COMPLETED",
@@ -104,9 +116,7 @@ export const SUPPLIED_ASSETS_STAGES: DealStage[] = [
 ];
 
 export const PRINT_AD_STAGES: DealStage[] = [
-  "LEAD",
-  "PITCHED",
-  "DEAL_SIGNED",
+  "NEW_BRIEF",
   "LIVE",
   "COMPLETED",
   "PAID",
@@ -146,56 +156,48 @@ export const STAGE_GROUPS: {
   creative?: boolean;
   note?: string;
 }[] = [
-  { key: "prospecting", label: "Prospecting", stages: ["LEAD", "PITCHED"], accent: "text-gray-500", dot: "bg-gray-400" },
-  { key: "deal", label: "Deal", stages: ["DEAL_SIGNED"], accent: "text-[#9C7424]", dot: "bg-[#ffd700]" },
   {
-    key: "creative",
-    label: "Creative",
-    stages: ["CREATIVE_BRIEF", "CREATIVE_REVIEW", "CREATIVE_APPROVED"],
+    key: "pipeline",
+    label: "Pipeline",
+    stages: ["NEW_BRIEF", "PITCHING_FEEDBACK", "APPROVAL"],
     accent: "text-purple-600",
     dot: "bg-purple-400",
-    creative: true,
-    note: "creative brief jobs only",
   },
-  { key: "approval", label: "Approval", stages: ["APPROVAL"], accent: "text-sky-600", dot: "bg-sky-400", note: "supplied assets only" },
-  { key: "commercial", label: "Commercial", stages: ["IO_SIGNED"], accent: "text-[#9C7424]", dot: "bg-[#ffd700]" },
-  { key: "execution", label: "Execution", stages: ["CLEARED_FOR_PRODUCTION", "LIVE"], accent: "text-emerald-600", dot: "bg-emerald-400" },
-  { key: "complete", label: "Complete", stages: ["COMPLETED", "PAID"], accent: "text-blue-600", dot: "bg-blue-400" },
+  {
+    key: "deal",
+    label: "Deal",
+    stages: ["SIGN_OFF", "IO_SIGNED_KICK_OFF"],
+    accent: "text-[#9C7424]",
+    dot: "bg-[#ffd700]",
+  },
+  {
+    key: "active",
+    label: "Active",
+    stages: ["IN_PRODUCTION", "LIVE"],
+    accent: "text-emerald-600",
+    dot: "bg-emerald-400",
+  },
+  {
+    key: "complete",
+    label: "Complete",
+    stages: ["COMPLETED", "PAID"],
+    accent: "text-blue-600",
+    dot: "bg-blue-400",
+  },
 ];
 
 export const STAGE_STYLES: Record<
   DealStage,
   { label: string; bg: string; text: string; dot: string; bar: string }
 > = {
-  LEAD: { label: "Lead", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", bar: "bg-gray-400" },
-  PITCHED: { label: "Pitched", bg: "bg-sky-100", text: "text-sky-700", dot: "bg-sky-400", bar: "bg-sky-400" },
-  DEAL_SIGNED: {
-    label: "Deal Signed",
-    bg: "bg-amber-100",
-    text: "text-amber-700",
-    dot: "bg-[#ffd700]",
-    bar: "bg-[#ffd700]",
-  },
-  CREATIVE_BRIEF: {
-    label: "Creative Brief",
-    bg: "bg-purple-50",
-    text: "text-purple-700",
-    dot: "bg-purple-300",
-    bar: "bg-purple-300",
-  },
-  CREATIVE_REVIEW: {
-    label: "Creative Review",
+  // ── current simplified pipeline ──
+  NEW_BRIEF: { label: "New Brief", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", bar: "bg-gray-400" },
+  PITCHING_FEEDBACK: {
+    label: "Pitching & Feedback",
     bg: "bg-purple-100",
     text: "text-purple-700",
     dot: "bg-purple-400",
     bar: "bg-purple-400",
-  },
-  CREATIVE_APPROVED: {
-    label: "Creative Approved",
-    bg: "bg-violet-100",
-    text: "text-violet-700",
-    dot: "bg-violet-500",
-    bar: "bg-violet-500",
   },
   APPROVAL: {
     label: "Approval",
@@ -204,19 +206,26 @@ export const STAGE_STYLES: Record<
     dot: "bg-sky-500",
     bar: "bg-sky-500",
   },
-  IO_SIGNED: {
-    label: "IO Signed",
+  SIGN_OFF: {
+    label: "Sign Off",
+    bg: "bg-amber-100",
+    text: "text-amber-700",
+    dot: "bg-amber-400",
+    bar: "bg-amber-400",
+  },
+  IO_SIGNED_KICK_OFF: {
+    label: "IO Signed & Kick Off",
     bg: "bg-yellow-100",
     text: "text-yellow-700",
-    dot: "bg-yellow-500",
-    bar: "bg-yellow-500",
+    dot: "bg-[#ffd700]",
+    bar: "bg-[#ffd700]",
   },
-  CLEARED_FOR_PRODUCTION: {
-    label: "Cleared for Production",
-    bg: "bg-teal-100",
-    text: "text-teal-700",
-    dot: "bg-teal-400",
-    bar: "bg-teal-400",
+  IN_PRODUCTION: {
+    label: "In Production",
+    bg: "bg-red-100",
+    text: "text-red-700",
+    dot: "bg-red-500",
+    bar: "bg-red-500",
   },
   LIVE: {
     label: "Live",
@@ -228,13 +237,21 @@ export const STAGE_STYLES: Record<
   COMPLETED: { label: "Completed", bg: "bg-blue-100", text: "text-blue-700", dot: "bg-blue-400", bar: "bg-blue-400" },
   PAID: { label: "Paid", bg: "bg-green-100", text: "text-green-700", dot: "bg-green-500", bar: "bg-green-500" },
   // ── legacy aliases (rendered only if a raw legacy value slips through) ──
-  NEGOTIATING: { label: "Pitched", bg: "bg-sky-100", text: "text-sky-700", dot: "bg-sky-400", bar: "bg-sky-400" },
-  BRIEF_RECEIVED: { label: "Creative Brief", bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-300", bar: "bg-purple-300" },
-  CREATIVE_RESPONSE: { label: "Creative Review", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
-  CLIENT_REVIEW: { label: "Creative Review", bg: "bg-fuchsia-100", text: "text-fuchsia-700", dot: "bg-fuchsia-400", bar: "bg-fuchsia-400" },
-  CLIENT_APPROVED: { label: "Creative Approved", bg: "bg-violet-100", text: "text-violet-700", dot: "bg-violet-500", bar: "bg-violet-500" },
-  CONTRACTED: { label: "Deal Signed", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-[#ffd700]", bar: "bg-[#ffd700]" },
-  BUDGET_SET: { label: "IO Signed", bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-yellow-500", bar: "bg-yellow-500" },
+  LEAD: { label: "New Brief", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", bar: "bg-gray-400" },
+  PITCHED: { label: "Pitching & Feedback", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
+  DEAL_SIGNED: { label: "Sign Off", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-400", bar: "bg-amber-400" },
+  CREATIVE_BRIEF: { label: "New Brief", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", bar: "bg-gray-400" },
+  CREATIVE_REVIEW: { label: "Pitching & Feedback", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
+  CREATIVE_APPROVED: { label: "Sign Off", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-400", bar: "bg-amber-400" },
+  IO_SIGNED: { label: "IO Signed & Kick Off", bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-[#ffd700]", bar: "bg-[#ffd700]" },
+  CLEARED_FOR_PRODUCTION: { label: "In Production", bg: "bg-red-100", text: "text-red-700", dot: "bg-red-500", bar: "bg-red-500" },
+  NEGOTIATING: { label: "Pitching & Feedback", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
+  BRIEF_RECEIVED: { label: "New Brief", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", bar: "bg-gray-400" },
+  CREATIVE_RESPONSE: { label: "Pitching & Feedback", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
+  CLIENT_REVIEW: { label: "Pitching & Feedback", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
+  CLIENT_APPROVED: { label: "Sign Off", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-400", bar: "bg-amber-400" },
+  CONTRACTED: { label: "Sign Off", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-400", bar: "bg-amber-400" },
+  BUDGET_SET: { label: "IO Signed & Kick Off", bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-[#ffd700]", bar: "bg-[#ffd700]" },
 };
 
 // Creative status — where the brief/response/approval loop is.

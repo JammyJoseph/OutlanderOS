@@ -149,7 +149,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
         jobType: jobType ?? workflowType,
         // Creative-brief jobs start the creative loop awaiting Outlander's response.
         creativeStatus: workflowType === "CREATIVE_BRIEF" ? "AWAITING_RESPONSE" : null,
-        stage: body.stage && isDealStage(body.stage) ? body.stage : "LEAD",
+        stage: body.stage && isDealStage(body.stage) ? body.stage : "NEW_BRIEF",
         stageUpdatedAt: new Date(),
         value: value !== undefined && value !== null && value !== "" ? parseFloat(value) : null,
         currency: currency ?? "GBP",
