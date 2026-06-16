@@ -3,22 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import {
-  Bell,
-  ChevronDown,
-  Lock,
-  LayoutGrid,
-  Calendar,
-  Shield,
-  User as UserIcon,
-} from "lucide-react";
-
-const PORTALS = [
-  { name: "Commercial", href: "/commercial" },
-  { name: "Production", href: "/production" },
-  { name: "Finance", href: "/finance", restricted: true },
-  { name: "Print", href: "/print" },
-];
+import { Bell, User as UserIcon } from "lucide-react";
+import { PortalSwitcher } from "@/components/portal/PortalSwitcher";
 
 interface NotificationItem {
   id: string;
@@ -40,10 +26,8 @@ interface MeUser {
 export function PersonalHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const [portalsOpen, setPortalsOpen] = useState(false);
   const [notifsOpen, setNotifsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const portalsRef = useRef<HTMLDivElement>(null);
   const notifsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +51,6 @@ export function PersonalHeader() {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (portalsRef.current && !portalsRef.current.contains(e.target as Node)) setPortalsOpen(false);
       if (notifsRef.current && !notifsRef.current.contains(e.target as Node)) setNotifsOpen(false);
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
     }
@@ -117,56 +100,8 @@ export function PersonalHeader() {
 
       {/* Right */}
       <div className="flex items-center gap-1">
-        {/* Portals dropdown */}
-        <div className="relative" ref={portalsRef}>
-          <button
-            onClick={() => setPortalsOpen((v) => !v)}
-            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <LayoutGrid className="h-3.5 w-3.5 text-gray-400" />
-            Portals
-            <ChevronDown className={`h-3.5 w-3.5 text-gray-400 transition-transform ${portalsOpen ? "rotate-180" : ""}`} />
-          </button>
-          {portalsOpen && (
-            <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-[#1e1e1e] border border-[#2a2a2a] shadow-lg shadow-black/40 z-50 overflow-hidden">
-              <div className="px-3 py-1.5 border-b border-gray-100">
-                <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Switch Portal</span>
-              </div>
-              {PORTALS.map((p) => (
-                <button
-                  key={p.href}
-                  onClick={() => { router.push(p.href); setPortalsOpen(false); }}
-                  className="flex items-center justify-between w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <span>{p.name}</span>
-                  {p.restricted && <Lock className="h-3 w-3 text-gray-400" />}
-                </button>
-              ))}
-              <div className="h-px bg-gray-100" />
-              <button
-                onClick={() => { router.push("/hub"); setPortalsOpen(false); }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-              >
-                <LayoutGrid className="h-3.5 w-3.5 text-gray-400" />
-                Hub
-              </button>
-              <button
-                onClick={() => { router.push("/admin"); setPortalsOpen(false); }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-              >
-                <Shield className="h-3.5 w-3.5 text-gray-400" />
-                Admin & Settings
-              </button>
-              <button
-                onClick={() => { router.push("/"); setPortalsOpen(false); }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-              >
-                <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                Year Calendar
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Portals dropdown (shared with PortalHeader) */}
+        <PortalSwitcher />
 
         {/* Notifications */}
         <div className="relative" ref={notifsRef}>
