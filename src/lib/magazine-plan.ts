@@ -80,15 +80,15 @@ export const SECTIONS: Record<
   SectionKey,
   { label: string; hex: string }
 > = {
-  Cover: { label: "Cover", hex: "#2563eb" },
+  Cover: { label: "Cover", hex: "#3b82f6" },
   FOB: { label: "FOB", hex: "#ff8c00" },
   Fashion: { label: "Fashion", hex: "#9ca3af" },
-  Feature: { label: "Feature", hex: "#22d3ee" },
-  Community: { label: "Community", hex: "#22c55e" },
-  Advertorial: { label: "Advertorial", hex: "#7dd3fc" },
-  "Art & Design": { label: "Art & Design", hex: "#a855f7" },
+  Feature: { label: "Feature", hex: "#60a5fa" },
+  Community: { label: "Community", hex: "#34d399" },
+  Advertorial: { label: "Advertorial", hex: "#4ade80" },
+  "Art & Design": { label: "Art & Design", hex: "#a78bfa" },
   "Digital Focus": { label: "Digital Focus", hex: "#2dd4bf" },
-  Space: { label: "Space", hex: "#4b5563" },
+  Space: { label: "Space", hex: "#6b7280" },
 };
 
 export const SECTION_KEYS = Object.keys(SECTIONS) as SectionKey[];

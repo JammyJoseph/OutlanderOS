@@ -219,7 +219,7 @@ function FlatPlanInner() {
         <Total label="Total In Progress" value={`${stats.inProgressPct}%`} accent="#c084fc" />
         <Total label="% Progress" value={`${stats.progressPct}%`} accent="#60a5fa" />
         <Total label="Total Complete" value={`${stats.completePct}%`} accent="#34d399" />
-        <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-gray-600">
+        <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-gray-700">
           {SECTION_KEYS.map((k) => (
             <span key={k} className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full" style={{ background: SECTIONS[k].hex }} />
@@ -318,8 +318,8 @@ function TrackerView({
                 style={{ background: i % 2 ? "rgba(255,255,255,0.015)" : "transparent" }}
               >
                 <td className={td} style={{ borderLeft: `3px solid ${colour}` }}>
-                  <span className="flex items-center gap-1 text-gray-500">
-                    <GripVertical className="h-3 w-3 cursor-grab text-gray-700 group-hover:text-gray-500" />
+                  <span className="flex items-center gap-1 font-semibold text-white">
+                    <GripVertical className="h-3 w-3 cursor-grab text-gray-500 group-hover:text-gray-700" />
                     {p.pageNumber}
                   </span>
                 </td>
@@ -394,7 +394,7 @@ function CellInput({
         type={date ? "date" : "text"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`${wide ? "min-w-[150px]" : "min-w-[80px]"} w-full rounded bg-transparent px-1 py-0.5 text-[11px] text-gray-200 placeholder-gray-700 focus:bg-white/5 focus:outline-none`}
+        className={`${wide ? "min-w-[150px]" : "min-w-[80px]"} w-full rounded bg-transparent px-1 py-0.5 text-[11px] text-gray-800 placeholder-gray-400 focus:bg-white/5 focus:outline-none`}
         placeholder="—"
         style={date ? { colorScheme: "dark" } : undefined}
       />
@@ -517,9 +517,9 @@ function PageCard({
       onClick={() => onOpen(index)}
       className="group relative flex h-[86px] w-[64px] flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2"
       style={{
-        background: isSpace ? "rgba(255,255,255,0.02)" : `${colour}33`, // ~20% tint
+        background: isSpace ? "rgba(255,255,255,0.04)" : `${colour}5e`, // ~37% tint
         // @ts-expect-error CSS custom prop for hover ring
-        "--tw-ring-color": `${colour}66`,
+        "--tw-ring-color": `${colour}99`,
       }}
     >
       <span
@@ -527,18 +527,18 @@ function PageCard({
         style={{ background: isSpace ? "rgba(255,255,255,0.06)" : colour }}
       />
       <div className="flex items-start justify-between pl-1">
-        <span className="font-mono text-[7px] font-bold text-gray-400">{p.pageNumber}</span>
+        <span className="font-mono text-[7px] font-bold text-white">{p.pageNumber}</span>
         {!isSpace && (
           <span
-            className="rounded px-0.5 text-[6px] font-bold uppercase leading-tight tracking-wide"
-            style={{ background: `${colour}44`, color: colour }}
+            className="rounded px-0.5 text-[6px] font-bold uppercase leading-tight tracking-wide text-black"
+            style={{ background: colour }}
           >
             {sectionAbbr(p.section)}
           </span>
         )}
       </div>
-      <p className="mt-0.5 line-clamp-4 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-100">
-        {isSpace ? <span className="text-gray-700">Space</span> : truncate(p.feature, 28)}
+      <p className="mt-0.5 line-clamp-4 pl-1 text-[8px] font-semibold leading-[1.1] text-white">
+        {isSpace ? <span className="text-gray-500">Space</span> : truncate(p.feature, 28)}
       </p>
     </button>
   );
@@ -652,7 +652,7 @@ function EditModal({
 }
 
 const modalInput =
-  "w-full rounded-lg border border-white/10 bg-black/30 px-2.5 py-1.5 text-xs text-gray-200 focus:border-[#00ff88]/50 focus:outline-none";
+  "w-full rounded-lg border border-white/10 bg-black/30 px-2.5 py-1.5 text-xs text-gray-800 focus:border-[#00ff88]/50 focus:outline-none";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
