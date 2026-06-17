@@ -4,11 +4,17 @@ import { withAuth } from "@/lib/auth";
 import {
   buildSeedPages,
   blankPage,
+  computeStats,
+  issueState,
+  resetPageStructure,
+  syncStatusFlags,
+  sectionColour,
+  SEED_ISSUES,
   SEED_TOTAL_PAGES,
   type MagazinePage,
 } from "@/lib/magazine-plan";
 
-// GET /api/magazine-plan            -> list all plans (lightweight, no pages)
+// GET /api/magazine-plan            -> list all plans with derived stats (no pages)
 // GET /api/magazine-plan?issue=2    -> full plan for an issue number (with pages)
 export const GET = withAuth(async (request: NextRequest) => {
   const issueParam = request.nextUrl.searchParams.get("issue");
@@ -22,29 +28,65 @@ export const GET = withAuth(async (request: NextRequest) => {
       return NextResponse.json({ plan: plan ?? null });
     }
 
-    const plans = await prisma.magazinePlan.findMany({
+    // List view: pull pages so we can derive completion stats + a status badge,
+    // then strip the heavy page array from the response.
+    const rows = await prisma.magazinePlan.findMany({
       orderBy: { issueNumber: "desc" },
-      select: {
-        id: true,
-        issueNumber: true,
-        issueName: true,
-        totalPages: true,
-        updatedAt: true,
-        updatedBy: true,
-      },
     });
-    return NextResponse.json({ plans });
+    const issues = rows.map((row) => {
+      const pages = (Array.isArray(row.pages) ? row.pages : []) as unknown as MagazinePage[];
+      const stats = computeStats(pages);
+      return {
+        id: row.id,
+        issueNumber: row.issueNumber,
+        issueName: row.issueName,
+        totalPages: row.totalPages,
+        updatedAt: row.updatedAt,
+        updatedBy: row.updatedBy,
+        stats,
+        state: issueState(stats),
+      };
+    });
+    return NextResponse.json({ issues });
   } catch (e) {
-    return NextResponse.json({ plans: [], plan: null, error: String(e) }, { status: 500 });
+    return NextResponse.json({ issues: [], plan: null, error: String(e) }, { status: 500 });
   }
 });
 
 // POST /api/magazine-plan
-//   { issueNumber, issueName, totalPages?, seed?: boolean }
-// Creates a plan. When seed is true the page array is pre-populated with the
-// representative SS26 structure; otherwise it starts as blank Space pages.
+//   { seedAll: true }                                   -> create the two seed issues
+//   { issueNumber, issueName, totalPages?, seed?: bool } -> create from seed/blank
+//   { issueNumber, issueName, cloneFromIssue: N }        -> copy a structure, reset content
+//   { issueNumber, issueName, pages: [...] }             -> create from an explicit page array
 export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
   const body = await request.json().catch(() => ({}));
+  const updatedBy = user.name || user.email;
+
+  // Bulk-seed both representative issues if none exist yet.
+  if (body.seedAll === true) {
+    try {
+      const created = [];
+      for (const issue of SEED_ISSUES) {
+        const pages = issue.build();
+        const plan = await prisma.magazinePlan.upsert({
+          where: { issueNumber: issue.issueNumber },
+          update: {}, // never clobber an existing issue
+          create: {
+            issueNumber: issue.issueNumber,
+            issueName: issue.issueName,
+            totalPages: issue.totalPages,
+            pages: pages as unknown as object,
+            updatedBy,
+          },
+        });
+        created.push({ id: plan.id, issueNumber: plan.issueNumber });
+      }
+      return NextResponse.json({ ok: true, created });
+    } catch (e) {
+      return NextResponse.json({ error: String(e) }, { status: 500 });
+    }
+  }
+
   const issueNumber = Number(body.issueNumber);
   const issueName = String(body.issueName ?? "").trim();
 
@@ -55,14 +97,35 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
     );
   }
 
-  const wantSeed = body.seed === true;
-  let totalPages = Number(body.totalPages ?? (wantSeed ? SEED_TOTAL_PAGES : 8));
-  if (!Number.isInteger(totalPages) || totalPages < 8) totalPages = 8;
-  totalPages = Math.round(totalPages / 8) * 8; // snap to a multiple of 8
+  let pages: MagazinePage[];
+  let totalPages: number;
 
-  const pages: MagazinePage[] = wantSeed
-    ? buildSeedPages(totalPages)
-    : Array.from({ length: totalPages }, (_, i) => blankPage(i + 1));
+  if (Number.isInteger(Number(body.cloneFromIssue))) {
+    // New Issue: inherit the structure of an existing issue, reset all content.
+    const source = await prisma.magazinePlan.findUnique({
+      where: { issueNumber: Number(body.cloneFromIssue) },
+    });
+    if (!source) {
+      return NextResponse.json({ error: "Source issue not found" }, { status: 404 });
+    }
+    const srcPages = (Array.isArray(source.pages) ? source.pages : []) as unknown as MagazinePage[];
+    pages = resetPageStructure(srcPages);
+    totalPages = source.totalPages;
+  } else if (Array.isArray(body.pages)) {
+    // Explicit page array (already-shaped); normalise defensively.
+    pages = (body.pages as MagazinePage[]).map((p, i) =>
+      syncStatusFlags({ ...p, pageNumber: i + 1, colour: sectionColour(p.section) })
+    );
+    totalPages = pages.length;
+  } else {
+    const wantSeed = body.seed === true;
+    totalPages = Number(body.totalPages ?? (wantSeed ? SEED_TOTAL_PAGES : 8));
+    if (!Number.isInteger(totalPages) || totalPages < 8) totalPages = 8;
+    totalPages = Math.round(totalPages / 8) * 8; // snap to a multiple of 8
+    pages = wantSeed
+      ? buildSeedPages(totalPages)
+      : Array.from({ length: totalPages }, (_, i) => blankPage(i + 1));
+  }
 
   try {
     const plan = await prisma.magazinePlan.upsert({
@@ -71,14 +134,14 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
         issueName,
         totalPages,
         pages: pages as unknown as object,
-        updatedBy: user.name || user.email,
+        updatedBy,
       },
       create: {
         issueNumber,
         issueName,
         totalPages,
         pages: pages as unknown as object,
-        updatedBy: user.name || user.email,
+        updatedBy,
       },
     });
     return NextResponse.json({ plan });

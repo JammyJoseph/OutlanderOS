@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   Loader2,
   Table2,
@@ -13,6 +15,7 @@ import {
   Trash2,
   X,
   Cloud,
+  ArrowLeft,
 } from "lucide-react";
 import { useMagazinePlan } from "@/components/print/usePlan";
 import {
@@ -34,7 +37,25 @@ import {
 type View = "tracker" | "flatplan";
 
 export default function FlatPlanPage() {
-  const { plan, loading, saving, error, savePages } = useMagazinePlan();
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center bg-[#0a0a0a]">
+          <Loader2 className="h-6 w-6 animate-spin text-[#00ff88]" />
+        </div>
+      }
+    >
+      <FlatPlanInner />
+    </Suspense>
+  );
+}
+
+function FlatPlanInner() {
+  const searchParams = useSearchParams();
+  const issueParam = searchParams.get("issue");
+  const issueNumber = issueParam ? parseInt(issueParam, 10) : null;
+
+  const { plan, loading, saving, error, savePages } = useMagazinePlan(issueNumber);
   const [view, setView] = useState<View>("tracker");
   const [editing, setEditing] = useState<number | null>(null); // index into pages
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -106,6 +127,9 @@ export default function FlatPlanPage() {
         <Cloud className="mb-3 h-8 w-8 text-gray-600" />
         <p className="text-sm">Couldn&apos;t load the magazine plan.</p>
         {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+        <Link href="/print" className="mt-3 text-xs text-[#00ff88] hover:underline">
+          ← Back to all issues
+        </Link>
       </div>
     );
   }
@@ -114,15 +138,24 @@ export default function FlatPlanPage() {
     <div className="flex h-full flex-col bg-[#0a0a0a] text-gray-200">
       {/* Header */}
       <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-white/5 bg-[#0a0a0a]/90 px-6 py-3 backdrop-blur">
-        <div>
-          <h1 className="flex items-center gap-2 text-base font-semibold text-white">
-            <span className="h-2 w-2 rounded-full bg-[#00ff88]" />
-            Flat Plan — Issue {String(plan.issueNumber).padStart(2, "0")} {plan.issueName}
-          </h1>
-          <p className="text-xs text-gray-500">
-            {pages.length} pages ({blocks} × 8-page sections)
-            {saving ? " · saving…" : plan.updatedBy ? ` · last edit ${plan.updatedBy}` : ""}
-          </p>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/print"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:text-white"
+            title="All issues"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </Link>
+          <div>
+            <h1 className="flex items-center gap-2 text-base font-semibold text-white">
+              <span className="h-2 w-2 rounded-full bg-[#00ff88]" />
+              Issue {String(plan.issueNumber).padStart(2, "0")} — {plan.issueName}
+            </h1>
+            <p className="text-xs text-gray-500">
+              {pages.length} pages ({blocks} × 8-page sections)
+              {saving ? " · saving…" : plan.updatedBy ? ` · last edit ${plan.updatedBy}` : ""}
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -162,7 +195,7 @@ export default function FlatPlanPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-hidden">
         {view === "tracker" ? (
           <TrackerView
             pages={pages}
@@ -173,7 +206,6 @@ export default function FlatPlanPage() {
             setStage={setStage}
             addRowAfter={addRowAfter}
             removeRow={removeRow}
-            advance={(i) => updatePage(i, { status: advanceStatus(pages[i].status) })}
           />
         ) : (
           <FlatPlanView pages={pages} onOpen={setEditing} />
@@ -183,11 +215,11 @@ export default function FlatPlanPage() {
       {/* Totals bar */}
       <div className="flex flex-wrap items-center gap-x-8 gap-y-1 border-t border-white/5 bg-[#0d0d0d] px-6 py-3 text-xs">
         <Total label="Total Sections" value={stats.sections} />
-        <Total label="Content Received" value={`${stats.contentReceivedPct}%`} accent="#fbbf24" />
-        <Total label="In Progress" value={`${stats.inProgressPct}%`} accent="#c084fc" />
+        <Total label="Total Content Received" value={`${stats.contentReceivedPct}%`} accent="#fbbf24" />
+        <Total label="Total In Progress" value={`${stats.inProgressPct}%`} accent="#c084fc" />
         <Total label="% Progress" value={`${stats.progressPct}%`} accent="#60a5fa" />
-        <Total label="Complete" value={`${stats.completePct}%`} accent="#34d399" />
-        <div className="ml-auto flex items-center gap-2 text-[10px] text-gray-600">
+        <Total label="Total Complete" value={`${stats.completePct}%`} accent="#34d399" />
+        <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-gray-600">
           {SECTION_KEYS.map((k) => (
             <span key={k} className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full" style={{ background: SECTIONS[k].hex }} />
@@ -225,7 +257,7 @@ function Total({ label, value, accent }: { label: string; value: string | number
   );
 }
 
-// ===================== TRACKER VIEW =====================
+// ===================== TRACKER VIEW (dense spreadsheet) =====================
 
 function TrackerView({
   pages,
@@ -236,7 +268,6 @@ function TrackerView({
   setStage,
   addRowAfter,
   removeRow,
-  advance,
 }: {
   pages: MagazinePage[];
   dragIndex: number | null;
@@ -246,11 +277,10 @@ function TrackerView({
   setStage: (i: number, stage: PageStatus) => void;
   addRowAfter: (i: number) => void;
   removeRow: (i: number) => void;
-  advance: (i: number) => void;
 }) {
   return (
-    <div className="min-w-full overflow-x-auto p-4">
-      <table className="w-full border-separate border-spacing-0 text-xs">
+    <div className="h-full overflow-auto">
+      <table className="w-full border-separate border-spacing-0 text-[11px]">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-gray-500">
             <th className={th}>#</th>
@@ -259,14 +289,14 @@ function TrackerView({
             <th className={th}>Content</th>
             <th className={th}>Type</th>
             <th className={th}>Photographer</th>
-            <th className={th}>Shoot Date</th>
+            <th className={th}>Shoot</th>
             <th className={th}>Talent / Interview</th>
-            <th className={th}>Interview Date</th>
+            <th className={th}>Int. Date</th>
             <th className={th}>Editor</th>
-            <th className={th}>Status Pipeline</th>
-            <th className={`${th} text-center`}>Ready</th>
-            <th className={`${th} text-center`}>In Design</th>
-            <th className={`${th} text-center`}>Complete</th>
+            <th className={`${th} text-center`}>Status</th>
+            <th className={`${th} text-center`}>Rdy</th>
+            <th className={`${th} text-center`}>Dsn</th>
+            <th className={`${th} text-center`}>Cmp</th>
             <th className={th}>Notes</th>
             <th className={th}></th>
           </tr>
@@ -284,7 +314,7 @@ function TrackerView({
                   if (dragIndex !== null) reorder(dragIndex, i);
                   setDragIndex(null);
                 }}
-                className={`group ${dragIndex === i ? "opacity-40" : ""}`}
+                className={`group h-7 ${dragIndex === i ? "opacity-40" : ""}`}
                 style={{ background: i % 2 ? "rgba(255,255,255,0.015)" : "transparent" }}
               >
                 <td className={td} style={{ borderLeft: `3px solid ${colour}` }}>
@@ -315,8 +345,8 @@ function TrackerView({
                 <CellInput value={p.talent} onChange={(v) => updatePage(i, { talent: v })} />
                 <CellInput value={p.interviewDate} onChange={(v) => updatePage(i, { interviewDate: v })} date />
                 <CellInput value={p.editor} onChange={(v) => updatePage(i, { editor: v })} />
-                <td className={td}>
-                  <StatusPill status={p.status} onClick={() => advance(i)} />
+                <td className={`${td} text-center`}>
+                  <StatusDots status={p.status} onSet={(s) => setStage(i, s)} />
                 </td>
                 <CheckCell checked={p.readyForDesign} onToggle={(v) => setStage(i, v ? "READY_FOR_DESIGN" : "CONTENT_RECEIVED")} />
                 <CheckCell checked={p.inDesign} onToggle={(v) => setStage(i, v ? "IN_DESIGN" : "READY_FOR_DESIGN")} />
@@ -341,10 +371,11 @@ function TrackerView({
   );
 }
 
-const th = "border-b border-white/10 px-2 py-2 font-semibold whitespace-nowrap";
-const td = "border-b border-white/5 px-2 py-1 align-middle";
+const th =
+  "sticky top-0 z-20 border-b border-white/10 bg-[#0a0a0a] px-2 py-1.5 font-semibold whitespace-nowrap";
+const td = "border-b border-white/5 px-2 py-0.5 align-middle";
 const cellSelect =
-  "w-full bg-transparent text-xs font-semibold focus:outline-none cursor-pointer";
+  "w-full bg-transparent text-[11px] font-semibold focus:outline-none cursor-pointer";
 
 function CellInput({
   value,
@@ -363,7 +394,7 @@ function CellInput({
         type={date ? "date" : "text"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`${wide ? "min-w-[160px]" : "min-w-[90px]"} w-full rounded bg-transparent px-1 py-0.5 text-xs text-gray-200 placeholder-gray-700 focus:bg-white/5 focus:outline-none`}
+        className={`${wide ? "min-w-[150px]" : "min-w-[80px]"} w-full rounded bg-transparent px-1 py-0.5 text-[11px] text-gray-200 placeholder-gray-700 focus:bg-white/5 focus:outline-none`}
         placeholder="—"
         style={date ? { colorScheme: "dark" } : undefined}
       />
@@ -371,17 +402,28 @@ function CellInput({
   );
 }
 
-function StatusPill({ status, onClick }: { status: PageStatus; onClick: () => void }) {
-  const s = STATUS_STYLE[status];
+// Status pipeline rendered as five 8px dots. Each is clickable to jump straight
+// to that stage; dots up to the current stage are filled with that stage colour.
+function StatusDots({ status, onSet }: { status: PageStatus; onSet: (s: PageStatus) => void }) {
+  const currentIdx = STATUS_PIPELINE.indexOf(status);
   return (
-    <button
-      onClick={onClick}
-      title="Click to advance"
-      className="whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold transition hover:brightness-125"
-      style={{ color: s.text, background: s.bg, borderColor: s.border }}
-    >
-      {STATUS_LABELS[status]}
-    </button>
+    <div className="flex items-center justify-center gap-1" title={STATUS_LABELS[status]}>
+      {STATUS_PIPELINE.map((s, idx) => {
+        const reached = currentIdx >= idx;
+        return (
+          <button
+            key={s}
+            onClick={() => onSet(s)}
+            title={STATUS_LABELS[s]}
+            className="h-2 w-2 rounded-full transition hover:scale-125"
+            style={{
+              background: reached ? STATUS_STYLE[s].text : "rgba(255,255,255,0.12)",
+              boxShadow: idx === currentIdx ? `0 0 0 2px ${STATUS_STYLE[s].bg}` : undefined,
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
 
@@ -400,7 +442,7 @@ function CheckCell({ checked, onToggle }: { checked: boolean; onToggle: (v: bool
   );
 }
 
-// ===================== FLAT PLAN VIEW =====================
+// ===================== FLAT PLAN VIEW (compact magazine layout) =====================
 
 function FlatPlanView({ pages, onOpen }: { pages: MagazinePage[]; onOpen: (i: number) => void }) {
   // Group into spreads: page 1 sits alone on the right (cover), then even-left /
@@ -412,29 +454,46 @@ function FlatPlanView({ pages, onOpen }: { pages: MagazinePage[]; onOpen: (i: nu
   }
 
   return (
-    <div className="p-5">
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="h-full overflow-auto p-3">
+      <div className="flex flex-wrap items-start gap-x-2 gap-y-2">
         {spreads.map((sp, si) => {
-          // Cover is spread 0; after it, mark a divider every 4 spreads (8 pages).
+          // Cover is spread 0; after it, a subtle full-width rule every 4 spreads
+          // (8 pages) marks the print section boundaries.
           const showBlockDivider = si > 1 && (si - 1) % 4 === 0;
           return (
-            <div key={si} className="space-y-2">
-              {showBlockDivider && (
-                <div className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-gray-600">
-                  <span className="h-px flex-1 bg-white/10" />
-                  8-page section
-                  <span className="h-px flex-1 bg-white/10" />
-                </div>
-              )}
-              <div className="flex gap-1.5 rounded-lg bg-white/[0.02] p-1.5 ring-1 ring-white/5">
-                <PageCard index={sp.left} pages={pages} onOpen={onOpen} />
-                <PageCard index={sp.right} pages={pages} onOpen={onOpen} />
-              </div>
-            </div>
+            <FlatPlanSpread
+              key={si}
+              spread={sp}
+              showDivider={showBlockDivider}
+              pages={pages}
+              onOpen={onOpen}
+            />
           );
         })}
       </div>
     </div>
+  );
+}
+
+function FlatPlanSpread({
+  spread,
+  showDivider,
+  pages,
+  onOpen,
+}: {
+  spread: { left: number | null; right: number | null };
+  showDivider: boolean;
+  pages: MagazinePage[];
+  onOpen: (i: number) => void;
+}) {
+  return (
+    <>
+      {showDivider && <div className="h-px w-full bg-white/5" />}
+      <div className="flex gap-[2px]">
+        <PageCard index={spread.left} pages={pages} onOpen={onOpen} />
+        <PageCard index={spread.right} pages={pages} onOpen={onOpen} />
+      </div>
+    </>
   );
 }
 
@@ -448,7 +507,7 @@ function PageCard({
   onOpen: (i: number) => void;
 }) {
   if (index === null) {
-    return <div className="flex-1 rounded-md border border-dashed border-white/5" />;
+    return <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-white/5" />;
   }
   const p = pages[index];
   const colour = sectionColour(p.section);
@@ -456,36 +515,52 @@ function PageCard({
   return (
     <button
       onClick={() => onOpen(index)}
-      className="group relative flex aspect-[3/4] flex-1 flex-col overflow-hidden rounded-md p-2 text-left ring-1 transition hover:ring-2"
+      className="group relative flex h-[86px] w-[64px] flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2"
       style={{
-        background: isSpace ? "rgba(255,255,255,0.02)" : `${colour}1a`,
+        background: isSpace ? "rgba(255,255,255,0.02)" : `${colour}33`, // ~20% tint
         // @ts-expect-error CSS custom prop for hover ring
         "--tw-ring-color": `${colour}66`,
       }}
     >
       <span
-        className="absolute left-0 top-0 h-full w-1"
+        className="absolute left-0 top-0 h-full w-[2px]"
         style={{ background: isSpace ? "rgba(255,255,255,0.06)" : colour }}
       />
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] font-bold text-gray-400">{p.pageNumber}</span>
+      <div className="flex items-start justify-between pl-1">
+        <span className="font-mono text-[7px] font-bold text-gray-400">{p.pageNumber}</span>
         {!isSpace && (
           <span
-            className="rounded px-1 py-px text-[7px] font-bold uppercase tracking-wide"
-            style={{ background: `${colour}33`, color: colour }}
+            className="rounded px-0.5 text-[6px] font-bold uppercase leading-tight tracking-wide"
+            style={{ background: `${colour}44`, color: colour }}
           >
-            {p.section}
+            {sectionAbbr(p.section)}
           </span>
         )}
       </div>
-      <p className="mt-1 line-clamp-3 text-[10px] font-semibold leading-tight text-gray-100">
-        {isSpace ? <span className="text-gray-700">Space</span> : p.feature}
+      <p className="mt-0.5 line-clamp-4 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-100">
+        {isSpace ? <span className="text-gray-700">Space</span> : truncate(p.feature, 28)}
       </p>
-      {!isSpace && p.type && (
-        <span className="mt-auto text-[8px] uppercase tracking-wide text-gray-500">{p.type}</span>
-      )}
     </button>
   );
+}
+
+function truncate(s: string, max: number): string {
+  return s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s;
+}
+
+function sectionAbbr(section: string): string {
+  const map: Record<string, string> = {
+    Cover: "COV",
+    FOB: "FOB",
+    Fashion: "FAS",
+    Feature: "FEA",
+    Community: "COM",
+    Advertorial: "AD",
+    "Art & Design": "A&D",
+    "Digital Focus": "DIG",
+    Space: "SPC",
+  };
+  return map[section] ?? section.slice(0, 3).toUpperCase();
 }
 
 // ===================== EDIT MODAL =====================

@@ -16,6 +16,8 @@ export type SectionKey =
   | "Feature"
   | "Community"
   | "Advertorial"
+  | "Art & Design"
+  | "Digital Focus"
   | "Space";
 
 export interface MagazinePage {
@@ -81,9 +83,11 @@ export const SECTIONS: Record<
   Cover: { label: "Cover", hex: "#2563eb" },
   FOB: { label: "FOB", hex: "#ff8c00" },
   Fashion: { label: "Fashion", hex: "#9ca3af" },
-  Feature: { label: "Feature", hex: "#3b82f6" },
+  Feature: { label: "Feature", hex: "#22d3ee" },
   Community: { label: "Community", hex: "#22c55e" },
-  Advertorial: { label: "Advertorial", hex: "#84cc16" },
+  Advertorial: { label: "Advertorial", hex: "#7dd3fc" },
+  "Art & Design": { label: "Art & Design", hex: "#a855f7" },
+  "Digital Focus": { label: "Digital Focus", hex: "#2dd4bf" },
   Space: { label: "Space", hex: "#4b5563" },
 };
 
@@ -169,7 +173,42 @@ export function computeStats(pages: MagazinePage[]): PlanStats {
   };
 }
 
-// ===== Seed data — representative Issue 02 "SS26" structure (~296 pages) =====
+// High-level issue state for dashboard badges, derived from page stats.
+export type IssueState = "Complete" | "In Progress" | "Planning";
+
+export function issueState(stats: PlanStats): IssueState {
+  if (stats.sections > 0 && stats.completePct >= 100) return "Complete";
+  if (stats.progressPct > 0 || stats.contentReceivedPct > 0) return "In Progress";
+  return "Planning";
+}
+
+// Clone the page STRUCTURE (sections, page numbers, block layout) of an existing
+// issue while wiping every content field back to a fresh, not-started state. Used
+// by the "New Issue" action so a new issue inherits the previous flat plan shape.
+export function resetPageStructure(pages: MagazinePage[]): MagazinePage[] {
+  return pages.map((p, i) =>
+    syncStatusFlags({
+      pageNumber: i + 1,
+      section: p.section,
+      feature: "",
+      content: "",
+      type: "",
+      photographer: "",
+      shootDate: "",
+      talent: "",
+      interviewDate: "",
+      editor: "",
+      status: "NOT_STARTED",
+      readyForDesign: false,
+      inDesign: false,
+      complete: false,
+      notes: "",
+      colour: sectionColour(p.section),
+    })
+  );
+}
+
+// ===== Seed data — two representative issues =====
 
 interface Segment {
   section: SectionKey;
@@ -188,7 +227,7 @@ interface Segment {
 // run of supplied/editorial pages, fashion editorial + FUTURE ICONS, long-form
 // features (Behind the Craft), community pages, and advertorial partnerships,
 // padded with paid Space pages so the total lands on a multiple of 8.
-const SEED_SEGMENTS: Segment[] = [
+const SEED_SEGMENTS_SS26: Segment[] = [
   { section: "Cover", feature: "SS26 COVER", content: "Bespoke Content", type: "Bespoke", pages: 1, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent TBC", editor: "Luke", status: "IN_DESIGN" },
   { section: "Advertorial", feature: "DIOR — Inside Front", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
   { section: "FOB", feature: "DIOR STILL LIFE", content: "Supplied", type: "Supplied", pages: 2, photographer: "Low Cooper", shootDate: "2026-05-15", editor: "Luke", status: "CONTENT_RECEIVED" },
@@ -223,10 +262,54 @@ const SEED_SEGMENTS: Segment[] = [
   { section: "Advertorial", feature: "TIFFANY & CO — Outside Back", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
 ];
 
-export function buildSeedPages(totalPages = 296): MagazinePage[] {
+// Issue 01 "AW25" — the shipped, fully-COMPLETE back issue (~280 pages). Carries
+// the wider section palette (Art & Design, Digital Focus) that defined AW25.
+const SEED_SEGMENTS_AW25: Segment[] = [
+  { section: "Cover", feature: "AW25 COVER", content: "Bespoke Content", type: "Bespoke", pages: 1, photographer: "Low Cooper", shootDate: "2025-08-12", talent: "AW25 Cover Star", editor: "Luke" },
+  { section: "Advertorial", feature: "CARTIER — Inside Front", content: "Advertorial", type: "Supplied", pages: 2 },
+  { section: "FOB", feature: "Masthead & Credits", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke" },
+  { section: "FOB", feature: "Contents", content: "Editorial", type: "Editorial", pages: 3, editor: "Luke" },
+  { section: "FOB", feature: "Editor's Letter", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke" },
+  { section: "Advertorial", feature: "DIOR — DPS", content: "Advertorial", type: "Supplied", pages: 2 },
+  { section: "FOB", feature: "Radar — New Season", content: "Editorial", type: "Editorial", pages: 6, photographer: "Studio", editor: "Maya" },
+  { section: "FOB", feature: "Object of Desire", content: "Supplied", type: "Supplied", pages: 2 },
+  { section: "FOB", feature: "The Edit — Beauty", content: "Editorial", type: "Editorial", pages: 4, photographer: "Still Life Team", shootDate: "2025-08-20", editor: "Maya" },
+  { section: "FOB", feature: "Five Minutes With…", content: "Bespoke Content", type: "Bespoke", pages: 3, talent: "Industry Guest", editor: "Sofia" },
+  { section: "Advertorial", feature: "GUCCI — DPS", content: "Advertorial", type: "Supplied", pages: 2 },
+  { section: "Fashion", feature: "Fashion Editorial — Nightfall", content: "Bespoke Content", type: "Bespoke", pages: 12, photographer: "Rae Iverson", shootDate: "2025-08-28", talent: "Lead Model", editor: "Luke" },
+  { section: "Fashion", feature: "Fashion Editorial — Tailored", content: "Bespoke Content", type: "Bespoke", pages: 10, photographer: "Low Cooper", shootDate: "2025-09-04", editor: "Luke" },
+  { section: "Fashion", feature: "Accessories Story", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Still Life Team", shootDate: "2025-09-08", editor: "Maya" },
+  { section: "Advertorial", feature: "PRADA — DPS", content: "Advertorial", type: "Supplied", pages: 2 },
+  { section: "Feature", feature: "COVER STORY — Interview", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Low Cooper", shootDate: "2025-08-12", talent: "AW25 Cover Star", editor: "Luke" },
+  { section: "Feature", feature: "The Long Read — Reinvention", content: "Editorial", type: "Editorial", pages: 6, editor: "Sofia" },
+  { section: "Feature", feature: "Photo Essay — Northern Light", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Theo Marsh", shootDate: "2025-09-12", editor: "Sofia" },
+  { section: "Advertorial", feature: "LOEWE — DPS", content: "Advertorial", type: "Supplied", pages: 2 },
+  { section: "Art & Design", feature: "ART & DESIGN — Studio Visit", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Theo Marsh", shootDate: "2025-09-02", talent: "Featured Artist", editor: "Sofia" },
+  { section: "Art & Design", feature: "Design Dispatch — Objects", content: "Editorial", type: "Editorial", pages: 6, editor: "Maya" },
+  { section: "Advertorial", feature: "CHANEL — DPS", content: "Advertorial", type: "Supplied", pages: 2 },
+  { section: "Digital Focus", feature: "DIGITAL FOCUS — Creators", content: "Bespoke Content", type: "Bespoke", pages: 4, talent: "Digital Creators", editor: "Maya" },
+  { section: "Digital Focus", feature: "Digital Focus — Tools", content: "Editorial", type: "Editorial", pages: 4, editor: "Maya" },
+  { section: "Community", feature: "Community Spotlight", content: "Bespoke Content", type: "Bespoke", pages: 4, talent: "Community Members", editor: "Sofia" },
+  { section: "Community", feature: "Outlander Directory", content: "Editorial", type: "Editorial", pages: 6, editor: "Maya" },
+  { section: "Advertorial", feature: "BURBERRY — DPS", content: "Advertorial", type: "Supplied", pages: 2 },
+  { section: "Feature", feature: "Travel — Autumn Escapes", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Theo Marsh", editor: "Sofia" },
+  { section: "Community", feature: "Stockists & Credits", content: "Editorial", type: "Editorial", pages: 2, editor: "Luke" },
+  { section: "FOB", feature: "Back Page — Last Word", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke" },
+  { section: "Advertorial", feature: "HERMÈS — Inside Back", content: "Advertorial", type: "Supplied", pages: 1 },
+  { section: "Advertorial", feature: "ROLEX — Outside Back", content: "Advertorial", type: "Supplied", pages: 1 },
+];
+
+// Generic page builder. `forceStatus` overrides every featured page's status
+// (used to mark Issue 01 fully COMPLETE); otherwise each segment's own status is
+// used. Remaining pages are padded with available Space slots.
+function buildPagesFromSegments(
+  segments: Segment[],
+  totalPages: number,
+  forceStatus?: PageStatus
+): MagazinePage[] {
   const pages: MagazinePage[] = [];
   let n = 1;
-  for (const seg of SEED_SEGMENTS) {
+  for (const seg of segments) {
     for (let i = 0; i < seg.pages; i++) {
       if (n > totalPages) break;
       const multi = seg.pages > 1 ? ` (${i + 1}/${seg.pages})` : "";
@@ -242,7 +325,7 @@ export function buildSeedPages(totalPages = 296): MagazinePage[] {
           talent: seg.talent ?? "",
           interviewDate: "",
           editor: seg.editor ?? "",
-          status: seg.status ?? "NOT_STARTED",
+          status: forceStatus ?? seg.status ?? "NOT_STARTED",
           readyForDesign: false,
           inDesign: false,
           complete: false,
@@ -260,5 +343,34 @@ export function buildSeedPages(totalPages = 296): MagazinePage[] {
   }
   return pages.slice(0, totalPages);
 }
+
+// Issue 02 SS26 — the live in-progress issue (kept as the default export name for
+// backwards compatibility with the existing API route import).
+export function buildSeedPages(totalPages = 296): MagazinePage[] {
+  return buildPagesFromSegments(SEED_SEGMENTS_SS26, totalPages);
+}
+
+// One blueprint per seeded issue. The API seeds all of these on first load.
+export interface SeedIssue {
+  issueNumber: number;
+  issueName: string;
+  totalPages: number;
+  build: () => MagazinePage[];
+}
+
+export const SEED_ISSUES: SeedIssue[] = [
+  {
+    issueNumber: 1,
+    issueName: "AW25",
+    totalPages: 280,
+    build: () => buildPagesFromSegments(SEED_SEGMENTS_AW25, 280, "COMPLETE"),
+  },
+  {
+    issueNumber: 2,
+    issueName: "SS26",
+    totalPages: 296,
+    build: () => buildPagesFromSegments(SEED_SEGMENTS_SS26, 296),
+  },
+];
 
 export const SEED_TOTAL_PAGES = 296;
