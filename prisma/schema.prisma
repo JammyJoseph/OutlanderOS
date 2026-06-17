@@ -584,6 +584,21 @@ model PrintDistribution {
   tracking  String?
 }
 
+// Embedded flat plan + line tracker for a magazine issue. `pages` holds the full
+// page-by-page array (see src/lib/magazine-plan.ts for the page object shape).
+model MagazinePlan {
+  id          String   @id @default(cuid())
+  issueNumber Int
+  issueName   String
+  totalPages  Int      @default(8)
+  pages       Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+
+  @@unique([issueNumber])
+}
+
 // ===== EDITORIAL =====
 model EditorialPiece {
   id           String    @id @default(cuid())
