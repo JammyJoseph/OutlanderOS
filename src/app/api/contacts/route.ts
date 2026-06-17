@@ -53,6 +53,21 @@ function parseRating(value: unknown): number | null {
   return Math.min(5, Math.max(1, Math.round(n)))
 }
 
+// Normalises a portfolio array into [{ title, url }] with sane caps.
+export function sanitizePortfolio(value: unknown): { title: string; url: string }[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => {
+      const v = item as { title?: unknown; url?: unknown }
+      return {
+        title: sanitizeString(v?.title ?? '', 160),
+        url: sanitizeString(v?.url ?? '', 500),
+      }
+    })
+    .filter((x) => x.url)
+    .slice(0, 30)
+}
+
 export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
   const body = await request.json()
 
@@ -77,6 +92,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
       location: body.location ? sanitizeString(body.location, 160) : null,
       rating: body.rating != null ? parseRating(body.rating) : null,
       notes: body.notes ? sanitizeString(body.notes, 4000) : null,
+      portfolioLinks: sanitizePortfolio(body.portfolioLinks),
       isRadar: Boolean(body.isRadar),
       radarStatus: body.radarStatus ? sanitizeString(body.radarStatus, 40) : null,
       radarLink: body.radarLink ? sanitizeString(body.radarLink, 300) : null,

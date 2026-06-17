@@ -2,6 +2,66 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
 import { sanitizeString, validateEmail } from '@/lib/validate'
+import { sanitizePortfolio } from '../route'
+
+export interface Collaboration {
+  productionId: string
+  productionTitle: string
+  role: string
+  source: 'crew' | 'team'
+}
+
+// Finds productions this contact has worked on — linked crew (by contactId)
+// plus team members matched by name or email.
+async function collaborationsFor(contact: {
+  id: string
+  name: string
+  email: string | null
+}): Promise<Collaboration[]> {
+  const [crew, team] = await Promise.all([
+    prisma.productionCrew.findMany({
+      where: { contactId: contact.id },
+      include: { production: { select: { id: true, title: true } } },
+    }),
+    prisma.productionTeamMember.findMany({
+      where: {
+        OR: [
+          { name: { equals: contact.name, mode: 'insensitive' } },
+          ...(contact.email
+            ? [{ email: { equals: contact.email, mode: 'insensitive' as const } }]
+            : []),
+        ],
+      },
+      include: { production: { select: { id: true, title: true } } },
+    }),
+  ])
+
+  const seen = new Set<string>()
+  const out: Collaboration[] = []
+  for (const c of crew) {
+    const key = `${c.production.id}|${c.role}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({
+      productionId: c.production.id,
+      productionTitle: c.production.title,
+      role: c.role,
+      source: 'crew',
+    })
+  }
+  for (const t of team) {
+    const key = `${t.production.id}|${t.role}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({
+      productionId: t.production.id,
+      productionTitle: t.production.title,
+      role: t.role,
+      source: 'team',
+    })
+  }
+  return out
+}
 
 export const GET = withAuth(async (
   _request: NextRequest,
@@ -13,7 +73,8 @@ export const GET = withAuth(async (
     include: { creator: { select: { id: true, name: true } } },
   })
   if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json(contact)
+  const collaborations = await collaborationsFor(contact)
+  return NextResponse.json({ ...contact, collaborations })
 })
 
 function parseRating(value: unknown): number | null {
@@ -52,6 +113,7 @@ const updateContact = withAuth(async (
       location: body.location !== undefined ? (body.location || null) : undefined,
       rating: body.rating !== undefined ? parseRating(body.rating) : undefined,
       notes: body.notes !== undefined ? (body.notes === null ? null : sanitizeString(body.notes, 4000)) : undefined,
+      portfolioLinks: body.portfolioLinks !== undefined ? sanitizePortfolio(body.portfolioLinks) : undefined,
       isRadar: body.isRadar !== undefined ? Boolean(body.isRadar) : undefined,
       radarStatus: body.radarStatus !== undefined ? (body.radarStatus || null) : undefined,
       radarLink: body.radarLink !== undefined ? (body.radarLink || null) : undefined,

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
@@ -9,7 +10,7 @@ import {
   Loader2,
   X,
   Mail,
-  AtSign,
+  Phone,
   MapPin,
   Trash2,
   Radar as RadarIcon,
@@ -19,6 +20,14 @@ import {
   ChevronRight,
   ExternalLink,
   Pencil,
+  LayoutGrid,
+  List as ListIcon,
+  Download,
+  RefreshCw,
+  Share2,
+  CheckSquare,
+  Square,
+  UserPlus,
 } from "lucide-react";
 import {
   CONTACT_CATEGORIES,
@@ -28,6 +37,28 @@ import {
 } from "@/lib/directory";
 
 const ACCENT = DIRECTORY_ACCENT;
+
+// lucide-react in this build doesn't ship an Instagram glyph — inline the classic mark.
+function Instagram({ size = 16, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  );
+}
 
 interface ContactRecord {
   id: string;
@@ -43,6 +74,7 @@ interface ContactRecord {
   location: string | null;
   rating: number | null;
   notes: string | null;
+  portfolioLinks?: { title: string; url: string }[];
   isRadar: boolean;
   radarStatus: string | null;
   radarLink: string | null;
@@ -52,9 +84,40 @@ interface ContactRecord {
 }
 
 type View = "contacts" | "categories" | "radar" | "recent";
+type DisplayMode = "grid" | "list";
+type SortKey = "name" | "category" | "rating" | "recent";
 
 function isView(v: string | null): v is View {
   return v === "contacts" || v === "categories" || v === "radar" || v === "recent";
+}
+
+const MASTER_SHEET = "1RJFla1KOPRWN0-ue9H6clQ5bWuYEuo1RSHD6K8Zy2hY";
+
+function igHandle(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  return (
+    raw
+      .replace(/https?:\/\/(www\.)?instagram\.com\//i, "")
+      .replace(/^@/, "")
+      .replace(/\/.*$/, "")
+      .trim() || null
+  );
+}
+
+// Builds the WhatsApp/text share block from selected contacts.
+function buildShareText(contacts: ContactRecord[]): string {
+  return contacts
+    .map((c, i) => {
+      const lines = [`${i + 1}.`];
+      const title = c.role || c.category;
+      if (title) lines.push(title);
+      lines.push(c.name.toUpperCase());
+      const handle = igHandle(c.instagram);
+      if (handle) lines.push(`instagram.com/${handle}`);
+      else if (c.email) lines.push(c.email);
+      return lines.join("\n");
+    })
+    .join("\n\n");
 }
 
 // ── Shared bits ───────────────────────────────────────────────────────────────
@@ -68,8 +131,6 @@ function Stars({
   onChange?: (r: number) => void;
   size?: number;
 }) {
-  // Read-only mode renders spans — these often sit inside a clickable card
-  // <button>, and nested buttons are invalid HTML.
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => {
@@ -140,14 +201,26 @@ function Directory() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("");
   const [radarStatusFilter, setRadarStatusFilter] = useState<string>("");
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("grid");
+  const [sortKey, setSortKey] = useState<SortKey>("recent");
 
-  const [editing, setEditing] = useState<ContactRecord | null | undefined>(undefined); // undefined = closed
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<string | null>(null);
+
+  const [editing, setEditing] = useState<ContactRecord | null | undefined>(undefined);
   const [addingRadar, setAddingRadar] = useState<ContactRecord | null | undefined>(undefined);
+
+  const [importing, setImporting] = useState(false);
 
   const setView = useCallback(
     (v: View) => router.push(v === "contacts" ? "/directory" : `/directory?view=${v}`),
     [router]
   );
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2200);
+  }
 
   const loadContacts = useCallback(async () => {
     const params = new URLSearchParams({ radar: "false" });
@@ -173,14 +246,14 @@ function Directory() {
     setCategories(Array.isArray(data?.categories) ? data.categories : []);
   }, []);
 
-  // (Re)load whatever the current view needs.
+  // (Re)load whatever the current view needs. Categories load for the chip row too.
   useEffect(() => {
     let active = true;
     setLoading(true);
     const jobs: Promise<unknown>[] = [];
     if (view === "radar") jobs.push(loadRadar());
     else jobs.push(loadContacts());
-    if (view === "categories") jobs.push(loadCategories());
+    if (view !== "radar") jobs.push(loadCategories());
     Promise.all(jobs).finally(() => {
       if (active) setLoading(false);
     });
@@ -198,7 +271,7 @@ function Directory() {
     if (res.ok) {
       setEditing(undefined);
       await loadContacts();
-      if (view === "categories") await loadCategories();
+      await loadCategories();
     }
     return res.ok;
   }
@@ -229,7 +302,6 @@ function Directory() {
   async function cycleRadarStatus(entry: ContactRecord) {
     const idx = RADAR_STATUSES.indexOf((entry.radarStatus ?? "WATCHING") as never);
     const next = RADAR_STATUSES[(idx + 1) % RADAR_STATUSES.length];
-    // optimistic
     setRadar((prev) => prev.map((r) => (r.id === entry.id ? { ...r, radarStatus: next } : r)));
     await fetch(`/api/contacts/${entry.id}`, {
       method: "PATCH",
@@ -239,13 +311,96 @@ function Directory() {
     if (radarStatusFilter) await loadRadar();
   }
 
-  const recentContacts = useMemo(
-    () =>
-      [...contacts]
-        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-        .slice(0, 60),
-    [contacts]
+  async function convertRadar(entry: ContactRecord) {
+    const handle = igHandle(entry.radarLink || entry.instagram);
+    const res = await fetch(`/api/contacts/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        isRadar: false,
+        radarStatus: null,
+        instagram: handle ? `@${handle}` : entry.instagram ?? undefined,
+        website:
+          !handle && entry.radarLink && entry.radarLink.startsWith("http")
+            ? entry.radarLink
+            : undefined,
+      }),
+    });
+    if (res.ok) {
+      showToast(`${entry.name} promoted to a contact`);
+      await loadRadar();
+    }
+  }
+
+  async function runImport(sync: boolean) {
+    setImporting(true);
+    try {
+      const res = await fetch("/api/directory/import-sheet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheetId: MASTER_SHEET }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(
+          `${sync ? "Synced" : "Imported"} — ${data.imported} new, ${data.updated} updated`
+        );
+        await loadContacts();
+        await loadCategories();
+      } else {
+        showToast(data.error || "Import failed");
+      }
+    } catch {
+      showToast("Import failed — check the connection");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  // Selection helpers
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const sortedContacts = useMemo(() => {
+    const base = view === "recent" ? [...contacts] : [...contacts];
+    const arr = [...base];
+    switch (sortKey) {
+      case "name":
+        arr.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "category":
+        arr.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+        break;
+      case "rating":
+        arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name));
+        break;
+      case "recent":
+      default:
+        arr.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+    }
+    return view === "recent" ? arr.slice(0, 60) : arr;
+  }, [contacts, sortKey, view]);
+
+  const selectedContacts = useMemo(
+    () => contacts.filter((c) => selected.has(c.id)),
+    [contacts, selected]
   );
+
+  async function copyShare() {
+    const text = buildShareText(selectedContacts);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(`Copied ${selectedContacts.length} contact${selectedContacts.length > 1 ? "s" : ""}!`);
+    } catch {
+      showToast("Could not copy to clipboard");
+    }
+  }
 
   const VIEW_TABS: { key: View; label: string; icon: React.ElementType }[] = [
     { key: "contacts", label: "All Contacts", icon: ContactIcon },
@@ -254,16 +409,15 @@ function Directory() {
     { key: "recent", label: "Recently Added", icon: Clock },
   ];
 
+  const showContactTools = view === "contacts" || view === "recent";
+
   return (
-    <div className="min-h-full px-6 py-8">
+    <div className="min-h-full px-6 py-8 pb-28">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
           <div>
-            <p
-              className="text-xs font-semibold uppercase tracking-widest"
-              style={{ color: ACCENT }}
-            >
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: ACCENT }}>
               OutlanderOS · Directory
             </p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
@@ -275,23 +429,50 @@ function Directory() {
                 : "Outlander's network of contacts, collaborators & talent."}
             </p>
           </div>
-          {view === "radar" ? (
-            <button
-              onClick={() => setAddingRadar(null)}
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
-              style={{ backgroundColor: ACCENT }}
-            >
-              <Plus size={16} /> Add to Radar
-            </button>
-          ) : (
-            <button
-              onClick={() => setEditing(null)}
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
-              style={{ backgroundColor: ACCENT }}
-            >
-              <Plus size={16} /> Add Contact
-            </button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {view !== "radar" && (
+              <>
+                <button
+                  onClick={() => runImport(false)}
+                  disabled={importing}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#141414] px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:border-[#3a3a3a] disabled:opacity-50"
+                  title="Import contacts from the master Google Sheet"
+                >
+                  {importing ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Download size={15} />
+                  )}
+                  Import from Google Sheet
+                </button>
+                <button
+                  onClick={() => runImport(true)}
+                  disabled={importing}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#141414] px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:border-[#3a3a3a] disabled:opacity-50"
+                  title="Re-sync from the sheet (updates existing, adds new)"
+                >
+                  <RefreshCw size={15} className={importing ? "animate-spin" : ""} /> Sync Sheet
+                </button>
+              </>
+            )}
+            {view === "radar" ? (
+              <button
+                onClick={() => setAddingRadar(null)}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+                style={{ backgroundColor: ACCENT }}
+              >
+                <Plus size={16} /> Add to Radar
+              </button>
+            ) : (
+              <button
+                onClick={() => setEditing(null)}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+                style={{ backgroundColor: ACCENT }}
+              >
+                <Plus size={16} /> Add Contact
+              </button>
+            )}
+          </div>
         </div>
 
         {/* View tabs */}
@@ -315,9 +496,9 @@ function Directory() {
           })}
         </div>
 
-        {/* Search + filters */}
+        {/* Search + filters + tools */}
         {view !== "categories" && (
-          <div className="mb-5 flex flex-wrap items-center gap-2">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
               <input
@@ -327,19 +508,38 @@ function Directory() {
                 className={`${inputCls} pl-8 w-72`}
               />
             </div>
-            {view !== "radar" && (
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className={`${inputCls} w-auto`}
-              >
-                <option value="">All categories</option>
-                {CONTACT_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+            {showContactTools && (
+              <>
+                <select
+                  value={sortKey}
+                  onChange={(e) => setSortKey(e.target.value as SortKey)}
+                  className={`${inputCls} w-auto`}
+                  title="Sort"
+                >
+                  <option value="recent">Recently added</option>
+                  <option value="name">Name (A–Z)</option>
+                  <option value="category">Category</option>
+                  <option value="rating">Rating</option>
+                </select>
+                <div className="flex items-center rounded-lg border border-[#2a2a2a] bg-[#141414] p-0.5">
+                  <button
+                    onClick={() => setDisplayMode("grid")}
+                    className={`rounded-md p-1.5 ${displayMode === "grid" ? "text-black" : "text-gray-500 hover:text-gray-300"}`}
+                    style={displayMode === "grid" ? { backgroundColor: ACCENT } : undefined}
+                    title="Grid view"
+                  >
+                    <LayoutGrid size={15} />
+                  </button>
+                  <button
+                    onClick={() => setDisplayMode("list")}
+                    className={`rounded-md p-1.5 ${displayMode === "list" ? "text-black" : "text-gray-500 hover:text-gray-300"}`}
+                    style={displayMode === "list" ? { backgroundColor: ACCENT } : undefined}
+                    title="List view"
+                  >
+                    <ListIcon size={15} />
+                  </button>
+                </div>
+              </>
             )}
             {view === "radar" && (
               <select
@@ -355,18 +555,56 @@ function Directory() {
                 ))}
               </select>
             )}
-            {(search || category || radarStatusFilter) && (
+            {(search || category || radarStatusFilter || sortKey !== "recent") && (
               <button
                 onClick={() => {
                   setSearch("");
                   setCategory("");
                   setRadarStatusFilter("");
+                  setSortKey("recent");
                 }}
                 className="px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-900"
               >
                 Clear
               </button>
             )}
+          </div>
+        )}
+
+        {/* Filter chips */}
+        {showContactTools && categories.some((c) => c.count > 0) && (
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setCategory("")}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                category === ""
+                  ? "border-transparent text-black"
+                  : "border-[#2a2a2a] text-gray-400 hover:text-gray-200"
+              }`}
+              style={category === "" ? { backgroundColor: ACCENT } : undefined}
+            >
+              All
+            </button>
+            {categories
+              .filter((c) => c.count > 0)
+              .map((c) => {
+                const active = category === c.category;
+                return (
+                  <button
+                    key={c.category}
+                    onClick={() => setCategory(active ? "" : c.category)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      active
+                        ? "border-transparent text-black"
+                        : "border-[#2a2a2a] text-gray-400 hover:text-gray-200"
+                    }`}
+                    style={active ? { backgroundColor: ACCENT } : undefined}
+                  >
+                    {c.category}
+                    <span className={active ? "text-black/60" : "text-gray-600"}>{c.count}</span>
+                  </button>
+                );
+              })}
           </div>
         )}
 
@@ -389,15 +627,53 @@ function Directory() {
             onCycle={cycleRadarStatus}
             onEdit={(e) => setAddingRadar(e)}
             onAdd={() => setAddingRadar(null)}
+            onConvert={convertRadar}
           />
         ) : (
-          <ContactsGrid
-            contacts={view === "recent" ? recentContacts : contacts}
-            onOpen={(c) => setEditing(c)}
+          <ContactsView
+            contacts={sortedContacts}
+            mode={displayMode}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            onEdit={(c) => setEditing(c)}
             onAdd={() => setEditing(null)}
           />
         )}
       </div>
+
+      {/* Floating share bar */}
+      {selected.size > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-5">
+          <div className="flex items-center gap-3 rounded-2xl border border-[#2a2a2a] bg-[#141414]/95 px-4 py-3 shadow-2xl backdrop-blur">
+            <span className="text-sm font-semibold text-gray-900">
+              {selected.size} selected
+            </span>
+            <div className="h-5 w-px bg-[#2a2a2a]" />
+            <button
+              onClick={copyShare}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+              style={{ boxShadow: "0 0 22px -6px #22c55e" }}
+            >
+              <Share2 size={15} /> Share
+            </button>
+            <button
+              onClick={() => setSelected(new Set())}
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-gray-400 hover:text-gray-900"
+            >
+              <X size={15} /> Clear selection
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed inset-x-0 bottom-24 z-50 flex justify-center px-4">
+          <div className="rounded-xl border border-[#2a2a2a] bg-[#1c1c1c] px-4 py-2.5 text-sm font-medium text-gray-900 shadow-xl">
+            {toast}
+          </div>
+        </div>
+      )}
 
       {editing !== undefined && (
         <ContactModal
@@ -419,15 +695,21 @@ function Directory() {
   );
 }
 
-// ── Contacts grid ───────────────────────────────────────────────────────────────
+// ── Contacts view (grid / list) ────────────────────────────────────────────────
 
-function ContactsGrid({
+function ContactsView({
   contacts,
-  onOpen,
+  mode,
+  selected,
+  onToggleSelect,
+  onEdit,
   onAdd,
 }: {
   contacts: ContactRecord[];
-  onOpen: (c: ContactRecord) => void;
+  mode: DisplayMode;
+  selected: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onEdit: (c: ContactRecord) => void;
   onAdd: () => void;
 }) {
   if (contacts.length === 0) {
@@ -435,54 +717,223 @@ function ContactsGrid({
       <EmptyState
         icon={ContactIcon}
         title="No contacts yet"
-        body="Build out Outlander's network — photographers, stylists, brand contacts and more."
+        body="Build out Outlander's network — import your master sheet, or add photographers, stylists and brand contacts."
         action="Add your first contact"
         onAction={onAdd}
       />
     );
   }
+
+  if (mode === "list") {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-[#2a2a2a] bg-[#141414]">
+        {contacts.map((c, i) => (
+          <ContactRow
+            key={c.id}
+            contact={c}
+            selected={selected.has(c.id)}
+            onToggleSelect={() => onToggleSelect(c.id)}
+            onEdit={() => onEdit(c)}
+            last={i === contacts.length - 1}
+          />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {contacts.map((c) => (
-        <button
+        <ContactCard
           key={c.id}
-          onClick={() => onOpen(c)}
-          className="group flex flex-col gap-2 rounded-xl border border-[#2a2a2a] bg-[#141414] p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#3a3a3a]"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
-              {(c.role || c.company) && (
-                <p className="truncate text-xs text-gray-500">
-                  {[c.role, c.company].filter(Boolean).join(" · ")}
-                </p>
-              )}
-            </div>
-            {c.rating ? <Stars rating={c.rating} /> : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <CategoryBadge category={c.category} />
-            {c.location && (
-              <span className="inline-flex items-center gap-1 text-[10px] text-gray-500">
-                <MapPin size={10} /> {c.location}
-              </span>
-            )}
-          </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[11px] text-gray-500">
-            {c.email && (
-              <span className="inline-flex items-center gap-1 truncate">
-                <Mail size={11} /> {c.email}
-              </span>
-            )}
-            {c.instagram && (
-              <span className="inline-flex items-center gap-1">
-                <AtSign size={11} /> {c.instagram.replace(/^@/, "")}
-              </span>
-            )}
-          </div>
-        </button>
+          contact={c}
+          selected={selected.has(c.id)}
+          onToggleSelect={() => onToggleSelect(c.id)}
+          onEdit={() => onEdit(c)}
+        />
       ))}
     </div>
+  );
+}
+
+function SelectBox({ selected, onToggle }: { selected: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggle();
+      }}
+      className={selected ? "" : "text-gray-600 hover:text-gray-300"}
+      style={selected ? { color: ACCENT } : undefined}
+      title={selected ? "Deselect" : "Select"}
+    >
+      {selected ? <CheckSquare size={18} /> : <Square size={18} />}
+    </button>
+  );
+}
+
+function QuickActions({ contact, onEdit }: { contact: ContactRecord; onEdit: () => void }) {
+  const handle = igHandle(contact.instagram);
+  return (
+    <div className="flex items-center gap-1.5">
+      {contact.email && (
+        <a
+          href={`mailto:${contact.email}`}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded-md p-1.5 text-gray-500 hover:bg-white/5 hover:text-gray-200"
+          title="Email"
+        >
+          <Mail size={14} />
+        </a>
+      )}
+      {contact.phone && (
+        <a
+          href={`tel:${contact.phone}`}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded-md p-1.5 text-gray-500 hover:bg-white/5 hover:text-gray-200"
+          title="Call"
+        >
+          <Phone size={14} />
+        </a>
+      )}
+      {handle && (
+        <a
+          href={`https://www.instagram.com/${handle}/`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="rounded-md p-1.5 text-gray-500 hover:bg-white/5 hover:text-[#dc2743]"
+          title={`@${handle}`}
+        >
+          <Instagram size={14} />
+        </a>
+      )}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onEdit();
+        }}
+        className="rounded-md p-1.5 text-gray-500 hover:bg-white/5 hover:text-gray-200"
+        title="Edit"
+      >
+        <Pencil size={14} />
+      </button>
+    </div>
+  );
+}
+
+function ContactCard({
+  contact: c,
+  selected,
+  onToggleSelect,
+  onEdit,
+}: {
+  contact: ContactRecord;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onEdit: () => void;
+}) {
+  const handle = igHandle(c.instagram);
+  return (
+    <Link
+      href={`/directory/${c.id}`}
+      className={`group relative flex flex-col gap-2 rounded-xl border bg-[#141414] p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#3a3a3a] hover:shadow-lg ${
+        selected ? "border-[#e0e0e0]/50" : "border-[#2a2a2a]"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <span
+            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1c1c1c] text-xs font-semibold text-gray-400"
+            aria-hidden
+          >
+            {c.name.slice(0, 2).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
+            {(c.role || c.company) && (
+              <p className="truncate text-xs text-gray-500">
+                {[c.role, c.company].filter(Boolean).join(" · ")}
+              </p>
+            )}
+          </div>
+        </div>
+        <SelectBox selected={selected} onToggle={onToggleSelect} />
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <CategoryBadge category={c.category} />
+        {c.rating ? <Stars rating={c.rating} /> : null}
+        {c.location && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-gray-500">
+            <MapPin size={10} /> {c.location}
+          </span>
+        )}
+      </div>
+      {handle && (
+        <span className="inline-flex w-fit items-center gap-1 text-[11px] font-medium text-[#dc2743]">
+          <Instagram size={11} /> @{handle}
+        </span>
+      )}
+      <div className="mt-1 flex items-center justify-between border-t border-[#222] pt-2">
+        <span className="truncate text-[11px] text-gray-600">
+          {c.email || c.phone || ""}
+        </span>
+        <span className="opacity-0 transition-opacity group-hover:opacity-100">
+          <QuickActions contact={c} onEdit={onEdit} />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function ContactRow({
+  contact: c,
+  selected,
+  onToggleSelect,
+  onEdit,
+  last,
+}: {
+  contact: ContactRecord;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onEdit: () => void;
+  last: boolean;
+}) {
+  const handle = igHandle(c.instagram);
+  return (
+    <Link
+      href={`/directory/${c.id}`}
+      className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.02] ${
+        last ? "" : "border-b border-[#222]"
+      } ${selected ? "bg-white/[0.03]" : ""}`}
+    >
+      <SelectBox selected={selected} onToggle={onToggleSelect} />
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1c1c1c] text-[11px] font-semibold text-gray-400">
+        {c.name.slice(0, 2).toUpperCase()}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
+          {c.rating ? <Stars rating={c.rating} /> : null}
+        </div>
+        <p className="truncate text-xs text-gray-500">
+          {[c.role, c.company].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+      <div className="hidden w-32 shrink-0 sm:block">
+        <CategoryBadge category={c.category} />
+      </div>
+      {handle && (
+        <span className="hidden items-center gap-1 text-[11px] font-medium text-[#dc2743] md:inline-flex">
+          <Instagram size={11} /> @{handle}
+        </span>
+      )}
+      <span className="opacity-0 transition-opacity group-hover:opacity-100">
+        <QuickActions contact={c} onEdit={onEdit} />
+      </span>
+    </Link>
   );
 }
 
@@ -530,8 +981,8 @@ function CategoriesGrid({
 
 const RADAR_STATUS_STYLE: Record<string, string> = {
   WATCHING: "border-gray-600 text-gray-300",
-  REACHED_OUT: "border-sky-700 text-sky-300",
-  CONNECTED: "border-violet-700 text-violet-300",
+  REACHED_OUT: "border-amber-700 text-amber-300",
+  CONNECTED: "border-sky-700 text-sky-300",
   COLLABORATING: "border-emerald-700 text-emerald-300",
 };
 
@@ -540,11 +991,13 @@ function RadarList({
   onCycle,
   onEdit,
   onAdd,
+  onConvert,
 }: {
   entries: ContactRecord[];
   onCycle: (e: ContactRecord) => void;
   onEdit: (e: ContactRecord) => void;
   onAdd: () => void;
+  onConvert: (e: ContactRecord) => void;
 }) {
   if (entries.length === 0) {
     return (
@@ -604,6 +1057,13 @@ function RadarList({
                 }`}
               >
                 {RADAR_STATUS_LABELS[status] ?? status}
+              </button>
+              <button
+                onClick={() => onConvert(e)}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#2a2a2a] px-2.5 py-1.5 text-[11px] font-medium text-gray-300 hover:border-emerald-700 hover:text-emerald-300"
+                title="Promote to a full contact"
+              >
+                <UserPlus size={12} /> Convert
               </button>
               <button
                 onClick={() => onEdit(e)}
@@ -707,7 +1167,7 @@ function ContactModal({
     instagram: contact?.instagram ?? "",
     website: contact?.website ?? "",
     location: contact?.location ?? "",
-    rating: contact?.rating ?? null as number | null,
+    rating: contact?.rating ?? (null as number | null),
     notes: contact?.notes ?? "",
     tags: (contact?.tags ?? []).join(", "),
   });

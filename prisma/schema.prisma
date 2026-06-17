@@ -115,6 +115,7 @@ model Contact {
   location        String?
   rating          Int? // 1–5
   notes           String?
+  portfolioLinks  Json      @default("[]") // [{ title: string, url: string }] — work/portfolio links
   // ── Outlander Radar: emerging talent / accounts to watch ──
   isRadar         Boolean   @default(false)
   radarStatus     String? // WATCHING | REACHED_OUT | CONNECTED | COLLABORATING

@@ -1,9 +1,35 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { Plus, Trash2, Mail, Phone, Users, Contact } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Trash2, Mail, Phone, Users, Contact, Search, X, Star } from "lucide-react";
 import { TeamMember, TeamStatus, gbp } from "./types";
+
+interface DirectoryContact {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  role: string | null;
+  category: string;
+  instagram: string | null;
+  rating: number | null;
+}
+
+const PICKER_CATEGORIES = [
+  "Photographer",
+  "Videographer",
+  "Stylist",
+  "MUA",
+  "Creative Director",
+  "Model",
+  "Talent",
+  "Producer",
+  "Set Designer",
+  "Editor",
+  "Colorist",
+  "Casting Director",
+];
 
 interface Props {
   productionId: string;
@@ -36,6 +62,7 @@ const STATUS_STYLES: Record<TeamStatus, { bg: string; text: string; border: stri
 
 export default function TeamTab({ productionId, members, refresh }: Props) {
   const [showAdd, setShowAdd] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
   const totalCost = useMemo(() => {
     return (members ?? []).reduce((sum, m) => sum + (m.rate || 0), 0);
@@ -57,6 +84,21 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
       body: JSON.stringify(form),
     });
     setShowAdd(false);
+    refresh();
+  }
+
+  async function addFromDirectory(c: DirectoryContact) {
+    await fetch(`/api/productions/${productionId}/team`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: c.name,
+        role: c.role || c.category || "Crew",
+        email: c.email,
+        phone: c.phone,
+        status: "SUGGESTED",
+      }),
+    });
     refresh();
   }
 
@@ -100,14 +142,13 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
               Total crew cost:{" "}
               <span className="font-semibold text-gray-800">{gbp(totalCost)}</span>
             </span>
-            <Link
-              href="/directory"
-              target="_blank"
+            <button
+              onClick={() => setShowPicker(true)}
               className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-800"
-              title="Browse Outlander's contact directory in a new tab"
+              title="Pick crew & talent from Outlander's directory"
             >
               <Contact size={13} /> Browse Directory
-            </Link>
+            </button>
             <button
               onClick={() => setShowAdd((v) => !v)}
               className="flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
@@ -142,6 +183,162 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
             ))}
           </div>
         )}
+      </div>
+
+      {showPicker && (
+        <DirectoryPicker
+          existing={members}
+          onPick={addFromDirectory}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function DirectoryPicker({
+  existing,
+  onPick,
+  onClose,
+}: {
+  existing: TeamMember[];
+  onPick: (c: DirectoryContact) => void;
+  onClose: () => void;
+}) {
+  const [contacts, setContacts] = useState<DirectoryContact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [added, setAdded] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    const params = new URLSearchParams({ radar: "false" });
+    if (search.trim()) params.set("search", search.trim());
+    if (category) params.set("category", category);
+    const t = setTimeout(() => {
+      fetch(`/api/contacts?${params.toString()}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (active) setContacts(Array.isArray(data) ? data : []);
+        })
+        .finally(() => active && setLoading(false));
+    }, 200);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
+  }, [search, category]);
+
+  const existingNames = useMemo(
+    () => new Set(existing.map((m) => m.name.trim().toLowerCase())),
+    [existing]
+  );
+
+  function pick(c: DirectoryContact) {
+    onPick(c);
+    setAdded((prev) => new Set(prev).add(c.id));
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-10 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-2xl border border-gray-100 bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Browse Directory</h2>
+            <p className="text-xs text-gray-500">Add crew &amp; talent from Outlander&apos;s contacts.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-50 px-5 py-3">
+          <div className="relative flex-1 min-w-[180px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search contacts…"
+              className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
+            />
+          </div>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
+          >
+            <option value="">All categories</option>
+            {PICKER_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="max-h-[55vh] overflow-y-auto">
+          {loading ? (
+            <p className="px-5 py-12 text-center text-sm text-gray-400">Loading…</p>
+          ) : contacts.length === 0 ? (
+            <p className="px-5 py-12 text-center text-sm text-gray-400">No contacts found.</p>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {contacts.map((c) => {
+                const isAdded = added.has(c.id);
+                const alreadyOnTeam = existingNames.has(c.name.trim().toLowerCase());
+                return (
+                  <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-amber-50/30">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-500">
+                      {c.name.slice(0, 2).toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-medium text-gray-900">{c.name}</p>
+                        {c.rating ? (
+                          <span className="inline-flex items-center gap-0.5 text-[11px] text-[#e6c200]">
+                            <Star size={11} className="fill-[#ffd700] text-[#ffd700]" /> {c.rating}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="truncate text-xs text-gray-500">
+                        {[c.role || c.category, c.company].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => pick(c)}
+                      disabled={isAdded}
+                      className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                        isAdded
+                          ? "bg-emerald-50 text-emerald-600"
+                          : "bg-[#ffd700] text-black hover:bg-[#e6c200]"
+                      }`}
+                      title={alreadyOnTeam ? "Already has a member with this name" : "Add to team"}
+                    >
+                      {isAdded ? "Added ✓" : alreadyOnTeam ? "Add again" : "Add"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end border-t border-gray-100 px-5 py-3">
+          <button
+            onClick={onClose}
+            className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+          >
+            Done
+          </button>
+        </div>
       </div>
     </div>
   );
