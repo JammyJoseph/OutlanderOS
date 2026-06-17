@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  MagazinePage,
-  MagazinePlanData,
-  PlanStats,
-  IssueState,
+import {
+  SEED_ISSUES,
+  type MagazinePage,
+  type MagazinePlanData,
+  type PlanStats,
+  type IssueState,
 } from "@/lib/magazine-plan";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -32,12 +33,16 @@ export interface IssueSummary {
   state: IssueState;
 }
 
-// Ensures the two representative issues exist, seeding them on first ever load.
+// Ensures the representative issues exist. Seeds if any are missing — the POST is
+// idempotent (it never overwrites an existing issue), so this also back-fills the
+// new AW25 issue on an environment that was already seeded with SS26 alone.
 async function ensureSeeded(): Promise<IssueSummary[]> {
   let res = await fetch(`/api/magazine-plan`, { cache: "no-store" });
   let data = await res.json();
   let issues: IssueSummary[] = data.issues ?? [];
-  if (!issues.length) {
+  const present = new Set(issues.map((i) => i.issueNumber));
+  const missingSeed = SEED_ISSUES.some((s) => !present.has(s.issueNumber));
+  if (missingSeed) {
     await fetch(`/api/magazine-plan`, {
       method: "POST",
       headers: JSON_HEADERS,
