@@ -20,6 +20,12 @@ model User {
   holidayAllowance Int       @default(25)
   salary           Float?
 
+  // Staff management — team assignments (e.g. ["COMMERCIAL","PRODUCTION"]),
+  // active status (deactivated users can't log in), and last login time.
+  teams       Json?     @default("[]")
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+
   googleAccessToken  String?
   googleRefreshToken String?
   googleTokenExpiry  DateTime?
@@ -201,6 +207,9 @@ model Campaign {
   notes            String?
   archived         Boolean        @default(false)
   archivedAt       DateTime?
+  archivedById     String? // userId who archived the deal
+  archivedByName   String? // display name captured at archive time
+  stageAtArchive   String? // pipeline stage when the deal was archived
   createdById      String
   createdBy        User           @relation("CampaignCreator", fields: [createdById], references: [id])
   billingContactId String?

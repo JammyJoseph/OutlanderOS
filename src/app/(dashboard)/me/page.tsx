@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { BusinessPulse } from "./_components/BusinessPulse";
-import { BusinessReminders } from "./_components/BusinessReminders";
+import { WeatherHeadlines } from "./_components/WeatherHeadlines";
 import { CultureFeed } from "./_components/CultureFeed";
-import { HolidayCard } from "./_components/HolidayCard";
+import { PersonalHR } from "./_components/PersonalHR";
+import { DeadlinesPanel } from "./_components/DeadlinesPanel";
 import { OutstandingItems } from "./_components/OutstandingItems";
 import { QuickLinks } from "./_components/QuickLinks";
 import { ActionTrackPanel } from "@/components/tasks/ActionTrackPanel";
@@ -97,14 +98,15 @@ export default function MePage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[65fr_35fr]">
-          {/* Left column — pulse, tasks, quick links */}
+          {/* Left column — pulse, tasks, deadlines, quick links */}
           <div className="min-w-0 space-y-4">
             <BusinessPulse />
             <ActionTrackPanel />
+            <DeadlinesPanel />
             <QuickLinks counts={data.counts} />
           </div>
 
-          {/* Right column — week, upcoming, culture feed, holiday */}
+          {/* Right column — week, upcoming, weather & headlines, culture, HR */}
           <div className="min-w-0 space-y-4">
             <WeekStrip
               tasks={data.tasks}
@@ -112,10 +114,10 @@ export default function MePage() {
               culturalEvents={data.culturalEvents}
             />
             <UpcomingList items={data.upcoming} />
-            <BusinessReminders />
+            <WeatherHeadlines />
             <OutstandingItems />
             <CultureFeed />
-            <HolidayCard holiday={data.holiday} />
+            <PersonalHR holiday={data.holiday} />
           </div>
         </div>
       </div>

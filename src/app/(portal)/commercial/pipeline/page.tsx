@@ -62,6 +62,8 @@ function PipelineBoard() {
   const [users, setUsers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewDeal, setShowNewDeal] = useState(false);
+  // Archiving is restricted to ADMINs and the Commercial team.
+  const [canArchive, setCanArchive] = useState(false);
 
   // Filters — typeFilter is multi-select; a deal matches if it has ANY selected type
   const [search, setSearch] = useState("");
@@ -91,6 +93,13 @@ function PipelineBoard() {
       })
       .finally(() => setLoading(false));
   }, [showArchived]);
+
+  useEffect(() => {
+    fetch("/api/me/permissions")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => setCanArchive(Boolean(p?.canArchiveDeals)))
+      .catch(() => setCanArchive(false));
+  }, []);
 
   // Scroll the focused stage column into view (when arriving from the dashboard)
   useEffect(() => {
@@ -399,6 +408,7 @@ function PipelineBoard() {
                               <DealCard
                                 key={deal.id}
                                 deal={deal}
+                                canArchive={canArchive}
                                 dragging={draggingId === deal.id}
                                 onArchive={() => archiveDeal(deal)}
                                 onUnarchive={() => unarchiveDeal(deal)}
@@ -515,6 +525,7 @@ function TypeFilterDropdown({
 
 function DealCard({
   deal,
+  canArchive,
   dragging,
   onArchive,
   onUnarchive,
@@ -522,6 +533,7 @@ function DealCard({
   onDragEnd,
 }: {
   deal: Deal;
+  canArchive: boolean;
   dragging: boolean;
   onArchive: () => void;
   onUnarchive: () => void;
@@ -555,8 +567,8 @@ function DealCard({
             : "border-gray-200/80 cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5"
         } ${dragging ? "opacity-40 rotate-1 scale-[0.98]" : ""}`}
       >
-        {/* Hover action: archive replaces delete everywhere */}
-        {!archived && (
+        {/* Hover action: archive replaces delete everywhere (commercial/admin only) */}
+        {!archived && canArchive && (
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -653,7 +665,7 @@ function DealCard({
             </span>
           )}
         </div>
-        {archived && (
+        {archived && canArchive && (
           <button
             onClick={(e) => {
               e.preventDefault();

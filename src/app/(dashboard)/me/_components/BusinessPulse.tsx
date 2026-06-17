@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Banknote,
-  CalendarClock,
   Clapperboard,
   FolderKanban,
   Landmark,
@@ -55,23 +54,11 @@ function PulseCard({ label, value, sub, icon, accent, href }: CardProps) {
   return href ? <Link href={href}>{body}</Link> : body;
 }
 
-function PayrollCard({ payroll }: { payroll: { date: string; daysUntil: number } }) {
-  const payday = new Date(payroll.date);
-  return (
-    <PulseCard
-      label="Next Payroll"
-      value={payroll.daysUntil === 0 ? "Today" : `in ${payroll.daysUntil} days`}
-      sub={payday.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}
-      icon={<CalendarClock className="h-4 w-4" />}
-      accent="#6B7280"
-    />
-  );
-}
-
 // Role-aware Business Pulse KPI cards. ADMIN (finance/admin) sees pipeline +
 // Xero money; MEMBER (ops/production) sees projects, deliveries, and the next
-// shoot. Fetches /api/dashboard/pulse on its own so the rest of the dashboard
-// isn't blocked by Xero round-trips.
+// shoot. Payroll now lives in the HR sidebar, not here. Fetches
+// /api/dashboard/pulse on its own so the rest of the dashboard isn't blocked
+// by Xero round-trips.
 export function BusinessPulse() {
   const [pulse, setPulse] = useState<PulseData | null>(null);
   const [error, setError] = useState(false);
@@ -114,7 +101,7 @@ export function BusinessPulse() {
             : `in ${shootDays} days`;
 
     return (
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <PulseCard
           label="Active Projects"
           value={pulse.activeProjects}
@@ -142,7 +129,6 @@ export function BusinessPulse() {
           accent="#22A06B"
           href={shoot ? `/production/${shoot.productionId}` : "/production"}
         />
-        <PayrollCard payroll={pulse.payroll} />
       </div>
     );
   }
@@ -154,7 +140,7 @@ export function BusinessPulse() {
   );
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
       <PulseCard
         label="Pipeline Value"
         value={formatGBP(pulse.pipelineValue)}
@@ -180,7 +166,6 @@ export function BusinessPulse() {
         icon={<Landmark className="h-4 w-4" />}
         accent="#22A06B"
       />
-      <PayrollCard payroll={pulse.payroll} />
     </div>
   );
 }

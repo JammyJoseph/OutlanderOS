@@ -22,6 +22,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
   }
 
+  // Deactivated staff keep their data but can't log in.
+  if (user.isActive === false) {
+    return NextResponse.json(
+      { error: 'Account deactivated. Contact your administrator.' },
+      { status: 403 }
+    )
+  }
+
+  // Record the sign-in time for the admin staff list.
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() },
+  })
+
   const token = jwt.sign(
     { userId: user.id, email: user.email, role: user.role, name: user.name },
     JWT_SECRET,

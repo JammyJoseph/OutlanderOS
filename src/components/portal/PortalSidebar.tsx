@@ -27,6 +27,7 @@ import {
   Radar,
   Clock,
   Tags,
+  Archive,
 } from "lucide-react";
 
 type NavItem = {
@@ -41,6 +42,7 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
     items: [
       { label: "Dashboard", href: "/commercial", icon: LayoutDashboard },
       { label: "Pipeline", href: "/commercial/pipeline", icon: FolderKanban },
+      { label: "Archive", href: "/commercial/archive", icon: Archive },
       { label: "Clients", href: "/commercial/clients", icon: Users },
       { label: "Media Plans", href: "/commercial/media-plans", icon: FileText },
       { label: "Content Tracker", href: "/commercial/content-tracker", icon: Camera },

@@ -9,7 +9,7 @@ import type { AuthUser } from "@/lib/auth";
 export async function archiveCampaign(id: string, user: AuthUser) {
   const deal = await prisma.campaign.findUnique({
     where: { id },
-    select: { id: true, title: true, archived: true, production: { select: { id: true, title: true, archived: true } } },
+    select: { id: true, title: true, stage: true, archived: true, production: { select: { id: true, title: true, archived: true } } },
   });
   if (!deal) return null;
 
@@ -23,7 +23,13 @@ export async function archiveCampaign(id: string, user: AuthUser) {
 
   const campaign = await prisma.campaign.update({
     where: { id },
-    data: { archived: true, archivedAt: now },
+    data: {
+      archived: true,
+      archivedAt: now,
+      archivedById: user.userId,
+      archivedByName: user.name,
+      stageAtArchive: deal.stage,
+    },
     include: {
       client: { select: { id: true, name: true } },
       production: { select: { id: true, status: true, archived: true } },
@@ -60,7 +66,7 @@ export async function unarchiveCampaign(id: string, user: AuthUser) {
 
   const campaign = await prisma.campaign.update({
     where: { id },
-    data: { archived: false, archivedAt: null },
+    data: { archived: false, archivedAt: null, archivedById: null, archivedByName: null, stageAtArchive: null },
     include: {
       client: { select: { id: true, name: true } },
       production: { select: { id: true, status: true, archived: true } },

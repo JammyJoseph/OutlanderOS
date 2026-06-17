@@ -106,6 +106,27 @@ export async function isAdminInDb(user: AuthUser): Promise<boolean> {
   return dbUser?.role === "ADMIN"
 }
 
+// Reads the user's team assignments from the DB (stored as a JSON string[]).
+// Teams aren't baked into the JWT, so team-gated actions look them up live.
+export async function getUserTeams(user: AuthUser): Promise<string[]> {
+  const { default: prisma } = await import("@/lib/prisma")
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { teams: true },
+  })
+  const raw = dbUser?.teams
+  if (Array.isArray(raw)) return raw.filter((t): t is string => typeof t === "string")
+  return []
+}
+
+// True when the user is an ADMIN or belongs to the Commercial team. Used to
+// gate deal archiving — members not on the commercial team can't archive.
+export async function canArchiveDeals(user: AuthUser): Promise<boolean> {
+  if (await isAdminInDb(user)) return true
+  const teams = await getUserTeams(user)
+  return teams.includes("COMMERCIAL")
+}
+
 type RouteContext = { params?: Promise<Record<string, string>> }
 type AuthedHandler = (
   request: NextRequest,
