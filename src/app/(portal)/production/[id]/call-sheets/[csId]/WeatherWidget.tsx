@@ -15,7 +15,12 @@ import {
   Droplets,
 } from "lucide-react";
 import { format } from "date-fns";
-import type { DailyForecast, WeatherData } from "./types";
+import type { DailyForecast, HourlyForecast, WeatherData } from "./types";
+
+function windDir(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8];
+}
 
 function ConditionIcon({ condition, size = 22 }: { condition: string; size?: number }) {
   const c = condition.toLowerCase();
@@ -60,12 +65,71 @@ function DayCard({ day, highlight }: { day: DailyForecast; highlight: boolean })
   );
 }
 
+// Hour-by-hour timeline for the shoot day. Shoot hours (first call → wrap) are
+// highlighted in the accent colour.
+export function HourlyTimeline({
+  hourly,
+  callTime,
+  wrapTime,
+}: {
+  hourly: HourlyForecast[];
+  callTime?: string;
+  wrapTime?: string;
+}) {
+  if (!hourly || hourly.length === 0) return null;
+  const start = callTime || "";
+  const end = wrapTime || "";
+  return (
+    <div className="overflow-x-auto -mx-1 px-1">
+      <div className="flex gap-2 min-w-min">
+        {hourly.map((h) => {
+          const inShoot = !!start && h.time >= start && (!end || h.time <= end);
+          return (
+            <div
+              key={h.time}
+              className={`flex-shrink-0 w-[78px] rounded-xl border p-2 text-center ${
+                inShoot ? "border-[#ff4444] bg-[#ff4444]/5" : "border-gray-100 bg-gray-50/50"
+              }`}
+            >
+              <p className={`text-xs font-bold ${inShoot ? "text-[#ff4444]" : "text-gray-600"}`}>
+                {h.time}
+              </p>
+              <div className="flex justify-center my-1">
+                <ConditionIcon condition={h.condition} size={18} />
+              </div>
+              <p className="text-sm font-semibold text-gray-900">{h.temp}°</p>
+              <p className="text-[10px] text-gray-400 capitalize leading-tight mt-0.5 truncate">
+                {h.description}
+              </p>
+              <div className="mt-1 space-y-0.5 text-[10px] text-gray-500">
+                <p className="flex items-center justify-center gap-0.5">
+                  <Wind size={9} /> {h.wind} {windDir(h.windDeg)}
+                </p>
+                <p className="flex items-center justify-center gap-0.5">
+                  <CloudRain size={9} /> {h.pop}%
+                </p>
+                <p className="flex items-center justify-center gap-0.5">
+                  <Droplets size={9} /> {h.humidity}%
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function WeatherDisplay({
   weatherData,
   shootDate,
+  callTime,
+  wrapTime,
 }: {
   weatherData: WeatherData | null;
   shootDate: string;
+  callTime?: string;
+  wrapTime?: string;
 }) {
   if (!weatherData || weatherData.forecast.length === 0) {
     return (
@@ -74,11 +138,22 @@ export function WeatherDisplay({
       </p>
     );
   }
+  const hourly = weatherData.hourly ?? [];
   return (
-    <div className="flex gap-2.5">
-      {weatherData.forecast.map((day) => (
-        <DayCard key={day.date} day={day} highlight={day.date === shootDate} />
-      ))}
+    <div className="space-y-3">
+      <div className="flex gap-2.5">
+        {weatherData.forecast.map((day) => (
+          <DayCard key={day.date} day={day} highlight={day.date === shootDate} />
+        ))}
+      </div>
+      {hourly.length > 0 && (
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+            Hourly — shoot day
+          </p>
+          <HourlyTimeline hourly={hourly} callTime={callTime} wrapTime={wrapTime} />
+        </div>
+      )}
     </div>
   );
 }
@@ -126,6 +201,8 @@ export function WeatherEditor({
       }
       setWeatherData({
         forecast: data.forecast,
+        hourly: data.hourly ?? [],
+        hourlyDate: data.hourlyDate ?? shootDate,
         fetchedAt: data.fetchedAt ?? new Date().toISOString(),
         lat: lat!,
         lng: lng!,

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import { applyLegacyNotesShim } from "@/lib/call-sheet-legacy";
-import { buildPublicViewData } from "../buildPublicViewData";
-import { PublicCallSheetView } from "./PublicCallSheetView";
+import { buildPublicViewData } from "../../buildPublicViewData";
+import { PublicCallSheetView } from "../../[token]/PublicCallSheetView";
 
 export const metadata: Metadata = {
   title: "Call Sheet — Outlander",
@@ -25,9 +25,10 @@ function NotAvailable() {
   );
 }
 
-// Public, token-gated call sheet for crew and talent. No login required —
-// the proxy allowlists /call-sheet/ and the unguessable token is the only key.
-export default async function PublicCallSheetPage({
+// Client-facing redacted call sheet. Same content as the internal share, but
+// production team phone numbers / emails are masked ("C/O Outlander"). Gated by
+// a separate clientShareToken so the URL differs from the internal link.
+export default async function ClientCallSheetPage({
   params,
 }: {
   params: Promise<{ token: string }>;
@@ -36,7 +37,7 @@ export default async function PublicCallSheetPage({
 
   const raw = token
     ? await prisma.callSheet.findUnique({
-        where: { shareToken: token },
+        where: { clientShareToken: token },
         include: {
           production: {
             select: {
@@ -54,5 +55,5 @@ export default async function PublicCallSheetPage({
   const sheet = applyLegacyNotesShim(raw);
   const viewData = buildPublicViewData(sheet);
 
-  return <PublicCallSheetView viewData={viewData} token={token} />;
+  return <PublicCallSheetView viewData={viewData} token={token} redacted />;
 }

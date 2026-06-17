@@ -507,6 +507,16 @@ model CallSheet {
   parkingNotes    String?
   notes           String? // legacy JSON blob — superseded by the dedicated columns above
   shareToken      String?         @unique
+  clientShareToken String?        @unique // separate token for the redacted client version
+  // ── Industry-standard call sheet sections (Jimmy Choo format) ──
+  header            Json          @default("{}") // { productionCompany, jobNumber }
+  clientTeam        Json          @default("[]") // [{ role, name }]
+  agencyTeam        Json          @default("[]") // [{ role, name, phone, email }]
+  productionCompany Json          @default("{}") // { name, address, execProducer, producer }
+  callTimes         Json          @default("[]") // [{ time, department }]
+  productionMobiles Json          @default("[]") // [{ role, name, phone }]
+  movementOrder     Json          @default("{}") // { nearestStation, siteEntrance, techParking, crewParking, routeNotes }
+  equipment         Json          @default("{}") // { cameraSupplier, cameraContact, cameraEmail, lightingSupplier, lightingContact, otherNotes }
   distributions   Json            @default("[]") // [{ name, role, email, sentAt, confirmedAt? }]
   distributedAt   DateTime?
   createdAt       DateTime        @default(now())

@@ -75,6 +75,14 @@ export const PUT = withAuth(async (
     if (body.cateringDetails !== undefined) updateData.cateringDetails = body.cateringDetails;
     if (body.documents !== undefined) updateData.documents = body.documents;
     if (body.weatherData !== undefined) updateData.weatherData = body.weatherData;
+    if (body.header !== undefined) updateData.header = body.header;
+    if (body.clientTeam !== undefined) updateData.clientTeam = body.clientTeam;
+    if (body.agencyTeam !== undefined) updateData.agencyTeam = body.agencyTeam;
+    if (body.productionCompany !== undefined) updateData.productionCompany = body.productionCompany;
+    if (body.callTimes !== undefined) updateData.callTimes = body.callTimes;
+    if (body.productionMobiles !== undefined) updateData.productionMobiles = body.productionMobiles;
+    if (body.movementOrder !== undefined) updateData.movementOrder = body.movementOrder;
+    if (body.equipment !== undefined) updateData.equipment = body.equipment;
     if (body.productionNotes !== undefined) updateData.productionNotes = body.productionNotes;
     if (body.safetyNotes !== undefined) updateData.safetyNotes = body.safetyNotes;
     if (body.parkingNotes !== undefined) updateData.parkingNotes = body.parkingNotes;
@@ -85,15 +93,17 @@ export const PUT = withAuth(async (
       updateData.distributedAt = body.distributedAt ? new Date(body.distributedAt) : null;
     }
 
-    // Publishing mints the public share token (once — the link stays stable
-    // across unpublish/republish cycles).
+    // Publishing mints the public share tokens (once each — the links stay
+    // stable across unpublish/republish cycles). The internal token shows the
+    // full sheet; the client token renders the redacted version.
     if (body.status === "PUBLISHED") {
       const existing = await prisma.callSheet.findUnique({
         where: { id },
-        select: { shareToken: true },
+        select: { shareToken: true, clientShareToken: true },
       });
       if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
       if (!existing.shareToken) updateData.shareToken = randomUUID();
+      if (!existing.clientShareToken) updateData.clientShareToken = randomUUID();
     }
 
     const sheet = await prisma.callSheet.update({

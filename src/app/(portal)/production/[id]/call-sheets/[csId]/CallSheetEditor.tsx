@@ -3,26 +3,27 @@
 import { useState } from "react";
 import {
   Clock, MapPin, Cloud, Camera, Users, Coffee, Paperclip, FileText,
-  GripVertical, UserPlus, Wallet, Contact as ContactIcon,
+  GripVertical, UserPlus, Wallet, Contact as ContactIcon, Building2, Briefcase,
+  Phone, Shield, Lock, Route, Aperture, RefreshCw, Check, Plus,
 } from "lucide-react";
 import type {
-  Attachment,
-  CallSheet,
-  CateringDetails,
-  CrewMember,
-  LocationData,
-  ScheduleItem,
-  Shot,
-  TalentMember,
-  WeatherData,
+  AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallTimeRow,
+  CateringDetails, ClientTeamMember, CrewMember, EquipmentInfo, LocationData,
+  MovementOrder, ProductionCompanyInfo, ProductionMobile, ScheduleItem, Shot,
+  TalentMember, WeatherData,
+} from "./types";
+import {
+  AGENCY_TEAM_ROLES, CLIENT_TEAM_ROLES, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE,
+  CREW_ROLE_PRESETS, defaultCallTimes,
 } from "./types";
 import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls } from "./shared";
 import { PeopleTable } from "./shared";
-import { LocationEditor } from "./LocationMap";
+import { LocationEditor, MovementOrderEditor } from "./LocationMap";
 import { WeatherEditor } from "./WeatherWidget";
 import { ShotlistEditor } from "./Shotlist";
 import { CateringEditor } from "./CateringSection";
 import { DocumentsEditor } from "./DocumentsSection";
+import { DirectoryPicker } from "./DirectoryPicker";
 
 export interface EditorProps {
   shootDate: string; setShootDate: (v: string) => void;
@@ -41,7 +42,17 @@ export interface EditorProps {
   notesGeneral: string; setNotesGeneral: (v: string) => void;
   notesSafety: string; setNotesSafety: (v: string) => void;
   notesParking: string; setNotesParking: (v: string) => void;
+  // New industry-standard sections
+  header: CallSheetHeader; setHeader: (v: CallSheetHeader) => void;
+  clientTeam: ClientTeamMember[]; setClientTeam: (v: ClientTeamMember[]) => void;
+  agencyTeam: AgencyTeamMember[]; setAgencyTeam: (v: AgencyTeamMember[]) => void;
+  productionCompany: ProductionCompanyInfo; setProductionCompany: (v: ProductionCompanyInfo) => void;
+  callTimes: CallTimeRow[]; setCallTimes: (v: CallTimeRow[]) => void;
+  productionMobiles: ProductionMobile[]; setProductionMobiles: (v: ProductionMobile[]) => void;
+  movementOrder: MovementOrder; setMovementOrder: (v: MovementOrder) => void;
+  equipment: EquipmentInfo; setEquipment: (v: EquipmentInfo) => void;
   production: CallSheet["production"];
+  onSyncDirectory: () => Promise<void>;
 }
 
 const iconCls = "text-gray-400";
@@ -58,6 +69,10 @@ export function CallSheetEditor(p: EditorProps) {
   const rosterCount = p.crew.length + p.talent.length;
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [synced, setSynced] = useState(false);
+  const [loadingStaff, setLoadingStaff] = useState(false);
 
   function handleDrop(target: number) {
     if (dragIndex === null || dragIndex === target) {
@@ -95,14 +110,114 @@ export function CallSheetEditor(p: EditorProps) {
     if (incoming.length) p.setCrew([...p.crew, ...incoming]);
   }
 
+  function addFromPicker(people: CrewMember[]) {
+    const existing = new Set(
+      p.crew.map((c) => `${(c.name || "").trim().toLowerCase()}|${(c.email || "").trim().toLowerCase()}`)
+    );
+    const incoming = people.filter(
+      (m) => !existing.has(`${(m.name || "").trim().toLowerCase()}|${(m.email || "").trim().toLowerCase()}`)
+    );
+    if (incoming.length) p.setCrew([...p.crew, ...incoming]);
+  }
+
+  async function syncDirectory() {
+    setSyncing(true);
+    try {
+      await p.onSyncDirectory();
+      setSynced(true);
+      setTimeout(() => setSynced(false), 2500);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  // Auto-fill the Agency Team from active Outlander staff, matching standard roles.
+  async function importAgencyStaff() {
+    setLoadingStaff(true);
+    try {
+      const res = await fetch("/api/users");
+      const users = (await res.json()) as {
+        name: string;
+        email: string | null;
+        role: string;
+        department: string | null;
+      }[];
+      if (!Array.isArray(users)) return;
+      const existing = new Set(p.agencyTeam.map((a) => (a.name || "").trim().toLowerCase()));
+      const rows: AgencyTeamMember[] = [];
+      for (const want of AGENCY_TEAM_ROLES) {
+        const match = users.find(
+          (u) =>
+            (u.department || "").toLowerCase().includes(want.split(" ")[0].toLowerCase()) ||
+            (u.role || "").toLowerCase() === want.toLowerCase()
+        );
+        rows.push({
+          role: want,
+          name: match && !existing.has(match.name.toLowerCase()) ? match.name : "",
+          phone: "",
+          email: match?.email || "",
+        });
+      }
+      // Replace blank default rows but keep anything already typed.
+      const merged = p.agencyTeam.length > 0 ? [...p.agencyTeam] : [];
+      for (const r of rows) {
+        if (!merged.some((m) => m.role === r.role)) merged.push(r);
+      }
+      p.setAgencyTeam(merged.length ? merged : rows);
+    } finally {
+      setLoadingStaff(false);
+    }
+  }
+
   const billingContact = p.production.campaign?.billingContact ?? null;
   const hasReference = p.production.budgetTotal != null || billingContact != null;
+  const clientName =
+    p.production.campaign?.client?.name || p.production.clientName || "";
 
   return (
     <div className="space-y-4">
-      {/* 1. General Info */}
-      <Section title="General Info" icon={<Clock size={15} className={iconCls} />}>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* 1. Header / Job Info */}
+      <Section title="Header & Job Info" icon={<FileText size={15} className={iconCls} />}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Production Company</label>
+            <input
+              type="text"
+              value={p.header.productionCompany}
+              onChange={(e) => p.setHeader({ ...p.header, productionCompany: e.target.value })}
+              placeholder="Outlander"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Job Number</label>
+            <input
+              type="text"
+              value={p.header.jobNumber}
+              onChange={(e) => p.setHeader({ ...p.header, jobNumber: e.target.value })}
+              placeholder="e.g. OL-2026-014"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Client</label>
+            <input
+              type="text"
+              value={clientName}
+              readOnly
+              placeholder="From linked campaign"
+              className={`${inputCls} bg-gray-50 text-gray-500`}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Project Title</label>
+            <input
+              type="text"
+              value={p.production.title}
+              readOnly
+              className={`${inputCls} bg-gray-50 text-gray-500`}
+            />
+          </div>
           <div>
             <label className={labelCls}>Shoot Date</label>
             <input
@@ -112,27 +227,28 @@ export function CallSheetEditor(p: EditorProps) {
               className={inputCls}
             />
           </div>
-          <div>
-            <label className={labelCls}>Call Time</label>
-            <input
-              type="time"
-              value={p.callTime}
-              onChange={(e) => p.setCallTime(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className={labelCls}>Wrap Time</label>
-            <input
-              type="time"
-              value={p.wrapTime}
-              onChange={(e) => p.setWrapTime(e.target.value)}
-              className={inputCls}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Main Call</label>
+              <input
+                type="time"
+                value={p.callTime}
+                onChange={(e) => p.setCallTime(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Wrap</label>
+              <input
+                type="time"
+                value={p.wrapTime}
+                onChange={(e) => p.setWrapTime(e.target.value)}
+                className={inputCls}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Read-only references pulled from the production / Commercial deal */}
         {hasReference && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50">
             {p.production.budgetTotal != null && (
@@ -143,7 +259,6 @@ export function CallSheetEditor(p: EditorProps) {
                 <p className="text-sm font-semibold text-gray-800">
                   {gbp(p.production.budgetTotal)}
                 </p>
-                <p className="text-[11px] text-gray-400">Set on the production — read only</p>
               </div>
             )}
             {billingContact && (
@@ -166,7 +281,183 @@ export function CallSheetEditor(p: EditorProps) {
         )}
       </Section>
 
-      {/* 2. Location */}
+      {/* 2. Client Team */}
+      <Section
+        title="Client Team"
+        icon={<Briefcase size={15} className={iconCls} />}
+        action={
+          p.clientTeam.length === 0 ? (
+            <button
+              onClick={() =>
+                p.setClientTeam(CLIENT_TEAM_ROLES.map((role) => ({ role, name: "" })))
+              }
+              className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444]"
+            >
+              <Plus size={13} /> Add standard roles
+            </button>
+          ) : undefined
+        }
+      >
+        <RoleNameTable
+          rows={p.clientTeam}
+          setRows={p.setClientTeam}
+          addLabel="Add Client Contact"
+          rolePlaceholder="Role (e.g. Art Director)"
+        />
+      </Section>
+
+      {/* 3. Agency Team */}
+      <Section
+        title="Agency Team (Outlander)"
+        icon={<Users size={15} className={iconCls} />}
+        action={
+          <button
+            onClick={importAgencyStaff}
+            disabled={loadingStaff}
+            className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] disabled:opacity-40"
+          >
+            {loadingStaff ? <RefreshCw size={13} className="animate-spin" /> : <UserPlus size={13} />}
+            Auto-fill from staff
+          </button>
+        }
+      >
+        <AgencyTeamTable rows={p.agencyTeam} setRows={p.setAgencyTeam} />
+      </Section>
+
+      {/* 4. Production Company */}
+      <Section title="Production Company" icon={<Building2 size={15} className={iconCls} />}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Company Name</label>
+            <input
+              type="text"
+              value={p.productionCompany.name}
+              onChange={(e) => p.setProductionCompany({ ...p.productionCompany, name: e.target.value })}
+              placeholder="Production company"
+              className={inputCls}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Address</label>
+            <textarea
+              value={p.productionCompany.address}
+              onChange={(e) => p.setProductionCompany({ ...p.productionCompany, address: e.target.value })}
+              placeholder="Full address"
+              rows={2}
+              className={`${inputCls} resize-none`}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Executive Producer</label>
+            <input
+              type="text"
+              value={p.productionCompany.execProducer}
+              onChange={(e) => p.setProductionCompany({ ...p.productionCompany, execProducer: e.target.value })}
+              placeholder="Exec Producer name"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Producer</label>
+            <input
+              type="text"
+              value={p.productionCompany.producer}
+              onChange={(e) => p.setProductionCompany({ ...p.productionCompany, producer: e.target.value })}
+              placeholder="Producer name"
+              className={inputCls}
+            />
+          </div>
+        </div>
+      </Section>
+
+      {/* 5. Call Times */}
+      <Section
+        title="Call Times"
+        icon={<Clock size={15} className={iconCls} />}
+        action={
+          p.callTimes.length === 0 ? (
+            <button
+              onClick={() => p.setCallTimes(defaultCallTimes())}
+              className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444]"
+            >
+              <Plus size={13} /> Use template
+            </button>
+          ) : undefined
+        }
+      >
+        <div className="space-y-2">
+          {p.callTimes.map((row, i) => (
+            <div key={i} className="grid grid-cols-[110px_1fr_32px] gap-2 items-center">
+              <input
+                type="time"
+                value={row.time}
+                onChange={(e) =>
+                  p.setCallTimes(p.callTimes.map((r, j) => (j === i ? { ...r, time: e.target.value } : r)))
+                }
+                className={smallInputCls}
+              />
+              <input
+                type="text"
+                value={row.department}
+                onChange={(e) =>
+                  p.setCallTimes(p.callTimes.map((r, j) => (j === i ? { ...r, department: e.target.value } : r)))
+                }
+                placeholder="Department"
+                className={smallInputCls}
+              />
+              <DeleteButton onClick={() => p.setCallTimes(p.callTimes.filter((_, j) => j !== i))} />
+            </div>
+          ))}
+          <AddButton
+            label="Add Call Time"
+            onClick={() => p.setCallTimes([...p.callTimes, { time: "", department: "" }])}
+          />
+        </div>
+      </Section>
+
+      {/* 6. Production Mobiles */}
+      <Section title="Production Mobiles" icon={<Phone size={15} className={iconCls} />}>
+        <div className="space-y-2">
+          {p.productionMobiles.map((row, i) => (
+            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_32px] gap-2 items-center">
+              <input
+                type="text"
+                value={row.role}
+                onChange={(e) =>
+                  p.setProductionMobiles(p.productionMobiles.map((r, j) => (j === i ? { ...r, role: e.target.value } : r)))
+                }
+                placeholder="Role (e.g. 1st AD)"
+                className={smallInputCls}
+              />
+              <input
+                type="text"
+                value={row.name}
+                onChange={(e) =>
+                  p.setProductionMobiles(p.productionMobiles.map((r, j) => (j === i ? { ...r, name: e.target.value } : r)))
+                }
+                placeholder="Name"
+                className={smallInputCls}
+              />
+              <input
+                type="tel"
+                value={row.phone}
+                onChange={(e) =>
+                  p.setProductionMobiles(p.productionMobiles.map((r, j) => (j === i ? { ...r, phone: e.target.value } : r)))
+                }
+                placeholder="Phone"
+                className={smallInputCls}
+              />
+              <DeleteButton onClick={() => p.setProductionMobiles(p.productionMobiles.filter((_, j) => j !== i))} />
+            </div>
+          ))}
+          <AddButton
+            label="Add Contact"
+            onClick={() => p.setProductionMobiles([...p.productionMobiles, { role: "", name: "", phone: "" }])}
+          />
+        </div>
+      </Section>
+
+      {/* 7. Location */}
       <Section title="Location" icon={<MapPin size={15} className={iconCls} />}>
         <LocationEditor
           location={p.location}
@@ -177,7 +468,17 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 3. Weather */}
+      {/* 8. Movement Order */}
+      <Section title="Movement Order" icon={<Route size={15} className={iconCls} />}>
+        <MovementOrderEditor
+          movementOrder={p.movementOrder}
+          setMovementOrder={p.setMovementOrder}
+          lat={p.locationLat}
+          lng={p.locationLng}
+        />
+      </Section>
+
+      {/* 9. Weather */}
       <Section title="Weather" icon={<Cloud size={15} className={iconCls} />}>
         <WeatherEditor
           lat={p.locationLat}
@@ -188,7 +489,7 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 4. Schedule — drag the grip to reorder rows */}
+      {/* 10. Schedule */}
       <Section title="Schedule" icon={<Clock size={15} className={iconCls} />}>
         <div className="space-y-2">
           {p.schedule.map((item, i) => (
@@ -262,30 +563,74 @@ export function CallSheetEditor(p: EditorProps) {
         </div>
       </Section>
 
-      {/* 5. Shotlist */}
+      {/* 11. Shotlist */}
       <Section title="Shotlist" icon={<Camera size={15} className={iconCls} />}>
         <ShotlistEditor shotlist={p.shotlist} setShotlist={p.setShotlist} />
       </Section>
 
-      {/* 6. Crew */}
-      <Section
-        title="Crew"
-        icon={<Users size={15} className={iconCls} />}
-        action={
-          (p.production.teamMembers ?? []).length > 0 ? (
-            <button
-              onClick={importTeam}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors"
-            >
-              <UserPlus size={13} /> Import from team
-            </button>
-          ) : undefined
-        }
-      >
-        <PeopleTable people={p.crew} setPeople={(v) => p.setCrew(v as CrewMember[])} addLabel="Add Crew" />
+      {/* 12. Conduct Policy (auto-included, read-only) */}
+      <Section title="Conduct Policy" icon={<Shield size={15} className={iconCls} />}>
+        <p className="text-xs text-gray-400 mb-2">
+          Auto-included on every call sheet — not editable.
+        </p>
+        <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{CONDUCT_POLICY}</p>
       </Section>
 
-      {/* 7. Talent / Cast */}
+      {/* 13. Confidentiality Notice (auto-included, read-only) */}
+      <Section title="Confidentiality Notice" icon={<Lock size={15} className={iconCls} />}>
+        <p className="text-xs text-gray-400 mb-2">
+          Auto-included on every call sheet — not editable.
+        </p>
+        <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{CONFIDENTIALITY_NOTICE}</p>
+      </Section>
+
+      {/* 14. Unit List (Crew) */}
+      <Section
+        title="Unit List (Crew)"
+        icon={<Users size={15} className={iconCls} />}
+        action={
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800"
+            >
+              <ContactIcon size={13} /> Import Directory
+            </button>
+            {(p.production.teamMembers ?? []).length > 0 && (
+              <button
+                onClick={importTeam}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800"
+              >
+                <UserPlus size={13} /> Import Team
+              </button>
+            )}
+            <button
+              onClick={syncDirectory}
+              disabled={syncing || p.crew.length === 0}
+              className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] disabled:opacity-40"
+              title="Save crew to the Directory with this production as a credit"
+            >
+              {syncing ? (
+                <RefreshCw size={13} className="animate-spin" />
+              ) : synced ? (
+                <Check size={13} className="text-emerald-600" />
+              ) : (
+                <RefreshCw size={13} />
+              )}
+              {synced ? "Saved" : "Save to Directory"}
+            </button>
+          </div>
+        }
+      >
+        <PeopleTable
+          people={p.crew}
+          setPeople={(v) => p.setCrew(v as CrewMember[])}
+          addLabel="Add Crew"
+          rolePresets={CREW_ROLE_PRESETS}
+        />
+      </Section>
+
+      {/* 15. Talent */}
       <Section
         title="Talent / Cast"
         icon={<Users size={15} className={iconCls} />}
@@ -295,7 +640,6 @@ export function CallSheetEditor(p: EditorProps) {
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-800"
-            title="Browse Outlander's directory for talent"
           >
             <ContactIcon size={12} /> Browse Directory
           </a>
@@ -308,17 +652,85 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 8. Catering */}
+      {/* 16. Catering */}
       <Section title="Catering" icon={<Coffee size={15} className={iconCls} />}>
         <CateringEditor catering={p.catering} setCatering={p.setCatering} rosterCount={rosterCount} />
       </Section>
 
-      {/* 9. Documents */}
+      {/* 17. Equipment */}
+      <Section title="Equipment" icon={<Aperture size={15} className={iconCls} />}>
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Camera</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input
+                type="text"
+                value={p.equipment.cameraSupplier}
+                onChange={(e) => p.setEquipment({ ...p.equipment, cameraSupplier: e.target.value })}
+                placeholder="Supplier"
+                className={inputCls}
+              />
+              <input
+                type="text"
+                value={p.equipment.cameraContact}
+                onChange={(e) => p.setEquipment({ ...p.equipment, cameraContact: e.target.value })}
+                placeholder="Contact name"
+                className={inputCls}
+              />
+              <input
+                type="email"
+                value={p.equipment.cameraEmail}
+                onChange={(e) => p.setEquipment({ ...p.equipment, cameraEmail: e.target.value })}
+                placeholder="Email"
+                className={inputCls}
+              />
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Lighting</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input
+                type="text"
+                value={p.equipment.lightingSupplier}
+                onChange={(e) => p.setEquipment({ ...p.equipment, lightingSupplier: e.target.value })}
+                placeholder="Supplier"
+                className={inputCls}
+              />
+              <input
+                type="text"
+                value={p.equipment.lightingContact}
+                onChange={(e) => p.setEquipment({ ...p.equipment, lightingContact: e.target.value })}
+                placeholder="Contact name"
+                className={inputCls}
+              />
+              <input
+                type="email"
+                value={p.equipment.lightingEmail}
+                onChange={(e) => p.setEquipment({ ...p.equipment, lightingEmail: e.target.value })}
+                placeholder="Email"
+                className={inputCls}
+              />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Other Equipment Notes</label>
+            <textarea
+              value={p.equipment.otherNotes}
+              onChange={(e) => p.setEquipment({ ...p.equipment, otherNotes: e.target.value })}
+              placeholder="Grip, sound, special equipment…"
+              rows={2}
+              className={`${inputCls} resize-none`}
+            />
+          </div>
+        </div>
+      </Section>
+
+      {/* 18. Documents */}
       <Section title="Documents" icon={<Paperclip size={15} className={iconCls} />}>
         <DocumentsEditor documents={p.documents} setDocuments={p.setDocuments} />
       </Section>
 
-      {/* 10. Notes */}
+      {/* 19. Notes */}
       <Section title="Notes" icon={<FileText size={15} className={iconCls} />}>
         <div className="space-y-3">
           {[
@@ -339,6 +751,103 @@ export function CallSheetEditor(p: EditorProps) {
           ))}
         </div>
       </Section>
+
+      {pickerOpen && (
+        <DirectoryPicker
+          onClose={() => setPickerOpen(false)}
+          onAdd={addFromPicker}
+          defaultCallTime={p.callTime}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Small editor tables ──
+
+function RoleNameTable({
+  rows,
+  setRows,
+  addLabel,
+  rolePlaceholder,
+}: {
+  rows: ClientTeamMember[];
+  setRows: (v: ClientTeamMember[]) => void;
+  addLabel: string;
+  rolePlaceholder: string;
+}) {
+  return (
+    <div className="space-y-2">
+      {rows.map((row, i) => (
+        <div key={i} className="grid grid-cols-[1fr_1fr_32px] gap-2 items-center">
+          <input
+            type="text"
+            value={row.role}
+            onChange={(e) => setRows(rows.map((r, j) => (j === i ? { ...r, role: e.target.value } : r)))}
+            placeholder={rolePlaceholder}
+            className={smallInputCls}
+          />
+          <input
+            type="text"
+            value={row.name}
+            onChange={(e) => setRows(rows.map((r, j) => (j === i ? { ...r, name: e.target.value } : r)))}
+            placeholder="Name"
+            className={smallInputCls}
+          />
+          <DeleteButton onClick={() => setRows(rows.filter((_, j) => j !== i))} />
+        </div>
+      ))}
+      <AddButton label={addLabel} onClick={() => setRows([...rows, { role: "", name: "" }])} />
+    </div>
+  );
+}
+
+function AgencyTeamTable({
+  rows,
+  setRows,
+}: {
+  rows: AgencyTeamMember[];
+  setRows: (v: AgencyTeamMember[]) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {rows.map((row, i) => (
+        <div key={i} className="grid grid-cols-[1fr_1fr_1fr_1fr_32px] gap-2 items-center">
+          <input
+            type="text"
+            value={row.role}
+            onChange={(e) => setRows(rows.map((r, j) => (j === i ? { ...r, role: e.target.value } : r)))}
+            placeholder="Role"
+            className={smallInputCls}
+          />
+          <input
+            type="text"
+            value={row.name}
+            onChange={(e) => setRows(rows.map((r, j) => (j === i ? { ...r, name: e.target.value } : r)))}
+            placeholder="Name"
+            className={smallInputCls}
+          />
+          <input
+            type="tel"
+            value={row.phone}
+            onChange={(e) => setRows(rows.map((r, j) => (j === i ? { ...r, phone: e.target.value } : r)))}
+            placeholder="Phone"
+            className={smallInputCls}
+          />
+          <input
+            type="email"
+            value={row.email}
+            onChange={(e) => setRows(rows.map((r, j) => (j === i ? { ...r, email: e.target.value } : r)))}
+            placeholder="Email"
+            className={smallInputCls}
+          />
+          <DeleteButton onClick={() => setRows(rows.filter((_, j) => j !== i))} />
+        </div>
+      ))}
+      <AddButton
+        label="Add Team Member"
+        onClick={() => setRows([...rows, { role: "", name: "", phone: "", email: "" }])}
+      />
     </div>
   );
 }

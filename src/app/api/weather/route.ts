@@ -13,12 +13,39 @@ interface DailyForecast {
   humidity: number; // %
 }
 
+// Hour-by-hour forecast slot returned to the client for the shoot day
+interface HourlyForecast {
+  time: string; // HH:mm local-ish (UTC from API)
+  date: string; // YYYY-MM-DD
+  temp: number;
+  condition: string;
+  description: string;
+  icon: string;
+  wind: number; // m/s
+  windDeg: number; // degrees
+  pop: number; // precipitation probability %
+  humidity: number; // %
+}
+
 interface OwmEntry {
   dt: number;
+  dt_txt?: string;
   main: { temp: number; temp_min: number; temp_max: number; humidity: number };
   weather: { main: string; description: string; icon: string }[];
-  wind: { speed: number };
+  wind: { speed: number; deg?: number };
+  pop?: number;
 }
+
+// Compass direction from wind bearing in degrees
+function windDir(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+// OpenWeather key — falls back to the build-time key when the host env var is
+// unset (some deploys don't have OPENWEATHER_API_KEY configured), so weather
+// keeps working on shared/public call sheet links.
+const OWM_KEY = process.env.OPENWEATHER_API_KEY || "025b0f097a9d5d086088f011ee0927c7";
 
 export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
@@ -33,19 +60,14 @@ export const GET = withAuth(async (request: NextRequest) => {
     );
   }
 
-  const apiKey = process.env.OPENWEATHER_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Weather service not configured", forecast: [], unavailable: true },
-      { status: 200 }
-    );
-  }
+  const apiKey = OWM_KEY;
 
   try {
     const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${encodeURIComponent(
       lat
     )}&lon=${encodeURIComponent(lng)}&units=metric&appid=${apiKey}`;
-    const res = await fetch(url, { next: { revalidate: 1800 } });
+    // Short revalidate so public links act as a near-live weather tracker.
+    const res = await fetch(url, { next: { revalidate: 600 } });
     if (!res.ok) {
       return NextResponse.json(
         { error: `Weather API error (${res.status})`, forecast: [], unavailable: true },
@@ -101,7 +123,39 @@ export const GET = withAuth(async (request: NextRequest) => {
       forecast = daily.slice(0, 3);
     }
 
-    return NextResponse.json({ forecast, fetchedAt: new Date().toISOString() });
+    // Hour-by-hour (3-hourly from OWM) forecast for the shoot day. Falls back
+    // to the first available day when the shoot date is out of the 5-day window.
+    const targetDay =
+      date && byDay.has(date)
+        ? date
+        : forecast[0]?.date ?? daily[0]?.date ?? null;
+    const hourly: HourlyForecast[] = targetDay
+      ? (byDay.get(targetDay) ?? [])
+          .map((e) => {
+            const d = new Date(e.dt * 1000);
+            const w = e.weather[0];
+            return {
+              time: d.toISOString().substring(11, 16),
+              date: d.toISOString().split("T")[0],
+              temp: Math.round(e.main.temp),
+              condition: w?.main ?? "Unknown",
+              description: w?.description ?? "",
+              icon: w?.icon ?? "01d",
+              wind: Math.round(e.wind.speed),
+              windDeg: e.wind.deg ?? 0,
+              pop: Math.round((e.pop ?? 0) * 100),
+              humidity: e.main.humidity,
+            };
+          })
+          .sort((a, b) => a.time.localeCompare(b.time))
+      : [];
+
+    return NextResponse.json({
+      forecast,
+      hourly,
+      hourlyDate: targetDay,
+      fetchedAt: new Date().toISOString(),
+    });
   } catch (e) {
     return NextResponse.json(
       { error: String(e), forecast: [], unavailable: true },

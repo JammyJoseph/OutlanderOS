@@ -129,12 +129,15 @@ export function PeopleTable({
   setPeople,
   readOnly = false,
   addLabel = "Add Person",
+  rolePresets,
 }: {
   people: (CrewMember | TalentMember)[];
   setPeople: (v: (CrewMember | TalentMember)[]) => void;
   readOnly?: boolean;
   addLabel?: string;
+  rolePresets?: string[];
 }) {
+  const listId = rolePresets ? "crew-role-presets" : undefined;
   if (readOnly) {
     if (people.length === 0) return null;
     return (
@@ -166,10 +169,18 @@ export function PeopleTable({
 
   return (
     <div className="space-y-2">
+      {rolePresets && (
+        <datalist id={listId}>
+          {rolePresets.map((r) => (
+            <option key={r} value={r} />
+          ))}
+        </datalist>
+      )}
       {people.map((p, i) => (
         <div key={i} className="grid grid-cols-[1fr_1fr_90px_1fr_1fr_32px] gap-2 items-center">
           <input
             type="text"
+            list={listId}
             value={p.role}
             onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, role: e.target.value } : m)))}
             placeholder="Role"
