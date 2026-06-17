@@ -444,56 +444,38 @@ function CheckCell({ checked, onToggle }: { checked: boolean; onToggle: (v: bool
 
 // ===================== FLAT PLAN VIEW (compact magazine layout) =====================
 
+type Spread = { left: number | null; right: number | null };
+
 function FlatPlanView({ pages, onOpen }: { pages: MagazinePage[]; onOpen: (i: number) => void }) {
   // Group into spreads: page 1 sits alone on the right (cover), then even-left /
   // odd-right pairs, like opening a physical magazine.
-  const spreads: { left: number | null; right: number | null }[] = [];
+  const spreads: Spread[] = [];
   spreads.push({ left: null, right: 0 }); // cover
   for (let i = 1; i < pages.length; i += 2) {
     spreads.push({ left: i, right: i + 1 < pages.length ? i + 1 : null });
   }
 
+  // Render spreads as one continuous, width-filling flow. Spreads wrap to fill the
+  // whole row at any viewport size (no fixed-width panels leaving dead space). A
+  // subtle left rule before every 4th spread marks the 8-page signature boundaries
+  // without breaking the flow.
   return (
-    <div className="h-full overflow-auto p-3">
-      <div className="flex flex-wrap items-start gap-x-2 gap-y-2">
+    <div className="h-full overflow-auto p-4">
+      <div className="flex flex-wrap content-start gap-x-2 gap-y-2.5">
         {spreads.map((sp, si) => {
-          // Cover is spread 0; after it, a subtle full-width rule every 4 spreads
-          // (8 pages) marks the print section boundaries.
-          const showBlockDivider = si > 1 && (si - 1) % 4 === 0;
+          const newSignature = si > 0 && si % 4 === 0;
           return (
-            <FlatPlanSpread
+            <div
               key={si}
-              spread={sp}
-              showDivider={showBlockDivider}
-              pages={pages}
-              onOpen={onOpen}
-            />
+              className={`flex gap-[2px] ${newSignature ? "border-l border-white/10 pl-2" : ""}`}
+            >
+              <PageCard index={sp.left} pages={pages} onOpen={onOpen} />
+              <PageCard index={sp.right} pages={pages} onOpen={onOpen} />
+            </div>
           );
         })}
       </div>
     </div>
-  );
-}
-
-function FlatPlanSpread({
-  spread,
-  showDivider,
-  pages,
-  onOpen,
-}: {
-  spread: { left: number | null; right: number | null };
-  showDivider: boolean;
-  pages: MagazinePage[];
-  onOpen: (i: number) => void;
-}) {
-  return (
-    <>
-      {showDivider && <div className="h-px w-full bg-white/5" />}
-      <div className="flex gap-[2px]">
-        <PageCard index={spread.left} pages={pages} onOpen={onOpen} />
-        <PageCard index={spread.right} pages={pages} onOpen={onOpen} />
-      </div>
-    </>
   );
 }
 
