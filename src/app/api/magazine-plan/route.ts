@@ -11,6 +11,7 @@ import {
   sectionColour,
   SEED_ISSUES,
   SEED_TOTAL_PAGES,
+  SEED_VERSION,
   type MagazinePage,
 } from "@/lib/magazine-plan";
 
@@ -41,6 +42,7 @@ export const GET = withAuth(async (request: NextRequest) => {
         issueNumber: row.issueNumber,
         issueName: row.issueName,
         totalPages: row.totalPages,
+        seedVersion: row.seedVersion,
         updatedAt: row.updatedAt,
         updatedBy: row.updatedBy,
         stats,
@@ -62,24 +64,41 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
   const body = await request.json().catch(() => ({}));
   const updatedBy = user.name || user.email;
 
-  // Bulk-seed both representative issues if none exist yet.
+  // Bulk-seed the representative issues. New issues are created; existing seed
+  // issues are refreshed only when their stored seedVersion is behind the current
+  // blueprint (so blueprint edits reach already-seeded environments). Issues a
+  // user created themselves are not in SEED_ISSUES and are never touched.
   if (body.seedAll === true) {
     try {
       const created = [];
       for (const issue of SEED_ISSUES) {
+        const existing = await prisma.magazinePlan.findUnique({
+          where: { issueNumber: issue.issueNumber },
+        });
+        if (existing && existing.seedVersion >= SEED_VERSION) {
+          created.push({ id: existing.id, issueNumber: existing.issueNumber, refreshed: false });
+          continue;
+        }
         const pages = issue.build();
         const plan = await prisma.magazinePlan.upsert({
           where: { issueNumber: issue.issueNumber },
-          update: {}, // never clobber an existing issue
+          update: {
+            issueName: issue.issueName,
+            totalPages: issue.totalPages,
+            pages: pages as unknown as object,
+            seedVersion: SEED_VERSION,
+            updatedBy,
+          },
           create: {
             issueNumber: issue.issueNumber,
             issueName: issue.issueName,
             totalPages: issue.totalPages,
             pages: pages as unknown as object,
+            seedVersion: SEED_VERSION,
             updatedBy,
           },
         });
-        created.push({ id: plan.id, issueNumber: plan.issueNumber });
+        created.push({ id: plan.id, issueNumber: plan.issueNumber, refreshed: true });
       }
       return NextResponse.json({ ok: true, created });
     } catch (e) {

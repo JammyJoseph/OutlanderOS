@@ -13,7 +13,10 @@ export type SectionKey =
   | "Cover"
   | "FOB"
   | "Fashion"
+  | "Fashion Shoot"
+  | "Cover Talent"
   | "Feature"
+  | "Special"
   | "Community"
   | "Advertorial"
   | "Art & Design"
@@ -76,6 +79,10 @@ export const STATUS_STYLE: Record<PageStatus, { text: string; bg: string; border
 };
 
 // Section colours. `hex` drives the flat-plan card accent + tracker left border.
+// Palette matches the SS26 flat-plan screenshots:
+//   BLUE Cover · ORANGE FOB · GREY Fashion editorial/Space · GOLD Fashion shoots
+//   PURPLE Cover Talent + Features · RED/Coral Special features · GREEN Community
+//   + Behind the Craft · LIGHT GREEN Advertorial.
 export const SECTIONS: Record<
   SectionKey,
   { label: string; hex: string }
@@ -83,10 +90,13 @@ export const SECTIONS: Record<
   Cover: { label: "Cover", hex: "#3b82f6" },
   FOB: { label: "FOB", hex: "#ff8c00" },
   Fashion: { label: "Fashion", hex: "#9ca3af" },
-  Feature: { label: "Feature", hex: "#60a5fa" },
+  "Fashion Shoot": { label: "Fashion Shoot", hex: "#eab308" },
+  "Cover Talent": { label: "Cover Talent", hex: "#c084fc" },
+  Feature: { label: "Feature", hex: "#a78bfa" },
+  Special: { label: "Special", hex: "#f87171" },
   Community: { label: "Community", hex: "#34d399" },
   Advertorial: { label: "Advertorial", hex: "#4ade80" },
-  "Art & Design": { label: "Art & Design", hex: "#a78bfa" },
+  "Art & Design": { label: "Art & Design", hex: "#8b5cf6" },
   "Digital Focus": { label: "Digital Focus", hex: "#2dd4bf" },
   Space: { label: "Space", hex: "#6b7280" },
 };
@@ -210,6 +220,11 @@ export function resetPageStructure(pages: MagazinePage[]): MagazinePage[] {
 
 // ===== Seed data — two representative issues =====
 
+// Bump whenever a seed blueprint below changes. Seeded issues store the version
+// they were built from; the loader re-seeds any seed issue whose stored version
+// is older, so blueprint edits reach already-seeded environments on next load.
+export const SEED_VERSION = 2;
+
 interface Segment {
   section: SectionKey;
   feature: string;
@@ -228,66 +243,82 @@ interface Segment {
 // features, community/directory pages and back matter. The content fills almost
 // the whole book — only a small handful of Space pages (unsold / TBC inventory)
 // remain at the end.
+// Page-by-page order taken from the SS26 flat-plan screenshots. Reads left→right,
+// top→bottom in rows of spreads; section keys are chosen so each block lands on the
+// colour shown in the screenshots (see SECTIONS above for the colour legend).
 const SEED_SEGMENTS_SS26: Segment[] = [
-  { section: "Cover", feature: "SS26 COVER", content: "Bespoke Content", type: "Bespoke", pages: 1, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent TBC", editor: "Luke", status: "IN_DESIGN" },
+  // ── Row 1 — Covers (BLUE) + inside-front advertorial + FOB open ──
+  { section: "Cover", feature: "FRONT COVER A", content: "Bespoke Content", type: "Bespoke", pages: 1, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "IN_DESIGN" },
+  { section: "Cover", feature: "FRONT COVER B", content: "Bespoke Content", type: "Bespoke", pages: 1, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "IN_DESIGN" },
+  { section: "Cover", feature: "FRONT COVER C", content: "Bespoke Content", type: "Bespoke", pages: 1, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "IN_DESIGN" },
   { section: "Advertorial", feature: "DIOR — Inside Front", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
-  { section: "FOB", feature: "DIOR STILL LIFE", content: "Supplied", type: "Supplied", pages: 2, photographer: "Low Cooper", shootDate: "2026-05-15", editor: "Luke", status: "CONTENT_RECEIVED" },
   { section: "FOB", feature: "Masthead & Credits", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", status: "COMPLETE" },
   { section: "FOB", feature: "Contents", content: "Editorial", type: "Editorial", pages: 2, editor: "Luke", status: "READY_FOR_DESIGN" },
   { section: "FOB", feature: "Editor's Letter", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", status: "READY_FOR_DESIGN" },
-  { section: "Advertorial", feature: "SAINT LAURENT — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
+  { section: "FOB", feature: "Contributors", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", status: "CONTENT_RECEIVED" },
+
+  // ── Row 2 — FOB editorial (ORANGE) ──
   { section: "FOB", feature: "Radar — New In", content: "Editorial", type: "Editorial", pages: 4, photographer: "Studio", editor: "Maya", status: "CONTENT_RECEIVED" },
-  { section: "Advertorial", feature: "VERSACE — Full Page", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
   { section: "FOB", feature: "Object of Desire", content: "Supplied", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
   { section: "FOB", feature: "The Edit — Beauty", content: "Editorial", type: "Editorial", pages: 4, photographer: "Still Life Team", shootDate: "2026-05-02", editor: "Maya", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "TOM FORD BEAUTY — Full Page", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
-  { section: "FOB", feature: "Trends Report", content: "Editorial", type: "Editorial", pages: 4, editor: "Maya", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "GUCCI — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "FOB", feature: "Five Minutes With…", content: "Bespoke Content", type: "Bespoke", pages: 3, talent: "Industry Guest", editor: "Sofia", status: "NOT_STARTED" },
+
+  // ── Row 3 — Advertise / Space (GREY) mixed with supplied content ──
+  { section: "Advertorial", feature: "SAINT LAURENT — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
+  { section: "Space", feature: "ADVERTISE — Space", content: "Space", type: "Space", pages: 2, status: "NOT_STARTED" },
+  { section: "Advertorial", feature: "VERSACE — Full Page", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
+
+  // ── Row 4 — FOB editorial + DIYA (ORANGE) ──
+  { section: "FOB", feature: "Trends Report", content: "Editorial", type: "Editorial", pages: 3, editor: "Maya", status: "NOT_STARTED" },
+  { section: "FOB", feature: "DIYA — Do It Yourself Atelier", content: "Editorial", type: "Editorial", pages: 4, photographer: "Studio", editor: "Sofia", status: "NOT_STARTED" },
   { section: "FOB", feature: "Style Notes — Column", content: "Editorial", type: "Editorial", pages: 2, editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "CARTIER — Full Page", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
-  { section: "Fashion", feature: "FUTURE ICONS", content: "Bespoke Content", type: "Bespoke", pages: 10, photographer: "Low Cooper", shootDate: "2026-05-15", talent: "Future Icons Cast", editor: "Luke", status: "CONTENT_RECEIVED" },
-  { section: "Advertorial", feature: "PRADA — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
-  { section: "Fashion", feature: "Fashion Editorial — Bloom", content: "Bespoke Content", type: "Bespoke", pages: 12, photographer: "Rae Iverson", shootDate: "2026-05-22", talent: "Model TBC", editor: "Luke", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "VALENTINO — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Fashion", feature: "Fashion Editorial — Coastline", content: "Bespoke Content", type: "Bespoke", pages: 10, photographer: "Rae Iverson", shootDate: "2026-05-30", talent: "Model TBC", editor: "Luke", status: "NOT_STARTED" },
-  { section: "Fashion", feature: "Accessories Story", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Still Life Team", shootDate: "2026-05-28", editor: "Maya", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "BOTTEGA VENETA — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Fashion", feature: "Shoe & Bag Edit", content: "Bespoke Content", type: "Bespoke", pages: 4, photographer: "Still Life Team", editor: "Maya", status: "NOT_STARTED" },
-  { section: "Fashion", feature: "Jewellery Story", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Still Life Team", shootDate: "2026-06-02", editor: "Maya", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "CHANEL — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Feature", feature: "BEHIND THE CRAFT — Parisian Sweet", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Theo Marsh", shootDate: "2026-05-10", talent: "Atelier Profile", editor: "Sofia", status: "CONTENT_RECEIVED" },
-  { section: "Feature", feature: "The Long Read — Future of Craft", content: "Editorial", type: "Editorial", pages: 6, editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "LOEWE — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Feature", feature: "INDUSTRY ICON — Interview", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Low Cooper", shootDate: "2026-05-18", talent: "Industry Icon", editor: "Luke", status: "NOT_STARTED" },
-  { section: "Community", feature: "ASK THE INDUSTRY", content: "Editorial", type: "Editorial", pages: 4, editor: "Maya", status: "NOT_STARTED" },
-  { section: "Feature", feature: "Photo Essay — City", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Rae Iverson", shootDate: "2026-05-25", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "BURBERRY — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Feature", feature: "BEHIND THE CRAFT — Atelier", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Theo Marsh", shootDate: "2026-05-12", talent: "Atelier Profile", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Feature", feature: "The Conversation", content: "Bespoke Content", type: "Bespoke", pages: 6, talent: "Two Voices", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "HERMÈS — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
-  { section: "Feature", feature: "Cultural Dispatch", content: "Editorial", type: "Editorial", pages: 4, editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Feature", feature: "Profile — Designer", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Low Cooper", talent: "Designer", editor: "Luke", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "TIFFANY — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Feature", feature: "Watches Special", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Still Life Team", editor: "Maya", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "OMEGA — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Feature", feature: "Photography Portfolio", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Theo Marsh", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Feature", feature: "Travel — Slow Escapes", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Theo Marsh", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "MONCLER — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Feature", feature: "Interiors Story", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Rae Iverson", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Feature", feature: "Food & Table", content: "Bespoke Content", type: "Bespoke", pages: 4, photographer: "Still Life Team", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "BALENCIAGA — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Community", feature: "OUTLANDER DIRECTORY", content: "Editorial", type: "Editorial", pages: 6, editor: "Maya", status: "NOT_STARTED" },
+
+  // ── Row 5 — Fashion editorial (GREY) — Fashion Bureau Retail ──
+  { section: "Fashion", feature: "FASHION BUREAU RETAIL", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Rae Iverson", shootDate: "2026-05-22", talent: "Model TBC", editor: "Luke", status: "CONTENT_RECEIVED" },
+
+  // ── Row 6 — FOB Bureau Retail continuing (ORANGE) ──
+  { section: "FOB", feature: "FOB BUREAU RETAIL", content: "Supplied", type: "Supplied", pages: 6, photographer: "Still Life Team", editor: "Maya", status: "NOT_STARTED" },
+
+  // ── Row 7 — Cover Talent spreads (PURPLE) ──
+  { section: "Cover Talent", feature: "COVER TALENT — Opening Spread", content: "Bespoke Content", type: "Bespoke", pages: 2, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "IN_DESIGN" },
+  { section: "Cover Talent", feature: "COVER TALENT — The Interview", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "CONTENT_RECEIVED" },
+
+  // ── Row 8 — Behind the Craft (GREEN) + Outlander feature (PURPLE) + Space ──
+  { section: "Community", feature: "BEHIND THE CRAFT — Atelier", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Theo Marsh", shootDate: "2026-05-10", talent: "Atelier Profile", editor: "Sofia", status: "CONTENT_RECEIVED" },
+  { section: "Feature", feature: "OUTLANDER — The Long Read", content: "Editorial", type: "Editorial", pages: 4, editor: "Sofia", status: "NOT_STARTED" },
+  { section: "Space", feature: "ADVERTISE — Space", content: "Space", type: "Space", pages: 2, status: "NOT_STARTED" },
+
+  // ── Row 9 — Community / editorial (GREEN) ──
+  { section: "Advertorial", feature: "GUCCI — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
   { section: "Community", feature: "Community Spotlight", content: "Bespoke Content", type: "Bespoke", pages: 4, talent: "Community Members", editor: "Sofia", status: "NOT_STARTED" },
+  { section: "Community", feature: "ASK THE INDUSTRY", content: "Editorial", type: "Editorial", pages: 4, editor: "Maya", status: "NOT_STARTED" },
+
+  // ── Row 10 — Cover Talent portfolio (PURPLE) + community ──
+  { section: "Cover Talent", feature: "COVER TALENT — Portfolio", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Low Cooper", talent: "Cover Talent", editor: "Luke", status: "NOT_STARTED" },
+  { section: "Community", feature: "Community Voices", content: "Editorial", type: "Editorial", pages: 2, editor: "Maya", status: "NOT_STARTED" },
+
+  // ── Row 11 — Fashion editorial (GREY) + Future Icons + Polaroids (GOLD) ──
+  { section: "Advertorial", feature: "PRADA — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
+  { section: "Fashion", feature: "Fashion Editorial — Bloom", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Rae Iverson", shootDate: "2026-05-22", talent: "Model TBC", editor: "Luke", status: "NOT_STARTED" },
+  { section: "Fashion Shoot", feature: "FUTURE ICONS", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Low Cooper", shootDate: "2026-05-15", talent: "Future Icons Cast", editor: "Luke", status: "CONTENT_RECEIVED" },
+  { section: "Fashion Shoot", feature: "POLAROIDS", content: "Bespoke Content", type: "Bespoke", pages: 4, photographer: "Low Cooper", shootDate: "2026-05-15", talent: "Future Icons Cast", editor: "Luke", status: "NOT_STARTED" },
+
+  // ── Row 12 — Behind the Craft (GREEN) + Outlander feature (PURPLE) ──
+  { section: "Advertorial", feature: "VALENTINO — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
+  { section: "Community", feature: "BEHIND THE CRAFT — Makers", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Theo Marsh", shootDate: "2026-05-12", talent: "Atelier Profile", editor: "Sofia", status: "NOT_STARTED" },
+  { section: "Feature", feature: "OUTLANDER — Cultural Essay", content: "Editorial", type: "Editorial", pages: 4, editor: "Sofia", status: "NOT_STARTED" },
+
+  // ── Row 13 — Special feature (RED/Coral) + Space + community directory ──
+  { section: "Special", feature: "SPECIAL — Anniversary Feature", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Low Cooper", talent: "Special Guests", editor: "Luke", status: "NOT_STARTED" },
+  { section: "Space", feature: "ADVERTISE — Space", content: "Space", type: "Space", pages: 2, status: "NOT_STARTED" },
+  { section: "Community", feature: "OUTLANDER DIRECTORY", content: "Editorial", type: "Editorial", pages: 6, editor: "Maya", status: "NOT_STARTED" },
+
+  // ── Row 14 — Final pages — community, back matter, inside/outside back ──
   { section: "Community", feature: "Reader Pages", content: "Editorial", type: "Editorial", pages: 2, editor: "Maya", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "DOLCE & GABBANA — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Feature", feature: "Wellness", content: "Editorial", type: "Editorial", pages: 4, editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Feature", feature: "Long Read — Sustainability", content: "Editorial", type: "Editorial", pages: 6, editor: "Sofia", status: "NOT_STARTED" },
   { section: "FOB", feature: "Horoscopes", content: "Editorial", type: "Editorial", pages: 2, editor: "Maya", status: "NOT_STARTED" },
   { section: "Community", feature: "Stockists & Credits", content: "Editorial", type: "Editorial", pages: 2, editor: "Luke", status: "NOT_STARTED" },
   { section: "FOB", feature: "Back Page — Last Word", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "HERMÈS — Inside Back", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
-  { section: "Advertorial", feature: "TIFFANY & CO — Outside Back", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
+  { section: "Advertorial", feature: "CHANEL — Inside Back", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
+  { section: "Advertorial", feature: "DIOR — Outside Back", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
 ];
 
 // Issue 01 "AW25" — the shipped, fully-COMPLETE back issue. Carries the wider

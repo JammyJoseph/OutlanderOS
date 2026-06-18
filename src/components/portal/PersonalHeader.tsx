@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { Bell, User as UserIcon } from "lucide-react";
 import { PortalSwitcher } from "@/components/portal/PortalSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface NotificationItem {
   id: string;
@@ -85,7 +86,7 @@ export function PersonalHeader() {
     .toUpperCase();
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#2a2a2a] bg-[#141414]/80 backdrop-blur-md px-5 sticky top-0 z-30">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/80 backdrop-blur-md px-5 sticky top-0 z-30">
       {/* Left: Logo + dashboard label */}
       <div className="flex items-center gap-3">
         <Link
@@ -103,6 +104,9 @@ export function PersonalHeader() {
         {/* Portals dropdown (shared with PortalHeader) */}
         <PortalSwitcher />
 
+        {/* Theme toggle */}
+        <ThemeToggle />
+
         {/* Notifications */}
         <div className="relative" ref={notifsRef}>
           <button
@@ -117,7 +121,7 @@ export function PersonalHeader() {
             )}
           </button>
           {notifsOpen && (
-            <div className="absolute right-0 top-full mt-1 w-80 rounded-xl bg-[#1e1e1e] border border-[#2a2a2a] shadow-lg shadow-black/40 z-50 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 w-80 rounded-xl bg-popover border border-border shadow-lg shadow-black/40 z-50 overflow-hidden">
               <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
                 <span className="text-xs font-semibold text-gray-700">Notifications</span>
                 {unreadCount > 0 && (
@@ -169,7 +173,7 @@ export function PersonalHeader() {
             </span>
           </button>
           {profileOpen && (
-            <div className="absolute right-0 top-full mt-1 w-52 rounded-xl bg-[#1e1e1e] border border-[#2a2a2a] shadow-lg shadow-black/40 z-50 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 w-52 rounded-xl bg-popover border border-border shadow-lg shadow-black/40 z-50 overflow-hidden">
               <div className="px-3 py-2 border-b border-gray-100">
                 <div className="text-xs font-semibold text-gray-900 truncate">{me?.name}</div>
                 <div className="text-[10px] text-gray-500 truncate">{me?.email}</div>

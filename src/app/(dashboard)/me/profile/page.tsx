@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Calendar, Mail, Building2, ShieldCheck, User as UserIcon, Pencil, X, Check } from 'lucide-react'
+import { Calendar, Mail, Building2, ShieldCheck, User as UserIcon, Pencil, X, Check, Sun, Moon } from 'lucide-react'
+import { useTheme } from '@/components/theme-context'
 
 type Me = {
   id: string
@@ -273,6 +274,19 @@ export default function ProfilePage() {
         )}
       </div>
 
+      <div className="mt-8 rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-[#ffd700]"><Sun className="h-4 w-4" /></div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Appearance</h2>
+            <p className="mt-0.5 text-xs text-gray-500">Choose how OutlanderOS looks for you</p>
+          </div>
+        </div>
+        <div className="mt-5">
+          <ThemeChooser />
+        </div>
+      </div>
+
       <div className="mt-10">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Team directory</h2>
@@ -334,6 +348,42 @@ export default function ProfilePage() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+function ThemeChooser() {
+  const { theme, setTheme } = useTheme()
+  const options: { value: 'light' | 'dark'; label: string; icon: React.ReactNode; desc: string }[] = [
+    { value: 'light', label: 'Light', icon: <Sun className="h-4 w-4" />, desc: 'Bright, default theme' },
+    { value: 'dark', label: 'Dark', icon: <Moon className="h-4 w-4" />, desc: 'Low-light, high contrast' },
+  ]
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {options.map((opt) => {
+        const active = theme === opt.value
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setTheme(opt.value)}
+            className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
+              active
+                ? 'border-[#ffd700] bg-amber-50 ring-2 ring-amber-200/60'
+                : 'border-gray-200 bg-gray-50/40 hover:bg-gray-50'
+            }`}
+          >
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-[#ffd700] text-black' : 'bg-gray-200 text-gray-600'}`}>
+              {opt.icon}
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-gray-900">{opt.label}</div>
+              <div className="text-xs text-gray-500">{opt.desc}</div>
+            </div>
+            {active && <Check className="h-4 w-4 text-[#ffd700]" />}
+          </button>
+        )
+      })}
     </div>
   )
 }

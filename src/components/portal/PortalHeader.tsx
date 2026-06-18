@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { portalAccent } from "@/lib/design";
 import { PortalSwitcher } from "@/components/portal/PortalSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function PortalHeader() {
   const pathname = usePathname();
@@ -14,7 +15,7 @@ export function PortalHeader() {
 
   return (
     <header
-      className="flex h-14 shrink-0 items-center justify-between border-b border-[#2a2a2a] bg-[#141414]/80 backdrop-blur-md px-5 sticky top-0 z-30"
+      className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/80 backdrop-blur-md px-5 sticky top-0 z-30"
       style={{ boxShadow: `inset 0 -2px 0 0 ${accent}` }}
     >
       {/* Left: Logo + breadcrumb */}
@@ -53,6 +54,7 @@ export function PortalHeader() {
 
       {/* Right: actions */}
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <NotificationBell tone="dark" />
 
         <Link

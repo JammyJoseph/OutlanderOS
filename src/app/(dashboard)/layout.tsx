@@ -1,6 +1,7 @@
 "use client";
 
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Settings } from "lucide-react";
@@ -15,9 +16,9 @@ export default function DashboardLayout({
   const hideHeader = pathname?.startsWith("/me");
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#0a0a0a]">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       {!hideHeader && (
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-[#2a2a2a] bg-[#141414]/80 px-6 backdrop-blur-md">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/80 px-6 backdrop-blur-md">
           <Link href="/me" className="flex items-center gap-2">
             <span className="text-lg font-bold tracking-tight text-gray-900">
               Outlander<span className="text-[#ffd700]">OS</span>
@@ -37,6 +38,7 @@ export default function DashboardLayout({
             >
               <Settings className="h-4 w-4" />
             </Link>
+            <ThemeToggle />
             <NotificationBell />
           </div>
         </header>

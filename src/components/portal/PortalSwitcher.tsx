@@ -88,7 +88,7 @@ export function PortalSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-[#1e1e1e] border border-[#2a2a2a] shadow-lg shadow-black/40 z-50 overflow-hidden">
+        <div className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-popover border border-border shadow-lg shadow-black/40 z-50 overflow-hidden">
           {/* Back to personal dashboard */}
           <button
             onClick={() => go("/me")}

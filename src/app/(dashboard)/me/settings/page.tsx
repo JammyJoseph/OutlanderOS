@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Lock, Bell, Sun, Check, AlertTriangle } from 'lucide-react'
+import { Lock, Bell, Sun, Moon, Check, AlertTriangle } from 'lucide-react'
 import { GoogleAccountSection } from './_components/GoogleAccountSection'
+import { useTheme } from '@/components/theme-context'
 
 const INPUT_CLS =
   'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
@@ -96,14 +97,8 @@ export default function MeSettingsPage() {
         </div>
       </Section>
 
-      <Section icon={<Sun className="h-4 w-4" />} title="Appearance" subtitle="Theme preference">
-        <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/40 p-4">
-          <div>
-            <div className="text-sm font-medium text-gray-900">Light mode</div>
-            <div className="text-xs text-gray-500">A dark mode is on the roadmap.</div>
-          </div>
-          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-800">Active</span>
-        </div>
+      <Section icon={<Sun className="h-4 w-4" />} title="Appearance" subtitle="Choose how OutlanderOS looks for you">
+        <ThemeChooser />
       </Section>
     </div>
   )
@@ -139,6 +134,42 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</label>
       {children}
+    </div>
+  )
+}
+
+function ThemeChooser() {
+  const { theme, setTheme } = useTheme()
+  const options: { value: 'light' | 'dark'; label: string; icon: React.ReactNode; desc: string }[] = [
+    { value: 'light', label: 'Light', icon: <Sun className="h-4 w-4" />, desc: 'Bright, default theme' },
+    { value: 'dark', label: 'Dark', icon: <Moon className="h-4 w-4" />, desc: 'Low-light, high contrast' },
+  ]
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {options.map((opt) => {
+        const active = theme === opt.value
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setTheme(opt.value)}
+            className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
+              active
+                ? 'border-[#ffd700] bg-amber-50 ring-2 ring-amber-200/60'
+                : 'border-gray-200 bg-gray-50/40 hover:bg-gray-50'
+            }`}
+          >
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-[#ffd700] text-black' : 'bg-gray-200 text-gray-600'}`}>
+              {opt.icon}
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-gray-900">{opt.label}</div>
+              <div className="text-xs text-gray-500">{opt.desc}</div>
+            </div>
+            {active && <Check className="h-4 w-4 text-[#ffd700]" />}
+          </button>
+        )
+      })}
     </div>
   )
 }

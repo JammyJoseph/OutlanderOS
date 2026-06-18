@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   SEED_ISSUES,
+  SEED_VERSION,
   type MagazinePage,
   type MagazinePlanData,
   type PlanStats,
@@ -27,22 +28,27 @@ export interface IssueSummary {
   issueNumber: number;
   issueName: string;
   totalPages: number;
+  seedVersion?: number;
   updatedAt: string;
   updatedBy: string | null;
   stats: PlanStats;
   state: IssueState;
 }
 
-// Ensures the representative issues exist. Seeds if any are missing — the POST is
-// idempotent (it never overwrites an existing issue), so this also back-fills the
-// new AW25 issue on an environment that was already seeded with SS26 alone.
+// Ensures the representative issues exist and are current. Triggers a (server-side
+// idempotent) seed when a seed issue is missing OR when its stored seedVersion is
+// behind the current blueprint — so blueprint edits reach environments that were
+// seeded with an older version. User-created issues are never re-seeded.
 async function ensureSeeded(): Promise<IssueSummary[]> {
   let res = await fetch(`/api/magazine-plan`, { cache: "no-store" });
   let data = await res.json();
   let issues: IssueSummary[] = data.issues ?? [];
-  const present = new Set(issues.map((i) => i.issueNumber));
-  const missingSeed = SEED_ISSUES.some((s) => !present.has(s.issueNumber));
-  if (missingSeed) {
+  const byNumber = new Map(issues.map((i) => [i.issueNumber, i]));
+  const needsSeed = SEED_ISSUES.some((s) => {
+    const found = byNumber.get(s.issueNumber);
+    return !found || (found.seedVersion ?? 0) < SEED_VERSION;
+  });
+  if (needsSeed) {
     await fetch(`/api/magazine-plan`, {
       method: "POST",
       headers: JSON_HEADERS,

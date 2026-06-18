@@ -16,6 +16,7 @@ model User {
   avatarUrl        String?
   department       String?
   avatar           String?
+  theme            String    @default("light") // "light" | "dark" — UI theme preference
   startDate        DateTime?
   holidayAllowance Int       @default(25)
   salary           Float?
@@ -592,6 +593,7 @@ model MagazinePlan {
   issueName   String
   totalPages  Int      @default(8)
   pages       Json     @default("[]")
+  seedVersion Int      @default(0) // bumped when the seed blueprint changes, so seeded issues re-seed on next load
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   updatedBy   String?
