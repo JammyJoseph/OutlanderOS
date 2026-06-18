@@ -16,8 +16,10 @@ import {
   X,
   Cloud,
   ArrowLeft,
+  PoundSterling,
 } from "lucide-react";
 import { useMagazinePlan } from "@/components/print/usePlan";
+import BudgetView from "@/components/print/BudgetView";
 import {
   SECTIONS,
   SECTION_KEYS,
@@ -34,7 +36,7 @@ import {
   type SectionKey,
 } from "@/lib/magazine-plan";
 
-type View = "tracker" | "flatplan";
+type View = "tracker" | "flatplan" | "budget";
 
 export default function FlatPlanPage() {
   return (
@@ -177,6 +179,14 @@ function FlatPlanInner() {
             >
               <LayoutGrid className="h-3.5 w-3.5" /> Flat Plan
             </button>
+            <button
+              onClick={() => setView("budget")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                view === "budget" ? "bg-[#00ff88] text-black" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <PoundSterling className="h-3.5 w-3.5" /> Budget
+            </button>
           </div>
 
           {/* Block management */}
@@ -207,6 +217,8 @@ function FlatPlanInner() {
             addRowAfter={addRowAfter}
             removeRow={removeRow}
           />
+        ) : view === "budget" ? (
+          <BudgetView issueId={plan.id} pages={pages} updatePage={updatePage} />
         ) : (
           <FlatPlanView pages={pages} onOpen={setEditing} />
         )}

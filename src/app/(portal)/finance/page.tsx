@@ -13,8 +13,9 @@ const ProjectFoldersTab = dynamic(() => import('./_components/ProjectFoldersTab'
 const InvoicesApprovalsTab = dynamic(() => import('./_components/InvoicesApprovalsTab'), { loading: () => <TabSkeleton />, ssr: false })
 const ExpensesTab = dynamic(() => import('./_components/ExpensesTab'), { loading: () => <TabSkeleton />, ssr: false })
 const PLHistoryTab = dynamic(() => import('./_components/PLHistoryTab'), { loading: () => <TabSkeleton />, ssr: false })
+const PrintPLTab = dynamic(() => import('./_components/PrintPLTab'), { loading: () => <TabSkeleton />, ssr: false })
 
-type TabId = 'dashboard' | 'projects' | 'invoices' | 'expenses' | 'pl'
+type TabId = 'dashboard' | 'projects' | 'invoices' | 'expenses' | 'pl' | 'print'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -22,6 +23,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'invoices', label: 'Invoices & Approvals' },
   { id: 'expenses', label: 'Expenses' },
   { id: 'pl', label: 'P&L & History' },
+  { id: 'print', label: 'Print P&L' },
 ]
 
 const VALID = new Set<TabId>(TABS.map((t) => t.id))
@@ -69,6 +71,7 @@ function FinanceInner() {
           {active === 'invoices' && <InvoicesApprovalsTab />}
           {active === 'expenses' && <ExpensesTab />}
           {active === 'pl' && <PLHistoryTab />}
+          {active === 'print' && <PrintPLTab />}
         </div>
       </div>
     </div>

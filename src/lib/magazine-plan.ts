@@ -40,6 +40,14 @@ export interface MagazinePage {
   complete: boolean;
   notes: string;
   colour: string; // section colour, used by flat plan
+  // ── Budget / cross-portal cost tracking (optional, see Print Budget tab) ──
+  // These live on the FIRST page of a multi-page feature (the budget "anchor");
+  // the Budget tab groups consecutive pages of a feature into a single row.
+  campaignId?: string; // linked Commercial deal — revenue auto-fills from its dealValue
+  productionId?: string; // linked Production project — production cost auto-fills from its actuals
+  revenue?: number; // manual revenue (used when no campaignId is linked)
+  productionCost?: number; // manual production cost (used when no productionId is linked)
+  printCost?: number; // paper / printing / distribution cost for this feature (always manual)
 }
 
 export interface MagazinePlanData {
@@ -462,3 +470,219 @@ export const SEED_ISSUES: SeedIssue[] = [
 ];
 
 export const SEED_TOTAL_PAGES = SS26_TOTAL;
+
+// ===== Print Budget — cross-portal cost tracking =====
+// Pure, shared between the Budget tab (client), /api/print-budget (server) and
+// the Finance Print P&L (server). No server-only imports allowed here.
+
+export type BudgetType = "Supplied Ad" | "Advertorial" | "Editorial" | "Space";
+
+// Strip a multi-page suffix like " (2/8)" so every page of one feature shares a key.
+function baseFeature(feature: string): string {
+  return feature.replace(/\s*\(\d+\/\d+\)\s*$/, "").trim();
+}
+
+// Classify a page into one of the four budget content types from its existing
+// flat-plan fields. Brand pages supplied finished (type "Supplied") are Supplied
+// Ads (no production cost); produced advertorials carry production cost; blank
+// Space pages are cost-free inventory; everything else is Editorial.
+export function budgetType(page: MagazinePage): BudgetType {
+  // Space inventory (blank slots and named "ADVERTISE — Space" pages) carries no
+  // cost: the whole Space section, or a page explicitly marked Space content/type.
+  if (page.section === "Space" || /^\s*space\s*$/i.test(page.type) || /^\s*space\s*$/i.test(page.content)) {
+    return "Space";
+  }
+  const supplied = /supplied/i.test(page.type) || /supplied/i.test(page.content);
+  const advertorial =
+    page.section === "Advertorial" ||
+    /advertorial/i.test(page.content) ||
+    /advertorial/i.test(page.feature);
+  if (advertorial && supplied) return "Supplied Ad"; // brand-supplied finished ad
+  if (advertorial) return "Advertorial"; // produced content, client pays
+  if (supplied) return "Supplied Ad";
+  return "Editorial";
+}
+
+// A budget row spans the consecutive pages of one feature. The financial fields
+// (links, manual costs) live on the anchor page; the row range/page count are
+// derived. Blank Space pages collapse into a single row.
+export interface BudgetGroup {
+  anchorIndex: number; // index into pages[] that owns the financial fields
+  indices: number[];
+  pageNumbers: number[];
+  pageLabel: string; // "12" or "12–15"
+  feature: string;
+  section: string;
+  type: BudgetType;
+  status: PageStatus;
+  pageCount: number;
+}
+
+export function groupBudgetRows(pages: MagazinePage[]): BudgetGroup[] {
+  const groups: BudgetGroup[] = [];
+  let key: string | null = null;
+  for (let i = 0; i < pages.length; i++) {
+    const p = pages[i];
+    const blank = p.section === "Space" && !p.feature.trim();
+    const k = blank ? `__space__|${p.section}` : `${baseFeature(p.feature)}|${p.section}`;
+    if (k !== key || groups.length === 0) {
+      groups.push({
+        anchorIndex: i,
+        indices: [i],
+        pageNumbers: [p.pageNumber],
+        pageLabel: String(p.pageNumber),
+        feature: blank ? "Space" : baseFeature(p.feature),
+        section: p.section,
+        type: budgetType(p),
+        status: p.status,
+        pageCount: 1,
+      });
+      key = k;
+    } else {
+      const g = groups[groups.length - 1];
+      g.indices.push(i);
+      g.pageNumbers.push(p.pageNumber);
+      g.pageCount++;
+    }
+  }
+  for (const g of groups) {
+    const first = g.pageNumbers[0];
+    const last = g.pageNumbers[g.pageNumbers.length - 1];
+    g.pageLabel = first === last ? String(first) : `${first}–${last}`;
+  }
+  return groups;
+}
+
+// Linked-record summaries the budget computation needs (fetched server-side).
+export interface LinkedDeal {
+  id: string;
+  title: string;
+  client: string | null;
+  dealValue: number | null;
+}
+export interface LinkedProduction {
+  id: string;
+  title: string;
+  actual: number;
+}
+
+export interface BudgetRow {
+  anchorIndex: number;
+  pageLabel: string;
+  pageCount: number;
+  feature: string;
+  section: string;
+  type: BudgetType;
+  status: PageStatus;
+  campaignId?: string;
+  productionId?: string;
+  source: string;
+  sourceHref: string | null;
+  revenue: number;
+  productionCost: number;
+  printCost: number;
+  margin: number;
+  revenueAuto: boolean; // revenue derived from a linked deal (not manually editable)
+  productionCostAuto: boolean; // production cost derived from a linked production
+}
+
+// Compute the financial picture for one budget row, blending the page's manual
+// fields with any linked deal/production values per the four cost models.
+export function computeBudgetRow(
+  group: BudgetGroup,
+  anchor: MagazinePage,
+  deal: LinkedDeal | null,
+  production: LinkedProduction | null
+): BudgetRow {
+  const base = {
+    anchorIndex: group.anchorIndex,
+    pageLabel: group.pageLabel,
+    pageCount: group.pageCount,
+    feature: group.feature,
+    section: group.section,
+    type: group.type,
+    status: group.status,
+    campaignId: anchor.campaignId,
+    productionId: anchor.productionId,
+  };
+
+  if (group.type === "Space") {
+    return {
+      ...base,
+      source: "N/A",
+      sourceHref: null,
+      revenue: 0,
+      productionCost: 0,
+      printCost: 0,
+      margin: 0,
+      revenueAuto: false,
+      productionCostAuto: false,
+    };
+  }
+
+  const revenueAuto = !!deal;
+  const revenue = deal ? deal.dealValue ?? 0 : anchor.revenue ?? 0;
+
+  const productionCostAuto = group.type !== "Supplied Ad" && !!production;
+  let productionCost = 0;
+  if (group.type === "Supplied Ad") productionCost = 0;
+  else if (production) productionCost = production.actual;
+  else productionCost = anchor.productionCost ?? 0;
+
+  const printCost = anchor.printCost ?? 0;
+  const margin = revenue - productionCost - printCost;
+
+  let source: string;
+  let sourceHref: string | null = null;
+  if (deal) {
+    source = deal.client ? `${deal.title} · ${deal.client}` : deal.title;
+    sourceHref = `/commercial/deals/${deal.id}`;
+  } else if (production) {
+    source = production.title;
+    sourceHref = `/production/${production.id}`;
+  } else if (group.type === "Editorial") {
+    source = "Editorial Budget";
+  } else {
+    source = "—";
+  }
+
+  return {
+    ...base,
+    source,
+    sourceHref,
+    revenue,
+    productionCost,
+    printCost,
+    margin,
+    revenueAuto,
+    productionCostAuto,
+  };
+}
+
+export interface BudgetTotals {
+  revenue: number;
+  productionCost: number;
+  printCost: number;
+  margin: number;
+  totalPages: number; // pages carrying a feature (excludes blank Space)
+  revenuePerPage: number;
+  costPerPage: number;
+}
+
+export function computeBudgetTotals(rows: BudgetRow[]): BudgetTotals {
+  const revenue = rows.reduce((s, r) => s + r.revenue, 0);
+  const productionCost = rows.reduce((s, r) => s + r.productionCost, 0);
+  const printCost = rows.reduce((s, r) => s + r.printCost, 0);
+  const margin = revenue - productionCost - printCost;
+  const totalPages = rows.reduce((s, r) => s + (r.type === "Space" ? 0 : r.pageCount), 0);
+  const cost = productionCost + printCost;
+  return {
+    revenue,
+    productionCost,
+    printCost,
+    margin,
+    totalPages,
+    revenuePerPage: totalPages ? revenue / totalPages : 0,
+    costPerPage: totalPages ? cost / totalPages : 0,
+  };
+}
