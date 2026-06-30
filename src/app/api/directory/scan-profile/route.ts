@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/auth"
 import { scanProfile, normalizeHandle, type ScanProfileResult } from "@/lib/instagram-scan"
+import { apifyScanProfile } from "@/lib/instagram-apify"
 import { getCachedScan, setCachedScan } from "@/lib/scan-cache"
 import { findContactByHandle } from "@/lib/scan-contacts"
 
@@ -31,7 +32,10 @@ export const POST = withAuth(async (request: NextRequest) => {
     result = hit.data
     cached = true
   } else {
-    result = await scanProfile(handle)
+    // Apify first (reliable, residential proxies); fall back to direct scraping
+    // when it's unconfigured, fails, or times out. Direct scraping itself falls
+    // back to a not-ok result, which the UI renders as manual-entry.
+    result = (await apifyScanProfile(handle)) ?? (await scanProfile(handle))
     if (result.ok) await setCachedScan(handle, "profile", result)
   }
 

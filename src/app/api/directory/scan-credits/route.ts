@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/auth"
 import { scanCredits, normalizeHandle, type ScanCreditsResult } from "@/lib/instagram-scan"
+import { apifyScanCredits } from "@/lib/instagram-apify"
 import { getCachedScan, setCachedScan } from "@/lib/scan-cache"
 
 // POST /api/directory/scan-credits
@@ -29,7 +30,9 @@ export const POST = withAuth(async (request: NextRequest) => {
     result = hit.data
     cached = true
   } else {
-    result = await scanCredits(handle)
+    // Apify first (reads real post captions via proxies); fall back to direct
+    // scraping when it's unconfigured, fails, or returns no posts.
+    result = (await apifyScanCredits(handle)) ?? (await scanCredits(handle))
     if (result.ok) await setCachedScan(handle, "credits", result)
   }
 

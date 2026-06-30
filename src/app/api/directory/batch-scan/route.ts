@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/auth"
 import { scanProfile, normalizeHandle, type ScanProfileResult } from "@/lib/instagram-scan"
+import { apifyScanProfile } from "@/lib/instagram-apify"
 import { getCachedScan, setCachedScan } from "@/lib/scan-cache"
 import { findContactByHandle } from "@/lib/scan-contacts"
 
@@ -60,7 +61,8 @@ export const POST = withAuth(async (request: NextRequest) => {
       result = hit.data
       cached = true
     } else {
-      result = await scanProfile(handle)
+      // Apify first, then fall back to direct scraping.
+      result = (await apifyScanProfile(handle)) ?? (await scanProfile(handle))
       if (result.ok) await setCachedScan(handle, "profile", result)
     }
 
