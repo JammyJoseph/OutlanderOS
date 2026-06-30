@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
+import { getAPARate } from "@/lib/apa-rates";
+
+// The template uses friendly, generic role names; these aliases point them at
+// the canonical APA rate-card role so the seeded line picks up a default rate.
+const TEMPLATE_ROLE_ALIASES: Record<string, string> = {
+  "DOP / Videographer": "Director of Photography",
+  "Camera Assistant": "Focus Puller (1st AC)",
+  "Sound Recordist": "Sound Mixer",
+  "Wardrobe Stylist": "Stylist",
+  "Hair Stylist": "Hairdresser",
+  MUA: "Make Up",
+};
+
+// Resolve a template role name to its APA rate (direct match or via alias).
+function apaRateForTemplateRole(role: string) {
+  return getAPARate(role) ?? getAPARate(TEMPLATE_ROLE_ALIASES[role] ?? "");
+}
 
 // Production budget categories → Finance CostEntry categories. Covers both the
 // new industry-standard section keys and the legacy free-form category keys so
@@ -168,6 +185,7 @@ export const POST = withAuth(async (
         section: string;
         role: string;
         quantity: number;
+        rate: number | null;
         vatPercent: number;
         description: string;
         budgeted: number;
@@ -178,15 +196,20 @@ export const POST = withAuth(async (
       for (const sec of BUDGET_TEMPLATE) {
         if (filledSections.has(sec.section)) continue;
         for (const role of sec.roles) {
+          // Crew roles auto-fill the APA max daily rate (our default); non-crew
+          // items (kits, fees, contingency…) have no APA rate and stay blank.
+          const apa = apaRateForTemplateRole(role);
+          const rate = apa ? apa.maxDailyRate : null;
           rows.push({
             productionId: id,
             category: sec.section,
             section: sec.section,
             role,
             quantity: 1, // template lines default to a quantity of 1
+            rate,
             vatPercent: 20,
-            description: "",
-            budgeted: 0,
+            description: apa ? "APA 2025 rate" : "",
+            budgeted: rate != null ? rate : 0, // qty 1 × rate
             actual: 0,
             sortOrder: order++,
           });

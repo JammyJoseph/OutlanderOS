@@ -16,6 +16,8 @@ import {
   X,
   Loader2,
   CheckCircle2,
+  Pencil,
+  BookOpen,
 } from "lucide-react";
 import {
   BudgetLineItem,
@@ -29,6 +31,8 @@ import {
   ProductionBudgetStatus,
   sectionOf,
 } from "./types";
+import { getAPARate, getAPARatesForSection } from "@/lib/apa-rates";
+import ApaRateCard from "./ApaRateCard";
 
 interface Props {
   production: ProductionFull;
@@ -69,6 +73,7 @@ export default function BudgetTab({
   const [statusBusy, setStatusBusy] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [showRateCard, setShowRateCard] = useState(false);
 
   // The line-item table flips between budget entry (with VAT columns) and a
   // separate actuals-tracking view (budgeted vs actual vs variance).
@@ -542,6 +547,14 @@ export default function BudgetTab({
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowRateCard(true)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-gray-700"
+              title="View the full APA standard crew rate card"
+            >
+              <BookOpen size={11} />
+              APA Rate Card
+            </button>
             {hasItems && canEditBudgeted && (
               <button
                 onClick={seedTemplate}
@@ -640,6 +653,7 @@ export default function BudgetTab({
                     <BudgetRow
                       key={line.id}
                       line={line}
+                      section={sec.key}
                       view={view}
                       canEditBudgeted={canEditBudgeted}
                       canEditActual={canEditActual}
@@ -800,6 +814,9 @@ export default function BudgetTab({
         </div>
       )}
 
+      {/* APA rate card reference */}
+      {showRateCard && <ApaRateCard onClose={() => setShowRateCard(false)} />}
+
       {/* Status-change confirmation */}
       {confirmStatus && nextAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -847,8 +864,96 @@ const EDIT_CELL =
   "text-[12px] bg-white border border-gray-200 rounded-md px-2 py-1 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/30 disabled:bg-transparent disabled:border-transparent disabled:shadow-none disabled:text-gray-500";
 const AUTO_CELL = "text-[12px] tabular-nums text-gray-400 cursor-default select-none px-1";
 
+// Role cell: a free-text input with an attached dropdown of the section's APA
+// roles. Typing keeps a custom role (rate stays as-is); picking from the list
+// auto-fills the APA rate via onPick. Falls back to a plain input for sections
+// with no APA roles (equipment, catering, post…).
+function RolePicker({
+  section,
+  value,
+  onChange,
+  onBlur,
+  onKeyDown,
+  onPick,
+  disabled,
+  wrapClass,
+  inputClass,
+}: {
+  section: string;
+  value: string;
+  onChange: (v: string) => void;
+  onBlur: () => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onPick: (role: string, rate: number) => void;
+  disabled: boolean;
+  wrapClass: string;
+  inputClass: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const roles = useMemo(() => getAPARatesForSection(section), [section]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  return (
+    <div ref={wrapRef} className={`relative ${wrapClass}`}>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        onKeyDown={onKeyDown}
+        disabled={disabled}
+        placeholder="Role / item"
+        className={`w-full ${roles.length > 0 && !disabled ? "pr-6" : ""} ${inputClass}`}
+      />
+      {roles.length > 0 && !disabled && (
+        <>
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setOpen((o) => !o)}
+            className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-gray-300 hover:text-gray-600"
+            title="Pick an APA role"
+          >
+            <ChevronDown size={13} />
+          </button>
+          {open && (
+            <div className="absolute left-0 top-full z-30 mt-1 max-h-60 w-72 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl">
+              {roles.map((r) => (
+                <button
+                  key={r.role}
+                  type="button"
+                  onClick={() => {
+                    onPick(r.role, r.maxDailyRate);
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-[12px] hover:bg-amber-50"
+                >
+                  <span className="text-gray-700">{r.role}</span>
+                  <span className="shrink-0 tabular-nums text-gray-400">
+                    {gbp(r.maxDailyRate)}/day
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function BudgetRow({
   line,
+  section,
   view,
   canEditBudgeted,
   canEditActual,
@@ -859,6 +964,7 @@ function BudgetRow({
   onAutoFocused,
 }: {
   line: BudgetLineItem;
+  section: string;
   view: "budget" | "actuals";
   canEditBudgeted: boolean;
   canEditActual: boolean;
@@ -882,6 +988,25 @@ function BudgetRow({
   const totalIncVat = lineTotalIncVat(line);
   const variance = total - (line.actual || 0);
   const editAny = canEditActual || canEditBudgeted;
+
+  // APA default for this line's role (if it maps to a rate-card role). Used to
+  // pre-fill the rate when a role is picked and to flag manual overrides.
+  const apa = getAPARate(line.role ?? "");
+  const isOverridden =
+    apa != null && line.rate != null && line.rate !== apa.maxDailyRate;
+
+  // Pick a role from the APA dropdown: set the role and auto-fill its default
+  // rate (qty defaults to 1) plus the "APA 2025 rate" description hint.
+  function pickRole(apaRole: string, apaRate: number) {
+    setRole(apaRole);
+    setRate(String(apaRate));
+    if (!description) setDescription("APA 2025 rate");
+    onUpdate({
+      role: apaRole,
+      rate: apaRate,
+      ...(description ? {} : { description: "APA 2025 rate" }),
+    });
+  }
 
   // Auto-focus the first editable cell when a new line is added via keyboard.
   useEffect(() => {
@@ -917,17 +1042,18 @@ function BudgetRow({
         ref={rowRef}
         className="grid grid-cols-12 gap-1.5 px-5 py-1.5 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[30px]"
       >
-        <input
-          type="text"
+        <RolePicker
+          section={section}
           value={role}
-          onChange={(e) => setRole(e.target.value)}
+          onChange={setRole}
           onBlur={() => {
             if (role !== (line.role ?? "")) onUpdate({ role });
           }}
           onKeyDown={handleKey}
+          onPick={pickRole}
           disabled={!canEditBudgeted}
-          placeholder="Role / item"
-          className={`col-span-3 font-medium truncate ${EDIT_CELL}`}
+          wrapClass="col-span-3"
+          inputClass={`font-medium truncate ${EDIT_CELL}`}
         />
         <input
           type="text"
@@ -985,17 +1111,18 @@ function BudgetRow({
       ref={rowRef}
       className="grid grid-cols-12 gap-1.5 px-5 py-1.5 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[30px]"
     >
-      <input
-        type="text"
+      <RolePicker
+        section={section}
         value={role}
-        onChange={(e) => setRole(e.target.value)}
+        onChange={setRole}
         onBlur={() => {
           if (role !== (line.role ?? "")) onUpdate({ role });
         }}
         onKeyDown={handleKey}
+        onPick={pickRole}
         disabled={!canEditBudgeted}
-        placeholder="Role / item"
-        className={`col-span-2 font-medium truncate ${EDIT_CELL}`}
+        wrapClass="col-span-2"
+        inputClass={`font-medium truncate ${EDIT_CELL}`}
       />
       <input
         type="text"
@@ -1022,19 +1149,31 @@ function BudgetRow({
         placeholder="1"
         className={`col-span-1 text-right tabular-nums ${EDIT_CELL}`}
       />
-      <input
-        type="number"
-        value={rate}
-        onChange={(e) => setRate(e.target.value)}
-        onBlur={() => {
-          const v = rate === "" ? null : Number(rate);
-          if (v !== line.rate) onUpdate({ rate: v });
-        }}
-        onKeyDown={handleKey}
-        disabled={!canEditBudgeted}
-        placeholder="0"
-        className={`col-span-2 text-right tabular-nums ${EDIT_CELL}`}
-      />
+      <div className="col-span-2 relative">
+        <input
+          type="number"
+          value={rate}
+          onChange={(e) => setRate(e.target.value)}
+          onBlur={() => {
+            const v = rate === "" ? null : Number(rate);
+            if (v !== line.rate) onUpdate({ rate: v });
+          }}
+          onKeyDown={handleKey}
+          disabled={!canEditBudgeted}
+          placeholder="0"
+          className={`w-full text-right tabular-nums ${EDIT_CELL} ${
+            isOverridden ? "pl-5 text-amber-700" : ""
+          }`}
+        />
+        {isOverridden && apa && (
+          <span
+            className="absolute left-1.5 top-1/2 -translate-y-1/2 text-amber-500"
+            title={`Manually overridden — APA default is ${gbp(apa.maxDailyRate)}/day`}
+          >
+            <Pencil size={10} />
+          </span>
+        )}
+      </div>
       <input
         type="number"
         value={vat}
