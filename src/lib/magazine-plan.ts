@@ -324,7 +324,7 @@ export function resetPageStructure(pages: MagazinePage[]): MagazinePage[] {
 // Bump whenever a seed blueprint below changes. Seeded issues store the version
 // they were built from; the loader re-seeds any seed issue whose stored version
 // is older, so blueprint edits reach already-seeded environments on next load.
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;
 
 interface Segment {
   section: SectionKey;
@@ -338,6 +338,12 @@ interface Segment {
   editor?: string;
   status?: PageStatus;
   gatefold?: boolean; // every page of this segment is a fold-out (wider card)
+  // SS26 carries an explicit physical imposition: each segment names the signature
+  // (print block) it belongs to and that signature's paper stock. Segments that
+  // straddle a signature boundary are split into one segment per signature.
+  signatureIndex?: number; // 0-based print block this segment sits in
+  stock?: StockType; // coated / uncoated — applies to the whole signature
+  notes?: string; // special print treatment for this segment (heat-sensitive, etc.)
 }
 
 // A believable, FULL run of a real magazine: cover + inside front, a deep FOB
@@ -348,89 +354,134 @@ interface Segment {
 // Page-by-page order taken from the SS26 flat-plan screenshots. Reads left→right,
 // top→bottom in rows of spreads; section keys are chosen so each block lands on the
 // colour shown in the screenshots (see SECTIONS above for the colour legend).
+// The exact SS26 imposition: three split covers wrapping a 272-page text block of
+// 17 × 16-page signatures, plus a 2-page gatefold insert between blocks 1 & 2 and
+// two back covers. Signature 0 carries the three front covers (cover treatment) and
+// the gatefold at its tail; signature 16 carries the two back covers at its tail.
+// Coated blocks: 1-4, 8-9, 15 (sigs 0-3, 7-8, 14). Uncoated: 5-7, 10-14, 16-17.
 const SEED_SEGMENTS_SS26: Segment[] = [
-  // ── Covers (LIGHT-BLUE) — three split covers ──
-  { section: "Cover", feature: "FRONT COVER A", content: "Bespoke Content", type: "Bespoke", pages: 1, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "IN_DESIGN" },
-  { section: "Cover", feature: "FRONT COVER B", content: "Bespoke Content", type: "Bespoke", pages: 1, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "IN_DESIGN" },
-  { section: "Cover", feature: "FRONT COVER C", content: "Bespoke Content", type: "Bespoke", pages: 1, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "IN_DESIGN" },
+  // ── Front covers (fold into Signature 0 / Block 1, coated) ──
+  { section: "Cover", feature: "FRONT COVER A", content: "Bespoke Content", type: "Bespoke", pages: 1, signatureIndex: 0, stock: "coated" },
+  { section: "Cover", feature: "FRONT COVER B", content: "Bespoke Content", type: "Bespoke", pages: 1, signatureIndex: 0, stock: "coated" },
+  { section: "Cover", feature: "FRONT COVER C", content: "Bespoke Content", type: "Bespoke", pages: 1, signatureIndex: 0, stock: "coated" },
 
-  // ── Inside-front gatefold + FOB open (ORANGE) ──
-  { section: "Advertorial", feature: "DIOR — Inside-Front GATEFOLD", content: "Advertorial", type: "Supplied", pages: 3, status: "CONTENT_RECEIVED", gatefold: true },
-  { section: "FOB", feature: "Masthead & Credits", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", status: "COMPLETE" },
-  { section: "FOB", feature: "Contents", content: "Editorial", type: "Editorial", pages: 2, editor: "Luke", status: "READY_FOR_DESIGN" },
-  { section: "FOB", feature: "Editor's Letter", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", status: "READY_FOR_DESIGN" },
-  { section: "FOB", feature: "Contributors", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", status: "CONTENT_RECEIVED" },
+  // ── Block 1 (pages 1-16) — COATED — brand ad opener ──
+  { section: "Advertorial", feature: "AD #1 (DPS IFC) CHANEL BEAUTY", content: "Advertorial", type: "Supplied", pages: 1, signatureIndex: 0, stock: "coated" },
+  { section: "Advertorial", feature: "AD #2 (DPS) OMEGA", content: "Advertorial", type: "Supplied", pages: 2, signatureIndex: 0, stock: "coated" },
+  { section: "Advertorial", feature: "AD #3 (DPS) BVLGARI", content: "Advertorial", type: "Supplied", pages: 2, signatureIndex: 0, stock: "coated" },
+  { section: "Advertorial", feature: "AD #4 (DPS) MCM", content: "Advertorial", type: "Supplied", pages: 2, signatureIndex: 0, stock: "coated" },
+  { section: "Advertorial", feature: "AD #5 (DPS) ARMANI", content: "Advertorial", type: "Supplied", pages: 2, signatureIndex: 0, stock: "coated" },
+  { section: "Advertorial", feature: "AD #6 (DPS) PENHALIGANS", content: "Advertorial", type: "Supplied", pages: 2, signatureIndex: 0, stock: "coated" },
+  { section: "Advertorial", feature: "AD #7 (DPS) BALMAIN", content: "Advertorial", type: "Supplied", pages: 2, signatureIndex: 0, stock: "coated" },
+  { section: "Advertorial", feature: "AD #8 (SP) HUBLOT", content: "Advertorial", type: "Supplied", pages: 1, signatureIndex: 0, stock: "coated" },
+  { section: "Advertorial", feature: "AD #9 (SP) TIMBERLAND", content: "Advertorial", type: "Supplied", pages: 1, signatureIndex: 0, stock: "coated" },
+  { section: "FOB", feature: "O. HOUSE AD", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", signatureIndex: 0, stock: "coated" },
 
-  // ── FOB editorial run (ORANGE) ──
-  { section: "FOB", feature: "Radar — New In", content: "Editorial", type: "Editorial", pages: 4, photographer: "Studio", editor: "Maya", status: "CONTENT_RECEIVED" },
-  { section: "Advertorial", feature: "SAINT LAURENT — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
-  { section: "FOB", feature: "Object of Desire", content: "Supplied", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
-  { section: "FOB", feature: "The Edit — Beauty", content: "Editorial", type: "Editorial", pages: 4, photographer: "Still Life Team", shootDate: "2026-05-02", editor: "Maya", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "VERSACE — Full Page", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
-  { section: "Space", feature: "ADVERTISE — Space", content: "Space", type: "Space", pages: 1, status: "NOT_STARTED" },
-  { section: "FOB", feature: "Trends Report", content: "Editorial", type: "Editorial", pages: 4, editor: "Maya", status: "NOT_STARTED" },
-  { section: "FOB", feature: "DIYA — Do It Yourself Atelier", content: "Editorial", type: "Editorial", pages: 4, photographer: "Studio", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "VERSACE — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
-  { section: "FOB", feature: "Style Notes — Column", content: "Editorial", type: "Editorial", pages: 2, editor: "Sofia", status: "NOT_STARTED" },
-  { section: "FOB", feature: "Grooming & Wellness", content: "Editorial", type: "Editorial", pages: 4, photographer: "Still Life Team", editor: "Maya", status: "NOT_STARTED" },
+  // ── Gatefold insert between blocks 1 & 2 (tail of Signature 0, coated) ──
+  { section: "Special", feature: "GATEFOLD PIC 1", content: "Bespoke Content", type: "Bespoke", pages: 1, gatefold: true, signatureIndex: 0, stock: "coated" },
+  { section: "Special", feature: "GATEFOLD PIC 2", content: "Bespoke Content", type: "Bespoke", pages: 1, gatefold: true, signatureIndex: 0, stock: "coated" },
 
-  // ── Fashion editorial (GREY) — Bureau Retail ──
-  { section: "Advertorial", feature: "GUCCI — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Fashion", feature: "FASHION BUREAU RETAIL", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Rae Iverson", shootDate: "2026-05-22", talent: "Model TBC", editor: "Luke", status: "CONTENT_RECEIVED" },
-  { section: "FOB", feature: "FOB BUREAU RETAIL", content: "Supplied", type: "Supplied", pages: 6, photographer: "Still Life Team", editor: "Maya", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "PRADA — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "CONTENT_RECEIVED" },
+  // ── Block 2 (pages 17-32) — COATED ──
+  { section: "FOB", feature: "Editor's Letter", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", signatureIndex: 1, stock: "coated" },
+  { section: "FOB", feature: "Masthead", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", signatureIndex: 1, stock: "coated" },
+  { section: "Fashion Shoot", feature: "FASHION: BV PATTERN OF PLAY", content: "Bespoke Content", type: "Bespoke", pages: 9, signatureIndex: 1, stock: "coated" },
+  { section: "FOB", feature: "FOB: BUREAU BETAK", content: "Editorial", type: "Editorial", pages: 5, signatureIndex: 1, stock: "coated" },
 
-  // ── Cover Talent (PURPLE) ──
-  { section: "Cover Talent", feature: "COVER TALENT — Opening Spread", content: "Bespoke Content", type: "Bespoke", pages: 2, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "IN_DESIGN" },
-  { section: "Cover Talent", feature: "COVER TALENT — The Interview", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Low Cooper", shootDate: "2026-04-20", talent: "Cover Talent", editor: "Luke", status: "CONTENT_RECEIVED" },
-  { section: "Cover Talent", feature: "COVER TALENT — Portfolio", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Low Cooper", talent: "Cover Talent", editor: "Luke", status: "NOT_STARTED" },
+  // ── Block 3 (pages 33-48) — COATED ──
+  { section: "FOB", feature: "FOB: BUREAU BETAK", content: "Editorial", type: "Editorial", pages: 3, signatureIndex: 2, stock: "coated" },
+  { section: "Fashion Shoot", feature: "FASHION: STILL LIFE SHOOT", content: "Bespoke Content", type: "Bespoke", pages: 8, signatureIndex: 2, stock: "coated" },
+  { section: "Cover Talent", feature: "COVER TALENT", content: "Bespoke Content", type: "Bespoke", pages: 5, signatureIndex: 2, stock: "coated" },
 
-  // ── Behind the Craft + Outlander long-reads (TEAL Features) ──
-  { section: "Feature", feature: "BEHIND THE CRAFT — Atelier", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Theo Marsh", shootDate: "2026-05-10", talent: "Atelier Profile", editor: "Sofia", status: "CONTENT_RECEIVED" },
-  { section: "Feature", feature: "OUTLANDER — The Long Read", content: "Editorial", type: "Editorial", pages: 4, editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Space", feature: "ADVERTISE — Space", content: "Space", type: "Space", pages: 2, status: "NOT_STARTED" },
+  // ── Block 4 (pages 49-64) — COATED ──
+  { section: "Cover Talent", feature: "COVER TALENT", content: "Bespoke Content", type: "Bespoke", pages: 11, signatureIndex: 3, stock: "coated" },
+  { section: "Advertorial", feature: "SPONSORED: SLOT 1 PORSCHE", content: "Advertorial", type: "Bespoke", pages: 5, signatureIndex: 3, stock: "coated" },
 
-  // ── Community (GREEN) ──
-  { section: "Advertorial", feature: "BOTTEGA VENETA — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Community", feature: "Community Spotlight", content: "Bespoke Content", type: "Bespoke", pages: 4, talent: "Community Members", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Community", feature: "ASK THE INDUSTRY", content: "Editorial", type: "Editorial", pages: 4, editor: "Maya", status: "NOT_STARTED" },
-  { section: "Community", feature: "Community Voices", content: "Editorial", type: "Editorial", pages: 2, editor: "Maya", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "LOEWE — Advertorial", content: "Advertorial", type: "Advertorial", pages: 4, status: "NOT_STARTED" },
+  // ── Block 5 (pages 65-80) — UNCOATED ──
+  { section: "Advertorial", feature: "SPONSORED: SLOT 1 PORSCHE", content: "Advertorial", type: "Bespoke", pages: 1, signatureIndex: 4, stock: "uncoated" },
+  { section: "FOB", feature: "FOB: LUCIEN PAGES", content: "Editorial", type: "Editorial", pages: 8, signatureIndex: 4, stock: "uncoated" },
+  { section: "Feature", feature: "ANOK YAI", content: "Bespoke Content", type: "Bespoke", pages: 6, signatureIndex: 4, stock: "uncoated" },
+  { section: "Community", feature: "COMMUNITY: INTRO", content: "Editorial", type: "Editorial", pages: 1, signatureIndex: 4, stock: "uncoated" },
 
-  // ── Fashion shoots — Bloom / Future Icons / Polaroids (GREY + GOLD) ──
-  { section: "Fashion", feature: "Fashion Editorial — Bloom", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Rae Iverson", shootDate: "2026-05-22", talent: "Model TBC", editor: "Luke", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "MIU MIU — GATEFOLD", content: "Advertorial", type: "Supplied", pages: 3, status: "CONTENT_RECEIVED", gatefold: true },
-  { section: "Fashion Shoot", feature: "FUTURE ICONS", content: "Bespoke Content", type: "Bespoke", pages: 8, photographer: "Low Cooper", shootDate: "2026-05-15", talent: "Future Icons Cast", editor: "Luke", status: "CONTENT_RECEIVED" },
-  { section: "Fashion Shoot", feature: "POLAROIDS", content: "Bespoke Content", type: "Bespoke", pages: 4, photographer: "Low Cooper", shootDate: "2026-05-15", talent: "Future Icons Cast", editor: "Luke", status: "NOT_STARTED" },
+  // ── Block 6 (pages 81-96) — UNCOATED ──
+  { section: "Community", feature: "COMMUNITY: INTRO", content: "Editorial", type: "Editorial", pages: 1, signatureIndex: 5, stock: "uncoated" },
+  { section: "Community", feature: "COMMUNITY: HONG KONG", content: "Bespoke Content", type: "Bespoke", pages: 6, signatureIndex: 5, stock: "uncoated" },
+  { section: "Community", feature: "COMMUNITY: MUMBAI", content: "Bespoke Content", type: "Bespoke", pages: 6, signatureIndex: 5, stock: "uncoated" },
+  { section: "Community", feature: "COMMUNITY: MONGOLIA", content: "Bespoke Content", type: "Bespoke", pages: 3, signatureIndex: 5, stock: "uncoated" },
 
-  // ── Behind the Craft + cultural essay (TEAL Features) ──
-  { section: "Advertorial", feature: "VALENTINO — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Feature", feature: "BEHIND THE CRAFT — Makers", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Theo Marsh", shootDate: "2026-05-12", talent: "Atelier Profile", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Feature", feature: "OUTLANDER — Cultural Essay", content: "Editorial", type: "Editorial", pages: 4, editor: "Sofia", status: "NOT_STARTED" },
+  // ── Block 7 (pages 97-112) — UNCOATED ──
+  { section: "Community", feature: "COMMUNITY: MONGOLIA", content: "Bespoke Content", type: "Bespoke", pages: 3, signatureIndex: 6, stock: "uncoated" },
+  { section: "Community", feature: "COMMUNITY: KENYA", content: "Bespoke Content", type: "Bespoke", pages: 6, signatureIndex: 6, stock: "uncoated" },
+  { section: "Art & Design", feature: "DESIGN: FURNITURE STORES PARIS", content: "Editorial", type: "Editorial", pages: 4, signatureIndex: 6, stock: "uncoated" },
+  { section: "Art & Design", feature: "DESIGN: HEIDI & JAY JEWELLERS", content: "Editorial", type: "Editorial", pages: 3, signatureIndex: 6, stock: "uncoated" },
 
-  // ── Art & Design (BLUE) ──
-  { section: "Advertorial", feature: "OMEGA — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Art & Design", feature: "ART & DESIGN — Studio Visit", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Theo Marsh", talent: "Featured Artist", editor: "Sofia", status: "NOT_STARTED" },
-  { section: "Art & Design", feature: "Design Dispatch — Objects", content: "Editorial", type: "Editorial", pages: 4, editor: "Maya", status: "NOT_STARTED" },
+  // ── Block 8 (pages 113-128) — COATED ──
+  { section: "Art & Design", feature: "DESIGN: HEIDI & JAY JEWELLERS", content: "Editorial", type: "Editorial", pages: 1, signatureIndex: 7, stock: "coated" },
+  { section: "Cover Talent", feature: "COVER TALENT", content: "Bespoke Content", type: "Bespoke", pages: 15, signatureIndex: 7, stock: "coated" },
 
-  // ── Digital Focus (CYAN) ──
-  { section: "Digital Focus", feature: "DIGITAL FOCUS — Creators", content: "Bespoke Content", type: "Bespoke", pages: 4, talent: "Digital Creators", editor: "Maya", status: "NOT_STARTED" },
-  { section: "Digital Focus", feature: "Digital Focus — Tools", content: "Editorial", type: "Editorial", pages: 2, editor: "Maya", status: "NOT_STARTED" },
+  // ── Block 9 (pages 129-144) — COATED ──
+  { section: "Cover Talent", feature: "COVER TALENT", content: "Bespoke Content", type: "Bespoke", pages: 1, signatureIndex: 8, stock: "coated" },
+  { section: "Fashion Shoot", feature: "FASHION: PEGGY BAG FEATURE", content: "Bespoke Content", type: "Bespoke", pages: 8, signatureIndex: 8, stock: "coated", notes: "HEAT SENSITIVE INK" },
+  { section: "FOB", feature: "FOB: STILLZ MOST ICONIC POLAROIDS", content: "Editorial", type: "Editorial", pages: 6, signatureIndex: 8, stock: "coated" },
+  { section: "Advertorial", feature: "SPONSORED: SLOT 2 SOREL", content: "Advertorial", type: "Bespoke", pages: 1, signatureIndex: 8, stock: "coated" },
 
-  // ── Special feature (CORAL) + directory ──
-  { section: "Advertorial", feature: "TIFFANY — DPS", content: "Advertorial", type: "Supplied", pages: 2, status: "NOT_STARTED" },
-  { section: "Special", feature: "SPECIAL — Anniversary Feature", content: "Bespoke Content", type: "Bespoke", pages: 6, photographer: "Low Cooper", talent: "Special Guests", editor: "Luke", status: "NOT_STARTED" },
-  { section: "Space", feature: "ADVERTISE — Space", content: "Space", type: "Space", pages: 2, status: "NOT_STARTED" },
-  { section: "Community", feature: "OUTLANDER DIRECTORY", content: "Editorial", type: "Editorial", pages: 6, editor: "Maya", status: "NOT_STARTED" },
+  // ── Block 10 (pages 145-160) — UNCOATED ──
+  { section: "Advertorial", feature: "SPONSORED: SLOT 2 SOREL", content: "Advertorial", type: "Bespoke", pages: 7, signatureIndex: 9, stock: "uncoated" },
+  { section: "Advertorial", feature: "SPONSORED: SLOT 3 VANS SZA", content: "Advertorial", type: "Bespoke", pages: 6, signatureIndex: 9, stock: "uncoated" },
+  { section: "Feature", feature: "BEHIND THE CRAFT: INTRO", content: "Editorial", type: "Editorial", pages: 2, signatureIndex: 9, stock: "uncoated" },
+  { section: "Feature", feature: "BEHIND THE CRAFT: DING ZUYIN", content: "Bespoke Content", type: "Bespoke", pages: 1, signatureIndex: 9, stock: "uncoated" },
 
-  // ── Back matter + inside/outside back ──
-  { section: "Community", feature: "Reader Pages", content: "Editorial", type: "Editorial", pages: 2, editor: "Maya", status: "NOT_STARTED" },
-  { section: "FOB", feature: "Horoscopes", content: "Editorial", type: "Editorial", pages: 2, editor: "Maya", status: "NOT_STARTED" },
-  { section: "Community", feature: "Stockists & Credits", content: "Editorial", type: "Editorial", pages: 2, editor: "Luke", status: "NOT_STARTED" },
-  { section: "FOB", feature: "Back Page — Last Word", content: "Editorial", type: "Editorial", pages: 1, editor: "Luke", status: "NOT_STARTED" },
-  { section: "Advertorial", feature: "CHANEL — Inside Back", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
-  { section: "Advertorial", feature: "DIOR — Outside Back", content: "Advertorial", type: "Supplied", pages: 1, status: "CONTENT_RECEIVED" },
+  // ── Block 11 (pages 161-176) — UNCOATED ──
+  { section: "Feature", feature: "BEHIND THE CRAFT: DING ZUYIN", content: "Bespoke Content", type: "Bespoke", pages: 5, signatureIndex: 10, stock: "uncoated" },
+  { section: "Feature", feature: "BEHIND THE CRAFT: PARISIAN SWEET", content: "Bespoke Content", type: "Bespoke", pages: 6, signatureIndex: 10, stock: "uncoated" },
+  { section: "Feature", feature: "BEHIND THE CRAFT: EMA GASPAR", content: "Bespoke Content", type: "Bespoke", pages: 5, signatureIndex: 10, stock: "uncoated" },
+
+  // ── Block 12 (pages 177-192) — UNCOATED ──
+  { section: "Feature", feature: "BEHIND THE CRAFT: EMA GASPAR", content: "Bespoke Content", type: "Bespoke", pages: 1, signatureIndex: 11, stock: "uncoated" },
+  { section: "Feature", feature: "TYSHAWN JONES", content: "Bespoke Content", type: "Bespoke", pages: 6, signatureIndex: 11, stock: "uncoated" },
+  { section: "Cover Talent", feature: "COVER TALENT: POKEMON", content: "Bespoke Content", type: "Bespoke", pages: 8, signatureIndex: 11, stock: "uncoated" },
+  { section: "Fashion Shoot", feature: "FASHION: MURDER MYSTERY SHOOT", content: "Bespoke Content", type: "Bespoke", pages: 1, signatureIndex: 11, stock: "uncoated" },
+
+  // ── Block 13 (pages 193-208) — UNCOATED ──
+  { section: "Fashion Shoot", feature: "FASHION: MURDER MYSTERY SHOOT", content: "Bespoke Content", type: "Bespoke", pages: 7, signatureIndex: 12, stock: "uncoated" },
+  { section: "Fashion Shoot", feature: "FASHION: SAINT LAURENT PARIS", content: "Bespoke Content", type: "Bespoke", pages: 8, signatureIndex: 12, stock: "uncoated" },
+  { section: "Special", feature: "COMIC BOOK", content: "Bespoke Content", type: "Bespoke", pages: 1, signatureIndex: 12, stock: "uncoated" },
+
+  // ── Block 14 (pages 209-224) — UNCOATED ──
+  { section: "Special", feature: "COMIC BOOK", content: "Bespoke Content", type: "Bespoke", pages: 5, signatureIndex: 13, stock: "uncoated" },
+  { section: "Fashion Shoot", feature: "FASHION: KERRY TAYLOR", content: "Bespoke Content", type: "Bespoke", pages: 6, signatureIndex: 13, stock: "uncoated" },
+  { section: "FOB", feature: "ASK THE INDUSTRY: INTRO", content: "Editorial", type: "Editorial", pages: 2, signatureIndex: 13, stock: "uncoated" },
+  { section: "FOB", feature: "ASK THE INDUSTRY: SARAH ANDLEMAN", content: "Editorial", type: "Editorial", pages: 2, signatureIndex: 13, stock: "uncoated" },
+  { section: "FOB", feature: "ASK THE INDUSTRY: TAYLOR MCNEIL", content: "Editorial", type: "Editorial", pages: 1, signatureIndex: 13, stock: "uncoated" },
+
+  // ── Block 15 (pages 225-240) — COATED ──
+  { section: "FOB", feature: "ASK THE INDUSTRY: TAYLOR MCNEIL", content: "Editorial", type: "Editorial", pages: 1, signatureIndex: 14, stock: "coated", notes: "TIP IN ORIGAMI (Golden Ticket pop-out)" },
+  { section: "FOB", feature: "ASK THE INDUSTRY: CALLUM MCCAFFERTY", content: "Editorial", type: "Editorial", pages: 2, signatureIndex: 14, stock: "coated" },
+  { section: "Feature", feature: "FUTURE ICONS: COVER", content: "Bespoke Content", type: "Bespoke", pages: 2, signatureIndex: 14, stock: "coated" },
+  { section: "Feature", feature: "FUTURE ICONS: CSM STUDENTS", content: "Bespoke Content", type: "Bespoke", pages: 8, signatureIndex: 14, stock: "coated" },
+  { section: "Advertorial", feature: "SKYLRK AD", content: "Advertorial", type: "Supplied", pages: 1, signatureIndex: 14, stock: "coated" },
+  { section: "Advertorial", feature: "KIDSUPER AD", content: "Advertorial", type: "Supplied", pages: 1, signatureIndex: 14, stock: "coated" },
+  { section: "Space", feature: "SPACE", content: "Space", type: "Space", pages: 1, signatureIndex: 14, stock: "coated" },
+
+  // ── Block 16 (pages 241-256) — UNCOATED / SPECIAL — empty buffer ──
+  { section: "Space", feature: "SPACE", content: "Space", type: "Space", pages: 16, signatureIndex: 15, stock: "uncoated" },
+
+  // ── Block 17 (pages 257-272) — UNCOATED / SPECIAL (50gsm) ──
+  { section: "Space", feature: "SPACE", content: "Space", type: "Space", pages: 1, signatureIndex: 16, stock: "uncoated", notes: "STICKER SHEET 2 · 50gsm stock" },
+  { section: "Digital Focus", feature: "DIGITAL COVER: NAOMI OSAKA", content: "Bespoke Content", type: "Bespoke", pages: 2, signatureIndex: 16, stock: "uncoated", notes: "50gsm stock" },
+  { section: "Feature", feature: "PARIS", content: "Bespoke Content", type: "Bespoke", pages: 4, signatureIndex: 16, stock: "uncoated", notes: "50gsm stock" },
+  { section: "Community", feature: "OUTLANDER DIRECTORY: PEOPLE GUIDE", content: "Editorial", type: "Editorial", pages: 4, signatureIndex: 16, stock: "uncoated", notes: "70gsm directory stock" },
+  { section: "Community", feature: "OUTLANDER DIRECTORY: WORLD GUIDE", content: "Editorial", type: "Editorial", pages: 4, signatureIndex: 16, stock: "uncoated", notes: "70gsm directory stock" },
+  { section: "FOB", feature: "THE DROP BOX LONDON NEW YORK PARIS", content: "Editorial", type: "Editorial", pages: 1, signatureIndex: 16, stock: "uncoated" },
+
+  // ── Back covers (fold into Signature 16, uncoated) ──
+  { section: "Advertorial", feature: "AD #12 TIMBERLAND (Inside Back Cover)", content: "Advertorial", type: "Supplied", pages: 1, signatureIndex: 16, stock: "uncoated" },
+  { section: "Advertorial", feature: "AD #12 TIMBERLAND (Back Cover)", content: "Advertorial", type: "Supplied", pages: 1, signatureIndex: 16, stock: "uncoated" },
 ];
+
+// Special print treatments for the whole SS26 book (surfaced page-by-page in the
+// notes column where they apply): Glow-in-the-dark ink (4pp), Gold foil scratch
+// layers (6pp), 2× sticker sheets, tracing sheet, heat-sensitive ink, 70gsm
+// directory paper, scratch-and-sniff grass, paper pop-out origami Golden Ticket.
 
 // Issue 01 "AW25" — the shipped, fully-COMPLETE back issue. Carries the wider
 // section palette (Art & Design, Digital Focus) that defined AW25, and like a
@@ -531,6 +582,45 @@ function buildPagesFromSegments(
   return pages.slice(0, totalPages);
 }
 
+// SS26 builder. Unlike the generic builder, SS26 carries an explicit physical
+// imposition, so each page is stamped with its segment's signatureIndex + stock
+// (and per-page special-treatment notes). No Space padding is added — the
+// blueprint already lays out the full book end to end, including its buffer pages.
+function buildSS26Pages(): MagazinePage[] {
+  const pages: MagazinePage[] = [];
+  let n = 1;
+  for (const seg of SEED_SEGMENTS_SS26) {
+    for (let i = 0; i < seg.pages; i++) {
+      const multi = seg.pages > 1 ? ` (${i + 1}/${seg.pages})` : "";
+      pages.push(
+        syncStatusFlags({
+          pageNumber: n,
+          section: seg.section,
+          feature: seg.feature + multi,
+          content: seg.content,
+          type: seg.type,
+          photographer: seg.photographer ?? "",
+          shootDate: seg.shootDate ?? "",
+          talent: seg.talent ?? "",
+          interviewDate: "",
+          editor: seg.editor ?? "",
+          status: seg.status ?? "NOT_STARTED",
+          readyForDesign: false,
+          inDesign: false,
+          complete: false,
+          notes: seg.notes ?? "",
+          colour: sectionColour(seg.section),
+          isGatefold: seg.gatefold ?? false,
+          signatureIndex: seg.signatureIndex ?? 0,
+          stockType: seg.stock ?? DEFAULT_STOCK,
+        })
+      );
+      n++;
+    }
+  }
+  return pages;
+}
+
 // Derive an issue's page count from its content: round the content up to the next
 // multiple of 8 (a valid print signature). If the content already lands exactly on
 // a signature, add one more so there's always a small block of Space pages for
@@ -541,13 +631,16 @@ function seedTotalPages(segments: Segment[]): number {
   return rounded === content ? rounded + 8 : rounded;
 }
 
-const SS26_TOTAL = seedTotalPages(SEED_SEGMENTS_SS26);
+// SS26 is a fixed 272-page book (17 × 16-page signatures). Covers and the gatefold
+// insert are extra physical pages on top of that count, so totalPages stays 272.
+const SS26_TOTAL = 272;
 const AW25_TOTAL = seedTotalPages(SEED_SEGMENTS_AW25);
 
 // Issue 02 SS26 — the live in-progress issue (kept as the default export name for
-// backwards compatibility with the existing API route import).
-export function buildSeedPages(totalPages = SS26_TOTAL): MagazinePage[] {
-  return buildPagesFromSegments(SEED_SEGMENTS_SS26, totalPages);
+// backwards compatibility with the existing API route import). The full SS26
+// blueprint is fixed, so the totalPages argument is accepted but ignored.
+export function buildSeedPages(_totalPages = SS26_TOTAL): MagazinePage[] {
+  return buildSS26Pages();
 }
 
 // One blueprint per seeded issue. The API seeds all of these on first load.
@@ -569,7 +662,7 @@ export const SEED_ISSUES: SeedIssue[] = [
     issueNumber: 2,
     issueName: "SS26",
     totalPages: SS26_TOTAL,
-    build: () => buildPagesFromSegments(SEED_SEGMENTS_SS26, SS26_TOTAL),
+    build: () => buildSS26Pages(),
   },
 ];
 
