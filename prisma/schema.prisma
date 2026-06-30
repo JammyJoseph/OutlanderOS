@@ -128,6 +128,13 @@ model Contact {
   rating          Int? // 1–5
   notes           String?
   portfolioLinks  Json      @default("[]") // [{ title: string, url: string }] — work/portfolio links
+  // ── Instagram scanner (Directory Intelligence) ──
+  source          String? // "instagram_scan" for scanned contacts; null for manual entries
+  confidence      String? // VERIFIED | LIKELY | UNVERIFIED — how sure we are about scanned data
+  followers       Int? // follower count captured at scan time
+  profilePic      String? // profile picture URL captured at scan time
+  collaborations  Json      @default("[]") // [{ contactId?, handle, count, lastProject?, role? }] — who they've worked with
+  scannedAt       DateTime? // last time this contact's profile was scraped
   // ── Outlander Radar: emerging talent / accounts to watch ──
   isRadar         Boolean   @default(false)
   radarStatus     String? // WATCHING | REACHED_OUT | CONNECTED | COLLABORATING
@@ -141,6 +148,19 @@ model Contact {
   clientCampaigns Campaign[]       @relation("ClientContact")
   productionCrew  ProductionCrew[]
   eventGuests     EventGuest[]
+}
+
+// Caches Instagram scrape results so the same handle isn't re-scraped within 24h.
+// Keyed by (handle, kind) where kind is "profile" or "credits".
+model ScanCache {
+  id        String   @id @default(cuid())
+  handle    String
+  kind      String   @default("profile") // profile | credits
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([handle, kind])
 }
 
 // ===== COMMERCIAL =====

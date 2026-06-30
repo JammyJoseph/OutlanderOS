@@ -74,8 +74,45 @@ export const GET = withAuth(async (
   })
   if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const collaborations = await collaborationsFor(contact)
-  return NextResponse.json({ ...contact, collaborations })
+  const network = await resolveNetwork(contact.collaborations)
+  return NextResponse.json({ ...contact, collaborations, network })
 })
+
+interface NetworkLink {
+  handle: string
+  count: number
+  role: string | null
+  contactId: string | null
+  contactName: string | null
+}
+
+// Resolves the contact's scan-derived collaboration links (stored as JSON) into
+// a display-ready list, looking up linked contacts' names where present.
+async function resolveNetwork(raw: unknown): Promise<NetworkLink[]> {
+  const links = Array.isArray(raw) ? raw : []
+  const valid = links.filter(
+    (l): l is { handle: string; count?: number; role?: string; contactId?: string } =>
+      Boolean(l) && typeof (l as { handle?: unknown }).handle === 'string'
+  )
+  if (valid.length === 0) return []
+  const ids = [...new Set(valid.map((l) => l.contactId).filter(Boolean))] as string[]
+  const named = ids.length
+    ? await prisma.contact.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, name: true },
+      })
+    : []
+  const nameById = new Map(named.map((c) => [c.id, c.name]))
+  return valid
+    .map((l) => ({
+      handle: l.handle,
+      count: l.count ?? 0,
+      role: l.role ?? null,
+      contactId: l.contactId ?? null,
+      contactName: l.contactId ? nameById.get(l.contactId) ?? null : null,
+    }))
+    .sort((a, b) => b.count - a.count)
+}
 
 function parseRating(value: unknown): number | null {
   if (value === null) return null

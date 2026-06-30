@@ -28,6 +28,9 @@ import {
   CheckSquare,
   Square,
   UserPlus,
+  ScanLine,
+  Network as NetworkIcon,
+  Sparkles,
 } from "lucide-react";
 import {
   CONTACT_CATEGORIES,
@@ -35,6 +38,8 @@ import {
   RADAR_STATUS_LABELS,
   DIRECTORY_ACCENT,
 } from "@/lib/directory";
+import ScannerPanel from "@/components/directory/ScannerPanel";
+import NetworkPanel from "@/components/directory/NetworkPanel";
 
 const ACCENT = DIRECTORY_ACCENT;
 
@@ -78,17 +83,51 @@ interface ContactRecord {
   isRadar: boolean;
   radarStatus: string | null;
   radarLink: string | null;
+  source?: string | null;
+  confidence?: "VERIFIED" | "LIKELY" | "UNVERIFIED" | null;
+  followers?: number | null;
+  profilePic?: string | null;
   createdAt: string;
   updatedAt: string;
   creator?: { id: string; name: string } | null;
 }
 
-type View = "contacts" | "categories" | "radar" | "recent";
+type View = "contacts" | "categories" | "radar" | "recent" | "scanner" | "network";
 type DisplayMode = "grid" | "list";
 type SortKey = "name" | "category" | "rating" | "recent";
 
 function isView(v: string | null): v is View {
-  return v === "contacts" || v === "categories" || v === "radar" || v === "recent";
+  return (
+    v === "contacts" ||
+    v === "categories" ||
+    v === "radar" ||
+    v === "recent" ||
+    v === "scanner" ||
+    v === "network"
+  );
+}
+
+const CONFIDENCE_STYLE: Record<string, string> = {
+  VERIFIED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+  LIKELY: "border-amber-500/40 bg-amber-500/10 text-amber-600",
+  UNVERIFIED: "border-border bg-secondary text-gray-500",
+};
+const CONFIDENCE_LABEL: Record<string, string> = {
+  VERIFIED: "Verified",
+  LIKELY: "Likely",
+  UNVERIFIED: "Unverified",
+};
+
+function ConfidenceBadge({ confidence }: { confidence: string }) {
+  const style = CONFIDENCE_STYLE[confidence] ?? CONFIDENCE_STYLE.UNVERIFIED;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style}`}
+      title="Scanned from Instagram"
+    >
+      <Sparkles size={9} /> {CONFIDENCE_LABEL[confidence] ?? confidence}
+    </span>
+  );
 }
 
 const MASTER_SHEET = "1RJFla1KOPRWN0-ue9H6clQ5bWuYEuo1RSHD6K8Zy2hY";
@@ -405,11 +444,14 @@ function Directory() {
   const VIEW_TABS: { key: View; label: string; icon: React.ElementType }[] = [
     { key: "contacts", label: "All Contacts", icon: ContactIcon },
     { key: "categories", label: "By Category", icon: Tags },
+    { key: "scanner", label: "Scanner", icon: ScanLine },
+    { key: "network", label: "Network", icon: NetworkIcon },
     { key: "radar", label: "Radar", icon: RadarIcon },
     { key: "recent", label: "Recently Added", icon: Clock },
   ];
 
   const showContactTools = view === "contacts" || view === "recent";
+  const isToolView = view === "scanner" || view === "network";
 
   return (
     <div className="min-h-full px-6 py-8 pb-28">
@@ -421,16 +463,26 @@ function Directory() {
               OutlanderOS · Directory
             </p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
-              {view === "radar" ? "Outlander Radar" : "Contact Directory"}
+              {view === "radar"
+                ? "Outlander Radar"
+                : view === "scanner"
+                ? "Profile Scanner"
+                : view === "network"
+                ? "Collaboration Network"
+                : "Contact Directory"}
             </h1>
             <p className="mt-1 text-sm text-gray-500">
               {view === "radar"
                 ? "Emerging talent, creators & accounts we think will be big."
+                : view === "scanner"
+                ? "Scan Instagram profiles to build the directory and map who works with whom."
+                : view === "network"
+                ? "Who's collaborated with whom, mapped from scanned post credits."
                 : "Outlander's network of contacts, collaborators & talent."}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {view !== "radar" && (
+            {view !== "radar" && !isToolView && (
               <>
                 <button
                   onClick={() => runImport(false)}
@@ -455,7 +507,7 @@ function Directory() {
                 </button>
               </>
             )}
-            {view === "radar" ? (
+            {isToolView ? null : view === "radar" ? (
               <button
                 onClick={() => setAddingRadar(null)}
                 className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
@@ -497,7 +549,7 @@ function Directory() {
         </div>
 
         {/* Search + filters + tools */}
-        {view !== "categories" && (
+        {view !== "categories" && !isToolView && (
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
@@ -609,7 +661,16 @@ function Directory() {
         )}
 
         {/* Body */}
-        {loading ? (
+        {view === "scanner" ? (
+          <ScannerPanel
+            onChanged={() => {
+              loadContacts();
+              loadCategories();
+            }}
+          />
+        ) : view === "network" ? (
+          <NetworkPanel />
+        ) : loading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="animate-spin text-gray-600" size={24} />
           </div>
@@ -864,6 +925,9 @@ function ContactCard({
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <CategoryBadge category={c.category} />
+        {c.source === "instagram_scan" && c.confidence && (
+          <ConfidenceBadge confidence={c.confidence} />
+        )}
         {c.rating ? <Stars rating={c.rating} /> : null}
         {c.location && (
           <span className="inline-flex items-center gap-1 text-[10px] text-gray-500">
@@ -917,6 +981,9 @@ function ContactRow({
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
           {c.rating ? <Stars rating={c.rating} /> : null}
+          {c.source === "instagram_scan" && c.confidence && (
+            <ConfidenceBadge confidence={c.confidence} />
+          )}
         </div>
         <p className="truncate text-xs text-gray-500">
           {[c.role, c.company].filter(Boolean).join(" · ")}

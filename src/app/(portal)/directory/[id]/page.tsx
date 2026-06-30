@@ -18,6 +18,9 @@ import {
   Briefcase,
   Film,
   Check,
+  Network as NetworkIcon,
+  Users,
+  Sparkles,
 } from "lucide-react";
 import { DIRECTORY_ACCENT } from "@/lib/directory";
 
@@ -55,6 +58,13 @@ interface Collaboration {
   role: string;
   source: "crew" | "team";
 }
+interface NetworkLink {
+  handle: string;
+  count: number;
+  role: string | null;
+  contactId: string | null;
+  contactName: string | null;
+}
 interface ContactDetail {
   id: string;
   name: string;
@@ -73,8 +83,24 @@ interface ContactDetail {
   isRadar: boolean;
   createdAt: string;
   collaborations: Collaboration[];
+  network?: NetworkLink[];
+  source?: string | null;
+  confidence?: "VERIFIED" | "LIKELY" | "UNVERIFIED" | null;
+  followers?: number | null;
+  profilePic?: string | null;
   creator?: { id: string; name: string } | null;
 }
+
+const CONFIDENCE_STYLE: Record<string, string> = {
+  VERIFIED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+  LIKELY: "border-amber-500/40 bg-amber-500/10 text-amber-600",
+  UNVERIFIED: "border-border bg-secondary text-gray-500",
+};
+const CONFIDENCE_LABEL: Record<string, string> = {
+  VERIFIED: "Verified",
+  LIKELY: "Likely",
+  UNVERIFIED: "Unverified",
+};
 
 const cardCls = "rounded-2xl border border-border bg-card p-5";
 const inputCls =
@@ -148,6 +174,7 @@ export default function ContactDetailPage({
       tags: Array.isArray(data.tags) ? data.tags : [],
       portfolioLinks: Array.isArray(data.portfolioLinks) ? data.portfolioLinks : [],
       collaborations: Array.isArray(data.collaborations) ? data.collaborations : [],
+      network: Array.isArray(data.network) ? data.network : [],
     });
     setLoading(false);
   }, [id]);
@@ -209,6 +236,17 @@ export default function ContactDetailPage({
               <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
                 {contact.category}
               </span>
+              {contact.source === "instagram_scan" && contact.confidence && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                    CONFIDENCE_STYLE[contact.confidence] ?? CONFIDENCE_STYLE.UNVERIFIED
+                  }`}
+                  title="Scanned from Instagram"
+                >
+                  <Sparkles size={9} />{" "}
+                  {CONFIDENCE_LABEL[contact.confidence] ?? contact.confidence}
+                </span>
+              )}
             </div>
             {(contact.role || contact.company) && (
               <p className="mt-1 text-base text-gray-500">
@@ -315,6 +353,55 @@ export default function ContactDetailPage({
                 </ul>
               )}
             </div>
+
+            {/* Collaboration network (from Instagram credit scans) */}
+            {contact.network && contact.network.length > 0 && (
+              <div className={cardCls}>
+                <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-gray-900">
+                  <NetworkIcon size={15} style={{ color: ACCENT }} /> Network
+                </h2>
+                <p className="mb-3 text-xs text-gray-500">
+                  Has worked with {contact.network.length} other
+                  {contact.network.length === 1 ? "" : "s"}, mapped from scanned post credits.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {contact.network.map((c) => {
+                    const inner = (
+                      <>
+                        <Users size={12} className="shrink-0 text-gray-500" />
+                        <span className="font-medium text-gray-700">
+                          {c.contactName || `@${c.handle}`}
+                        </span>
+                        {c.role && <span className="text-gray-500"> · {c.role}</span>}
+                        <span
+                          className="ml-1 rounded-full px-1.5 text-[10px] font-semibold text-black"
+                          style={{ backgroundColor: ACCENT }}
+                        >
+                          {c.count}
+                        </span>
+                      </>
+                    );
+                    const cls =
+                      "inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs transition-colors hover:border-[var(--ring)]";
+                    return c.contactId ? (
+                      <Link key={c.handle} href={`/directory/${c.contactId}`} className={cls}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <a
+                        key={c.handle}
+                        href={`https://www.instagram.com/${c.handle}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cls}
+                      >
+                        {inner}
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right / Instagram + meta */}
