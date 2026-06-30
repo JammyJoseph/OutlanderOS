@@ -17,6 +17,7 @@ import {
   Cloud,
   ArrowLeft,
   PoundSterling,
+  ExternalLink,
 } from "lucide-react";
 import { useMagazinePlan } from "@/components/print/usePlan";
 import BudgetView from "@/components/print/BudgetView";
@@ -70,6 +71,12 @@ function FlatPlanInner() {
     savePages(next, next.length);
   }
 
+  // Any structural change (add / remove / reorder) must keep pageNumber in lockstep
+  // with array order so the flat plan and tracker always agree on numbering.
+  function mutateStructural(next: MagazinePage[]) {
+    mutate(renumber(next));
+  }
+
   function updatePage(index: number, patch: Partial<MagazinePage>) {
     mutate(pages.map((p, i) => (i === index ? syncStatusFlags({ ...p, ...patch }) : p)));
   }
@@ -81,17 +88,31 @@ function FlatPlanInner() {
   function addRowAfter(index: number) {
     const next = [...pages];
     next.splice(index + 1, 0, blankPage(index + 2));
-    mutate(next);
+    mutateStructural(next);
   }
 
   function removeRow(index: number) {
-    mutate(pages.filter((_, i) => i !== index));
+    mutateStructural(pages.filter((_, i) => i !== index));
+  }
+
+  // Remove a single page with confirmation, then renumber the rest. Used by the
+  // flat plan's per-card × button for fine-tuning (bulk add/remove still uses blocks).
+  function removePage(index: number) {
+    const p = pages[index];
+    if (!p) return;
+    if (
+      !confirm(
+        `Remove page ${p.pageNumber}? This will remove the page and renumber remaining pages.`
+      )
+    )
+      return;
+    mutateStructural(pages.filter((_, i) => i !== index));
   }
 
   function addBlock(size: number) {
     const start = pages.length;
     const extra = Array.from({ length: size }, (_, i) => blankPage(start + i + 1));
-    mutate([...pages, ...extra]);
+    mutateStructural([...pages, ...extra]);
   }
 
   function removeLastBlock() {
@@ -100,7 +121,7 @@ function FlatPlanInner() {
       return;
     }
     if (!confirm("Remove the last 8 pages? This can't be undone once saved.")) return;
-    mutate(pages.slice(0, pages.length - 8));
+    mutateStructural(pages.slice(0, pages.length - 8));
   }
 
   function reorder(from: number, to: number) {
@@ -108,7 +129,7 @@ function FlatPlanInner() {
     const next = [...pages];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
-    mutate(next);
+    mutateStructural(next);
   }
 
   function printFlatPlan() {
@@ -220,7 +241,12 @@ function FlatPlanInner() {
         ) : view === "budget" ? (
           <BudgetView issueId={plan.id} pages={pages} updatePage={updatePage} />
         ) : (
-          <FlatPlanView pages={pages} onOpen={setEditing} />
+          <FlatPlanView
+            pages={pages}
+            onOpen={setEditing}
+            reorder={reorder}
+            removePage={removePage}
+          />
         )}
       </div>
 
@@ -251,6 +277,11 @@ function FlatPlanInner() {
       )}
     </div>
   );
+}
+
+// Re-sequence pageNumber to match array order after any structural change.
+function renumber(pages: MagazinePage[]): MagazinePage[] {
+  return pages.map((p, i) => (p.pageNumber === i + 1 ? p : { ...p, pageNumber: i + 1 }));
 }
 
 const btnGhost =
@@ -310,6 +341,7 @@ function TrackerView({
             <th className={`${th} text-center`}>Dsn</th>
             <th className={`${th} text-center`}>Cmp</th>
             <th className={th}>Notes</th>
+            <th className={th}>Assets</th>
             <th className={th}></th>
           </tr>
         </thead>
@@ -363,6 +395,10 @@ function TrackerView({
                 <CheckCell checked={p.inDesign} onToggle={(v) => setStage(i, v ? "IN_DESIGN" : "READY_FOR_DESIGN")} />
                 <CheckCell checked={p.complete} onToggle={(v) => setStage(i, v ? "COMPLETE" : "IN_DESIGN")} />
                 <CellInput value={p.notes} onChange={(v) => updatePage(i, { notes: v })} wide />
+                <AssetsCell
+                  links={p.assetLinks ?? []}
+                  onChange={(links) => updatePage(i, { assetLinks: links })}
+                />
                 <td className={td}>
                   <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
                     <button onClick={() => addRowAfter(i)} title="Add row" className="rounded p-0.5 text-gray-500 hover:text-[#00ff88]">
@@ -412,6 +448,95 @@ function CellInput({
   );
 }
 
+// Assets column — paste Google Drive / Figma / any URL. Stored URLs render as
+// truncated blue links that open in a new tab; the "+" reveals an input to add
+// another, and each link gets a hover × to remove it.
+function AssetsCell({
+  links,
+  onChange,
+}: {
+  links: string[];
+  onChange: (links: string[]) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  function commit() {
+    const url = draft.trim();
+    if (url) onChange([...links, normaliseUrl(url)]);
+    setDraft("");
+    setAdding(false);
+  }
+
+  return (
+    <td className={td}>
+      <div className="flex min-w-[120px] flex-col gap-0.5">
+        {links.map((url, li) => (
+          <span key={li} className="group/link flex items-center gap-1">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={url}
+              className="flex items-center gap-0.5 truncate text-[10px] text-blue-500 hover:underline"
+            >
+              <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate">{linkLabel(url)}</span>
+            </a>
+            <button
+              onClick={() => onChange(links.filter((_, i) => i !== li))}
+              title="Remove link"
+              className="opacity-0 transition group-hover/link:opacity-100"
+            >
+              <X className="h-2.5 w-2.5 text-gray-400 hover:text-red-400" />
+            </button>
+          </span>
+        ))}
+        {adding ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") {
+                setDraft("");
+                setAdding(false);
+              }
+            }}
+            placeholder="Paste URL…"
+            className="w-full rounded bg-muted px-1 py-0.5 text-[10px] text-gray-800 focus:outline-none"
+          />
+        ) : (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-0.5 text-[10px] text-gray-400 hover:text-[#00ff88]"
+          >
+            <Plus className="h-2.5 w-2.5" /> {links.length ? "Add" : "Link"}
+          </button>
+        )}
+      </div>
+    </td>
+  );
+}
+
+// Prefix a bare domain so it becomes a valid, openable link.
+function normaliseUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
+// Short, readable label: host + a hint of the path, truncated.
+function linkLabel(url: string): string {
+  try {
+    const u = new URL(normaliseUrl(url));
+    const tail = u.pathname.length > 1 ? u.pathname : "";
+    return truncate(`${u.hostname.replace(/^www\./, "")}${tail}`, 22);
+  } catch {
+    return truncate(url, 22);
+  }
+}
+
 // Status pipeline rendered as five 8px dots. Each is clickable to jump straight
 // to that stage; dots up to the current stage are filled with that stage colour.
 function StatusDots({ status, onSet }: { status: PageStatus; onSet: (s: PageStatus) => void }) {
@@ -454,33 +579,88 @@ function CheckCell({ checked, onToggle }: { checked: boolean; onToggle: (v: bool
 
 // ===================== FLAT PLAN VIEW (compact magazine layout) =====================
 
-type Spread = { left: number | null; right: number | null };
+const PAGES_PER_ROW = 16; // 8 spread pairs
 
-function FlatPlanView({ pages, onOpen }: { pages: MagazinePage[]; onOpen: (i: number) => void }) {
-  // Group into spreads: page 1 sits alone on the right (cover), then even-left /
-  // odd-right pairs, like opening a physical magazine.
-  const spreads: Spread[] = [];
-  spreads.push({ left: null, right: 0 }); // cover
-  for (let i = 1; i < pages.length; i += 2) {
-    spreads.push({ left: i, right: i + 1 < pages.length ? i + 1 : null });
+function FlatPlanView({
+  pages,
+  onOpen,
+  reorder,
+  removePage,
+}: {
+  pages: MagazinePage[];
+  onOpen: (i: number) => void;
+  reorder: (from: number, to: number) => void;
+  removePage: (i: number) => void;
+}) {
+  // Drag-to-reorder state. `dragIndex` is the page being dragged; `dropBefore` is
+  // the array index the dragged page would be inserted in front of (a value of
+  // pages.length means "drop at the very end"). The blue rule renders at that seam.
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropBefore, setDropBefore] = useState<number | null>(null);
+
+  function handleDrop() {
+    if (dragIndex !== null && dropBefore !== null) {
+      // dropBefore is an insert-before index in the ORIGINAL array; once the dragged
+      // page is spliced out, every later target shifts down by one.
+      let to = dropBefore;
+      if (dragIndex < dropBefore) to = dropBefore - 1;
+      reorder(dragIndex, to);
+    }
+    setDragIndex(null);
+    setDropBefore(null);
   }
 
-  // Render spreads as one continuous, width-filling flow. Spreads wrap to fill the
-  // whole row at any viewport size (no fixed-width panels leaving dead space). A
-  // subtle left rule before every 4th spread marks the 8-page signature boundaries
-  // without breaking the flow.
+  // Chunk pages into rows of 16; each row renders as 8 tight spread pairs.
+  const rows: number[][] = [];
+  for (let i = 0; i < pages.length; i += PAGES_PER_ROW) {
+    rows.push(Array.from({ length: Math.min(PAGES_PER_ROW, pages.length - i) }, (_, k) => i + k));
+  }
+
   return (
     <div className="h-full overflow-auto p-4">
-      <div className="flex flex-wrap content-start gap-x-2 gap-y-2.5">
-        {spreads.map((sp, si) => {
-          const newSignature = si > 0 && si % 4 === 0;
+      <div className="flex min-w-max flex-col" onDragEnd={() => { setDragIndex(null); setDropBefore(null); }}>
+        {rows.map((row, ri) => {
+          const first = row[0];
+          const last = row[row.length - 1];
           return (
-            <div
-              key={si}
-              className={`flex gap-[2px] ${newSignature ? "border-l border-border pl-2" : ""}`}
-            >
-              <PageCard index={sp.left} pages={pages} onOpen={onOpen} />
-              <PageCard index={sp.right} pages={pages} onOpen={onOpen} />
+            <div key={ri} className={ri > 0 ? "mt-3 border-t border-border/50 pt-3" : ""}>
+              <div className="mb-1 font-mono text-[8px] uppercase tracking-wider text-gray-400">
+                pp. {pages[first]?.pageNumber}–{pages[last]?.pageNumber}
+              </div>
+              <div className="flex items-start gap-[5px]">
+                {Array.from({ length: Math.ceil(row.length / 2) }, (_, sp) => {
+                  const li = row[sp * 2];
+                  const ri2 = row[sp * 2 + 1];
+                  return (
+                    <div key={sp} className="flex gap-[1.5px]">
+                      <PageCard
+                        index={li}
+                        pages={pages}
+                        onOpen={onOpen}
+                        dragIndex={dragIndex}
+                        dropBefore={dropBefore}
+                        setDragIndex={setDragIndex}
+                        setDropBefore={setDropBefore}
+                        onDrop={handleDrop}
+                        removePage={removePage}
+                        total={pages.length}
+                      />
+                      <PageCard
+                        index={ri2 ?? null}
+                        pages={pages}
+                        onOpen={onOpen}
+                        dragIndex={dragIndex}
+                        dropBefore={dropBefore}
+                        setDragIndex={setDragIndex}
+                        setDropBefore={setDropBefore}
+                        onDrop={handleDrop}
+                        removePage={removePage}
+                        total={pages.length}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
@@ -493,10 +673,24 @@ function PageCard({
   index,
   pages,
   onOpen,
+  dragIndex,
+  dropBefore,
+  setDragIndex,
+  setDropBefore,
+  onDrop,
+  removePage,
+  total,
 }: {
   index: number | null;
   pages: MagazinePage[];
   onOpen: (i: number) => void;
+  dragIndex: number | null;
+  dropBefore: number | null;
+  setDragIndex: (i: number | null) => void;
+  setDropBefore: (i: number | null) => void;
+  onDrop: () => void;
+  removePage: (i: number) => void;
+  total: number;
 }) {
   if (index === null) {
     return <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-border" />;
@@ -504,35 +698,82 @@ function PageCard({
   const p = pages[index];
   const colour = sectionColour(p.section);
   const isSpace = p.section === "Space" && !p.feature.trim();
+  const isCover = index === 0;
+  const isBack = index === total - 1;
+
+  // Where the blue insertion rule sits relative to THIS card: on its left when the
+  // pointer is over the left half (insert before), on its right for the last card.
+  const showLeftRule = dropBefore === index && dragIndex !== null;
+  const showRightRule = dropBefore === index + 1 && dragIndex !== null;
+
+  function onDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const after = e.clientX > rect.left + rect.width / 2;
+    setDropBefore(after ? index! + 1 : index!);
+  }
+
   return (
-    <button
-      onClick={() => onOpen(index)}
-      className="group relative flex h-[86px] w-[64px] flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2"
-      style={{
-        background: isSpace ? "var(--secondary)" : `${colour}5e`, // ~37% tint
-        // @ts-expect-error CSS custom prop for hover ring
-        "--tw-ring-color": `${colour}99`,
-      }}
-    >
-      <span
-        className="absolute left-0 top-0 h-full w-[2px]"
-        style={{ background: isSpace ? "var(--border)" : colour }}
-      />
-      <div className="flex items-start justify-between pl-1">
-        <span className="font-mono text-[7px] font-bold text-gray-900">{p.pageNumber}</span>
-        {!isSpace && (
-          <span
-            className="rounded px-0.5 text-[6px] font-bold uppercase leading-tight tracking-wide text-black"
-            style={{ background: colour }}
-          >
-            {sectionAbbr(p.section)}
+    <div className="relative">
+      {showLeftRule && (
+        <span className="absolute -left-[1px] top-0 z-10 h-full w-[2px] rounded bg-[#3b82f6]" />
+      )}
+      {showRightRule && (
+        <span className="absolute -right-[1px] top-0 z-10 h-full w-[2px] rounded bg-[#3b82f6]" />
+      )}
+      <button
+        draggable
+        onDragStart={() => setDragIndex(index)}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onClick={() => onOpen(index)}
+        className={`group relative flex h-[86px] w-[64px] cursor-grab flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2 active:cursor-grabbing ${
+          dragIndex === index ? "opacity-40" : ""
+        }`}
+        style={{
+          background: isSpace ? "var(--secondary)" : `${colour}5e`, // ~37% tint
+          // @ts-expect-error CSS custom prop for hover ring
+          "--tw-ring-color": `${colour}99`,
+        }}
+      >
+        <span
+          className="absolute left-0 top-0 h-full w-[2px]"
+          style={{ background: isSpace ? "var(--border)" : colour }}
+        />
+        {/* Remove button — only on hover so it doesn't clutter the plan. */}
+        <span
+          role="button"
+          tabIndex={0}
+          title={`Remove page ${p.pageNumber}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            removePage(index!);
+          }}
+          className="absolute right-0.5 top-0.5 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition hover:bg-red-500 group-hover:opacity-100"
+        >
+          <X className="h-2.5 w-2.5" />
+        </span>
+        <div className="flex items-start justify-between pl-1">
+          <span className="font-mono text-[7px] font-bold text-gray-900">{p.pageNumber}</span>
+          {!isSpace && (
+            <span
+              className="rounded px-0.5 text-[6px] font-bold uppercase leading-tight tracking-wide text-black"
+              style={{ background: colour }}
+            >
+              {sectionAbbr(p.section)}
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 line-clamp-3 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-900">
+          {isSpace ? <span className="text-gray-500">Space</span> : truncate(p.feature, 28)}
+        </p>
+        {(isCover || isBack) && (
+          <span className="mt-auto pl-1 text-[6px] font-bold uppercase tracking-wide text-gray-700">
+            {isCover ? "Front Cover" : "Back Cover"}
           </span>
         )}
-      </div>
-      <p className="mt-0.5 line-clamp-4 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-900">
-        {isSpace ? <span className="text-gray-500">Space</span> : truncate(p.feature, 28)}
-      </p>
-    </button>
+      </button>
+    </div>
   );
 }
 

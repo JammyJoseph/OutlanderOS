@@ -40,6 +40,9 @@ export interface MagazinePage {
   complete: boolean;
   notes: string;
   colour: string; // section colour, used by flat plan
+  // Reference links for this page — Google Drive / Figma / any URL. Edited from
+  // the tracker's Assets column; optional so existing/seeded pages stay valid.
+  assetLinks?: string[];
   // ── Budget / cross-portal cost tracking (optional, see Print Budget tab) ──
   // These live on the FIRST page of a multi-page feature (the budget "anchor");
   // the Budget tab groups consecutive pages of a feature into a single row.
