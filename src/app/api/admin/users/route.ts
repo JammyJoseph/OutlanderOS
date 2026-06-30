@@ -36,28 +36,31 @@ export const GET = withAdmin(async () => {
   return NextResponse.json(users);
 });
 
-// POST /api/admin/users — create a staff member (admin only).
+// Generates a readable 8-char alphanumeric temporary password. Excludes
+// ambiguous characters (0/O, 1/l/I) so admins can dictate it without confusion.
+function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  let out = "";
+  for (let i = 0; i < 8; i++) {
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
+}
+
+// POST /api/admin/users — create a staff member (admin only). A temporary
+// password is auto-generated and returned ONCE in the response so the admin can
+// share it; the new user must change it on first login (mustChangePassword).
 export const POST = withAdmin(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const password = typeof body.password === "string" ? body.password : "";
     const role = body.role === "ADMIN" ? "ADMIN" : "MEMBER";
     const teams = cleanTeams(body.teams);
     const department = typeof body.department === "string" ? body.department.trim() || null : null;
 
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: "Name, email and password are required" },
-        { status: 400 }
-      );
-    }
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
-        { status: 400 }
-      );
+    if (!name || !email) {
+      return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -65,13 +68,24 @@ export const POST = withAdmin(async (request: NextRequest) => {
       return NextResponse.json({ error: "A user with that email already exists" }, { status: 409 });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const tempPassword = generateTempPassword();
+    const hashed = await bcrypt.hash(tempPassword, 10);
     const user = await prisma.user.create({
-      data: { name, email, password: hashed, role, teams, department, isActive: true },
+      data: {
+        name,
+        email,
+        password: hashed,
+        role,
+        teams,
+        department,
+        isActive: true,
+        mustChangePassword: true,
+      },
       select: STAFF_SELECT,
     });
 
-    return NextResponse.json(user, { status: 201 });
+    // tempPassword is included only on creation and never stored in plaintext.
+    return NextResponse.json({ ...user, tempPassword }, { status: 201 });
   } catch (err) {
     console.error("POST /api/admin/users", err);
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 });

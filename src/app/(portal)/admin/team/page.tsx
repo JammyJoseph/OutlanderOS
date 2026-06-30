@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Mail, Plus, Pencil, Loader2, ShieldCheck, X, Check } from "lucide-react";
+import { Mail, Plus, Pencil, Loader2, ShieldCheck, X, Check, Copy, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Staff {
@@ -14,6 +14,13 @@ interface Staff {
   isActive: boolean;
   lastLoginAt: string | null;
   createdAt: string;
+}
+
+// Returned only on creation — the one-time temporary password to share securely.
+interface NewCredentials {
+  name: string;
+  email: string;
+  password: string;
 }
 
 const TEAMS = [
@@ -54,6 +61,7 @@ export default function TeamPage() {
   const [editing, setEditing] = useState<Staff | null>(null);
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [newCreds, setNewCreds] = useState<NewCredentials | null>(null);
 
   async function load() {
     setLoading(true);
@@ -244,13 +252,102 @@ export default function TeamPage() {
             setCreating(false);
             setEditing(null);
           }}
-          onSaved={(saved, isNew) => {
+          onSaved={(saved, isNew, tempPassword) => {
             setStaff((prev) => (isNew ? [saved, ...prev] : prev.map((u) => (u.id === saved.id ? saved : u))));
             setCreating(false);
             setEditing(null);
+            if (isNew && tempPassword) {
+              setNewCreds({ name: saved.name, email: saved.email, password: tempPassword });
+            }
           }}
         />
       )}
+
+      {newCreds && <CredentialsModal creds={newCreds} onClose={() => setNewCreds(null)} />}
+    </div>
+  );
+}
+
+// ─── New-account credentials modal (shown once) ───────────────────────────────
+
+function CredentialsModal({
+  creds,
+  onClose,
+}: {
+  creds: NewCredentials;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyCredentials() {
+    const text = `Email: ${creds.email} / Password: ${creds.password}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard blocked — admin can still read the values on screen */
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ffd700]/20">
+              <KeyRound className="h-4 w-4 text-[#9a7322]" />
+            </span>
+            <h2 className="text-base font-semibold text-gray-900">Account created</h2>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4 px-5 py-4">
+          <p className="text-sm text-gray-600">
+            Temporary password for <span className="font-medium text-gray-900">{creds.name}</span>.
+            Share it with the team member securely — they&apos;ll be prompted to change it on first
+            login.
+          </p>
+
+          <div className="space-y-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Email</span>
+              <span className="truncate font-mono text-sm text-gray-800">{creds.email}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                Password
+              </span>
+              <span className="select-all font-mono text-base font-semibold tracking-wider text-gray-900">
+                {creds.password}
+              </span>
+            </div>
+          </div>
+
+          <p className="text-xs text-amber-600">
+            This password won&apos;t be shown again. Copy it now if you need it.
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
+          <button
+            onClick={copyCredentials}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? "Copied" : "Copy credentials"}
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200]"
+          >
+            Done
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -264,7 +361,7 @@ function StaffModal({
 }: {
   staff: Staff | null;
   onClose: () => void;
-  onSaved: (s: Staff, isNew: boolean) => void;
+  onSaved: (s: Staff, isNew: boolean, tempPassword?: string) => void;
 }) {
   const isNew = !staff;
   const [name, setName] = useState(staff?.name ?? "");
@@ -282,8 +379,8 @@ function StaffModal({
 
   async function save() {
     setError(null);
-    if (!name.trim() || !email.trim() || (isNew && !password)) {
-      setError("Name, email" + (isNew ? " and password are" : " are") + " required.");
+    if (!name.trim() || !email.trim()) {
+      setError("Name and email are required.");
       return;
     }
     setSaving(true);
@@ -297,7 +394,9 @@ function StaffModal({
         teams,
         department: department.trim() || null,
       };
-      if (password) payload.password = password;
+      // New accounts get an auto-generated temporary password from the server.
+      // On edit, an admin may optionally set a new password.
+      if (!isNew && password) payload.password = password;
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -308,7 +407,8 @@ function StaffModal({
         setError(body.error || "Couldn't save.");
         return;
       }
-      onSaved(body as Staff, isNew);
+      const { tempPassword, ...saved } = body as Staff & { tempPassword?: string };
+      onSaved(saved as Staff, isNew, tempPassword);
     } finally {
       setSaving(false);
     }
@@ -343,18 +443,28 @@ function StaffModal({
               className={inputCls}
             />
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">
-              {isNew ? "Password" : "New password (leave blank to keep)"}
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={isNew ? "" : "••••••••"}
-              className={inputCls}
-            />
-          </div>
+          {isNew ? (
+            <div className="flex items-start gap-2 rounded-lg border border-[#ffd700]/40 bg-[#ffd700]/10 px-3 py-2.5">
+              <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9a7322]" />
+              <p className="text-xs text-gray-600">
+                A temporary password will be generated and shown once after creation. They&apos;ll be
+                prompted to change it on first login.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500">
+                New password (leave blank to keep)
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={inputCls}
+              />
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">Department</label>
             <input

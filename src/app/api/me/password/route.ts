@@ -22,7 +22,17 @@ export async function PUT(request: NextRequest) {
   if (!valid) return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 })
 
   const hash = await bcrypt.hash(newPassword, 10)
-  await prisma.user.update({ where: { id: me.userId }, data: { password: hash } })
+  // Clearing the temp password also lifts the first-login lock. We report back
+  // whether this was the user's onboarding change so the client can route them
+  // through the one-time welcome screen.
+  const wasOnboarding = user.mustChangePassword === true
+  await prisma.user.update({
+    where: { id: me.userId },
+    data: { password: hash, mustChangePassword: false },
+  })
 
-  return NextResponse.json({ ok: true })
+  const response = NextResponse.json({ ok: true, onboarding: wasOnboarding })
+  // Release the proxy lock so the user can navigate freely again.
+  response.cookies.set('must_change_pw', '', { maxAge: 0, path: '/' })
+  return response
 }

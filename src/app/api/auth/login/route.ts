@@ -44,11 +44,23 @@ export async function POST(request: NextRequest) {
 
   const response = NextResponse.json({
     user: { id: user.id, email: user.email, name: user.name, role: user.role },
+    mustChangePassword: user.mustChangePassword === true,
   })
   response.cookies.set('auth_token', token, {
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
+
+  // New accounts log in with a temporary password. Drop a lightweight flag the
+  // proxy uses to lock them onto the change-password screen until it's cleared.
+  if (user.mustChangePassword === true) {
+    response.cookies.set('must_change_pw', '1', {
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
+    })
+  } else {
+    response.cookies.set('must_change_pw', '', { maxAge: 0, path: '/' })
+  }
   return response
 }

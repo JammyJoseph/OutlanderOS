@@ -27,6 +27,11 @@ model User {
   isActive    Boolean   @default(true)
   lastLoginAt DateTime?
 
+  // Onboarding: new staff get a temporary password and must change it on first
+  // login; hasSeenWelcome gates the one-time welcome screen after that.
+  mustChangePassword Boolean @default(false)
+  hasSeenWelcome     Boolean @default(false)
+
   googleAccessToken  String?
   googleRefreshToken String?
   googleTokenExpiry  DateTime?

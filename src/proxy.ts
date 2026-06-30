@@ -28,6 +28,17 @@ export function proxy(request: NextRequest) {
     const payload = JSON.parse(atob(token.split('.')[1]))
     if (!payload.userId) throw new Error('Invalid token')
 
+    // First-login lock. Staff created by an admin carry a temporary password and
+    // a `must_change_pw` cookie (set at login). Until they set a real password —
+    // which clears the cookie in /api/me/password — every page bounces to the
+    // change-password screen so they can't reach anything else first.
+    if (
+      request.cookies.get('must_change_pw')?.value === '1' &&
+      pathname !== '/me/change-password'
+    ) {
+      return NextResponse.redirect(new URL('/me/change-password', request.url))
+    }
+
     if ((pathname.startsWith('/finance') || pathname.startsWith('/admin')) && payload.role !== 'ADMIN') {
       return NextResponse.redirect(new URL('/hub', request.url))
     }

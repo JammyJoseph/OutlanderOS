@@ -16,6 +16,9 @@ const SELECT = {
   googleConnected: true,
   googleEmail: true,
   theme: true,
+  teams: true,
+  mustChangePassword: true,
+  hasSeenWelcome: true,
   createdAt: true,
 } as const
 
@@ -71,6 +74,8 @@ export async function PATCH(request: NextRequest) {
   const data: Record<string, unknown> = {}
 
   if (body.theme === 'light' || body.theme === 'dark') data.theme = body.theme
+  // One-time onboarding welcome screen — can only be marked seen, never unseen.
+  if (body.hasSeenWelcome === true) data.hasSeenWelcome = true
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
