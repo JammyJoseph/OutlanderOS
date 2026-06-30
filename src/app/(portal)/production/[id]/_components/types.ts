@@ -53,6 +53,10 @@ export interface BudgetLineItem {
   id: string;
   productionId: string;
   category: string;
+  section: string | null;
+  role: string | null;
+  quantity: number | null;
+  rate: number | null;
   description: string;
   budgeted: number;
   actual: number;
@@ -147,6 +151,8 @@ export interface ProductionFull {
   trelloCardId: string | null;
   budgetTotal: number | null;
   budgetActual: number | null;
+  budgetMarkupPercent: number | null;
+  budgetVatPercent: number | null;
   productionBudgetStatus: ProductionBudgetStatus | null;
   productionLockedAt: string | null;
   archived?: boolean;
@@ -225,6 +231,126 @@ export const BUDGET_CATEGORIES: { key: string; label: string }[] = [
   { key: "internal", label: "Internal" },
   { key: "other", label: "Other" },
 ];
+
+// ── Industry-standard production budget sections ──
+// Each section groups line items; `template` lists the common roles seeded
+// when a budget is first set up; `costCategory` maps to the Finance CostEntry
+// category so production actuals land in the right Finance bucket. `accent`
+// is a Tailwind class applied to the left border / header tint of the section.
+export interface BudgetSectionDef {
+  key: string;
+  label: string;
+  costCategory: string;
+  accent: string; // left-border accent colour (Tailwind border-l-* — 400 shade, theme-stable)
+  template: string[]; // default role/item names seeded by the template
+}
+
+export const BUDGET_SECTIONS: BudgetSectionDef[] = [
+  {
+    key: "PRE_PRODUCTION",
+    label: "Pre-Production",
+    costCategory: "production",
+    accent: "border-l-blue-400",
+    template: ["Producer", "Production Manager", "Recce", "Insurance", "Contingency"],
+  },
+  {
+    key: "CAST_TALENT",
+    label: "Cast / Talent",
+    costCategory: "talent",
+    accent: "border-l-pink-400",
+    template: ["Lead Talent", "Extras / Background"],
+  },
+  {
+    key: "CREW",
+    label: "Crew",
+    costCategory: "production",
+    accent: "border-l-purple-400",
+    template: ["DOP / Videographer", "Camera Assistant", "Sound Recordist", "BTS"],
+  },
+  {
+    key: "STYLING_GLAM",
+    label: "Styling / Glam",
+    costCategory: "production",
+    accent: "border-l-rose-400",
+    template: ["Wardrobe Stylist", "Hair Stylist", "MUA"],
+  },
+  {
+    key: "LOCATIONS",
+    label: "Locations",
+    costCategory: "location",
+    accent: "border-l-emerald-400",
+    template: ["Location Fee", "Green Room / Base"],
+  },
+  {
+    key: "EQUIPMENT",
+    label: "Equipment",
+    costCategory: "equipment",
+    accent: "border-l-amber-400",
+    template: ["Lighting Kit", "Camera Kit", "Grip Kit"],
+  },
+  {
+    key: "TRANSPORT",
+    label: "Transport",
+    costCategory: "travel",
+    accent: "border-l-cyan-400",
+    template: ["Production Van", "Taxi / Mileage"],
+  },
+  {
+    key: "CATERING",
+    label: "Catering",
+    costCategory: "catering",
+    accent: "border-l-orange-400",
+    template: ["Crew Catering"],
+  },
+  {
+    key: "ART_DEPARTMENT",
+    label: "Art Department",
+    costCategory: "production",
+    accent: "border-l-teal-400",
+    template: ["Props"],
+  },
+  {
+    key: "POST_PRODUCTION",
+    label: "Post-Production",
+    costCategory: "production",
+    accent: "border-l-indigo-400",
+    template: ["Editor", "Colourist", "Retouching"],
+  },
+];
+
+// Map a legacy `category` value (pre-sections data + deal-imported splits) onto
+// the new section keys so existing line items still land in a sensible section.
+export const LEGACY_CATEGORY_TO_SECTION: Record<string, string> = {
+  production_company: "CREW",
+  styling: "STYLING_GLAM",
+  glam_mua: "STYLING_GLAM",
+  talent: "CAST_TALENT",
+  location: "LOCATIONS",
+  catering: "CATERING",
+  equipment: "EQUIPMENT",
+  travel: "TRANSPORT",
+  contingency: "PRE_PRODUCTION",
+  internal: "PRE_PRODUCTION",
+  other: "ART_DEPARTMENT",
+};
+
+// The section a line item belongs to: explicit `section`, else mapped from the
+// legacy category, else a catch-all.
+export function sectionOf(item: { section: string | null; category: string }): string {
+  if (item.section) return item.section;
+  return LEGACY_CATEGORY_TO_SECTION[item.category] ?? "ART_DEPARTMENT";
+}
+
+// Total for a line: quantity × rate when both are set, otherwise the manual
+// budgeted figure.
+export function lineTotal(item: {
+  quantity: number | null;
+  rate: number | null;
+  budgeted: number;
+}): number {
+  if (item.quantity != null && item.rate != null) return item.quantity * item.rate;
+  return item.budgeted || 0;
+}
 
 export const CREATIVE_TYPES: { key: string; label: string; color: string }[] = [
   { key: "brief", label: "Brief", color: "bg-blue-50 text-blue-700" },

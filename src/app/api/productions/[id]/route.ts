@@ -37,7 +37,7 @@ export const GET = withAuth(async (
           },
         },
         expenses: { orderBy: { createdAt: "asc" } },
-        budgetItems: { orderBy: [{ category: "asc" }, { sortOrder: "asc" }] },
+        budgetItems: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         productionTasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         teamMembers: { orderBy: [{ status: "desc" }, { createdAt: "asc" }] },
         creativeAssets: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
@@ -95,6 +95,29 @@ export const PUT = withAuth(async (
         : Number(body.budgetActual);
     }
     if (body.marginTarget !== undefined) updateData.marginTarget = body.marginTarget;
+    // Budget summary markup / VAT — production's own calculation (not the locked
+    // Commercial allocation), so editable independent of production type. Frozen
+    // once the budget is FINAL.
+    if (body.budgetMarkupPercent !== undefined || body.budgetVatPercent !== undefined) {
+      if (existing.productionBudgetStatus === "FINAL") {
+        return NextResponse.json(
+          { error: "This production budget is FINAL — markup and VAT can no longer be changed." },
+          { status: 403 }
+        );
+      }
+      if (body.budgetMarkupPercent !== undefined) {
+        updateData.budgetMarkupPercent =
+          body.budgetMarkupPercent === null || body.budgetMarkupPercent === ""
+            ? null
+            : Number(body.budgetMarkupPercent);
+      }
+      if (body.budgetVatPercent !== undefined) {
+        updateData.budgetVatPercent =
+          body.budgetVatPercent === null || body.budgetVatPercent === ""
+            ? null
+            : Number(body.budgetVatPercent);
+      }
+    }
     if (body.productionBudgetStatus !== undefined) {
       // Production budget lifecycle: BUDGETING → LOCKED → IN_PROGRESS → FINAL.
       // Unlocking back to BUDGETING from LOCKED/IN_PROGRESS is admin-only;

@@ -360,6 +360,8 @@ model Production {
   productionBudgetStatus String? // BUDGETING | LOCKED | IN_PROGRESS | FINAL
   productionLockedAt     DateTime?
   productionLockedBy     String? // userId who locked the production budget
+  budgetMarkupPercent    Float? // agency/production-company markup applied to the budget subtotal
+  budgetVatPercent       Float? // VAT rate applied on top of (subtotal + markup); defaults to 20% in the UI
   shootDates       DateTime[]
   archived         Boolean          @default(false)
   archivedAt       DateTime?
@@ -386,8 +388,12 @@ model BudgetLineItem {
   productionId String
   production   Production @relation("productionBudget", fields: [productionId], references: [id], onDelete: Cascade)
   category     String
+  section      String? // industry-standard grouping: PRE_PRODUCTION | CAST_TALENT | CREW | STYLING_GLAM | LOCATIONS | EQUIPMENT | TRANSPORT | CATERING | ART_DEPARTMENT | POST_PRODUCTION
+  role         String? // specific role/item name (e.g. "DOP", "Lead Talent", "Lighting Kit")
+  quantity     Float? // number of days/units
+  rate         Float? // £ per unit
   description  String
-  budgeted     Float      @default(0)
+  budgeted     Float      @default(0) // = quantity × rate when both set, else manual
   actual       Float      @default(0)
   notes        String?
   sortOrder    Int        @default(0)
