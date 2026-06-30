@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -18,17 +18,15 @@ import {
   Tags,
   Clock,
   ChevronRight,
-  ChevronLeft,
   ExternalLink,
   Pencil,
-  LayoutGrid,
-  List as ListIcon,
   Download,
   RefreshCw,
   Share2,
   CheckSquare,
   Square,
   UserPlus,
+  Users,
   ScanLine,
   Network as NetworkIcon,
   Sparkles,
@@ -94,7 +92,6 @@ interface ContactRecord {
 }
 
 type View = "contacts" | "categories" | "radar" | "recent" | "scanner" | "network";
-type DisplayMode = "grid" | "list";
 type SortKey = "name" | "category" | "rating" | "recent";
 
 function isView(v: string | null): v is View {
@@ -142,6 +139,47 @@ function igHandle(raw: string | null | undefined): string | null {
       .replace(/\/.*$/, "")
       .trim() || null
   );
+}
+
+// Compact follower count — "12.5K", "1.2M". Null when unknown.
+function fmtFollowers(n: number | null | undefined): string | null {
+  if (n == null || !Number.isFinite(n)) return null;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
+  return String(n);
+}
+
+// Free-text location → a coarse country for the Country filter. Locations are
+// entered loosely ("London", "Shoreditch, London, UK"), so we map well-known
+// cities to countries and fall back to the trailing comma segment.
+const CITY_COUNTRY: Record<string, string> = {
+  london: "UK", manchester: "UK", glasgow: "UK", edinburgh: "UK", bristol: "UK",
+  leeds: "UK", liverpool: "UK", birmingham: "UK", brighton: "UK", cardiff: "UK",
+  belfast: "UK", "new york": "USA", nyc: "USA", "los angeles": "USA", la: "USA",
+  miami: "USA", "san francisco": "USA", chicago: "USA", paris: "France",
+  milan: "Italy", rome: "Italy", berlin: "Germany", munich: "Germany",
+  madrid: "Spain", barcelona: "Spain", amsterdam: "Netherlands", dublin: "Ireland",
+  lisbon: "Portugal", copenhagen: "Denmark", stockholm: "Sweden", sydney: "Australia",
+  melbourne: "Australia", toronto: "Canada", dubai: "UAE", "abu dhabi": "UAE",
+  tokyo: "Japan", "cape town": "South Africa", lagos: "Nigeria",
+};
+const COUNTRY_ALIASES: Record<string, string> = {
+  uk: "UK", "united kingdom": "UK", england: "UK", scotland: "UK", wales: "UK",
+  gb: "UK", "great britain": "UK", usa: "USA", us: "USA", "united states": "USA",
+  america: "USA", uae: "UAE",
+};
+function countryOf(location: string | null | undefined): string | null {
+  if (!location) return null;
+  const parts = location.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return null;
+  const tail = parts[parts.length - 1];
+  const aliased = COUNTRY_ALIASES[tail.toLowerCase()];
+  if (aliased) return aliased;
+  for (const p of parts) {
+    const c = CITY_COUNTRY[p.toLowerCase()];
+    if (c) return c;
+  }
+  return tail.length <= 24 ? tail : null;
 }
 
 // Builds the WhatsApp/text share block from selected contacts.
@@ -240,8 +278,8 @@ function Directory() {
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("");
+  const [country, setCountry] = useState<string>("");
   const [radarStatusFilter, setRadarStatusFilter] = useState<string>("");
-  const [displayMode, setDisplayMode] = useState<DisplayMode>("grid");
   const [sortKey, setSortKey] = useState<SortKey>("recent");
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -249,9 +287,6 @@ function Directory() {
 
   const [editing, setEditing] = useState<ContactRecord | null | undefined>(undefined);
   const [addingRadar, setAddingRadar] = useState<ContactRecord | null | undefined>(undefined);
-
-  // Quick-view sidebar — index into the currently displayed contact list.
-  const [quickViewIndex, setQuickViewIndex] = useState<number | null>(null);
 
   const [importing, setImporting] = useState(false);
 
@@ -430,6 +465,22 @@ function Directory() {
     return view === "recent" ? arr.slice(0, 60) : arr;
   }, [contacts, sortKey, view]);
 
+  // Distinct countries present in the loaded contacts, most common first.
+  const countryOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of contacts) {
+      const co = countryOf(c.location);
+      if (co) counts.set(co, (counts.get(co) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c);
+  }, [contacts]);
+
+  // Country filtering happens client-side against the coarse countryOf().
+  const displayedContacts = useMemo(
+    () => (country ? sortedContacts.filter((c) => countryOf(c.location) === country) : sortedContacts),
+    [sortedContacts, country]
+  );
+
   const selectedContacts = useMemo(
     () => contacts.filter((c) => selected.has(c.id)),
     [contacts, selected]
@@ -577,24 +628,21 @@ function Directory() {
                   <option value="category">Category</option>
                   <option value="rating">Rating</option>
                 </select>
-                <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
-                  <button
-                    onClick={() => setDisplayMode("grid")}
-                    className={`rounded-md p-1.5 ${displayMode === "grid" ? "text-black" : "text-gray-500 hover:text-gray-900"}`}
-                    style={displayMode === "grid" ? { backgroundColor: ACCENT } : undefined}
-                    title="Grid view"
+                {countryOptions.length > 0 && (
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className={`${inputCls} w-auto`}
+                    title="Filter by country"
                   >
-                    <LayoutGrid size={15} />
-                  </button>
-                  <button
-                    onClick={() => setDisplayMode("list")}
-                    className={`rounded-md p-1.5 ${displayMode === "list" ? "text-black" : "text-gray-500 hover:text-gray-900"}`}
-                    style={displayMode === "list" ? { backgroundColor: ACCENT } : undefined}
-                    title="List view"
-                  >
-                    <ListIcon size={15} />
-                  </button>
-                </div>
+                    <option value="">All countries</option>
+                    {countryOptions.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </>
             )}
             {view === "radar" && (
@@ -611,11 +659,12 @@ function Directory() {
                 ))}
               </select>
             )}
-            {(search || category || radarStatusFilter || sortKey !== "recent") && (
+            {(search || category || country || radarStatusFilter || sortKey !== "recent") && (
               <button
                 onClick={() => {
                   setSearch("");
                   setCategory("");
+                  setCountry("");
                   setRadarStatusFilter("");
                   setSortKey("recent");
                 }}
@@ -695,28 +744,15 @@ function Directory() {
             onConvert={convertRadar}
           />
         ) : (
-          <ContactsView
-            contacts={sortedContacts}
-            mode={displayMode}
+          <SplitPanel
+            contacts={displayedContacts}
             selected={selected}
             onToggleSelect={toggleSelect}
             onEdit={(c) => setEditing(c)}
             onAdd={() => setEditing(null)}
-            onOpen={(i) => setQuickViewIndex(i)}
           />
         )}
       </div>
-
-      {/* Quick-view slide-in sidebar */}
-      {quickViewIndex != null && sortedContacts[quickViewIndex] && (
-        <QuickViewSidebar
-          list={sortedContacts}
-          index={quickViewIndex}
-          onIndex={setQuickViewIndex}
-          onClose={() => setQuickViewIndex(null)}
-          onEdit={(c) => setEditing(c)}
-        />
-      )}
 
       {/* Floating share bar */}
       {selected.size > 0 && (
@@ -772,67 +808,153 @@ function Directory() {
   );
 }
 
-// ── Contacts view (grid / list) ────────────────────────────────────────────────
+// ── Contacts split-panel (list + detail) ───────────────────────────────────────
 
-function ContactsView({
+function SplitPanel({
   contacts,
-  mode,
   selected,
   onToggleSelect,
   onEdit,
   onAdd,
-  onOpen,
 }: {
   contacts: ContactRecord[];
-  mode: DisplayMode;
   selected: Set<string>;
   onToggleSelect: (id: string) => void;
   onEdit: (c: ContactRecord) => void;
   onAdd: () => void;
-  onOpen: (index: number) => void;
 }) {
+  // The highlighted contact, tracked by id so it survives list re-sorts/filters.
+  const [activeId, setActiveId] = useState<string | null>(contacts[0]?.id ?? null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Default to (or fall back to) the first contact whenever the list changes.
+  useEffect(() => {
+    if (contacts.length === 0) {
+      setActiveId(null);
+    } else if (!contacts.some((c) => c.id === activeId)) {
+      setActiveId(contacts[0].id);
+    }
+  }, [contacts, activeId]);
+
+  const active = contacts.find((c) => c.id === activeId) ?? contacts[0] ?? null;
+
+  // Arrow keys move the highlight up/down the list (ignored while typing).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      const idx = contacts.findIndex((c) => c.id === activeId);
+      const cur = idx < 0 ? 0 : idx;
+      const next =
+        e.key === "ArrowDown"
+          ? Math.min(cur + 1, contacts.length - 1)
+          : Math.max(cur - 1, 0);
+      setActiveId(contacts[next]?.id ?? null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [contacts, activeId]);
+
+  // Keep the highlighted row visible as the selection moves.
+  useEffect(() => {
+    if (!activeId) return;
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-cid="${activeId}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [activeId]);
+
   if (contacts.length === 0) {
     return (
       <EmptyState
         icon={ContactIcon}
-        title="No contacts yet"
-        body="Build out Outlander's network — import your master sheet, or add photographers, stylists and brand contacts."
-        action="Add your first contact"
+        title="No contacts found"
+        body="Nothing matches these filters yet. Clear the search, category or country filter — or add a new contact."
+        action="Add a contact"
         onAction={onAdd}
       />
     );
   }
 
-  if (mode === "list") {
-    return (
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
-        {contacts.map((c, i) => (
-          <ContactRow
-            key={c.id}
-            contact={c}
-            selected={selected.has(c.id)}
-            onToggleSelect={() => onToggleSelect(c.id)}
-            onEdit={() => onEdit(c)}
-            onOpen={() => onOpen(i)}
-            last={i === contacts.length - 1}
-          />
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {contacts.map((c, i) => (
-        <ContactCard
-          key={c.id}
-          contact={c}
-          selected={selected.has(c.id)}
-          onToggleSelect={() => onToggleSelect(c.id)}
-          onEdit={() => onEdit(c)}
-          onOpen={() => onOpen(i)}
-        />
-      ))}
+    <div className="flex flex-col gap-4 lg:h-[calc(100dvh-330px)] lg:min-h-[560px] lg:flex-row">
+      {/* Left — contact list */}
+      <div className="flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card lg:w-2/5">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-4 py-2.5 backdrop-blur">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
+            {contacts.length} contact{contacts.length === 1 ? "" : "s"}
+          </p>
+          <p className="hidden text-[10px] text-gray-400 sm:block">↑ ↓ to browse</p>
+        </div>
+        <div ref={listRef} className="flex-1 overflow-y-auto">
+          {contacts.map((c) => (
+            <SplitRow
+              key={c.id}
+              contact={c}
+              active={c.id === active?.id}
+              selected={selected.has(c.id)}
+              onSelect={() => setActiveId(c.id)}
+              onToggleSelect={() => onToggleSelect(c.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Right — contact detail */}
+      <div className="flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card lg:w-3/5">
+        {active && <ContactDetailPanel key={active.id} contact={active} onEdit={onEdit} />}
+      </div>
+    </div>
+  );
+}
+
+function SplitRow({
+  contact: c,
+  active,
+  selected,
+  onSelect,
+  onToggleSelect,
+}: {
+  contact: ContactRecord;
+  active: boolean;
+  selected: boolean;
+  onSelect: () => void;
+  onToggleSelect: () => void;
+}) {
+  const handle = igHandle(c.instagram);
+  const followers = fmtFollowers(c.followers);
+  return (
+    <div
+      data-cid={c.id}
+      onClick={onSelect}
+      className={`flex cursor-pointer items-center gap-2.5 border-b border-border px-3 py-2.5 transition-colors ${
+        active ? "bg-secondary" : "hover:bg-secondary/60"
+      }`}
+      style={active ? { boxShadow: `inset 3px 0 0 ${ACCENT}` } : undefined}
+    >
+      <SelectBox selected={selected} onToggle={onToggleSelect} />
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500">
+        {c.name.slice(0, 2).toUpperCase()}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
+        <div className="flex items-center gap-2 text-[11px] text-gray-500">
+          {handle ? (
+            <span className="truncate font-medium text-[#dc2743]">@{handle}</span>
+          ) : (
+            <span className="truncate">{c.role || c.company || "—"}</span>
+          )}
+          {followers && (
+            <span className="inline-flex shrink-0 items-center gap-0.5" title="Followers">
+              <Users size={10} /> {followers}
+            </span>
+          )}
+        </div>
+      </div>
+      <span className="hidden shrink-0 sm:block">
+        <CategoryBadge category={c.category} />
+      </span>
     </div>
   );
 }
@@ -854,193 +976,7 @@ function SelectBox({ selected, onToggle }: { selected: boolean; onToggle: () => 
   );
 }
 
-function QuickActions({ contact, onEdit }: { contact: ContactRecord; onEdit: () => void }) {
-  const handle = igHandle(contact.instagram);
-  return (
-    <div className="flex items-center gap-1.5">
-      {contact.email && (
-        <a
-          href={`mailto:${contact.email}`}
-          onClick={(e) => e.stopPropagation()}
-          className="rounded-md p-1.5 text-gray-500 hover:bg-secondary hover:text-gray-900"
-          title="Email"
-        >
-          <Mail size={14} />
-        </a>
-      )}
-      {contact.phone && (
-        <a
-          href={`tel:${contact.phone}`}
-          onClick={(e) => e.stopPropagation()}
-          className="rounded-md p-1.5 text-gray-500 hover:bg-secondary hover:text-gray-900"
-          title="Call"
-        >
-          <Phone size={14} />
-        </a>
-      )}
-      {handle && (
-        <a
-          href={`https://www.instagram.com/${handle}/`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="rounded-md p-1.5 text-gray-500 hover:bg-secondary hover:text-[#dc2743]"
-          title={`@${handle}`}
-        >
-          <Instagram size={14} />
-        </a>
-      )}
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onEdit();
-        }}
-        className="rounded-md p-1.5 text-gray-500 hover:bg-secondary hover:text-gray-900"
-        title="Edit"
-      >
-        <Pencil size={14} />
-      </button>
-    </div>
-  );
-}
-
-function ContactCard({
-  contact: c,
-  selected,
-  onToggleSelect,
-  onEdit,
-  onOpen,
-}: {
-  contact: ContactRecord;
-  selected: boolean;
-  onToggleSelect: () => void;
-  onEdit: () => void;
-  onOpen: () => void;
-}) {
-  const handle = igHandle(c.instagram);
-  return (
-    <Link
-      href={`/directory/${c.id}`}
-      onClick={(e) => {
-        // Plain click opens the quick-view sidebar; modifier-click still opens
-        // the full profile page (new tab etc.).
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        onOpen();
-      }}
-      className={`group relative flex flex-col gap-2 rounded-xl border bg-card p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--ring)] hover:shadow-lg ${
-        selected ? "border-[var(--ring)]" : "border-border"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2.5 min-w-0">
-          <span
-            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-gray-500"
-            aria-hidden
-          >
-            {c.name.slice(0, 2).toUpperCase()}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
-            {(c.role || c.company) && (
-              <p className="truncate text-xs text-gray-500">
-                {[c.role, c.company].filter(Boolean).join(" · ")}
-              </p>
-            )}
-          </div>
-        </div>
-        <SelectBox selected={selected} onToggle={onToggleSelect} />
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <CategoryBadge category={c.category} />
-        {c.source === "instagram_scan" && c.confidence && (
-          <ConfidenceBadge confidence={c.confidence} />
-        )}
-        {c.rating ? <Stars rating={c.rating} /> : null}
-        {c.location && (
-          <span className="inline-flex items-center gap-1 text-[10px] text-gray-500">
-            <MapPin size={10} /> {c.location}
-          </span>
-        )}
-      </div>
-      {handle && (
-        <span className="inline-flex w-fit items-center gap-1 text-[11px] font-medium text-[#dc2743]">
-          <Instagram size={11} /> @{handle}
-        </span>
-      )}
-      <div className="mt-1 flex items-center justify-between border-t border-border pt-2">
-        <span className="truncate text-[11px] text-gray-600">
-          {c.email || c.phone || ""}
-        </span>
-        <span className="opacity-0 transition-opacity group-hover:opacity-100">
-          <QuickActions contact={c} onEdit={onEdit} />
-        </span>
-      </div>
-    </Link>
-  );
-}
-
-function ContactRow({
-  contact: c,
-  selected,
-  onToggleSelect,
-  onEdit,
-  onOpen,
-  last,
-}: {
-  contact: ContactRecord;
-  selected: boolean;
-  onToggleSelect: () => void;
-  onEdit: () => void;
-  onOpen: () => void;
-  last: boolean;
-}) {
-  const handle = igHandle(c.instagram);
-  return (
-    <Link
-      href={`/directory/${c.id}`}
-      onClick={(e) => {
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        onOpen();
-      }}
-      className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary ${
-        last ? "" : "border-b border-border"
-      } ${selected ? "bg-secondary" : ""}`}
-    >
-      <SelectBox selected={selected} onToggle={onToggleSelect} />
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500">
-        {c.name.slice(0, 2).toUpperCase()}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
-          {c.rating ? <Stars rating={c.rating} /> : null}
-          {c.source === "instagram_scan" && c.confidence && (
-            <ConfidenceBadge confidence={c.confidence} />
-          )}
-        </div>
-        <p className="truncate text-xs text-gray-500">
-          {[c.role, c.company].filter(Boolean).join(" · ")}
-        </p>
-      </div>
-      <div className="hidden w-32 shrink-0 sm:block">
-        <CategoryBadge category={c.category} />
-      </div>
-      {handle && (
-        <span className="hidden items-center gap-1 text-[11px] font-medium text-[#dc2743] md:inline-flex">
-          <Instagram size={11} /> @{handle}
-        </span>
-      )}
-      <span className="opacity-0 transition-opacity group-hover:opacity-100">
-        <QuickActions contact={c} onEdit={onEdit} />
-      </span>
-    </Link>
-  );
-}
-
-// ── Quick-view sidebar ──────────────────────────────────────────────────────────
+// ── Contact detail panel ────────────────────────────────────────────────────────
 
 interface Collaboration {
   productionId: string;
@@ -1053,51 +989,19 @@ interface ContactDetail extends ContactRecord {
   collaborations?: Collaboration[];
 }
 
-function QuickViewSidebar({
-  list,
-  index,
-  onIndex,
-  onClose,
+function ContactDetailPanel({
+  contact,
   onEdit,
 }: {
-  list: ContactRecord[];
-  index: number;
-  onIndex: (i: number) => void;
-  onClose: () => void;
+  contact: ContactRecord;
   onEdit: (c: ContactRecord) => void;
 }) {
-  const current = list[index];
-  const [shown, setShown] = useState(false);
   const [detail, setDetail] = useState<ContactDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Trigger the slide-in once mounted.
+  // Pull the full profile (collaborations, portfolio, etc.) for the selection.
+  const id = contact.id;
   useEffect(() => {
-    const t = requestAnimationFrame(() => setShown(true));
-    return () => cancelAnimationFrame(t);
-  }, []);
-
-  // Arrow keys move through the list; Escape closes.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        onClose();
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        if (index < list.length - 1) onIndex(index + 1);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (index > 0) onIndex(index - 1);
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [index, list.length, onIndex, onClose]);
-
-  // Pull the full profile (collaborations, portfolio, etc.) for the current id.
-  const id = current?.id;
-  useEffect(() => {
-    if (!id) return;
     let active = true;
     setLoading(true);
     setDetail(null);
@@ -1115,252 +1019,229 @@ function QuickViewSidebar({
     };
   }, [id]);
 
-  if (!current) return null;
-
-  const c: ContactDetail = detail ?? current;
+  const c: ContactDetail = detail ?? contact;
   const handle = igHandle(c.instagram);
+  const followers = fmtFollowers(c.followers);
   const collaborations = detail?.collaborations ?? [];
   const portfolio = c.portfolioLinks ?? [];
   const tags = c.tags ?? [];
 
   return (
-    <div className="fixed inset-0 z-50">
-      {/* Overlay */}
-      <div
-        onClick={onClose}
-        className={`absolute inset-0 bg-black/40 backdrop-blur-[1px] transition-opacity duration-300 ${
-          shown ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      {/* Panel */}
-      <aside
-        className={`absolute top-0 right-0 h-full w-full max-w-[480px] overflow-y-auto border-l border-border bg-card shadow-2xl transition-transform duration-300 ${
-          shown ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        {/* Nav header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-card/95 px-4 py-3 backdrop-blur">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => index > 0 && onIndex(index - 1)}
-              disabled={index === 0}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40"
-              title="Previous (↑)"
-            >
-              <ChevronLeft size={14} /> Prev
-            </button>
-            <span className="px-2 text-xs font-medium text-gray-500 tabular-nums">
-              {index + 1} of {list.length}
-            </span>
-            <button
-              onClick={() => index < list.length - 1 && onIndex(index + 1)}
-              disabled={index >= list.length - 1}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40"
-              title="Next (↓)"
-            >
-              Next <ChevronRight size={14} />
-            </button>
-          </div>
+    <>
+      {/* Sticky header */}
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-card/95 px-5 py-3 backdrop-blur">
+        <p className="min-w-0 truncate text-sm font-semibold text-gray-900">{c.name}</p>
+        <div className="flex shrink-0 items-center gap-2">
           <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-500 hover:bg-secondary hover:text-gray-900"
-            title="Close (Esc)"
+            onClick={() => onEdit(contact)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900"
           >
-            <X size={18} />
+            <Pencil size={13} /> Edit
           </button>
+          <Link
+            href={`/directory/${c.id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-black transition-opacity hover:opacity-90"
+            style={{ backgroundColor: ACCENT }}
+          >
+            Open Full Profile <ChevronRight size={13} />
+          </Link>
+        </div>
+      </div>
+
+      <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+        {/* Identity */}
+        <div>
+          <div className="flex items-start gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-gray-500">
+              {c.name.slice(0, 2).toUpperCase()}
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl font-semibold leading-tight text-gray-900">{c.name}</h2>
+              {(c.role || c.company) && (
+                <p className="mt-0.5 text-sm text-gray-500">
+                  {[c.role, c.company].filter(Boolean).join(" · ")}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <CategoryBadge category={c.category} />
+            {c.source === "instagram_scan" && c.confidence && (
+              <ConfidenceBadge confidence={c.confidence} />
+            )}
+            {c.rating ? <Stars rating={c.rating} /> : null}
+            {c.location && (
+              <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                <MapPin size={12} /> {c.location}
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-5 px-5 py-5">
-          {/* Identity */}
-          <div>
-            <div className="flex items-start gap-3">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-gray-500">
-                {c.name.slice(0, 2).toUpperCase()}
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-xl font-semibold leading-tight text-gray-900">{c.name}</h2>
-                {(c.role || c.company) && (
-                  <p className="mt-0.5 text-sm text-gray-500">
-                    {[c.role, c.company].filter(Boolean).join(" · ")}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <CategoryBadge category={c.category} />
-              {c.source === "instagram_scan" && c.confidence && (
-                <ConfidenceBadge confidence={c.confidence} />
-              )}
-              {c.rating ? <Stars rating={c.rating} /> : null}
-            </div>
-          </div>
-
-          {/* Contact details */}
-          <div className="space-y-2">
-            {handle && (
+        {/* Instagram + follower count, prominent */}
+        {(handle || followers) && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
+            {handle ? (
               <a
                 href={`https://www.instagram.com/${handle}/`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-medium text-[#dc2743] hover:underline"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-[#dc2743] hover:underline"
               >
-                <Instagram size={15} /> @{handle}
+                <Instagram size={16} /> @{handle}
               </a>
+            ) : (
+              <span className="text-sm text-gray-500">Instagram</span>
             )}
-            <div className="grid grid-cols-1 gap-1.5 text-sm text-gray-600">
-              {c.email && (
-                <a href={`mailto:${c.email}`} className="inline-flex items-center gap-2 hover:text-gray-900">
-                  <Mail size={14} className="text-gray-400" /> {c.email}
-                </a>
-              )}
-              {c.phone && (
-                <a href={`tel:${c.phone}`} className="inline-flex items-center gap-2 hover:text-gray-900">
-                  <Phone size={14} className="text-gray-400" /> {c.phone}
-                </a>
-              )}
-              {c.location && (
-                <span className="inline-flex items-center gap-2">
-                  <MapPin size={14} className="text-gray-400" /> {c.location}
+            {followers && (
+              <span className="text-right">
+                <span className="block text-base font-bold text-gray-900 tabular-nums">
+                  {followers}
                 </span>
-              )}
-              {c.website && (
-                <a
-                  href={c.website.startsWith("http") ? c.website : `https://${c.website}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 hover:text-gray-900"
-                >
-                  <ExternalLink size={14} className="text-gray-400" /> {c.website}
-                </a>
-              )}
-            </div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                  Followers
+                </span>
+              </span>
+            )}
           </div>
+        )}
 
-          {/* Instagram preview */}
-          {handle && (
-            <div>
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                Instagram
-              </p>
-              <div className="overflow-hidden rounded-xl border border-border bg-background">
-                <iframe
-                  key={handle}
-                  src={`https://www.instagram.com/${handle}/embed/`}
-                  title={`@${handle} on Instagram`}
-                  className="h-[320px] w-full"
-                  loading="lazy"
-                  scrolling="no"
-                />
-              </div>
-              <a
-                href={`https://www.instagram.com/${handle}/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900"
-              >
-                <ExternalLink size={12} /> View on Instagram if the preview doesn&apos;t load
-              </a>
-            </div>
+        {/* Contact details */}
+        <div className="grid grid-cols-1 gap-1.5 text-sm text-gray-600">
+          {c.email && (
+            <a href={`mailto:${c.email}`} className="inline-flex items-center gap-2 hover:text-gray-900">
+              <Mail size={14} className="text-gray-400" /> {c.email}
+            </a>
           )}
-
-          {/* Bio / notes */}
-          {c.notes && (
-            <div>
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                Notes
-              </p>
-              <p className="whitespace-pre-wrap text-sm text-gray-600">{c.notes}</p>
-            </div>
+          {c.phone && (
+            <a href={`tel:${c.phone}`} className="inline-flex items-center gap-2 hover:text-gray-900">
+              <Phone size={14} className="text-gray-400" /> {c.phone}
+            </a>
           )}
-
-          {/* Tags */}
-          {tags.length > 0 && (
-            <div>
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                Tags
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-gray-600"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
+          {c.location && (
+            <span className="inline-flex items-center gap-2">
+              <MapPin size={14} className="text-gray-400" /> {c.location}
+            </span>
           )}
-
-          {/* Portfolio */}
-          {portfolio.length > 0 && (
-            <div>
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                Portfolio
-              </p>
-              <div className="space-y-1.5">
-                {portfolio.map((p, i) => (
-                  <a
-                    key={i}
-                    href={p.url.startsWith("http") ? p.url : `https://${p.url}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex w-full items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-600 hover:border-[var(--ring)] hover:text-gray-900"
-                  >
-                    <ExternalLink size={13} className="text-gray-400" />
-                    <span className="truncate">{p.title || p.url}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
+          {c.website && (
+            <a
+              href={c.website.startsWith("http") ? c.website : `https://${c.website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 hover:text-gray-900"
+            >
+              <ExternalLink size={14} className="text-gray-400" /> {c.website}
+            </a>
           )}
+        </div>
 
-          {/* Collaboration history */}
+        {/* Instagram preview */}
+        {handle && (
           <div>
             <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-              Collaboration history
+              Instagram
             </p>
-            {loading ? (
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <Loader2 size={14} className="animate-spin" /> Loading…
-              </div>
-            ) : collaborations.length === 0 ? (
-              <p className="text-xs text-gray-400">No productions linked yet.</p>
-            ) : (
-              <div className="space-y-1.5">
-                {collaborations.map((col) => (
-                  <Link
-                    key={`${col.productionId}-${col.role}`}
-                    href={`/production/${col.productionId}`}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm hover:border-[var(--ring)]"
-                  >
-                    <span className="truncate text-gray-700">{col.productionTitle}</span>
-                    <span className="shrink-0 text-xs text-gray-400">{col.role}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
+            <div className="overflow-hidden rounded-xl border border-border bg-background">
+              <iframe
+                key={handle}
+                src={`https://www.instagram.com/${handle}/embed/`}
+                title={`@${handle} on Instagram`}
+                className="h-[360px] w-full"
+                loading="lazy"
+                scrolling="no"
+              />
+            </div>
+            <a
+              href={`https://www.instagram.com/${handle}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900"
+            >
+              <ExternalLink size={12} /> View on Instagram if the preview doesn&apos;t load
+            </a>
           </div>
+        )}
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 border-t border-border pt-4">
-            <Link
-              href={`/directory/${c.id}`}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
-              style={{ backgroundColor: ACCENT }}
-            >
-              Open full profile <ChevronRight size={15} />
-            </Link>
-            <button
-              onClick={() => onEdit(current)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900"
-            >
-              <Pencil size={14} /> Edit
-            </button>
+        {/* Bio / notes */}
+        {c.notes && (
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              Bio / Notes
+            </p>
+            <p className="whitespace-pre-wrap text-sm text-gray-600">{c.notes}</p>
           </div>
+        )}
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              Tags
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-gray-600"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Portfolio */}
+        {portfolio.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              Portfolio
+            </p>
+            <div className="space-y-1.5">
+              {portfolio.map((p, i) => (
+                <a
+                  key={i}
+                  href={p.url.startsWith("http") ? p.url : `https://${p.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-600 hover:border-[var(--ring)] hover:text-gray-900"
+                >
+                  <ExternalLink size={13} className="text-gray-400" />
+                  <span className="truncate">{p.title || p.url}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Collaboration history */}
+        <div>
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            Collaboration history
+          </p>
+          {loading ? (
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <Loader2 size={14} className="animate-spin" /> Loading…
+            </div>
+          ) : collaborations.length === 0 ? (
+            <p className="text-xs text-gray-400">No productions linked yet.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {collaborations.map((col) => (
+                <Link
+                  key={`${col.productionId}-${col.role}`}
+                  href={`/production/${col.productionId}`}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm hover:border-[var(--ring)]"
+                >
+                  <span className="truncate text-gray-700">{col.productionTitle}</span>
+                  <span className="shrink-0 text-xs text-gray-400">{col.role}</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
-      </aside>
-    </div>
+      </div>
+    </>
   );
 }
 
