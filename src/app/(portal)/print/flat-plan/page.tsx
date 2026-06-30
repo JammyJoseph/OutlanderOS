@@ -796,9 +796,26 @@ function SignatureBlock({
   const bodyStart = isFirst ? 3 : 0;
   const bodySlots = slots.slice(bodyStart);
 
-  // Chunk the body into rows of 16 (8 spreads); each row pairs slots into spreads.
-  const rows: number[][] = [];
-  for (let i = 0; i < bodySlots.length; i += 16) rows.push(bodySlots.slice(i, i + 16));
+  // Split the body into runs of normal vs gatefold pages, preserving order. A
+  // gatefold is a fold-out strip of panels, so it gets its own row of uniform
+  // single cards (NOT an over-wide card) — exactly how it reads in the printed
+  // flat plan. Normal runs chunk into rows of 16.
+  const runs: { gatefold: boolean; slots: number[] }[] = [];
+  for (const slot of bodySlots) {
+    const gf = !!sig.pages[slot]?.isGatefold;
+    const last = runs[runs.length - 1];
+    if (last && last.gatefold === gf) last.slots.push(slot);
+    else runs.push({ gatefold: gf, slots: [slot] });
+  }
+  const bodyRows: { gatefold: boolean; slots: number[] }[] = [];
+  for (const run of runs) {
+    if (run.gatefold) {
+      bodyRows.push(run);
+    } else {
+      for (let i = 0; i < run.slots.length; i += 16)
+        bodyRows.push({ gatefold: false, slots: run.slots.slice(i, i + 16) });
+    }
+  }
 
   const slotProps = (slot: number) => ({
     si,
@@ -908,7 +925,7 @@ function SignatureBlock({
             <div className="flex items-start gap-[3px]">
               {coverSingle !== null && <PageSlot {...slotProps(coverSingle)} />}
               {coverSpread && (
-                <div className="flex gap-[1.5px]">
+                <div className="flex gap-[1px]">
                   <PageSlot {...slotProps(coverSpread[0])} />
                   {coverSpread[1] !== null ? (
                     <PageSlot {...slotProps(coverSpread[1])} />
@@ -922,25 +939,35 @@ function SignatureBlock({
             </div>
           )}
 
-          {/* Body rows of 16 (8 tight spreads) */}
-          {rows.map((row, ri) => (
-            <div key={ri} className="flex items-start gap-[3px]">
-              {Array.from({ length: Math.ceil(row.length / 2) }, (_, sp) => {
-                const left = row[sp * 2];
-                const right = row[sp * 2 + 1];
-                return (
-                  <div key={sp} className="flex gap-[1.5px]">
-                    <PageSlot {...slotProps(left)} />
-                    {right !== undefined ? (
-                      <PageSlot {...slotProps(right)} />
-                    ) : (
-                      <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-border" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+          {/* Body rows. A normal 16pp row reads as the signature folds: a single
+              right-hand page, seven tight spreads, then a single left-hand page.
+              Facing pages within a spread sit flush (1px); spreads are split by a
+              3px gap. Gatefold runs render as their own row of uniform singles. */}
+          {bodyRows.map((row, ri) =>
+            row.gatefold ? (
+              <div key={ri} className="flex items-start gap-[3px]">
+                {row.slots.map((slot) => (
+                  <PageSlot key={slot} {...slotProps(slot)} />
+                ))}
+              </div>
+            ) : (
+              <div key={ri} className="flex items-start gap-[3px]">
+                {/* leading single right-hand page */}
+                <PageSlot {...slotProps(row.slots[0])} />
+                {/* tight spreads, with the trailing odd page as a single */}
+                {Array.from({ length: Math.ceil((row.slots.length - 1) / 2) }, (_, sp) => {
+                  const left = row.slots[1 + sp * 2];
+                  const right = row.slots[1 + sp * 2 + 1];
+                  return (
+                    <div key={sp} className="flex gap-[1px]">
+                      <PageSlot {...slotProps(left)} />
+                      {right !== undefined && <PageSlot {...slotProps(right)} />}
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
         </div>
       </div>
     </div>
@@ -1011,9 +1038,9 @@ function PageSlot({
         onDragOver={onDragOver}
         onDrop={onPageDrop}
         onClick={() => onOpen(globalIndex)}
-        className={`group relative flex h-[86px] cursor-grab flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2 active:cursor-grabbing ${
-          isGatefold ? "w-[96px]" : "w-[64px]"
-        } ${dragging ? "opacity-40" : ""}`}
+        className={`group relative flex h-[86px] w-[64px] cursor-grab flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2 active:cursor-grabbing ${
+          dragging ? "opacity-40" : ""
+        }`}
         style={{
           background: isSpace ? "var(--secondary)" : `${colour}5e`, // ~37% tint
           // @ts-expect-error CSS custom prop for hover ring
@@ -1051,7 +1078,7 @@ function PageSlot({
           )}
         </div>
         <p className="mt-0.5 line-clamp-3 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-900">
-          {isSpace ? <span className="text-gray-500">Space</span> : truncate(page.feature, isGatefold ? 40 : 28)}
+          {isSpace ? <span className="text-gray-500">Space</span> : truncate(page.feature, 28)}
         </p>
         {(isCover || isBack || isGatefold) && (
           <span className="mt-auto flex flex-wrap gap-0.5 pl-1">
@@ -1218,7 +1245,7 @@ function openPrintWindow(issueName: string, issueNumber: number, pages: Magazine
     .meta{font-size:11px;color:#666;margin-bottom:16px}
     .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
     .card{border:1px solid #e5e5e5;border-radius:4px;padding:6px;min-height:72px;break-inside:avoid}
-    .card.gf{grid-column:span 2;outline:1px dashed #999;outline-offset:-3px}
+    .card.gf{outline:1px dashed #999;outline-offset:-3px}
     .gflbl{display:inline-block;background:#111;color:#fff;font-size:6px;padding:0 3px;border-radius:2px;vertical-align:middle}
     .pn{font-size:9px;font-weight:700;color:#999}
     .ft{font-size:9px;font-weight:600;line-height:1.2;margin-top:2px}
