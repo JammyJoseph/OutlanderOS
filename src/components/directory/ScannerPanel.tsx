@@ -210,6 +210,7 @@ function SingleScanner({
   // Credits
   const [credits, setCredits] = useState<ScanCreditsResult | null>(null);
   const [scanningCredits, setScanningCredits] = useState(false);
+  const [addingAllCredits, setAddingAllCredits] = useState(false);
 
   // Scan queue (Scan All)
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -377,6 +378,64 @@ function SingleScanner({
       }
     } catch {
       showToast("Couldn't add contacts");
+    }
+  }
+
+  // One-click: import EVERY credited person from this profile's credit scan.
+  // No per-profile re-scan needed — we add the handles directly. scan-import
+  // dedups by handle (existing contacts are merged, never duplicated) and we
+  // link each credited person to the subject profile as a collaborator.
+  async function addAllFromCredits() {
+    if (!credits?.credits.length || !profile?.ok) {
+      showToast("Scan a profile's credits first");
+      return;
+    }
+    setAddingAllCredits(true);
+    try {
+      const subjectHandle = profile.handle.toLowerCase();
+      // The subject profile itself, plus every credited person.
+      const contacts = [
+        profileToInput(profile),
+        ...credits.credits.map((c) => ({
+          handle: c.handle,
+          category: c.category,
+          confidence: c.confidence,
+        })),
+      ];
+      // Link the subject to each credited person (they collaborated), alongside
+      // the co-mention pairs the scan already surfaced.
+      const subjectLinks = credits.credits.map((c) => ({
+        a: subjectHandle,
+        b: c.handle,
+        count: Math.max(1, c.mentionCount || 1),
+      }));
+      const collaborationPairs = [...subjectLinks, ...(credits.collaborationPairs ?? [])];
+
+      const res = await fetch("/api/directory/scan-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contacts, collaborationPairs }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Report new vs. existing, excluding the subject profile from the tally.
+        const imported: { handle: string; created: boolean }[] = Array.isArray(data.imported)
+          ? data.imported
+          : [];
+        const people = imported.filter((i) => i.handle !== subjectHandle);
+        const newCount = people.filter((i) => i.created).length;
+        const linkedCount = people.filter((i) => !i.created).length;
+        showToast(
+          `Added ${newCount} new contact${newCount === 1 ? "" : "s"}, linked ${linkedCount} existing collaborator${linkedCount === 1 ? "" : "s"}`
+        );
+        onChanged?.();
+      } else {
+        showToast(data.error || "Couldn't add contacts");
+      }
+    } catch {
+      showToast("Couldn't add contacts");
+    } finally {
+      setAddingAllCredits(false);
     }
   }
 
@@ -583,18 +642,35 @@ function SingleScanner({
               </p>
             </div>
             {credits.credits.length > 0 && (
-              <button
-                onClick={scanAllCredits}
-                disabled={queueRunning}
-                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-gray-600 hover:border-[var(--ring)] disabled:opacity-50"
-              >
-                {queueRunning ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <ScanLine size={14} />
-                )}
-                Scan All
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={addAllFromCredits}
+                  disabled={addingAllCredits || queueRunning}
+                  className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                  style={{ backgroundColor: ACCENT }}
+                  title="Import every credited person — dedupes against the directory and links them to this profile"
+                >
+                  {addingAllCredits ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <UserPlus size={14} />
+                  )}
+                  Add All to Directory
+                </button>
+                <button
+                  onClick={scanAllCredits}
+                  disabled={queueRunning || addingAllCredits}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-gray-600 hover:border-[var(--ring)] disabled:opacity-50"
+                  title="Scrape each credited person's profile to enrich them before adding"
+                >
+                  {queueRunning ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <ScanLine size={14} />
+                  )}
+                  Scan All
+                </button>
+              </div>
             )}
           </div>
 
@@ -615,6 +691,8 @@ function SingleScanner({
                         key={p.handle}
                         person={p}
                         last={i === people.length - 1}
+                        subjectHandle={credits.handle}
+                        subjectInput={profile?.ok ? profileToInput(profile) : null}
                         showToast={showToast}
                         onChanged={onChanged}
                       />
@@ -695,11 +773,15 @@ function QueueStatus({ item }: { item: QueueItem }) {
 function CreditRow({
   person,
   last,
+  subjectHandle,
+  subjectInput,
   showToast,
   onChanged,
 }: {
   person: CreditPerson;
   last: boolean;
+  subjectHandle?: string | null;
+  subjectInput?: ReturnType<typeof profileToInput> | null;
   showToast: (m: string) => void;
   onChanged?: () => void;
 }) {
@@ -709,23 +791,37 @@ function CreditRow({
   async function add() {
     setAdding(true);
     try {
+      // Include the subject profile so the collaboration link can resolve both
+      // ends; scan-import dedups by handle so neither side is duplicated.
+      const contacts: unknown[] = [
+        { handle: person.handle, category: person.category, confidence: person.confidence },
+      ];
+      if (subjectInput) contacts.push(subjectInput);
+      const collaborationPairs =
+        subjectHandle && subjectHandle.toLowerCase() !== person.handle.toLowerCase()
+          ? [{ a: subjectHandle, b: person.handle, count: Math.max(1, person.mentionCount || 1) }]
+          : [];
+
       const res = await fetch("/api/directory/scan-import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contacts: [
-            {
-              handle: person.handle,
-              category: person.category,
-              confidence: person.confidence,
-            },
-          ],
-        }),
+        body: JSON.stringify({ contacts, collaborationPairs }),
       });
       const data = await res.json();
       if (res.ok) {
         setAdded(true);
-        showToast(data.created ? `Added @${person.handle}` : `@${person.handle} updated`);
+        // Did this person already exist? Read it back from the import report.
+        const row = Array.isArray(data.imported)
+          ? (data.imported as { handle: string; created: boolean }[]).find(
+              (i) => i.handle === person.handle.toLowerCase()
+            )
+          : undefined;
+        const created = row ? row.created : (data.created ?? 0) > 0;
+        showToast(
+          created
+            ? `Added @${person.handle}`
+            : `@${person.handle} already in Directory — added as collaborator`
+        );
         onChanged?.();
       } else {
         showToast(data.error || "Couldn't add");
