@@ -2,7 +2,12 @@
 // handle, merging without clobbering manual data, and recording collaborations.
 
 import prisma from "@/lib/prisma"
-import { normalizeHandle, canonicalCategory, type Confidence } from "@/lib/instagram-scan"
+import {
+  normalizeHandle,
+  canonicalCategory,
+  type Confidence,
+  type RecentPost,
+} from "@/lib/instagram-scan"
 
 export interface CollaborationLink {
   contactId?: string
@@ -41,7 +46,33 @@ export interface ScannedContactInput {
   website?: string | null
   followers?: number | null
   profilePic?: string | null
+  recentPosts?: RecentPost[] | null
   confidence?: Confidence | null
+}
+
+// Sanitises incoming post data into [{ shortcode, imageUrl, caption? }], capped
+// at 9 — these arrive from the scraper, so we don't trust their shape blindly.
+function sanitizeRecentPosts(value: unknown): RecentPost[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((p) => {
+      const v = p as { shortcode?: unknown; imageUrl?: unknown; caption?: unknown }
+      return {
+        shortcode: typeof v?.shortcode === "string" ? v.shortcode.slice(0, 60) : "",
+        imageUrl: typeof v?.imageUrl === "string" ? v.imageUrl.slice(0, 1000) : "",
+        caption: typeof v?.caption === "string" ? v.caption.slice(0, 400) : null,
+      }
+    })
+    .filter((p) => p.shortcode && p.imageUrl)
+    .slice(0, 9)
+}
+
+// True when a contact's stored name is really just their handle (e.g. "@nike"
+// or "nike"), meaning we should upgrade it to the scanned full name when we have one.
+function nameIsJustHandle(name: string | null, handle: string): boolean {
+  if (!name) return true
+  const n = normalizeHandle(name) ?? name.trim().toLowerCase()
+  return n === handle.toLowerCase()
 }
 
 // Upserts a scanned profile into the directory. Creates a new contact tagged
@@ -64,12 +95,18 @@ export async function upsertScannedContact(
       return { contact: { id: existing.id, name: existing.name }, created: false }
     }
     const data: Record<string, unknown> = {}
-    if (!current.name && input.name) data.name = input.name
+    // Upgrade a handle-only name to the scanned full name (but never clobber a
+    // real, manually-entered name).
+    if (input.name && nameIsJustHandle(current.name, norm ?? "")) data.name = input.name
     if (!current.website && input.website) data.website = input.website
     if (!current.location && input.location) data.location = input.location
     if (!current.notes && input.bio) data.notes = input.bio
     if (current.followers == null && input.followers != null) data.followers = input.followers
     if (!current.profilePic && input.profilePic) data.profilePic = input.profilePic
+    const posts = sanitizeRecentPosts(input.recentPosts)
+    const currentPosts = Array.isArray(current.recentPosts) ? current.recentPosts : []
+    // Refresh post thumbnails whenever the scan brought some back.
+    if (posts.length > 0 && posts.length >= currentPosts.length) data.recentPosts = posts
     if ((!current.category || current.category === "Other") && category !== "Other")
       data.category = category
     if (!current.confidence && input.confidence) data.confidence = input.confidence
@@ -95,6 +132,7 @@ export async function upsertScannedContact(
       notes: input.bio || null,
       followers: input.followers ?? null,
       profilePic: input.profilePic ?? null,
+      recentPosts: sanitizeRecentPosts(input.recentPosts) as unknown as object,
       confidence: input.confidence ?? "UNVERIFIED",
       source: "instagram_scan",
       scannedAt: new Date(),

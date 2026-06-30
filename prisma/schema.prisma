@@ -133,6 +133,7 @@ model Contact {
   confidence      String? // VERIFIED | LIKELY | UNVERIFIED — how sure we are about scanned data
   followers       Int? // follower count captured at scan time
   profilePic      String? // profile picture URL captured at scan time
+  recentPosts     Json      @default("[]") // [{ shortcode, imageUrl, caption? }] — most recent posts captured at scan time
   collaborations  Json      @default("[]") // [{ contactId?, handle, count, lastProject?, role? }] — who they've worked with
   scannedAt       DateTime? // last time this contact's profile was scraped
   // ── Outlander Radar: emerging talent / accounts to watch ──

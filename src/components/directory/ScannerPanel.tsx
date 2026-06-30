@@ -54,6 +54,7 @@ interface ScanProfileResult {
   location: string | null;
   confidence: Confidence;
   taggedAccounts: string[];
+  recentPosts?: { shortcode: string; imageUrl: string; caption?: string | null }[];
   source: string;
   ok: boolean;
   error?: string;
@@ -997,6 +998,7 @@ function profileToInput(p: ScanProfileResult) {
     website: p.website,
     followers: p.followers,
     profilePic: p.profilePic,
+    recentPosts: p.recentPosts ?? [],
     confidence: p.confidence,
   };
 }

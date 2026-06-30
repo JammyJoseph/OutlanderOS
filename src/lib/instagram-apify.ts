@@ -18,6 +18,7 @@ import {
   normalizeHandle,
   type ScanProfileResult,
   type ScanCreditsResult,
+  type RecentPost,
 } from "./instagram-scan"
 import { logger } from "./logger"
 
@@ -36,6 +37,8 @@ interface ApifyPost {
   caption?: string | null
   shortCode?: string | null
   shortcode?: string | null
+  displayUrl?: string | null
+  url?: string | null
 }
 
 // The subset of the profile scraper's output item we care about.
@@ -105,6 +108,20 @@ function postsFromItem(item: ApifyProfileItem): { shortcode: string; caption: st
     .filter((p) => p.caption)
 }
 
+// Pulls up to 9 most recent posts with thumbnail images for the 3×3 grid.
+// Only posts that carry both a shortcode and an image URL are kept.
+function recentPostsFromItem(item: ApifyProfileItem): RecentPost[] {
+  const posts = Array.isArray(item.latestPosts) ? item.latestPosts : []
+  return posts
+    .map((p) => ({
+      shortcode: (p.shortCode || p.shortcode || "").trim(),
+      imageUrl: (p.displayUrl || "").trim(),
+      caption: (p.caption || "").trim() || null,
+    }))
+    .filter((p) => p.shortcode && p.imageUrl)
+    .slice(0, 9)
+}
+
 // Profile scan via Apify. Returns null when Apify is unconfigured, fails, or
 // yields nothing usable so the caller can fall back to direct scraping.
 export async function apifyScanProfile(handleInput: string): Promise<ScanProfileResult | null> {
@@ -139,6 +156,7 @@ export async function apifyScanProfile(handleInput: string): Promise<ScanProfile
     // Apify returns authoritative data, so a populated result is high-confidence.
     confidence: name || followers != null ? "VERIFIED" : "LIKELY",
     taggedAccounts,
+    recentPosts: recentPostsFromItem(item),
     source: "apify",
     ok: true,
   }

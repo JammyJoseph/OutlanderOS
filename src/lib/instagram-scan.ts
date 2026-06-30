@@ -14,6 +14,13 @@ import { logger } from "@/lib/logger"
 
 export type Confidence = "VERIFIED" | "LIKELY" | "UNVERIFIED"
 
+// A single recent post captured at scan time, used for the 3×3 thumbnail grid.
+export interface RecentPost {
+  shortcode: string
+  imageUrl: string
+  caption?: string | null
+}
+
 export interface ScanProfileResult {
   handle: string
   name: string | null
@@ -25,6 +32,7 @@ export interface ScanProfileResult {
   location: string | null
   confidence: Confidence
   taggedAccounts: string[]
+  recentPosts: RecentPost[] // up to 9 most recent posts (Apify only); [] otherwise
   source: string // which method succeeded: "embed" | "html" | "json" | "none"
   ok: boolean
   error?: string
@@ -292,6 +300,7 @@ export async function scanProfile(handleInput: string): Promise<ScanProfileResul
     location: null,
     confidence: "UNVERIFIED",
     taggedAccounts: [],
+    recentPosts: [],
     source: "none",
     ok: false,
   }
@@ -384,6 +393,7 @@ function blankProfile(handle: string, error: string): ScanProfileResult {
     location: null,
     confidence: "UNVERIFIED",
     taggedAccounts: [],
+    recentPosts: [],
     source: "none",
     ok: false,
     error,

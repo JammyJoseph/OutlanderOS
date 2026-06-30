@@ -30,6 +30,9 @@ import {
   ScanLine,
   Network as NetworkIcon,
   Sparkles,
+  LayoutDashboard,
+  TrendingUp,
+  Handshake,
 } from "lucide-react";
 import {
   CONTACT_CATEGORIES,
@@ -86,16 +89,27 @@ interface ContactRecord {
   confidence?: "VERIFIED" | "LIKELY" | "UNVERIFIED" | null;
   followers?: number | null;
   profilePic?: string | null;
+  recentPosts?: { shortcode: string; imageUrl: string; caption?: string | null }[];
+  collaborations?: unknown[];
+  scannedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   creator?: { id: string; name: string } | null;
 }
 
-type View = "contacts" | "categories" | "radar" | "recent" | "scanner" | "network";
-type SortKey = "name" | "category" | "rating" | "recent";
+type View =
+  | "dashboard"
+  | "contacts"
+  | "categories"
+  | "radar"
+  | "recent"
+  | "scanner"
+  | "network";
+type SortKey = "name" | "za" | "category" | "followers" | "recent";
 
 function isView(v: string | null): v is View {
   return (
+    v === "dashboard" ||
     v === "contacts" ||
     v === "categories" ||
     v === "radar" ||
@@ -269,7 +283,7 @@ export default function DirectoryPage() {
 function Directory() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const view: View = isView(searchParams.get("view")) ? (searchParams.get("view") as View) : "contacts";
+  const view: View = isView(searchParams.get("view")) ? (searchParams.get("view") as View) : "dashboard";
 
   const [contacts, setContacts] = useState<ContactRecord[]>([]);
   const [radar, setRadar] = useState<ContactRecord[]>([]);
@@ -280,7 +294,8 @@ function Directory() {
   const [category, setCategory] = useState<string>("");
   const [country, setCountry] = useState<string>("");
   const [radarStatusFilter, setRadarStatusFilter] = useState<string>("");
-  const [sortKey, setSortKey] = useState<SortKey>("recent");
+  // A–Z is always the landing sort for the contact list.
+  const [sortKey, setSortKey] = useState<SortKey>("name");
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
@@ -291,7 +306,7 @@ function Directory() {
   const [importing, setImporting] = useState(false);
 
   const setView = useCallback(
-    (v: View) => router.push(v === "contacts" ? "/directory" : `/directory?view=${v}`),
+    (v: View) => router.push(v === "dashboard" ? "/directory" : `/directory?view=${v}`),
     [router]
   );
 
@@ -332,6 +347,8 @@ function Directory() {
     if (view === "radar") jobs.push(loadRadar());
     else jobs.push(loadContacts());
     if (view !== "radar") jobs.push(loadCategories());
+    // The dashboard needs the radar count alongside contacts/categories.
+    if (view === "dashboard") jobs.push(loadRadar());
     Promise.all(jobs).finally(() => {
       if (active) setLoading(false);
     });
@@ -446,23 +463,34 @@ function Directory() {
   }
 
   const sortedContacts = useMemo(() => {
-    const base = view === "recent" ? [...contacts] : [...contacts];
-    const arr = [...base];
+    // "Recently Added" is its own view: contacts from the last 30 days, newest first.
+    if (view === "recent") {
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      return [...contacts]
+        .filter((c) => +new Date(c.createdAt) >= cutoff)
+        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+    }
+    const arr = [...contacts];
     switch (sortKey) {
       case "name":
         arr.sort((a, b) => a.name.localeCompare(b.name));
         break;
+      case "za":
+        arr.sort((a, b) => b.name.localeCompare(a.name));
+        break;
       case "category":
         arr.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
         break;
-      case "rating":
-        arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name));
+      case "followers":
+        arr.sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0) || a.name.localeCompare(b.name));
         break;
       case "recent":
-      default:
         arr.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+        break;
+      default:
+        arr.sort((a, b) => a.name.localeCompare(b.name));
     }
-    return view === "recent" ? arr.slice(0, 60) : arr;
+    return arr;
   }, [contacts, sortKey, view]);
 
   // Distinct countries present in the loaded contacts, most common first.
@@ -497,16 +525,18 @@ function Directory() {
   }
 
   const VIEW_TABS: { key: View; label: string; icon: React.ElementType }[] = [
+    { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { key: "contacts", label: "All Contacts", icon: ContactIcon },
-    { key: "categories", label: "By Category", icon: Tags },
     { key: "scanner", label: "Scanner", icon: ScanLine },
     { key: "network", label: "Network", icon: NetworkIcon },
     { key: "radar", label: "Radar", icon: RadarIcon },
     { key: "recent", label: "Recently Added", icon: Clock },
   ];
 
-  const showContactTools = view === "contacts" || view === "recent";
-  const isToolView = view === "scanner" || view === "network";
+  // The contact list only sorts/filters in "All Contacts" — "Recently Added" is
+  // a fixed 30-day recency view.
+  const showContactTools = view === "contacts";
+  const isToolView = view === "scanner" || view === "network" || view === "dashboard";
 
   return (
     <div className="min-h-full px-6 py-8 pb-28">
@@ -518,21 +548,29 @@ function Directory() {
               OutlanderOS · Directory
             </p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
-              {view === "radar"
+              {view === "dashboard"
+                ? "Directory"
+                : view === "radar"
                 ? "Outlander Radar"
                 : view === "scanner"
                 ? "Profile Scanner"
                 : view === "network"
                 ? "Collaboration Network"
+                : view === "recent"
+                ? "Recently Added"
                 : "Contact Directory"}
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              {view === "radar"
+              {view === "dashboard"
+                ? "Your directory at a glance — contacts, scanning, network & radar."
+                : view === "radar"
                 ? "Emerging talent, creators & accounts we think will be big."
                 : view === "scanner"
                 ? "Scan Instagram profiles to build the directory and map who works with whom."
                 : view === "network"
                 ? "Who's collaborated with whom, mapped from scanned post credits."
+                : view === "recent"
+                ? "Contacts added to the directory in the last 30 days."
                 : "Outlander's network of contacts, collaborators & talent."}
             </p>
           </div>
@@ -623,10 +661,11 @@ function Directory() {
                   className={`${inputCls} w-auto`}
                   title="Sort"
                 >
-                  <option value="recent">Recently added</option>
                   <option value="name">Name (A–Z)</option>
-                  <option value="category">Category</option>
-                  <option value="rating">Rating</option>
+                  <option value="za">Name (Z–A)</option>
+                  <option value="recent">Recently added</option>
+                  <option value="followers">Most followers</option>
+                  <option value="category">By category</option>
                 </select>
                 {countryOptions.length > 0 && (
                   <select
@@ -659,14 +698,14 @@ function Directory() {
                 ))}
               </select>
             )}
-            {(search || category || country || radarStatusFilter || sortKey !== "recent") && (
+            {(search || category || country || radarStatusFilter || sortKey !== "name") && (
               <button
                 onClick={() => {
                   setSearch("");
                   setCategory("");
                   setCountry("");
                   setRadarStatusFilter("");
-                  setSortKey("recent");
+                  setSortKey("name");
                 }}
                 className="px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-900"
               >
@@ -727,6 +766,13 @@ function Directory() {
           <div className="flex items-center justify-center py-24">
             <Loader2 className="animate-spin text-gray-600" size={24} />
           </div>
+        ) : view === "dashboard" ? (
+          <Dashboard
+            contacts={contacts}
+            radar={radar}
+            categories={categories}
+            onNavigate={setView}
+          />
         ) : view === "categories" ? (
           <CategoriesGrid
             categories={categories}
@@ -938,10 +984,10 @@ function SplitRow({
         {c.name.slice(0, 2).toUpperCase()}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
+        <p className="truncate text-[15px] font-bold leading-tight text-gray-900">{c.name}</p>
         <div className="flex items-center gap-2 text-[11px] text-gray-500">
           {handle ? (
-            <span className="truncate font-medium text-[#dc2743]">@{handle}</span>
+            <span className="truncate font-semibold text-[#dc2743]">@{handle}</span>
           ) : (
             <span className="truncate">{c.role || c.company || "—"}</span>
           )}
@@ -985,7 +1031,7 @@ interface Collaboration {
   source: "crew" | "team";
 }
 
-interface ContactDetail extends ContactRecord {
+interface ContactDetail extends Omit<ContactRecord, "collaborations"> {
   collaborations?: Collaboration[];
 }
 
@@ -1019,12 +1065,13 @@ function ContactDetailPanel({
     };
   }, [id]);
 
-  const c: ContactDetail = detail ?? contact;
+  const c: ContactDetail = detail ?? (contact as unknown as ContactDetail);
   const handle = igHandle(c.instagram);
   const followers = fmtFollowers(c.followers);
   const collaborations = detail?.collaborations ?? [];
   const portfolio = c.portfolioLinks ?? [];
   const tags = c.tags ?? [];
+  const recentPosts = (c.recentPosts ?? []).filter((p) => p?.imageUrl && p?.shortcode);
 
   return (
     <>
@@ -1135,29 +1182,37 @@ function ContactDetailPanel({
           )}
         </div>
 
-        {/* Instagram preview */}
+        {/* Instagram preview — a 3×3 grid of scanned posts when we have them,
+            otherwise a tall live embed. */}
         {handle && (
           <div>
             <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
               Instagram
             </p>
-            <div className="overflow-hidden rounded-xl border border-border bg-background">
-              <iframe
-                key={handle}
-                src={`https://www.instagram.com/${handle}/embed/`}
-                title={`@${handle} on Instagram`}
-                className="h-[360px] w-full"
-                loading="lazy"
-                scrolling="no"
-              />
-            </div>
+            {recentPosts.length > 0 ? (
+              <PostGrid handle={handle} posts={recentPosts} />
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-border bg-background">
+                <iframe
+                  key={handle}
+                  src={`https://www.instagram.com/${handle}/embed/`}
+                  title={`@${handle} on Instagram`}
+                  className="h-[500px] w-full"
+                  loading="lazy"
+                  scrolling="no"
+                />
+              </div>
+            )}
             <a
               href={`https://www.instagram.com/${handle}/`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900"
             >
-              <ExternalLink size={12} /> View on Instagram if the preview doesn&apos;t load
+              <ExternalLink size={12} />{" "}
+              {recentPosts.length > 0
+                ? "Open the full profile on Instagram"
+                : "View on Instagram if the preview doesn't load"}
             </a>
           </div>
         )}
@@ -1242,6 +1297,249 @@ function ContactDetailPanel({
         </div>
       </div>
     </>
+  );
+}
+
+// ── Instagram post grid (3×3 of scanned posts) ──────────────────────────────────
+
+function PostGrid({
+  handle,
+  posts,
+}: {
+  handle: string;
+  posts: { shortcode: string; imageUrl: string; caption?: string | null }[];
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-1.5 overflow-hidden rounded-xl">
+      {posts.slice(0, 9).map((p) => (
+        <a
+          key={p.shortcode}
+          href={`https://www.instagram.com/p/${p.shortcode}/`}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={p.caption?.slice(0, 120) || `@${handle} on Instagram`}
+          className="group relative block aspect-square overflow-hidden rounded-lg border border-border bg-secondary"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={p.imageUrl}
+            alt={p.caption?.slice(0, 80) || `Post by @${handle}`}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+          <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-opacity group-hover:bg-black/30 group-hover:opacity-100">
+            <ExternalLink size={16} className="text-white" />
+          </span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// ── Directory dashboard (landing overview) ───────────────────────────────────────
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number | string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-center gap-2 text-gray-500">
+        <Icon size={15} style={{ color: ACCENT }} />
+        <span className="text-[11px] font-semibold uppercase tracking-wide">{label}</span>
+      </div>
+      <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 tabular-nums">{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
+function Dashboard({
+  contacts,
+  radar,
+  categories,
+  onNavigate,
+}: {
+  contacts: ContactRecord[];
+  radar: ContactRecord[];
+  categories: { category: string; count: number }[];
+  onNavigate: (v: View) => void;
+}) {
+  const now = Date.now();
+  const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+
+  const recentlyAdded = contacts.filter((c) => +new Date(c.createdAt) >= weekAgo).length;
+  const collaborators = contacts.filter(
+    (c) => Array.isArray(c.collaborations) && c.collaborations.length > 0
+  ).length;
+  const radarWatching = radar.filter(
+    (r) => (r.radarStatus ?? "WATCHING") === "WATCHING"
+  ).length;
+
+  // Most-populated categories first, for the breakdown card.
+  const topCategories = [...categories]
+    .filter((c) => c.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
+  // Last 5 scanned profiles, newest scan first.
+  const recentlyScanned = contacts
+    .filter((c) => c.source === "instagram_scan" && c.scannedAt)
+    .sort((a, b) => +new Date(b.scannedAt!) - +new Date(a.scannedAt!))
+    .slice(0, 5);
+
+  const QUICK: {
+    key: View;
+    title: string;
+    body: string;
+    icon: React.ElementType;
+  }[] = [
+    { key: "contacts", title: "Contacts", body: "Browse your full contact directory", icon: ContactIcon },
+    { key: "scanner", title: "Scanner", body: "Scan Instagram profiles to discover talent", icon: ScanLine },
+    { key: "network", title: "Network", body: "View collaboration connections", icon: NetworkIcon },
+    { key: "radar", title: "Radar", body: "Track emerging talent", icon: RadarIcon },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard icon={Users} label="Total Contacts" value={contacts.length} />
+        <StatCard
+          icon={Clock}
+          label="Recently Added"
+          value={recentlyAdded}
+          hint="in the last 7 days"
+        />
+        <StatCard
+          icon={Handshake}
+          label="Collaborators"
+          value={collaborators}
+          hint="with collaboration history"
+        />
+        <StatCard
+          icon={RadarIcon}
+          label="Radar Watching"
+          value={radarWatching}
+          hint={`${radar.length} on the radar`}
+        />
+      </div>
+
+      {/* Category breakdown */}
+      {topCategories.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2 text-gray-500">
+            <Tags size={15} style={{ color: ACCENT }} />
+            <span className="text-[11px] font-semibold uppercase tracking-wide">
+              Categories breakdown
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {topCategories.map((c) => (
+              <button
+                key={c.category}
+                onClick={() => onNavigate("contacts")}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-[var(--ring)]"
+              >
+                {c.category}
+                <span className="rounded-full bg-secondary px-1.5 py-0.5 text-xs font-semibold tabular-nums text-gray-500">
+                  {c.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quick access */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {QUICK.map((q) => {
+          const Icon = q.icon;
+          return (
+            <button
+              key={q.key}
+              onClick={() => onNavigate(q.key)}
+              className="group flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 text-left transition-colors hover:border-[var(--ring)]"
+            >
+              <span
+                className="flex h-10 w-10 items-center justify-center rounded-xl"
+                style={{ backgroundColor: `${ACCENT}1a`, color: ACCENT }}
+              >
+                <Icon size={18} />
+              </span>
+              <div>
+                <p className="flex items-center gap-1 text-sm font-semibold text-gray-900">
+                  {q.title}
+                  <ChevronRight
+                    size={14}
+                    className="text-gray-400 transition-transform group-hover:translate-x-0.5"
+                  />
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">{q.body}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Recently scanned */}
+      {recentlyScanned.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2 text-gray-500">
+            <TrendingUp size={15} style={{ color: ACCENT }} />
+            <span className="text-[11px] font-semibold uppercase tracking-wide">
+              Recently scanned
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {recentlyScanned.map((c) => {
+              const handle = igHandle(c.instagram);
+              const followers = fmtFollowers(c.followers);
+              return (
+                <Link
+                  key={c.id}
+                  href={`/directory/${c.id}`}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2 transition-colors hover:border-[var(--ring)]"
+                >
+                  {c.profilePic ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={c.profilePic}
+                      alt={c.name}
+                      referrerPolicy="no-referrer"
+                      className="h-9 w-9 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500">
+                      {c.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
+                    {handle && (
+                      <p className="truncate text-[11px] font-medium text-[#dc2743]">@{handle}</p>
+                    )}
+                  </div>
+                  {followers && (
+                    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-gray-500">
+                      <Users size={12} /> {followers}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
