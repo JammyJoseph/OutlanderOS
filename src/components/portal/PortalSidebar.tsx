@@ -106,8 +106,8 @@ export function PortalSidebar() {
   if (!config) return null;
 
   return (
-    <aside className="flex w-[200px] shrink-0 flex-col border-r border-[#2a2a2a] bg-[#0f0f0f]/80 backdrop-blur-md">
-      <div className="flex h-10 items-center gap-2 border-b border-[#2a2a2a] px-4">
+    <aside className="flex w-[200px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur-md">
+      <div className="flex h-10 items-center gap-2 border-b border-sidebar-border px-4">
         <span
           className="h-2 w-2 rounded-full"
           style={{ backgroundColor: accent }}

@@ -320,7 +320,7 @@ export default function CallSheetPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#141414] flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <Loader2 size={24} className="animate-spin text-gray-400" />
       </div>
     );
@@ -328,7 +328,7 @@ export default function CallSheetPage() {
 
   if (!sheet) {
     return (
-      <div className="min-h-screen bg-[#141414] flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Call sheet not found.</p>
           <Link
@@ -359,7 +359,7 @@ export default function CallSheetPage() {
   const badge = STATUS_BADGES[sheet.status];
 
   return (
-    <div className="min-h-screen bg-[#141414]" data-callsheet-print>
+    <div className="min-h-screen bg-card" data-callsheet-print>
       <div className="max-w-4xl mx-auto px-6 py-10 print:px-0 print:py-0 print:max-w-none">
         <div className="flex items-center justify-between mb-6 print:hidden">
           <Link

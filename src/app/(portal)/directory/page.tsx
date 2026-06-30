@@ -137,7 +137,7 @@ function Stars({
         const star = (
           <Star
             size={size}
-            className={i <= (rating ?? 0) ? "fill-[#ffd700] text-[#ffd700]" : "text-[#3a3a3a]"}
+            className={i <= (rating ?? 0) ? "fill-[#ffd700] text-[#ffd700]" : "text-gray-300"}
           />
         );
         return onChange ? (
@@ -162,14 +162,14 @@ function Stars({
 
 function CategoryBadge({ category }: { category: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-[#2a2a2a] bg-[#1c1c1c] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-300">
+    <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-300">
       {category}
     </span>
   );
 }
 
 const inputCls =
-  "w-full rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#e0e0e0]/40 focus:outline-none focus:ring-2 focus:ring-[#e0e0e0]/10";
+  "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
 const labelCls = "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1";
 
 // ── Page ───────────────────────────────────────────────────────────────────────
@@ -435,7 +435,7 @@ function Directory() {
                 <button
                   onClick={() => runImport(false)}
                   disabled={importing}
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#141414] px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:border-[#3a3a3a] disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm font-medium text-gray-600 hover:border-[var(--ring)] disabled:opacity-50"
                   title="Import contacts from the master Google Sheet"
                 >
                   {importing ? (
@@ -448,7 +448,7 @@ function Directory() {
                 <button
                   onClick={() => runImport(true)}
                   disabled={importing}
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#141414] px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:border-[#3a3a3a] disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm font-medium text-gray-600 hover:border-[var(--ring)] disabled:opacity-50"
                   title="Re-sync from the sheet (updates existing, adds new)"
                 >
                   <RefreshCw size={15} className={importing ? "animate-spin" : ""} /> Sync Sheet
@@ -476,7 +476,7 @@ function Directory() {
         </div>
 
         {/* View tabs */}
-        <div className="mb-5 flex flex-wrap gap-1 rounded-xl border border-[#2a2a2a] bg-[#141414] p-1 w-fit">
+        <div className="mb-5 flex flex-wrap gap-1 rounded-xl border border-border bg-card p-1 w-fit">
           {VIEW_TABS.map((t) => {
             const Icon = t.icon;
             const isActive = view === t.key;
@@ -485,7 +485,7 @@ function Directory() {
                 key={t.key}
                 onClick={() => setView(t.key)}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-                  isActive ? "text-black" : "text-gray-400 hover:text-gray-900"
+                  isActive ? "text-black" : "text-gray-500 hover:text-gray-900"
                 }`}
                 style={isActive ? { backgroundColor: ACCENT } : undefined}
               >
@@ -521,10 +521,10 @@ function Directory() {
                   <option value="category">Category</option>
                   <option value="rating">Rating</option>
                 </select>
-                <div className="flex items-center rounded-lg border border-[#2a2a2a] bg-[#141414] p-0.5">
+                <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
                   <button
                     onClick={() => setDisplayMode("grid")}
-                    className={`rounded-md p-1.5 ${displayMode === "grid" ? "text-black" : "text-gray-500 hover:text-gray-300"}`}
+                    className={`rounded-md p-1.5 ${displayMode === "grid" ? "text-black" : "text-gray-500 hover:text-gray-900"}`}
                     style={displayMode === "grid" ? { backgroundColor: ACCENT } : undefined}
                     title="Grid view"
                   >
@@ -532,7 +532,7 @@ function Directory() {
                   </button>
                   <button
                     onClick={() => setDisplayMode("list")}
-                    className={`rounded-md p-1.5 ${displayMode === "list" ? "text-black" : "text-gray-500 hover:text-gray-300"}`}
+                    className={`rounded-md p-1.5 ${displayMode === "list" ? "text-black" : "text-gray-500 hover:text-gray-900"}`}
                     style={displayMode === "list" ? { backgroundColor: ACCENT } : undefined}
                     title="List view"
                   >
@@ -579,7 +579,7 @@ function Directory() {
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 category === ""
                   ? "border-transparent text-black"
-                  : "border-[#2a2a2a] text-gray-400 hover:text-gray-200"
+                  : "border-border text-gray-500 hover:text-gray-900"
               }`}
               style={category === "" ? { backgroundColor: ACCENT } : undefined}
             >
@@ -596,7 +596,7 @@ function Directory() {
                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                       active
                         ? "border-transparent text-black"
-                        : "border-[#2a2a2a] text-gray-400 hover:text-gray-200"
+                        : "border-border text-gray-500 hover:text-gray-900"
                     }`}
                     style={active ? { backgroundColor: ACCENT } : undefined}
                   >
@@ -644,11 +644,11 @@ function Directory() {
       {/* Floating share bar */}
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-5">
-          <div className="flex items-center gap-3 rounded-2xl border border-[#2a2a2a] bg-[#141414]/95 px-4 py-3 shadow-2xl backdrop-blur">
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-2xl backdrop-blur">
             <span className="text-sm font-semibold text-gray-900">
               {selected.size} selected
             </span>
-            <div className="h-5 w-px bg-[#2a2a2a]" />
+            <div className="h-5 w-px bg-border" />
             <button
               onClick={copyShare}
               className="inline-flex items-center gap-2 rounded-xl bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
@@ -669,7 +669,7 @@ function Directory() {
       {/* Toast */}
       {toast && (
         <div className="fixed inset-x-0 bottom-24 z-50 flex justify-center px-4">
-          <div className="rounded-xl border border-[#2a2a2a] bg-[#1c1c1c] px-4 py-2.5 text-sm font-medium text-gray-900 shadow-xl">
+          <div className="rounded-xl border border-border bg-popover px-4 py-2.5 text-sm font-medium text-gray-900 shadow-xl">
             {toast}
           </div>
         </div>
@@ -726,7 +726,7 @@ function ContactsView({
 
   if (mode === "list") {
     return (
-      <div className="overflow-hidden rounded-2xl border border-[#2a2a2a] bg-[#141414]">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
         {contacts.map((c, i) => (
           <ContactRow
             key={c.id}
@@ -781,7 +781,7 @@ function QuickActions({ contact, onEdit }: { contact: ContactRecord; onEdit: () 
         <a
           href={`mailto:${contact.email}`}
           onClick={(e) => e.stopPropagation()}
-          className="rounded-md p-1.5 text-gray-500 hover:bg-white/5 hover:text-gray-200"
+          className="rounded-md p-1.5 text-gray-500 hover:bg-secondary hover:text-gray-900"
           title="Email"
         >
           <Mail size={14} />
@@ -791,7 +791,7 @@ function QuickActions({ contact, onEdit }: { contact: ContactRecord; onEdit: () 
         <a
           href={`tel:${contact.phone}`}
           onClick={(e) => e.stopPropagation()}
-          className="rounded-md p-1.5 text-gray-500 hover:bg-white/5 hover:text-gray-200"
+          className="rounded-md p-1.5 text-gray-500 hover:bg-secondary hover:text-gray-900"
           title="Call"
         >
           <Phone size={14} />
@@ -803,7 +803,7 @@ function QuickActions({ contact, onEdit }: { contact: ContactRecord; onEdit: () 
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="rounded-md p-1.5 text-gray-500 hover:bg-white/5 hover:text-[#dc2743]"
+          className="rounded-md p-1.5 text-gray-500 hover:bg-secondary hover:text-[#dc2743]"
           title={`@${handle}`}
         >
           <Instagram size={14} />
@@ -815,7 +815,7 @@ function QuickActions({ contact, onEdit }: { contact: ContactRecord; onEdit: () 
           e.stopPropagation();
           onEdit();
         }}
-        className="rounded-md p-1.5 text-gray-500 hover:bg-white/5 hover:text-gray-200"
+        className="rounded-md p-1.5 text-gray-500 hover:bg-secondary hover:text-gray-900"
         title="Edit"
       >
         <Pencil size={14} />
@@ -839,14 +839,14 @@ function ContactCard({
   return (
     <Link
       href={`/directory/${c.id}`}
-      className={`group relative flex flex-col gap-2 rounded-xl border bg-[#141414] p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#3a3a3a] hover:shadow-lg ${
-        selected ? "border-[#e0e0e0]/50" : "border-[#2a2a2a]"
+      className={`group relative flex flex-col gap-2 rounded-xl border bg-card p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--ring)] hover:shadow-lg ${
+        selected ? "border-[var(--ring)]" : "border-border"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2.5 min-w-0">
           <span
-            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1c1c1c] text-xs font-semibold text-gray-400"
+            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-gray-500"
             aria-hidden
           >
             {c.name.slice(0, 2).toUpperCase()}
@@ -876,7 +876,7 @@ function ContactCard({
           <Instagram size={11} /> @{handle}
         </span>
       )}
-      <div className="mt-1 flex items-center justify-between border-t border-[#222] pt-2">
+      <div className="mt-1 flex items-center justify-between border-t border-border pt-2">
         <span className="truncate text-[11px] text-gray-600">
           {c.email || c.phone || ""}
         </span>
@@ -905,12 +905,12 @@ function ContactRow({
   return (
     <Link
       href={`/directory/${c.id}`}
-      className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.02] ${
-        last ? "" : "border-b border-[#222]"
-      } ${selected ? "bg-white/[0.03]" : ""}`}
+      className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary ${
+        last ? "" : "border-b border-border"
+      } ${selected ? "bg-secondary" : ""}`}
     >
       <SelectBox selected={selected} onToggle={onToggleSelect} />
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1c1c1c] text-[11px] font-semibold text-gray-400">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500">
         {c.name.slice(0, 2).toUpperCase()}
       </span>
       <div className="min-w-0 flex-1">
@@ -962,11 +962,11 @@ function CategoriesGrid({
         <button
           key={c.category}
           onClick={() => onPick(c.category)}
-          className="flex items-center justify-between rounded-xl border border-[#2a2a2a] bg-[#141414] px-4 py-3.5 text-left transition-colors hover:border-[#3a3a3a]"
+          className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3.5 text-left transition-colors hover:border-[var(--ring)]"
         >
           <span className="text-sm font-semibold text-gray-900">{c.category}</span>
           <span className="inline-flex items-center gap-2 text-xs text-gray-500">
-            <span className="rounded-full border border-[#2a2a2a] px-2 py-0.5 font-semibold text-gray-300">
+            <span className="rounded-full border border-border px-2 py-0.5 font-semibold text-gray-600">
               {c.count}
             </span>
             <ChevronRight size={14} />
@@ -1018,7 +1018,7 @@ function RadarList({
         return (
           <div
             key={e.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#2a2a2a] bg-[#141414] p-4"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4"
             style={{ boxShadow: `0 0 0 1px rgba(224,224,224,0.04), 0 0 24px -12px ${ACCENT}` }}
           >
             <div className="min-w-0 flex-1">
@@ -1034,7 +1034,7 @@ function RadarList({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(ev) => ev.stopPropagation()}
-                    className="inline-flex items-center gap-1 text-gray-400 hover:text-gray-900"
+                    className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-900"
                   >
                     <ExternalLink size={11} /> {e.radarLink || e.instagram || e.website}
                   </a>
@@ -1052,22 +1052,22 @@ function RadarList({
               <button
                 onClick={() => onCycle(e)}
                 title="Click to advance status"
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors hover:bg-white/5 ${
-                  RADAR_STATUS_STYLE[status] ?? "border-gray-600 text-gray-300"
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors hover:bg-secondary ${
+                  RADAR_STATUS_STYLE[status] ?? "border-gray-300 text-gray-600"
                 }`}
               >
                 {RADAR_STATUS_LABELS[status] ?? status}
               </button>
               <button
                 onClick={() => onConvert(e)}
-                className="inline-flex items-center gap-1 rounded-lg border border-[#2a2a2a] px-2.5 py-1.5 text-[11px] font-medium text-gray-300 hover:border-emerald-700 hover:text-emerald-300"
+                className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-gray-600 hover:border-emerald-500 hover:text-emerald-600"
                 title="Promote to a full contact"
               >
                 <UserPlus size={12} /> Convert
               </button>
               <button
                 onClick={() => onEdit(e)}
-                className="rounded-lg border border-[#2a2a2a] p-1.5 text-gray-500 hover:text-gray-900"
+                className="rounded-lg border border-border p-1.5 text-gray-500 hover:text-gray-900"
                 title="Edit"
               >
                 <Pencil size={13} />
@@ -1096,7 +1096,7 @@ function EmptyState({
   onAction?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#2a2a2a] bg-[#101010] px-6 py-20 text-center">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-20 text-center">
       <Icon size={28} className="mb-3 text-gray-600" />
       <p className="text-sm font-semibold text-gray-900">{title}</p>
       <p className="mt-1 max-w-md text-xs text-gray-500">{body}</p>
@@ -1128,15 +1128,15 @@ function ModalShell({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 py-10 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-[#2a2a2a] bg-[#141414] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#2a2a2a] px-5 py-4">
+      <div className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="text-base font-semibold text-gray-900">{title}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-900">
             <X size={18} />
           </button>
         </div>
         <div className="max-h-[65vh] space-y-4 overflow-y-auto px-5 py-5">{children}</div>
-        <div className="flex items-center justify-between gap-2 border-t border-[#2a2a2a] px-5 py-4">
+        <div className="flex items-center justify-between gap-2 border-t border-border px-5 py-4">
           {footer}
         </div>
       </div>

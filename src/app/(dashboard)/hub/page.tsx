@@ -140,7 +140,7 @@ export default function HubPage() {
               <Link
                 key={portal.href}
                 href={portal.href}
-                className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-[#2a2a2a] bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-border bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                 style={{ borderTop: `3px solid ${portal.accent}` }}
               >
                 {portal.restricted && (

@@ -74,7 +74,7 @@ export default function BudgetView({
   return (
     <div className="h-full overflow-auto">
       {error && (
-        <div className="m-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+        <div className="m-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
           Couldn&apos;t load linked deal / production values: {error}
         </div>
       )}
@@ -109,7 +109,7 @@ export default function BudgetView({
           ))}
         </tbody>
         <tfoot>
-          <tr className="text-[12px] font-bold text-white">
+          <tr className="text-[12px] font-bold text-foreground">
             <td className={tdTotal} colSpan={4}>
               TOTALS · {totals.totalPages} pages
             </td>
@@ -136,10 +136,10 @@ export default function BudgetView({
 }
 
 const th =
-  "sticky top-0 z-20 border-b border-white/10 bg-[#0a0a0a] px-2 py-1.5 font-semibold whitespace-nowrap";
-const td = "border-b border-white/5 px-2 py-0.5 align-middle";
-const tdTotal = "sticky bottom-0 border-t border-white/15 bg-[#0d0d0d] px-2 py-2 align-middle font-mono";
-const tdTotalSub = "border-t border-white/5 bg-[#0d0d0d] px-2 py-1 align-middle";
+  "sticky top-0 z-20 border-b border-border bg-secondary px-2 py-1.5 font-semibold whitespace-nowrap";
+const td = "border-b border-border px-2 py-0.5 align-middle";
+const tdTotal = "sticky bottom-0 border-t border-border bg-card px-2 py-2 align-middle font-mono";
+const tdTotalSub = "border-t border-border bg-card px-2 py-1 align-middle";
 
 const TYPE_STYLE: Record<BudgetType, { text: string; bg: string }> = {
   "Supplied Ad": { text: "#60a5fa", bg: "rgba(96,165,250,0.14)" },
@@ -182,10 +182,10 @@ function BudgetRowView({
   return (
     <tr className="group h-7 align-middle" style={{ background: isSpace ? "transparent" : undefined }}>
       <td className={td}>
-        <span className="font-mono font-semibold text-white">{row.pageLabel}</span>
+        <span className="font-mono font-semibold text-gray-900">{row.pageLabel}</span>
       </td>
       <td className={`${td} max-w-[220px]`}>
-        <span className="block truncate text-gray-200" title={row.feature}>
+        <span className="block truncate text-gray-800" title={row.feature}>
           {row.feature || <span className="text-gray-600">—</span>}
         </span>
       </td>
@@ -269,7 +269,7 @@ function BudgetRowView({
         ) : prodEditable ? (
           <MoneyInput value={row.productionCost} onChange={onProductionCost} />
         ) : (
-          <span className="font-mono text-gray-200" title="From linked production">
+          <span className="font-mono text-gray-800" title="From linked production">
             {money(row.productionCost)}
           </span>
         )}
@@ -323,14 +323,14 @@ function LinkPicker({
       <button
         onClick={() => onPick("")}
         title={`Unlink ${label}`}
-        className="flex items-center gap-0.5 rounded bg-white/5 px-1 text-[9px] text-gray-400 hover:text-red-400"
+        className="flex items-center gap-0.5 rounded bg-secondary px-1 text-[9px] text-gray-400 hover:text-red-400"
       >
         <X className="h-2.5 w-2.5" /> {label}
       </button>
     );
   }
   return (
-    <label className="flex cursor-pointer items-center gap-0.5 rounded bg-white/5 px-1 text-[9px] text-gray-400 hover:text-[#4d9fff]">
+    <label className="flex cursor-pointer items-center gap-0.5 rounded bg-secondary px-1 text-[9px] text-gray-400 hover:text-[#4d9fff]">
       <Link2 className="h-2.5 w-2.5" />
       <span>{label}</span>
       <select
@@ -339,11 +339,11 @@ function LinkPicker({
         className="cursor-pointer bg-transparent text-[9px] focus:outline-none"
         style={{ width: 10, color: "transparent" }}
       >
-        <option value="" className="bg-[#141414] text-white">
+        <option value="" className="bg-popover text-foreground">
           Link {label}…
         </option>
         {options.map((o) => (
-          <option key={o.id} value={o.id} className="bg-[#141414] text-white">
+          <option key={o.id} value={o.id} className="bg-popover text-foreground">
             {o.label}
           </option>
         ))}
@@ -361,7 +361,7 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) 
         value={value || ""}
         onChange={(e) => onChange(e.target.value === "" ? 0 : Number(e.target.value))}
         placeholder="0"
-        className="w-[68px] rounded bg-transparent px-1 py-0.5 text-right font-mono text-[11px] text-gray-100 placeholder-gray-600 focus:bg-white/5 focus:outline-none"
+        className="w-[68px] rounded bg-transparent px-1 py-0.5 text-right font-mono text-[11px] text-gray-900 placeholder-gray-400 focus:bg-muted focus:outline-none"
       />
     </span>
   );

@@ -323,7 +323,7 @@ export default function ProductionDashboard() {
   const archived = list.filter((p) => ["DELIVERED", "ARCHIVED"].includes(p.status));
 
   return (
-    <div className="min-h-screen bg-[#141414]">
+    <div className="min-h-screen bg-card">
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Page header */}
         <div className="flex items-end justify-between mb-7">
@@ -981,7 +981,7 @@ function ProjectCard({ production: p }: { production: Production }) {
 
   return (
     <Link href={`/production/${p.id}`}>
-      <div className="bg-white rounded-2xl border border-[#2a2a2a] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-5 group cursor-pointer h-full flex flex-col">
+      <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-5 group cursor-pointer h-full flex flex-col">
         <div className="flex items-start justify-between mb-3">
           <div className="w-10 h-10 bg-[#ff4444]/10 rounded-xl flex items-center justify-center flex-shrink-0">
             <Film size={18} className="text-[#ff4444]" />

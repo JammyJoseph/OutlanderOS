@@ -192,7 +192,7 @@ export default function CampaignTrackerTab({
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
             <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <Film size={15} className="text-[#ff4444]" />
+              <Film size={15} className="text-red-600" />
               Production Milestones
             </h3>
             {production ? (
@@ -227,7 +227,7 @@ export default function CampaignTrackerTab({
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
             <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <LinkIcon size={15} className="text-[#ffd700]" />
+              <LinkIcon size={15} className="text-[var(--portal-commercial)]" />
               Link Banking
             </h3>
             <span className="text-sm font-semibold text-gray-700">
@@ -306,7 +306,7 @@ export default function CampaignTrackerTab({
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-            <CalendarDays size={15} className="text-[#ffd700]" />
+            <CalendarDays size={15} className="text-[var(--portal-commercial)]" />
             Campaign Calendar
           </h3>
           <div className="flex items-center gap-2">

@@ -1,7 +1,7 @@
 // Shared constants for the Directory portal — Outlander's network of contacts,
 // collaborators and talent.
 
-export const DIRECTORY_ACCENT = "#e0e0e0";
+export const DIRECTORY_ACCENT = "#64748b";
 
 // Contact categories, in display order. Stored on Contact.category.
 export const CONTACT_CATEGORIES = [

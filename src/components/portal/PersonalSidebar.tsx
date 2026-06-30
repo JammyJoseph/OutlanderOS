@@ -22,8 +22,8 @@ const ITEMS = [
 export function PersonalSidebar() {
   const pathname = usePathname();
   return (
-    <aside className="flex w-[200px] shrink-0 flex-col border-r border-[#2a2a2a] bg-white/80 backdrop-blur-md">
-      <div className="flex h-10 items-center gap-2 border-b border-[#2a2a2a] px-4">
+    <aside className="flex w-[200px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur-md">
+      <div className="flex h-10 items-center gap-2 border-b border-sidebar-border px-4">
         <span className="h-2 w-2 rounded-full bg-[#ffd700]" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
           My Dashboard

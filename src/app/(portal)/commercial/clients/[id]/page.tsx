@@ -139,7 +139,7 @@ function InviteButton() {
       {show && (
         <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-gray-200 bg-white p-3 shadow-lg z-10">
           <div className="flex items-start gap-2">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#ffd700]" />
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--portal-commercial)]" />
             <p className="text-xs text-gray-500 leading-snug">
               Client portal invitations are <span className="font-semibold text-gray-700">coming soon</span>.
             </p>
@@ -216,7 +216,7 @@ export default function ClientDetailPage() {
               <h1 className="text-xl font-bold text-gray-900">{client.name}</h1>
               <div className="mt-0.5 flex items-center gap-3 text-sm text-gray-500">
                 {client.industry && <span>{client.industry}</span>}
-                <span className="text-[#ffd700] font-semibold">
+                <span className="text-[var(--portal-commercial)] font-semibold">
                   {fmt(totalSpend, primaryCurrency)} total
                 </span>
                 <span>{client.campaigns.length} campaign{client.campaigns.length !== 1 ? "s" : ""}</span>

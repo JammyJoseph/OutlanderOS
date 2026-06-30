@@ -62,10 +62,10 @@ export default function CommercialProjectsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#141414] font-[family-name:var(--font-manrope)]">
+    <div className="min-h-screen bg-card font-[family-name:var(--font-manrope)]">
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="mb-7">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#ffd700]">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
             OutlanderOS · Commercial
           </p>
           <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">
@@ -157,7 +157,7 @@ export default function CommercialProjectsPage() {
                       className="mt-4 flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50/40 px-4 py-2.5 transition-colors hover:bg-amber-50"
                     >
                       <span className="flex items-center gap-2 text-xs font-medium text-gray-700">
-                        <Film size={14} className="text-[#ffd700]" />
+                        <Film size={14} className="text-[var(--portal-commercial)]" />
                         Production · {p.production.status} ·{" "}
                         {gbp(p.production.budgetTotal)} allocated
                       </span>

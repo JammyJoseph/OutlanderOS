@@ -84,12 +84,12 @@ export default function ArchivePage() {
     : deals;
 
   return (
-    <div className="min-h-screen bg-[#141414]">
+    <div className="min-h-screen bg-card">
       <div className="mx-auto max-w-5xl px-6 py-8">
         {/* Header */}
         <div className="mb-5 flex items-end justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#ffd700]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
               OutlanderOS · Commercial
             </p>
             <h1 className="mt-1 flex items-center gap-2 text-3xl font-semibold tracking-tight text-gray-900">

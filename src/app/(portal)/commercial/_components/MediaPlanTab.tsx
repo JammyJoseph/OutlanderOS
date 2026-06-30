@@ -337,7 +337,7 @@ export default function MediaPlanTab({
                 href={link}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200] px-2.5 py-2 rounded-lg border border-gray-200 transition-colors"
+                className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)] px-2.5 py-2 rounded-lg border border-gray-200 transition-colors"
               >
                 <ExternalLink size={12} /> Open
               </a>
@@ -352,12 +352,12 @@ export default function MediaPlanTab({
           </label>
           {file ? (
             <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3">
-              <FileText size={16} className="text-[#ff4444] shrink-0" />
+              <FileText size={16} className="text-red-600 shrink-0" />
               <a
                 href={file}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 truncate text-sm text-gray-700 hover:text-[#ffd700] transition-colors"
+                className="flex-1 truncate text-sm text-gray-700 hover:text-[var(--portal-commercial)] transition-colors"
               >
                 {file.split("/").pop()}
               </a>
@@ -365,7 +365,7 @@ export default function MediaPlanTab({
                 href={file}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+                className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)]"
               >
                 <ExternalLink size={12} /> View
               </a>
@@ -445,7 +445,7 @@ export default function MediaPlanTab({
         {/* Preview */}
         <div>
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Preview</p>
-          <div className="rounded-xl border border-[#2a2a2a] overflow-hidden bg-[#0a0a0a]">
+          <div className="rounded-xl border border-border overflow-hidden bg-background">
             {preview ? (
               <iframe
                 src={preview}
@@ -518,14 +518,14 @@ export default function MediaPlanTab({
           <div className="flex items-center gap-3 mb-5 text-[11px]">
             <button
               onClick={() => setMediaSpend(String(dv))}
-              className="text-gray-400 hover:text-[#ffd700] transition-colors"
+              className="text-gray-400 hover:text-[var(--portal-commercial)] transition-colors"
             >
               No production — all media spend
             </button>
             {ms > 0 && (
               <button
                 onClick={() => setMediaSpend("0")}
-                className="text-gray-400 hover:text-[#ffd700] transition-colors"
+                className="text-gray-400 hover:text-[var(--portal-commercial)] transition-colors"
               >
                 Reset media spend
               </button>
@@ -578,9 +578,9 @@ export default function MediaPlanTab({
           </div>
           <div>
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
-              Hard Cost Budget <span className="normal-case text-[#ff4444]">→ Production</span>
+              Hard Cost Budget <span className="normal-case text-red-600">→ Production</span>
             </p>
-            <div className={`${autoCls} flex items-center !text-[#ff8888]`}>{gbp0(hardCostBudget)}</div>
+            <div className={`${autoCls} flex items-center !text-red-500`}>{gbp0(hardCostBudget)}</div>
           </div>
         </div>
 
@@ -719,7 +719,7 @@ function SummaryRow({
         <p className={`text-sm font-medium ${accent ? "text-gray-800" : "text-gray-600"}`}>{label}</p>
         <p className="text-[11px] text-gray-400">{detail}</p>
       </div>
-      <span className={`text-sm font-bold tabular-nums ${accent ? "text-[#ffd700]" : "text-gray-700"}`}>
+      <span className={`text-sm font-bold tabular-nums ${accent ? "text-[var(--portal-commercial)]" : "text-gray-700"}`}>
         {value}
       </span>
     </div>

@@ -99,7 +99,7 @@ export default function ClientsPage() {
                     {initials(client.name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900 truncate group-hover:text-[#ffd700] transition-colors">
+                    <p className="font-semibold text-gray-900 truncate group-hover:text-[var(--portal-commercial)] transition-colors">
                       {client.name}
                     </p>
                     {client.industry && (

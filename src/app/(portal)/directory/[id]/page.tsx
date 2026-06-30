@@ -76,9 +76,9 @@ interface ContactDetail {
   creator?: { id: string; name: string } | null;
 }
 
-const cardCls = "rounded-2xl border border-[#2a2a2a] bg-[#141414] p-5";
+const cardCls = "rounded-2xl border border-border bg-card p-5";
 const inputCls =
-  "w-full rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-[#e0e0e0]/40 focus:outline-none focus:ring-2 focus:ring-[#e0e0e0]/10";
+  "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
 const labelCls =
   "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2";
 
@@ -115,7 +115,7 @@ function Stars({
             className={
               i <= (rating ?? 0)
                 ? "fill-[#ffd700] text-[#ffd700]"
-                : "text-[#3a3a3a] hover:text-[#555]"
+                : "text-gray-300 hover:text-gray-400"
             }
           />
         </button>
@@ -206,7 +206,7 @@ export default function ContactDetailPage({
               <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
                 {contact.name}
               </h1>
-              <span className="inline-flex items-center rounded-full border border-[#2a2a2a] bg-[#1c1c1c] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-300">
+              <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
                 {contact.category}
               </span>
             </div>
@@ -301,7 +301,7 @@ export default function ContactDetailPage({
                     <li key={i}>
                       <Link
                         href={`/production/${c.productionId}`}
-                        className="flex items-center justify-between rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-3 py-2.5 transition-colors hover:border-[#3a3a3a]"
+                        className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2.5 transition-colors hover:border-[var(--ring)]"
                       >
                         <span className="text-sm text-gray-900">
                           Worked with us on{" "}
@@ -320,7 +320,7 @@ export default function ContactDetailPage({
           {/* Right / Instagram + meta */}
           <div className="space-y-5">
             {handle ? (
-              <div className="overflow-hidden rounded-2xl border border-[#2a2a2a] bg-[#141414]">
+              <div className="overflow-hidden rounded-2xl border border-border bg-card">
                 <div
                   className="flex items-center gap-3 px-5 py-4"
                   style={{
@@ -441,7 +441,7 @@ function TagEditor({
         {tags.map((t) => (
           <span
             key={t}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#2a2a2a] bg-[#1c1c1c] px-3 py-1 text-xs text-gray-300"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-gray-600"
           >
             {t}
             <button
@@ -463,7 +463,7 @@ function TagEditor({
           }}
           onBlur={add}
           placeholder="Add tag…"
-          className="min-w-[100px] flex-1 rounded-full border border-dashed border-[#2a2a2a] bg-transparent px-3 py-1 text-xs text-gray-900 placeholder:text-gray-600 focus:border-[#e0e0e0]/40 focus:outline-none"
+          className="min-w-[100px] flex-1 rounded-full border border-dashed border-border bg-transparent px-3 py-1 text-xs text-gray-900 placeholder:text-gray-400 focus:border-[var(--ring)] focus:outline-none"
         />
       </div>
     </div>
@@ -540,13 +540,13 @@ function PortfolioEditor({
           {links.map((l, i) => (
             <li
               key={i}
-              className="flex items-center justify-between rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-3 py-2"
+              className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2"
             >
               <a
                 href={l.url.startsWith("http") ? l.url : `https://${l.url}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 truncate text-sm text-gray-300 hover:text-gray-900"
+                className="inline-flex items-center gap-2 truncate text-sm text-gray-600 hover:text-gray-900"
               >
                 <ExternalLink size={13} className="shrink-0 text-gray-600" />
                 <span className="truncate">{l.title}</span>

@@ -46,7 +46,7 @@ export default function PrintDashboard() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#0a0a0a]">
+      <div className="flex h-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-[#00ff88]" />
       </div>
     );
@@ -58,10 +58,10 @@ export default function PrintDashboard() {
     issues.find((i) => i.state !== "Complete")?.issueNumber ?? issues[0]?.issueNumber;
 
   return (
-    <div className="flex h-full flex-col bg-[#0a0a0a] text-gray-200">
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-white/5 bg-[#0a0a0a]/90 px-6 py-3 backdrop-blur">
+    <div className="flex h-full flex-col bg-background text-foreground">
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/90 px-6 py-3 backdrop-blur">
         <div>
-          <h1 className="flex items-center gap-2 text-base font-semibold text-white">
+          <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
             <span className="h-2 w-2 rounded-full bg-[#00ff88]" />
             Print — Outlander Magazine
           </h1>
@@ -86,7 +86,7 @@ export default function PrintDashboard() {
             href={LEGACY_SHEET}
             target="_blank"
             rel="noopener"
-            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-foreground"
           >
             <ExternalLink className="h-3.5 w-3.5" /> Legacy Sheet
           </a>
@@ -108,7 +108,7 @@ export default function PrintDashboard() {
             <button
               onClick={handleNewIssue}
               disabled={creating || !issues.length}
-              className="flex min-h-[164px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/10 bg-white/[0.01] text-gray-500 transition hover:border-[#00ff88]/40 hover:text-[#00ff88] disabled:opacity-50"
+              className="flex min-h-[164px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card text-gray-500 transition hover:border-[#00ff88]/40 hover:text-[#00ff88] disabled:opacity-50"
             >
               {creating ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -130,9 +130,9 @@ function IssueCard({ issue, isCurrent }: { issue: IssueSummary; isCurrent: boole
   return (
     <Link
       href={`/print/flat-plan?issue=${issue.issueNumber}`}
-      className="group relative flex flex-col rounded-2xl border bg-white/[0.02] p-5 transition hover:bg-white/[0.04]"
+      className="group relative flex flex-col rounded-2xl border border-border bg-card p-5 transition hover:bg-secondary"
       style={{
-        borderColor: isCurrent ? `${st.accent}66` : "rgba(255,255,255,0.06)",
+        borderColor: isCurrent ? `${st.accent}66` : undefined,
         boxShadow: isCurrent ? `inset 0 0 0 1px ${st.accent}33` : undefined,
       }}
     >
@@ -146,10 +146,10 @@ function IssueCard({ issue, isCurrent }: { issue: IssueSummary; isCurrent: boole
       )}
 
       <div className="flex items-baseline gap-2">
-        <span className="font-mono text-3xl font-bold text-white">
+        <span className="font-mono text-3xl font-bold text-foreground">
           {String(issue.issueNumber).padStart(2, "0")}
         </span>
-        <span className="text-sm font-semibold text-gray-400">{issue.issueName}</span>
+        <span className="text-sm font-semibold text-gray-500">{issue.issueName}</span>
       </div>
 
       <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: st.text }}>
@@ -165,7 +165,7 @@ function IssueCard({ issue, isCurrent }: { issue: IssueSummary; isCurrent: boole
             {issue.stats.progressPct}%
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
           <div
             className="h-full rounded-full transition-all"
             style={{ width: `${issue.stats.progressPct}%`, background: st.accent }}

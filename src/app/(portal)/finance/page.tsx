@@ -49,7 +49,7 @@ function FinanceInner() {
           <p className="mt-0.5 text-xs text-gray-500">Budgets, costs, invoices &amp; the company P&amp;L — one source of truth</p>
         </div>
 
-        <div className="flex overflow-x-auto border-b border-[#2a2a2a]">
+        <div className="flex overflow-x-auto border-b border-border">
           {TABS.map((tab) => (
             <button
               key={tab.id}

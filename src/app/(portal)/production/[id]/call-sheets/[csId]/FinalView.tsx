@@ -50,7 +50,7 @@ export function FinalView({
   }
 
   return (
-    <div className="min-h-screen bg-[#141414] print:bg-white" data-callsheet-print>
+    <div className="min-h-screen bg-card print:bg-white" data-callsheet-print>
       <div className="max-w-4xl mx-auto px-6 py-10 print:px-0 print:py-0 print:max-w-none">
         <div className="flex items-center justify-between mb-6 print:hidden">
           <Link

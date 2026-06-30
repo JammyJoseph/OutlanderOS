@@ -32,7 +32,7 @@ function todayLabel(): string {
 
 function PageSkeleton() {
   return (
-    <div className="min-h-full bg-[#0a0a0a] p-6">
+    <div className="min-h-full bg-background p-6">
       <div className="mx-auto max-w-6xl space-y-4">
         <div className="h-8 w-72 animate-pulse rounded-lg bg-gray-100" />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -70,7 +70,7 @@ export default function MePage() {
 
   if (error && !data) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#0a0a0a]">
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-background">
         <p className="text-sm text-gray-500">{error}</p>
         <button
           onClick={loadData}
@@ -87,7 +87,7 @@ export default function MePage() {
   const firstName = data.user.name.split(" ")[0] || data.user.name;
 
   return (
-    <div className="min-h-full bg-[#0a0a0a] p-6">
+    <div className="min-h-full bg-background p-6">
       <div className="mx-auto max-w-6xl space-y-4">
         {/* Top strip — greeting + date */}
         <div className="flex flex-wrap items-baseline justify-between gap-2">

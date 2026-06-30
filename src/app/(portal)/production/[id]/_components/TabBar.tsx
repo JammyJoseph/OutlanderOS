@@ -40,7 +40,7 @@ const TABS: { key: TabKey; label: string; Icon: React.ComponentType<{ size?: num
 
 export default function TabBar({ active, onSelect, counts }: Props) {
   return (
-    <div className="sticky top-0 z-30 bg-[#141414]/90 backdrop-blur supports-[backdrop-filter]:bg-[#141414]/70 -mx-6 px-6 border-b border-gray-100">
+    <div className="sticky top-0 z-30 bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/70 -mx-6 px-6 border-b border-gray-100">
       <div className="flex gap-1 overflow-x-auto scrollbar-none py-2">
         {(TABS ?? []).map(({ key, label, Icon }) => {
           const isActive = active === key;

@@ -25,7 +25,7 @@ const ACCENT_BAR: Record<NonNullable<KPICardProps['accent']>, string> = {
 export default function KPICard({ label, value, accent = 'default', sub, loading }: KPICardProps) {
   return (
     <div
-      className="rounded-xl border border-[#2a2a2a] bg-white px-5 py-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+      className="rounded-xl border border-border bg-card px-5 py-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
       style={{ borderLeft: `3px solid ${ACCENT_BAR[accent]}` }}
     >
       <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 truncate">

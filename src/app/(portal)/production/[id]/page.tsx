@@ -205,7 +205,7 @@ export default function ProjectDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#141414] flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <Loader2 size={24} className="animate-spin text-gray-400" />
       </div>
     );
@@ -213,7 +213,7 @@ export default function ProjectDetail() {
 
   if (!production) {
     return (
-      <div className="min-h-screen bg-[#141414] flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Project not found.</p>
           <Link
@@ -237,7 +237,7 @@ export default function ProjectDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-[#141414]">
+    <div className="min-h-screen bg-card">
       <div className="max-w-6xl mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-5">
           <Link

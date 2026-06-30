@@ -84,7 +84,7 @@ export default function ScheduleTab({
                 Day {d}
                 <span
                   className={`ml-1.5 text-[10px] ${
-                    activeDay === d ? "text-white/80" : "text-gray-400"
+                    activeDay === d ? "text-black/70" : "text-gray-400"
                   }`}
                 >
                   {(blocks ?? []).filter((b) => b.shootDay === d).length}

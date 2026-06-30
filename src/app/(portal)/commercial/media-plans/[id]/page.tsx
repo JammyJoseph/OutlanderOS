@@ -219,7 +219,7 @@ export default function MediaPlanEditPage() {
         <p className="text-sm text-gray-500">Media plan not found.</p>
         <Link
           href="/commercial/media-plans"
-          className="text-sm text-[#ffd700] hover:underline"
+          className="text-sm text-[var(--portal-commercial)] hover:underline"
         >
           Back to Media Plans
         </Link>

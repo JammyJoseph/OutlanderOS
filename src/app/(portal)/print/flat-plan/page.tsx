@@ -42,7 +42,7 @@ export default function FlatPlanPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-full items-center justify-center bg-[#0a0a0a]">
+        <div className="flex h-full items-center justify-center bg-background">
           <Loader2 className="h-6 w-6 animate-spin text-[#00ff88]" />
         </div>
       }
@@ -117,7 +117,7 @@ function FlatPlanInner() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#0a0a0a]">
+      <div className="flex h-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-[#00ff88]" />
       </div>
     );
@@ -125,8 +125,8 @@ function FlatPlanInner() {
 
   if (!plan) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-[#0a0a0a] text-center text-gray-400">
-        <Cloud className="mb-3 h-8 w-8 text-gray-600" />
+      <div className="flex h-full flex-col items-center justify-center bg-background text-center text-gray-500">
+        <Cloud className="mb-3 h-8 w-8 text-gray-400" />
         <p className="text-sm">Couldn&apos;t load the magazine plan.</p>
         {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
         <Link href="/print" className="mt-3 text-xs text-[#00ff88] hover:underline">
@@ -137,19 +137,19 @@ function FlatPlanInner() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-[#0a0a0a] text-gray-200">
+    <div className="flex h-full flex-col bg-background text-foreground">
       {/* Header */}
-      <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-white/5 bg-[#0a0a0a]/90 px-6 py-3 backdrop-blur">
+      <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background/90 px-6 py-3 backdrop-blur">
         <div className="flex items-center gap-3">
           <Link
             href="/print"
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:text-white"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-secondary text-gray-500 hover:text-foreground"
             title="All issues"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
           <div>
-            <h1 className="flex items-center gap-2 text-base font-semibold text-white">
+            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
               <span className="h-2 w-2 rounded-full bg-[#00ff88]" />
               Issue {String(plan.issueNumber).padStart(2, "0")} — {plan.issueName}
             </h1>
@@ -162,11 +162,11 @@ function FlatPlanInner() {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* View toggle */}
-          <div className="flex rounded-lg bg-white/5 p-0.5">
+          <div className="flex rounded-lg bg-secondary p-0.5">
             <button
               onClick={() => setView("tracker")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "tracker" ? "bg-[#00ff88] text-black" : "text-gray-400 hover:text-white"
+                view === "tracker" ? "bg-[#00ff88] text-black" : "text-gray-500 hover:text-foreground"
               }`}
             >
               <Table2 className="h-3.5 w-3.5" /> Tracker
@@ -174,7 +174,7 @@ function FlatPlanInner() {
             <button
               onClick={() => setView("flatplan")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "flatplan" ? "bg-[#00ff88] text-black" : "text-gray-400 hover:text-white"
+                view === "flatplan" ? "bg-[#00ff88] text-black" : "text-gray-500 hover:text-foreground"
               }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" /> Flat Plan
@@ -182,7 +182,7 @@ function FlatPlanInner() {
             <button
               onClick={() => setView("budget")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "budget" ? "bg-[#00ff88] text-black" : "text-gray-400 hover:text-white"
+                view === "budget" ? "bg-[#00ff88] text-black" : "text-gray-500 hover:text-foreground"
               }`}
             >
               <PoundSterling className="h-3.5 w-3.5" /> Budget
@@ -225,7 +225,7 @@ function FlatPlanInner() {
       </div>
 
       {/* Totals bar */}
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-1 border-t border-white/5 bg-[#0d0d0d] px-6 py-3 text-xs">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-1 border-t border-border bg-card px-6 py-3 text-xs">
         <Total label="Total Sections" value={stats.sections} />
         <Total label="Total Content Received" value={`${stats.contentReceivedPct}%`} accent="#fbbf24" />
         <Total label="Total In Progress" value={`${stats.inProgressPct}%`} accent="#c084fc" />
@@ -254,15 +254,15 @@ function FlatPlanInner() {
 }
 
 const btnGhost =
-  "flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-gray-300 hover:bg-white/10";
+  "flex items-center gap-1 rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:bg-muted";
 const btnSolid =
-  "flex items-center gap-1 rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-black hover:bg-gray-200";
+  "flex items-center gap-1 rounded-lg bg-gray-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-gray-700";
 
 function Total({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
   return (
     <div className="flex items-baseline gap-1.5">
       <span className="text-[10px] uppercase tracking-wider text-gray-500">{label}</span>
-      <span className="font-mono text-sm font-bold" style={{ color: accent ?? "#fff" }}>
+      <span className="font-mono text-sm font-bold" style={{ color: accent ?? "var(--foreground)" }}>
         {value}
       </span>
     </div>
@@ -326,12 +326,11 @@ function TrackerView({
                   if (dragIndex !== null) reorder(dragIndex, i);
                   setDragIndex(null);
                 }}
-                className={`group h-7 ${dragIndex === i ? "opacity-40" : ""}`}
-                style={{ background: i % 2 ? "rgba(255,255,255,0.015)" : "transparent" }}
+                className={`group h-7 ${dragIndex === i ? "opacity-40" : ""} ${i % 2 ? "bg-muted/40" : ""}`}
               >
                 <td className={td} style={{ borderLeft: `3px solid ${colour}` }}>
-                  <span className="flex items-center gap-1 font-semibold text-white">
-                    <GripVertical className="h-3 w-3 cursor-grab text-gray-500 group-hover:text-gray-700" />
+                  <span className="flex items-center gap-1 font-semibold text-gray-900">
+                    <GripVertical className="h-3 w-3 cursor-grab text-gray-400 group-hover:text-gray-600" />
                     {p.pageNumber}
                   </span>
                 </td>
@@ -343,7 +342,7 @@ function TrackerView({
                     style={{ color: colour }}
                   >
                     {SECTION_KEYS.map((k) => (
-                      <option key={k} value={k} className="bg-[#141414] text-white">
+                      <option key={k} value={k} className="bg-popover text-foreground">
                         {k}
                       </option>
                     ))}
@@ -384,8 +383,8 @@ function TrackerView({
 }
 
 const th =
-  "sticky top-0 z-20 border-b border-white/10 bg-[#0a0a0a] px-2 py-1.5 font-semibold whitespace-nowrap";
-const td = "border-b border-white/5 px-2 py-0.5 align-middle";
+  "sticky top-0 z-20 border-b border-border bg-secondary px-2 py-1.5 font-semibold whitespace-nowrap";
+const td = "border-b border-border px-2 py-0.5 align-middle";
 const cellSelect =
   "w-full bg-transparent text-[11px] font-semibold focus:outline-none cursor-pointer";
 
@@ -406,9 +405,8 @@ function CellInput({
         type={date ? "date" : "text"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`${wide ? "min-w-[150px]" : "min-w-[80px]"} w-full rounded bg-transparent px-1 py-0.5 text-[11px] text-gray-800 placeholder-gray-400 focus:bg-white/5 focus:outline-none`}
+        className={`${wide ? "min-w-[150px]" : "min-w-[80px]"} w-full rounded bg-transparent px-1 py-0.5 text-[11px] text-gray-800 placeholder-gray-400 focus:bg-muted focus:outline-none`}
         placeholder="—"
-        style={date ? { colorScheme: "dark" } : undefined}
       />
     </td>
   );
@@ -429,7 +427,7 @@ function StatusDots({ status, onSet }: { status: PageStatus; onSet: (s: PageStat
             title={STATUS_LABELS[s]}
             className="h-2 w-2 rounded-full transition hover:scale-125"
             style={{
-              background: reached ? STATUS_STYLE[s].text : "rgba(255,255,255,0.12)",
+              background: reached ? STATUS_STYLE[s].text : "var(--border)",
               boxShadow: idx === currentIdx ? `0 0 0 2px ${STATUS_STYLE[s].bg}` : undefined,
             }}
           />
@@ -445,7 +443,7 @@ function CheckCell({ checked, onToggle }: { checked: boolean; onToggle: (v: bool
       <button
         onClick={() => onToggle(!checked)}
         className={`mx-auto flex h-4 w-4 items-center justify-center rounded border ${
-          checked ? "border-[#00ff88] bg-[#00ff88] text-black" : "border-white/15 bg-transparent"
+          checked ? "border-[#00ff88] bg-[#00ff88] text-black" : "border-border bg-transparent"
         }`}
       >
         {checked && <Check className="h-3 w-3" />}
@@ -479,7 +477,7 @@ function FlatPlanView({ pages, onOpen }: { pages: MagazinePage[]; onOpen: (i: nu
           return (
             <div
               key={si}
-              className={`flex gap-[2px] ${newSignature ? "border-l border-white/10 pl-2" : ""}`}
+              className={`flex gap-[2px] ${newSignature ? "border-l border-border pl-2" : ""}`}
             >
               <PageCard index={sp.left} pages={pages} onOpen={onOpen} />
               <PageCard index={sp.right} pages={pages} onOpen={onOpen} />
@@ -501,7 +499,7 @@ function PageCard({
   onOpen: (i: number) => void;
 }) {
   if (index === null) {
-    return <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-white/5" />;
+    return <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-border" />;
   }
   const p = pages[index];
   const colour = sectionColour(p.section);
@@ -511,17 +509,17 @@ function PageCard({
       onClick={() => onOpen(index)}
       className="group relative flex h-[86px] w-[64px] flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2"
       style={{
-        background: isSpace ? "rgba(255,255,255,0.04)" : `${colour}5e`, // ~37% tint
+        background: isSpace ? "var(--secondary)" : `${colour}5e`, // ~37% tint
         // @ts-expect-error CSS custom prop for hover ring
         "--tw-ring-color": `${colour}99`,
       }}
     >
       <span
         className="absolute left-0 top-0 h-full w-[2px]"
-        style={{ background: isSpace ? "rgba(255,255,255,0.06)" : colour }}
+        style={{ background: isSpace ? "var(--border)" : colour }}
       />
       <div className="flex items-start justify-between pl-1">
-        <span className="font-mono text-[7px] font-bold text-white">{p.pageNumber}</span>
+        <span className="font-mono text-[7px] font-bold text-gray-900">{p.pageNumber}</span>
         {!isSpace && (
           <span
             className="rounded px-0.5 text-[6px] font-bold uppercase leading-tight tracking-wide text-black"
@@ -531,7 +529,7 @@ function PageCard({
           </span>
         )}
       </div>
-      <p className="mt-0.5 line-clamp-4 pl-1 text-[8px] font-semibold leading-[1.1] text-white">
+      <p className="mt-0.5 line-clamp-4 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-900">
         {isSpace ? <span className="text-gray-500">Space</span> : truncate(p.feature, 28)}
       </p>
     </button>
@@ -577,15 +575,15 @@ function EditModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl"
+        className="w-full max-w-lg rounded-2xl border border-border bg-popover p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: colour }} />
             Page {page.pageNumber}
           </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-white">
+          <button onClick={onClose} className="text-gray-500 hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -598,7 +596,7 @@ function EditModal({
               className={modalInput}
             >
               {SECTION_KEYS.map((k) => (
-                <option key={k} value={k} className="bg-[#141414]">{k}</option>
+                <option key={k} value={k} className="bg-popover">{k}</option>
               ))}
             </select>
           </Field>
@@ -609,7 +607,7 @@ function EditModal({
               className={modalInput}
             >
               {STATUS_PIPELINE.map((s) => (
-                <option key={s} value={s} className="bg-[#141414]">{STATUS_LABELS[s]}</option>
+                <option key={s} value={s} className="bg-popover">{STATUS_LABELS[s]}</option>
               ))}
             </select>
           </Field>
@@ -626,13 +624,13 @@ function EditModal({
             <input value={page.photographer} onChange={(e) => onChange({ photographer: e.target.value })} className={modalInput} />
           </Field>
           <Field label="Shoot Date">
-            <input type="date" value={page.shootDate} onChange={(e) => onChange({ shootDate: e.target.value })} className={modalInput} style={{ colorScheme: "dark" }} />
+            <input type="date" value={page.shootDate} onChange={(e) => onChange({ shootDate: e.target.value })} className={modalInput} />
           </Field>
           <Field label="Talent">
             <input value={page.talent} onChange={(e) => onChange({ talent: e.target.value })} className={modalInput} />
           </Field>
           <Field label="Interview Date">
-            <input type="date" value={page.interviewDate} onChange={(e) => onChange({ interviewDate: e.target.value })} className={modalInput} style={{ colorScheme: "dark" }} />
+            <input type="date" value={page.interviewDate} onChange={(e) => onChange({ interviewDate: e.target.value })} className={modalInput} />
           </Field>
           <Field label="Editor" full>
             <input value={page.editor} onChange={(e) => onChange({ editor: e.target.value })} className={modalInput} />
@@ -649,7 +647,7 @@ function EditModal({
 }
 
 const modalInput =
-  "w-full rounded-lg border border-white/10 bg-black/30 px-2.5 py-1.5 text-xs text-gray-800 focus:border-[#00ff88]/50 focus:outline-none";
+  "w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 focus:border-[#00ff88]/50 focus:outline-none";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (

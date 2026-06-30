@@ -165,12 +165,12 @@ export default function CommercialDashboard() {
   }, [deals, stageFilter, sortMode]);
 
   return (
-    <div className="min-h-screen bg-[#141414]">
+    <div className="min-h-screen bg-card">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Page header */}
         <div className="flex items-end justify-between mb-7">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#ffd700]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
               OutlanderOS · Commercial
             </p>
             <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">
@@ -186,7 +186,7 @@ export default function CommercialDashboard() {
               href="/commercial/pipeline"
               className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
             >
-              <Kanban size={16} className="text-[#ffd700]" />
+              <Kanban size={16} className="text-[var(--portal-commercial)]" />
               Open Pipeline
             </Link>
             <button
@@ -307,7 +307,7 @@ function StatCard({
   subtitle?: string;
 }) {
   const TONE: Record<typeof tone, { bg: string; fg: string }> = {
-    amber: { bg: "bg-amber-50", fg: "text-[#ffd700]" },
+    amber: { bg: "bg-amber-50", fg: "text-[var(--portal-commercial)]" },
     red: { bg: "bg-red-50", fg: "text-red-600" },
     blue: { bg: "bg-blue-50", fg: "text-blue-600" },
     green: { bg: "bg-green-50", fg: "text-green-600" },
@@ -352,7 +352,7 @@ function ActiveJobs({
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <Briefcase size={15} className="text-[#ffd700]" />
+          <Briefcase size={15} className="text-[var(--portal-commercial)]" />
           Active Jobs
           <span className="text-gray-400 font-normal">
             {deals.length}
@@ -361,7 +361,7 @@ function ActiveJobs({
           {stageFilter && (
             <button
               onClick={onClearFilter}
-              className="ml-1 text-[11px] font-medium text-[#ffd700] hover:text-[#e6c200]"
+              className="ml-1 text-[11px] font-medium text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)]"
             >
               · {STAGE_STYLES[stageFilter]?.label} ✕
             </button>
@@ -499,7 +499,7 @@ function StageSummary({
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full overflow-hidden">
       <div className="px-4 py-4 border-b border-gray-50">
         <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <Kanban size={15} className="text-[#ffd700]" />
+          <Kanban size={15} className="text-[var(--portal-commercial)]" />
           By Stage
         </h2>
       </div>
@@ -520,7 +520,7 @@ function StageSummary({
                 <span className="truncate">{style.label}</span>
               </span>
               <span
-                className={`text-xs font-semibold tabular-nums shrink-0 ${isActive ? "text-[#e6c200]" : "text-gray-500"}`}
+                className={`text-xs font-semibold tabular-nums shrink-0 ${isActive ? "text-[var(--portal-commercial)]" : "text-gray-500"}`}
               >
                 {s.count}
               </span>
@@ -564,7 +564,7 @@ function CampaignCalendar({
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <CalendarDays size={15} className="text-[#ffd700]" />
+          <CalendarDays size={15} className="text-[var(--portal-commercial)]" />
           Campaign Calendar
         </h2>
         <div className="flex items-center gap-2">
@@ -649,7 +649,7 @@ function RecentActivity({ items }: { items: ActivityItem[] }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50">
         <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <ActivityIcon size={15} className="text-[#ffd700]" />
+          <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
           Recent Activity
         </h2>
       </div>
@@ -665,7 +665,7 @@ function RecentActivity({ items }: { items: ActivityItem[] }) {
               href={`/commercial/deals/${item.campaign.id}`}
               className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50/60 transition-colors group"
             >
-              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[#ffd700] flex items-center justify-center shrink-0">
+              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[var(--portal-commercial)] flex items-center justify-center shrink-0">
                 {ACTIVITY_ICONS[item.type] ?? <ActivityIcon size={13} />}
               </div>
               <div className="min-w-0 flex-1">

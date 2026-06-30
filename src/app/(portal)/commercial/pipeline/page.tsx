@@ -206,12 +206,12 @@ function PipelineBoard() {
     "rounded-xl border border-gray-200 bg-white text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
 
   return (
-    <div className="min-h-screen bg-[#141414]">
+    <div className="min-h-screen bg-card">
       <div className="max-w-full px-6 py-8">
         {/* Header */}
         <div className="flex items-end justify-between mb-5 max-w-6xl mx-auto">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#ffd700]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
               OutlanderOS · Commercial
             </p>
             <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">Pipeline</h1>
@@ -224,7 +224,7 @@ function PipelineBoard() {
               href="/commercial"
               className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
             >
-              <LayoutDashboard size={16} className="text-[#ffd700]" />
+              <LayoutDashboard size={16} className="text-[var(--portal-commercial)]" />
               Dashboard
             </Link>
             <button
@@ -473,7 +473,7 @@ function TypeFilterDropdown({
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-1.5 rounded-xl border bg-white text-sm px-3 py-2 transition-colors ${
           selected.length
-            ? "border-[#ffd700] text-[#e6c200] font-medium"
+            ? "border-[#ffd700] text-[var(--portal-commercial)] font-medium"
             : "border-gray-200 text-gray-700"
         }`}
       >

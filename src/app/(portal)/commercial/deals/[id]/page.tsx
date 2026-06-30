@@ -356,7 +356,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           <p className="text-lg font-semibold text-gray-800">Deal not found</p>
           <Link
             href="/commercial/pipeline"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#ffd700] hover:text-[#e6c200]"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)]"
           >
             <ArrowLeft size={14} /> Back to pipeline
           </Link>
@@ -417,7 +417,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   ];
 
   return (
-    <div className="min-h-screen bg-[#141414]">
+    <div className="min-h-screen bg-card">
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Breadcrumb + saved indicator */}
         <div className="flex items-center justify-between mb-4">
@@ -518,7 +518,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 {printRelated && (
                   <Link
                     href="/print"
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-[#00ff88] hover:bg-teal-100 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-emerald-600 hover:bg-teal-100 transition-colors"
                   >
                     <Newspaper size={11} /> Print: View in magazine planning{" "}
                     <ArrowUpRight size={11} />
@@ -672,7 +672,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               onClick={() => setTab(t.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 tab === t.key
-                  ? "bg-[#ffd700]/10 text-[#e6c200]"
+                  ? "bg-[#ffd700]/10 text-[var(--portal-commercial)]"
                   : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
               }`}
             >
@@ -966,7 +966,7 @@ function TypePills({
           <button
             onClick={() => setAdding((a) => !a)}
             title="Add type"
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-[#ffd700] hover:text-[#e6c200] transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-[#ffd700] hover:text-[var(--portal-commercial)] transition-colors"
           >
             <Plus size={11} /> Add
           </button>
@@ -1082,12 +1082,12 @@ function OverviewTab({
           return (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Film size={15} className="text-[#ff4444]" />
+                <Film size={15} className="text-red-600" />
                 Production Status
               </h3>
               <Link
                 href={`/production/${prod.id}`}
-                className="text-sm font-semibold text-gray-900 hover:text-[#ff4444] transition-colors"
+                className="text-sm font-semibold text-gray-900 hover:text-red-600 transition-colors"
               >
                 {prod.title}
               </Link>
@@ -1134,7 +1134,7 @@ function OverviewTab({
               </dl>
               <Link
                 href={`/production/${prod.id}`}
-                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ff4444] hover:text-red-600 transition-colors"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-600 transition-colors"
               >
                 Open in Production <ArrowUpRight size={12} />
               </Link>
@@ -1208,7 +1208,7 @@ function OverviewTab({
           <h3 className="text-sm font-semibold text-gray-800 mb-3">Client</h3>
           <Link
             href={`/commercial/clients/${deal.client.id}`}
-            className="text-sm font-semibold text-gray-900 hover:text-[#ffd700] transition-colors"
+            className="text-sm font-semibold text-gray-900 hover:text-[var(--portal-commercial)] transition-colors"
           >
             {deal.client.name}
           </Link>
@@ -1259,7 +1259,7 @@ function LaunchChecklist({
     >
       <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
         <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <Rocket size={15} className={ready ? "text-emerald-600" : "text-[#ffd700]"} />
+          <Rocket size={15} className={ready ? "text-emerald-600" : "text-[var(--portal-commercial)]"} />
           Production launch checklist
         </h3>
         {ready ? (
@@ -1604,7 +1604,7 @@ function BriefCreativeTab({
             )}
           </div>
           {figmaEmbedUrl(response.figmaUrl) ? (
-            <div className="mt-3 rounded-xl border border-gray-800 bg-[#1a1a1a] overflow-hidden">
+            <div className="mt-3 rounded-xl border border-gray-800 bg-secondary overflow-hidden">
               <iframe
                 title="Figma deck"
                 src={figmaEmbedUrl(response.figmaUrl)!}
@@ -2013,7 +2013,7 @@ function ActivityTab({ activities }: { activities: ActivityEntry[] }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden max-w-2xl">
       <div className="px-6 py-4 border-b border-gray-50">
         <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <ActivityIcon size={15} className="text-[#ffd700]" />
+          <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
           Activity
         </h3>
       </div>
@@ -2023,7 +2023,7 @@ function ActivityTab({ activities }: { activities: ActivityEntry[] }) {
         <div className="divide-y divide-gray-50">
           {activities.map((a) => (
             <div key={a.id} className="flex items-start gap-3 px-6 py-3.5">
-              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[#ffd700] flex items-center justify-center shrink-0">
+              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[var(--portal-commercial)] flex items-center justify-center shrink-0">
                 {ACTIVITY_ICONS[a.type] ?? <ActivityIcon size={13} />}
               </div>
               <div className="min-w-0">

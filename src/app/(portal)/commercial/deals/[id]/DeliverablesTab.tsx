@@ -112,7 +112,7 @@ export default function DeliverablesTab({
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
           <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-            <PackageCheck size={15} className="text-[#ffd700]" />
+            <PackageCheck size={15} className="text-[var(--portal-commercial)]" />
             Contracted Deliverables
           </h3>
           {contractedLocked && (
@@ -385,7 +385,7 @@ function AddDeliverableForm({
       <button
         onClick={() => setOpen(true)}
         className={`inline-flex items-center gap-1.5 text-sm font-medium ${
-          additional ? "text-amber-700 hover:text-amber-800" : "text-[#e6c200] hover:text-[#ffd700]"
+          additional ? "text-amber-700 hover:text-amber-800" : "text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)]"
         }`}
       >
         <Plus size={14} /> Add {additional ? "Additional" : "Contracted"} Deliverable
