@@ -27,14 +27,18 @@ import {
   STATUS_PIPELINE,
   STATUS_LABELS,
   STATUS_STYLE,
-  advanceStatus,
+  DEFAULT_STOCK,
   blankPage,
   computeStats,
+  groupSignatures,
+  flattenSignatures,
   sectionColour,
   syncStatusFlags,
   type MagazinePage,
+  type MagazineSignature,
   type PageStatus,
   type SectionKey,
+  type StockType,
 } from "@/lib/magazine-plan";
 
 type View = "tracker" | "flatplan" | "budget";
@@ -65,7 +69,16 @@ function FlatPlanInner() {
 
   const pages = plan?.pages ?? [];
   const stats = useMemo(() => computeStats(pages), [pages]);
-  const blocks = Math.round(pages.length / 8);
+  const signatures = useMemo(() => groupSignatures(pages), [pages]);
+
+  // Per-page signature lookup for the tracker's Signature / Stock columns.
+  const sigByIndex = useMemo(() => {
+    const map: { sigNumber: number; sigIndex: number; stock: StockType }[] = [];
+    signatures.forEach((s, si) =>
+      s.pages.forEach(() => map.push({ sigNumber: si + 1, sigIndex: si, stock: s.stockType }))
+    );
+    return map;
+  }, [signatures]);
 
   function mutate(next: MagazinePage[]) {
     savePages(next, next.length);
@@ -109,27 +122,77 @@ function FlatPlanInner() {
     mutateStructural(pages.filter((_, i) => i !== index));
   }
 
-  function addBlock(size: number) {
-    const start = pages.length;
-    const extra = Array.from({ length: size }, (_, i) => blankPage(start + i + 1));
-    mutateStructural([...pages, ...extra]);
-  }
-
-  function removeLastBlock() {
-    if (pages.length <= 8) {
-      alert("A magazine must keep at least one 8-page section.");
-      return;
-    }
-    if (!confirm("Remove the last 8 pages? This can't be undone once saved.")) return;
-    mutateStructural(pages.slice(0, pages.length - 8));
-  }
-
   function reorder(from: number, to: number) {
     if (from === to) return;
     const next = [...pages];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
     mutateStructural(next);
+  }
+
+  // ── Signature operations (flat-plan) ──
+  // Each rebuilds the signature groups, mutates them, then flattens back to the
+  // canonical page array (which re-stamps signatureIndex/stockType + page numbers).
+
+  function setSignatureStock(sigIndex: number, stock: StockType) {
+    const next = signatures.map((s) =>
+      s.signatureIndex === sigIndex ? { ...s, stockType: stock } : s
+    );
+    mutate(flattenSignatures(next));
+  }
+
+  function moveSignature(from: number, to: number) {
+    if (from === to) return;
+    const next = signatures.map((s) => ({ ...s, pages: [...s.pages] }));
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    mutate(flattenSignatures(next));
+  }
+
+  function addSignature(size: 8 | 16) {
+    const blanks = Array.from({ length: size }, () => blankPage(1));
+    const next: MagazineSignature[] = [
+      ...signatures.map((s) => ({ ...s, pages: [...s.pages] })),
+      {
+        signatureIndex: signatures.length,
+        startIndex: pages.length,
+        pageCount: size,
+        stockType: DEFAULT_STOCK,
+        pages: blanks,
+      },
+    ];
+    mutate(flattenSignatures(next));
+  }
+
+  function removeSignature(sigIndex: number) {
+    if (signatures.length <= 1) {
+      alert("A magazine must keep at least one signature.");
+      return;
+    }
+    const sig = signatures[sigIndex];
+    if (!sig) return;
+    if (
+      !confirm(
+        `Remove Signature ${sigIndex + 1} (${sig.pageCount} pages)? This removes those pages and renumbers the rest. Can't be undone once saved.`
+      )
+    )
+      return;
+    const next = signatures.filter((s) => s.signatureIndex !== sigIndex);
+    mutate(flattenSignatures(next));
+  }
+
+  function removeLastSignature() {
+    removeSignature(signatures.length - 1);
+  }
+
+  // Move a single page card from one slot to another (within or across signatures).
+  function movePage(fromSig: number, fromSlot: number, toSig: number, toSlot: number) {
+    const next = signatures.map((s) => ({ ...s, pages: [...s.pages] }));
+    const [moved] = next[fromSig].pages.splice(fromSlot, 1);
+    let slot = toSlot;
+    if (fromSig === toSig && fromSlot < toSlot) slot -= 1; // splice-out shifts later slots down
+    next[toSig].pages.splice(slot, 0, moved);
+    mutate(flattenSignatures(next));
   }
 
   function printFlatPlan() {
@@ -175,7 +238,7 @@ function FlatPlanInner() {
               Issue {String(plan.issueNumber).padStart(2, "0")} — {plan.issueName}
             </h1>
             <p className="text-xs text-gray-500">
-              {pages.length} pages ({blocks} × 8-page sections)
+              {pages.length} pages · {signatures.length} signature{signatures.length === 1 ? "" : "s"}
               {saving ? " · saving…" : plan.updatedBy ? ` · last edit ${plan.updatedBy}` : ""}
             </p>
           </div>
@@ -210,15 +273,15 @@ function FlatPlanInner() {
             </button>
           </div>
 
-          {/* Block management */}
-          <button onClick={() => addBlock(8)} className={btnGhost}>
-            <Plus className="h-3.5 w-3.5" /> 8 Pages
+          {/* Signature management */}
+          <button onClick={() => addSignature(8)} className={btnGhost} title="Add an 8-page signature at the end">
+            <Plus className="h-3.5 w-3.5" /> Sig 8pp
           </button>
-          <button onClick={() => addBlock(16)} className={btnGhost}>
-            <Plus className="h-3.5 w-3.5" /> 16 Pages
+          <button onClick={() => addSignature(16)} className={btnGhost} title="Add a 16-page signature at the end">
+            <Plus className="h-3.5 w-3.5" /> Sig 16pp
           </button>
-          <button onClick={removeLastBlock} className={btnGhost}>
-            <Minus className="h-3.5 w-3.5" /> Last Block
+          <button onClick={removeLastSignature} className={btnGhost} title="Remove the last signature">
+            <Minus className="h-3.5 w-3.5" /> Sig
           </button>
           <button onClick={printFlatPlan} className={btnSolid}>
             <Printer className="h-3.5 w-3.5" /> Print
@@ -230,11 +293,13 @@ function FlatPlanInner() {
         {view === "tracker" ? (
           <TrackerView
             pages={pages}
+            sigByIndex={sigByIndex}
             dragIndex={dragIndex}
             setDragIndex={setDragIndex}
             reorder={reorder}
             updatePage={updatePage}
             setStage={setStage}
+            setSignatureStock={setSignatureStock}
             addRowAfter={addRowAfter}
             removeRow={removeRow}
           />
@@ -242,10 +307,14 @@ function FlatPlanInner() {
           <BudgetView issueId={plan.id} pages={pages} updatePage={updatePage} />
         ) : (
           <FlatPlanView
-            pages={pages}
+            signatures={signatures}
             onOpen={setEditing}
-            reorder={reorder}
+            movePage={movePage}
+            moveSignature={moveSignature}
+            setSignatureStock={setSignatureStock}
+            removeSignature={removeSignature}
             removePage={removePage}
+            total={pages.length}
           />
         )}
       </div>
@@ -304,20 +373,24 @@ function Total({ label, value, accent }: { label: string; value: string | number
 
 function TrackerView({
   pages,
+  sigByIndex,
   dragIndex,
   setDragIndex,
   reorder,
   updatePage,
   setStage,
+  setSignatureStock,
   addRowAfter,
   removeRow,
 }: {
   pages: MagazinePage[];
+  sigByIndex: { sigNumber: number; sigIndex: number; stock: StockType }[];
   dragIndex: number | null;
   setDragIndex: (i: number | null) => void;
   reorder: (from: number, to: number) => void;
   updatePage: (i: number, patch: Partial<MagazinePage>) => void;
   setStage: (i: number, stage: PageStatus) => void;
+  setSignatureStock: (sigIndex: number, stock: StockType) => void;
   addRowAfter: (i: number) => void;
   removeRow: (i: number) => void;
 }) {
@@ -327,6 +400,8 @@ function TrackerView({
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-gray-500">
             <th className={th}>#</th>
+            <th className={`${th} text-center`}>Sig</th>
+            <th className={`${th} text-center`}>Stock</th>
             <th className={th}>Section</th>
             <th className={th}>Feature</th>
             <th className={th}>Content</th>
@@ -348,6 +423,7 @@ function TrackerView({
         <tbody>
           {pages.map((p, i) => {
             const colour = sectionColour(p.section);
+            const sig = sigByIndex[i] ?? { sigNumber: 1, sigIndex: 0, stock: "coated" as StockType };
             return (
               <tr
                 key={i}
@@ -365,6 +441,21 @@ function TrackerView({
                     <GripVertical className="h-3 w-3 cursor-grab text-gray-400 group-hover:text-gray-600" />
                     {p.pageNumber}
                   </span>
+                </td>
+                <td className={`${td} text-center`}>
+                  <span className="font-mono text-[10px] font-bold text-gray-600">{sig.sigNumber}</span>
+                </td>
+                <td className={`${td} text-center`}>
+                  <select
+                    value={sig.stock}
+                    onChange={(e) => setSignatureStock(sig.sigIndex, e.target.value as StockType)}
+                    title="Stock applies to the whole signature"
+                    className="cursor-pointer rounded bg-transparent text-[10px] font-bold uppercase focus:outline-none"
+                    style={{ color: sig.stock === "coated" ? "#2563eb" : "#6b7280" }}
+                  >
+                    <option value="coated" className="bg-popover text-foreground">Coated</option>
+                    <option value="uncoated" className="bg-popover text-foreground">Uncoated</option>
+                  </select>
                 </td>
                 <td className={td}>
                   <select
@@ -579,138 +670,345 @@ function CheckCell({ checked, onToggle }: { checked: boolean; onToggle: (v: bool
 
 // ===================== FLAT PLAN VIEW (compact magazine layout) =====================
 
-const PAGES_PER_ROW = 16; // 8 spread pairs
+// Drop coordinate: insert BEFORE `slot` within signature `sig` (slot === pageCount
+// means "append to the end of that signature").
+type PageDrop = { sig: number; slot: number };
 
 function FlatPlanView({
-  pages,
+  signatures,
   onOpen,
-  reorder,
+  movePage,
+  moveSignature,
+  setSignatureStock,
+  removeSignature,
   removePage,
+  total,
 }: {
-  pages: MagazinePage[];
+  signatures: MagazineSignature[];
   onOpen: (i: number) => void;
-  reorder: (from: number, to: number) => void;
+  movePage: (fromSig: number, fromSlot: number, toSig: number, toSlot: number) => void;
+  moveSignature: (from: number, to: number) => void;
+  setSignatureStock: (sigIndex: number, stock: StockType) => void;
+  removeSignature: (sigIndex: number) => void;
   removePage: (i: number) => void;
+  total: number;
 }) {
-  // Drag-to-reorder state. `dragIndex` is the page being dragged; `dropBefore` is
-  // the array index the dragged page would be inserted in front of (a value of
-  // pages.length means "drop at the very end"). The blue rule renders at that seam.
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dropBefore, setDropBefore] = useState<number | null>(null);
+  const [pageDrag, setPageDrag] = useState<PageDrop | null>(null);
+  const [pageTarget, setPageTarget] = useState<PageDrop | null>(null);
+  const [sigDrag, setSigDrag] = useState<number | null>(null);
+  const [sigTarget, setSigTarget] = useState<number | null>(null);
 
-  function handleDrop() {
-    if (dragIndex !== null && dropBefore !== null) {
-      // dropBefore is an insert-before index in the ORIGINAL array; once the dragged
-      // page is spliced out, every later target shifts down by one.
-      let to = dropBefore;
-      if (dragIndex < dropBefore) to = dropBefore - 1;
-      reorder(dragIndex, to);
-    }
-    setDragIndex(null);
-    setDropBefore(null);
+  function endDrag() {
+    setPageDrag(null);
+    setPageTarget(null);
+    setSigDrag(null);
+    setSigTarget(null);
   }
-
-  // Chunk pages into rows of 16; each row renders as 8 tight spread pairs.
-  const rows: number[][] = [];
-  for (let i = 0; i < pages.length; i += PAGES_PER_ROW) {
-    rows.push(Array.from({ length: Math.min(PAGES_PER_ROW, pages.length - i) }, (_, k) => i + k));
+  function onPageDrop() {
+    if (pageDrag && pageTarget) movePage(pageDrag.sig, pageDrag.slot, pageTarget.sig, pageTarget.slot);
+    endDrag();
+  }
+  function onSigDrop() {
+    if (sigDrag !== null && sigTarget !== null) moveSignature(sigDrag, sigTarget);
+    endDrag();
   }
 
   return (
-    <div className="h-full overflow-auto p-4">
-      <div className="flex min-w-max flex-col" onDragEnd={() => { setDragIndex(null); setDropBefore(null); }}>
-        {rows.map((row, ri) => {
-          const first = row[0];
-          const last = row[row.length - 1];
-          return (
-            <div key={ri} className={ri > 0 ? "mt-3 border-t border-border/50 pt-3" : ""}>
-              <div className="mb-1 font-mono text-[8px] uppercase tracking-wider text-gray-400">
-                pp. {pages[first]?.pageNumber}–{pages[last]?.pageNumber}
-              </div>
-              <div className="flex items-start gap-[5px]">
-                {Array.from({ length: Math.ceil(row.length / 2) }, (_, sp) => {
-                  const li = row[sp * 2];
-                  const ri2 = row[sp * 2 + 1];
-                  return (
-                    <div key={sp} className="flex gap-[1.5px]">
-                      <PageCard
-                        index={li}
-                        pages={pages}
-                        onOpen={onOpen}
-                        dragIndex={dragIndex}
-                        dropBefore={dropBefore}
-                        setDragIndex={setDragIndex}
-                        setDropBefore={setDropBefore}
-                        onDrop={handleDrop}
-                        removePage={removePage}
-                        total={pages.length}
-                      />
-                      <PageCard
-                        index={ri2 ?? null}
-                        pages={pages}
-                        onOpen={onOpen}
-                        dragIndex={dragIndex}
-                        dropBefore={dropBefore}
-                        setDragIndex={setDragIndex}
-                        setDropBefore={setDropBefore}
-                        onDrop={handleDrop}
-                        removePage={removePage}
-                        total={pages.length}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+    <div className="h-full overflow-auto p-4" onDragEnd={endDrag}>
+      <div className="flex min-w-max flex-col gap-4">
+        {signatures.map((sig, si) => (
+          <SignatureBlock
+            key={si}
+            sig={sig}
+            isFirst={si === 0}
+            total={total}
+            onlySignature={signatures.length === 1}
+            onOpen={onOpen}
+            removePage={removePage}
+            removeSignature={removeSignature}
+            setSignatureStock={setSignatureStock}
+            pageDrag={pageDrag}
+            pageTarget={pageTarget}
+            setPageDrag={setPageDrag}
+            setPageTarget={setPageTarget}
+            onPageDrop={onPageDrop}
+            sigDrag={sigDrag}
+            sigTarget={sigTarget}
+            setSigDrag={setSigDrag}
+            setSigTarget={setSigTarget}
+            onSigDrop={onSigDrop}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-function PageCard({
-  index,
-  pages,
-  onOpen,
-  dragIndex,
-  dropBefore,
-  setDragIndex,
-  setDropBefore,
-  onDrop,
-  removePage,
+function SignatureBlock({
+  sig,
+  isFirst,
   total,
+  onlySignature,
+  onOpen,
+  removePage,
+  removeSignature,
+  setSignatureStock,
+  pageDrag,
+  pageTarget,
+  setPageDrag,
+  setPageTarget,
+  onPageDrop,
+  sigDrag,
+  sigTarget,
+  setSigDrag,
+  setSigTarget,
+  onSigDrop,
 }: {
-  index: number | null;
-  pages: MagazinePage[];
-  onOpen: (i: number) => void;
-  dragIndex: number | null;
-  dropBefore: number | null;
-  setDragIndex: (i: number | null) => void;
-  setDropBefore: (i: number | null) => void;
-  onDrop: () => void;
-  removePage: (i: number) => void;
+  sig: MagazineSignature;
+  isFirst: boolean;
   total: number;
+  onlySignature: boolean;
+  onOpen: (i: number) => void;
+  removePage: (i: number) => void;
+  removeSignature: (sigIndex: number) => void;
+  setSignatureStock: (sigIndex: number, stock: StockType) => void;
+  pageDrag: PageDrop | null;
+  pageTarget: PageDrop | null;
+  setPageDrag: (d: PageDrop | null) => void;
+  setPageTarget: (d: PageDrop | null) => void;
+  onPageDrop: () => void;
+  sigDrag: number | null;
+  sigTarget: number | null;
+  setSigDrag: (i: number | null) => void;
+  setSigTarget: (i: number | null) => void;
+  onSigDrop: () => void;
 }) {
-  if (index === null) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const si = sig.signatureIndex;
+  const coated = sig.stockType === "coated";
+  const slots = sig.pages.map((_, k) => k);
+
+  // The first signature gets the special cover treatment: Cover A as a single,
+  // then Cover B + Cover C as a spread, a gap, then the rest as normal spreads.
+  const coverSingle = isFirst && slots.length > 0 ? 0 : null;
+  const coverSpread =
+    isFirst && slots.length > 1 ? ([1, slots.length > 2 ? 2 : null] as [number, number | null]) : null;
+  const bodyStart = isFirst ? 3 : 0;
+  const bodySlots = slots.slice(bodyStart);
+
+  // Chunk the body into rows of 16 (8 spreads); each row pairs slots into spreads.
+  const rows: number[][] = [];
+  for (let i = 0; i < bodySlots.length; i += 16) rows.push(bodySlots.slice(i, i + 16));
+
+  const slotProps = (slot: number) => ({
+    si,
+    slot,
+    globalIndex: sig.startIndex + slot,
+    page: sig.pages[slot],
+    total,
+    onOpen,
+    removePage,
+    pageDrag,
+    pageTarget,
+    setPageDrag,
+    setPageTarget,
+    onPageDrop,
+  });
+
+  const showSigRule = sigDrag !== null && sigTarget === si && sigDrag !== si;
+
+  return (
+    <div className="relative">
+      {showSigRule && (
+        <span className="absolute -top-[8px] left-0 z-10 h-[3px] w-full rounded bg-[#3b82f6]" />
+      )}
+      <div
+        className="rounded-lg p-2"
+        style={{
+          border: coated ? "1px solid rgba(59,130,246,0.45)" : "1px solid var(--border)",
+          background: coated
+            ? "linear-gradient(180deg, rgba(219,234,254,0.45), rgba(255,255,255,0))"
+            : "var(--card)",
+          boxShadow: coated ? "inset 0 1px 0 rgba(255,255,255,0.7)" : undefined,
+        }}
+      >
+        {/* ── Signature header (drag to move the whole block) ── */}
+        <div
+          draggable
+          onDragStart={() => setSigDrag(si)}
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (sigDrag !== null) setSigTarget(si);
+          }}
+          onDrop={onSigDrop}
+          className={`relative mb-2 flex cursor-grab items-center gap-2 rounded-md px-2 py-1 text-[11px] font-semibold active:cursor-grabbing ${
+            sigDrag === si ? "opacity-40" : ""
+          }`}
+          style={
+            coated
+              ? {
+                  background: "linear-gradient(180deg,#dbeafe,#eff6ff)",
+                  color: "#1e40af",
+                  border: "1px solid rgba(59,130,246,0.4)",
+                }
+              : { background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }
+          }
+          title="Drag to move this entire signature"
+        >
+          <GripVertical className="h-3.5 w-3.5 opacity-60" />
+          {/* Stock badge */}
+          <span
+            className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-extrabold"
+            style={
+              coated
+                ? { background: "#2563eb", color: "#fff" }
+                : { background: "var(--muted)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }
+            }
+          >
+            {coated ? "C" : "U"}
+          </span>
+          <span>Sig {si + 1}</span>
+          <span className="opacity-70">· {sig.pageCount}pp</span>
+          {/* Coating dropdown */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="rounded px-1 py-0.5 hover:bg-black/5"
+            title="Set paper stock for this signature"
+          >
+            {coated ? "Coated" : "Uncoated"} ▾
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
+              <div className="absolute left-2 top-full z-30 mt-1 w-28 overflow-hidden rounded-md border border-border bg-popover text-foreground shadow-lg">
+                {(["coated", "uncoated"] as StockType[]).map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => {
+                      setSignatureStock(si, st);
+                      setMenuOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[11px] hover:bg-muted ${
+                      sig.stockType === st ? "font-bold" : ""
+                    }`}
+                  >
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ background: st === "coated" ? "#2563eb" : "#9ca3af" }}
+                    />
+                    {st === "coated" ? "Coated" : "Uncoated"}
+                    {sig.stockType === st && <Check className="ml-auto h-3 w-3" />}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {!onlySignature && (
+            <button
+              type="button"
+              onClick={() => removeSignature(si)}
+              title="Remove this signature"
+              className="ml-1 rounded p-0.5 opacity-60 hover:bg-red-500/15 hover:text-red-500 hover:opacity-100"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+
+        {/* ── Pages ── */}
+        <div className="flex flex-col gap-[5px]">
+          {/* Cover treatment row (first signature only) */}
+          {isFirst && (coverSingle !== null || coverSpread) && (
+            <div className="flex items-start gap-[5px]">
+              {coverSingle !== null && <PageSlot {...slotProps(coverSingle)} />}
+              {coverSpread && (
+                <div className="flex gap-[1.5px]">
+                  <PageSlot {...slotProps(coverSpread[0])} />
+                  {coverSpread[1] !== null ? (
+                    <PageSlot {...slotProps(coverSpread[1])} />
+                  ) : (
+                    <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-border" />
+                  )}
+                </div>
+              )}
+              {/* gap before the first ad / body starts */}
+              <div className="w-4" />
+            </div>
+          )}
+
+          {/* Body rows of 16 (8 tight spreads) */}
+          {rows.map((row, ri) => (
+            <div key={ri} className="flex items-start gap-[5px]">
+              {Array.from({ length: Math.ceil(row.length / 2) }, (_, sp) => {
+                const left = row[sp * 2];
+                const right = row[sp * 2 + 1];
+                return (
+                  <div key={sp} className="flex gap-[1.5px]">
+                    <PageSlot {...slotProps(left)} />
+                    {right !== undefined ? (
+                      <PageSlot {...slotProps(right)} />
+                    ) : (
+                      <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-border" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PageSlot({
+  si,
+  slot,
+  globalIndex,
+  page,
+  total,
+  onOpen,
+  removePage,
+  pageDrag,
+  pageTarget,
+  setPageDrag,
+  setPageTarget,
+  onPageDrop,
+}: {
+  si: number;
+  slot: number;
+  globalIndex: number;
+  page: MagazinePage | undefined;
+  total: number;
+  onOpen: (i: number) => void;
+  removePage: (i: number) => void;
+  pageDrag: PageDrop | null;
+  pageTarget: PageDrop | null;
+  setPageDrag: (d: PageDrop | null) => void;
+  setPageTarget: (d: PageDrop | null) => void;
+  onPageDrop: () => void;
+}) {
+  if (!page) {
     return <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-border" />;
   }
-  const p = pages[index];
-  const colour = sectionColour(p.section);
-  const isSpace = p.section === "Space" && !p.feature.trim();
-  const isCover = index === 0;
-  const isBack = index === total - 1;
+  const colour = sectionColour(page.section);
+  const isSpace = page.section === "Space" && !page.feature.trim();
+  const isCover = globalIndex === 0;
+  const isBack = globalIndex === total - 1;
+  const dragging = pageDrag?.sig === si && pageDrag?.slot === slot;
 
-  // Where the blue insertion rule sits relative to THIS card: on its left when the
-  // pointer is over the left half (insert before), on its right for the last card.
-  const showLeftRule = dropBefore === index && dragIndex !== null;
-  const showRightRule = dropBefore === index + 1 && dragIndex !== null;
+  // The blue insertion rule renders on this card's left (insert before) or right
+  // (insert after) edge when a drag is targeting that seam within this signature.
+  const showLeftRule = pageDrag !== null && pageTarget?.sig === si && pageTarget?.slot === slot;
+  const showRightRule = pageDrag !== null && pageTarget?.sig === si && pageTarget?.slot === slot + 1;
 
   function onDragOver(e: React.DragEvent) {
     e.preventDefault();
+    if (!pageDrag) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const after = e.clientX > rect.left + rect.width / 2;
-    setDropBefore(after ? index! + 1 : index!);
+    setPageTarget({ sig: si, slot: after ? slot + 1 : slot });
   }
 
   return (
@@ -723,12 +1021,12 @@ function PageCard({
       )}
       <button
         draggable
-        onDragStart={() => setDragIndex(index)}
+        onDragStart={() => setPageDrag({ sig: si, slot })}
         onDragOver={onDragOver}
-        onDrop={onDrop}
-        onClick={() => onOpen(index)}
+        onDrop={onPageDrop}
+        onClick={() => onOpen(globalIndex)}
         className={`group relative flex h-[86px] w-[64px] cursor-grab flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2 active:cursor-grabbing ${
-          dragIndex === index ? "opacity-40" : ""
+          dragging ? "opacity-40" : ""
         }`}
         style={{
           background: isSpace ? "var(--secondary)" : `${colour}5e`, // ~37% tint
@@ -744,28 +1042,28 @@ function PageCard({
         <span
           role="button"
           tabIndex={0}
-          title={`Remove page ${p.pageNumber}`}
+          title={`Remove page ${page.pageNumber}`}
           onClick={(e) => {
             e.stopPropagation();
-            removePage(index!);
+            removePage(globalIndex);
           }}
           className="absolute right-0.5 top-0.5 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition hover:bg-red-500 group-hover:opacity-100"
         >
           <X className="h-2.5 w-2.5" />
         </span>
         <div className="flex items-start justify-between pl-1">
-          <span className="font-mono text-[7px] font-bold text-gray-900">{p.pageNumber}</span>
+          <span className="font-mono text-[7px] font-bold text-gray-900">{page.pageNumber}</span>
           {!isSpace && (
             <span
               className="rounded px-0.5 text-[6px] font-bold uppercase leading-tight tracking-wide text-black"
               style={{ background: colour }}
             >
-              {sectionAbbr(p.section)}
+              {sectionAbbr(page.section)}
             </span>
           )}
         </div>
         <p className="mt-0.5 line-clamp-3 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-900">
-          {isSpace ? <span className="text-gray-500">Space</span> : truncate(p.feature, 28)}
+          {isSpace ? <span className="text-gray-500">Space</span> : truncate(page.feature, 28)}
         </p>
         {(isCover || isBack) && (
           <span className="mt-auto pl-1 text-[6px] font-bold uppercase tracking-wide text-gray-700">

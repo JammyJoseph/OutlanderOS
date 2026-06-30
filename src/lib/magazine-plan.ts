@@ -23,6 +23,10 @@ export type SectionKey =
   | "Digital Focus"
   | "Space";
 
+// Paper stock for a signature. Coated = glossy/art paper; uncoated = matte.
+export type StockType = "coated" | "uncoated";
+export const DEFAULT_STOCK: StockType = "coated";
+
 export interface MagazinePage {
   pageNumber: number;
   section: SectionKey | string;
@@ -51,6 +55,13 @@ export interface MagazinePage {
   revenue?: number; // manual revenue (used when no campaignId is linked)
   productionCost?: number; // manual production cost (used when no productionId is linked)
   printCost?: number; // paper / printing / distribution cost for this feature (always manual)
+  // ── Print signature (physical imposition) ──
+  // A magazine prints in signatures — blocks of 8 or 16 pages on one folded sheet.
+  // Each page records which signature it belongs to and that signature's stock.
+  // Both are derived/stamped by groupSignatures + flattenSignatures below, so they
+  // stay in lockstep with the page order; optional so legacy/seed pages stay valid.
+  signatureIndex?: number; // 0-based signature this page sits in
+  stockType?: StockType; // paper stock, inherited from the signature
 }
 
 export interface MagazinePlanData {
@@ -154,6 +165,79 @@ export function blankPage(pageNumber: number, section: SectionKey = "Space"): Ma
     notes: "",
     colour: sectionColour(section),
   });
+}
+
+// ===== Signatures (physical print imposition) =====
+// A signature is a consecutive block of pages printed on one sheet. We keep the
+// canonical state as a FLAT page array (so the tracker, budget and save path stay
+// unchanged) and derive signature groups on demand. `groupSignatures` reads each
+// page's stored `signatureIndex`; legacy/seed pages that predate signatures are
+// auto-chunked into 16-page signatures (the magazine standard, tail kept as-is).
+
+export interface MagazineSignature {
+  signatureIndex: number; // 0-based, sequential
+  startIndex: number; // index of this signature's first page in the flat array
+  pageCount: number; // 8 or 16 in normal use, but any count is rendered honestly
+  stockType: StockType;
+  pages: MagazinePage[];
+}
+
+export function groupSignatures(pages: MagazinePage[]): MagazineSignature[] {
+  const raw: { idx: number; startIndex: number; stockType: StockType; pages: MagazinePage[] }[] = [];
+  const hasIdx = pages.some((p) => typeof p.signatureIndex === "number");
+
+  if (hasIdx) {
+    // Group consecutive pages sharing a signatureIndex (pages always flatten to
+    // contiguous runs, so a run boundary is a signature boundary).
+    let cur: (typeof raw)[number] | null = null;
+    pages.forEach((p, i) => {
+      const idx = typeof p.signatureIndex === "number" ? p.signatureIndex : -1;
+      if (!cur || cur.idx !== idx) {
+        cur = { idx, startIndex: i, stockType: p.stockType ?? DEFAULT_STOCK, pages: [p] };
+        raw.push(cur);
+      } else {
+        cur.pages.push(p);
+      }
+    });
+  } else {
+    // Legacy: no signature info yet — fall back to clean 16-page blocks.
+    for (let i = 0; i < pages.length; i += 16) {
+      const slice = pages.slice(i, i + 16);
+      raw.push({ idx: raw.length, startIndex: i, stockType: DEFAULT_STOCK, pages: slice });
+    }
+  }
+
+  // Re-sequence to 0..n and recompute counts so callers always see clean numbers.
+  return raw.map((s, n) => ({
+    signatureIndex: n,
+    startIndex: s.startIndex,
+    pageCount: s.pages.length,
+    stockType: s.stockType,
+    pages: s.pages,
+  }));
+}
+
+// Flatten signatures back to the canonical page array, stamping each page with its
+// signature index + stock and re-sequencing page numbers. Empty signatures are
+// dropped so a signature emptied by page moves doesn't linger as a ghost block.
+export function flattenSignatures(signatures: MagazineSignature[]): MagazinePage[] {
+  const out: MagazinePage[] = [];
+  let sigNo = 0;
+  for (const sig of signatures) {
+    if (sig.pages.length === 0) continue;
+    for (const p of sig.pages) {
+      out.push(
+        syncStatusFlags({
+          ...p,
+          pageNumber: out.length + 1,
+          signatureIndex: sigNo,
+          stockType: sig.stockType,
+        })
+      );
+    }
+    sigNo++;
+  }
+  return out;
 }
 
 export interface PlanStats {

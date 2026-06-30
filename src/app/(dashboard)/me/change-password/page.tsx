@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, Lock, ShieldCheck } from "lucide-react";
 
 export default function ChangePasswordPage() {
-  const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -37,8 +35,12 @@ export default function ChangePasswordPage() {
         return;
       }
       // Onboarding users go through the one-time welcome screen.
-      router.push(data.onboarding ? "/welcome" : "/me");
-      router.refresh();
+      // Use a hard navigation (not router.push): the API response just cleared
+      // the `must_change_pw` cookie, and a soft client-side navigation can race
+      // the proxy (which reads the cookie jar / serves a cached RSC payload) and
+      // bounce the user straight back here. A full-page load guarantees the
+      // browser sends the updated cookies, so the proxy lets them through.
+      window.location.assign(data.onboarding ? "/welcome" : "/me");
     } catch {
       setError("Connection error. Please try again.");
       setSaving(false);
