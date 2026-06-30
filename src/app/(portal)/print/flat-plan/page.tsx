@@ -714,8 +714,8 @@ function FlatPlanView({
   }
 
   return (
-    <div className="h-full overflow-auto p-4" onDragEnd={endDrag}>
-      <div className="flex min-w-max flex-col gap-4">
+    <div className="h-full overflow-auto p-4 pl-6" onDragEnd={endDrag}>
+      <div className="flex min-w-max flex-col gap-[9px]">
         {signatures.map((sig, si) => (
           <SignatureBlock
             key={si}
@@ -817,110 +817,95 @@ function SignatureBlock({
 
   const showSigRule = sigDrag !== null && sigTarget === si && sigDrag !== si;
 
+  // Tab (and signature) colours — coated reads blue, uncoated neutral grey. This
+  // is how a real print flat plan flags a stock change: a small overhanging tab on
+  // the left edge of the signature, not a space-eating inline header.
+  const tabBg = coated ? "#2563eb" : "#9ca3af";
+
   return (
-    <div className="relative">
+    <div className="relative ml-3">
       {showSigRule && (
-        <span className="absolute -top-[8px] left-0 z-10 h-[3px] w-full rounded bg-[#3b82f6]" />
+        <span className="absolute -top-[5px] left-0 z-10 h-[3px] w-full rounded bg-[#3b82f6]" />
       )}
+
+      {/* ── Left signature tab (overhangs the block; drag to move, click for stock) ── */}
       <div
-        className="rounded-lg p-2"
+        draggable
+        onDragStart={() => setSigDrag(si)}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (sigDrag !== null) setSigTarget(si);
+        }}
+        onDrop={onSigDrop}
+        onClick={() => setMenuOpen((v) => !v)}
+        title={`Sig ${si + 1} · ${sig.pageCount}pp · ${coated ? "Coated" : "Uncoated"} — drag to move, click for stock`}
+        className={`absolute -left-3 top-2 z-10 flex w-6 cursor-grab flex-col items-center gap-0.5 rounded-l-md rounded-r-sm py-1.5 text-white shadow-sm active:cursor-grabbing ${
+          sigDrag === si ? "opacity-40" : ""
+        }`}
+        style={{ background: tabBg }}
+      >
+        <span className="text-[11px] font-extrabold leading-none">{coated ? "C" : "U"}</span>
+        <span className="text-[8px] font-bold leading-none opacity-90">S{si + 1}</span>
+      </div>
+
+      {/* Stock / remove menu */}
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
+          <div className="absolute -left-3 top-[58px] z-30 w-36 overflow-hidden rounded-md border border-border bg-popover text-foreground shadow-lg">
+            <div className="border-b border-border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+              Sig {si + 1} · {sig.pageCount}pp
+            </div>
+            {(["coated", "uncoated"] as StockType[]).map((st) => (
+              <button
+                key={st}
+                onClick={() => {
+                  setSignatureStock(si, st);
+                  setMenuOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[11px] hover:bg-muted ${
+                  sig.stockType === st ? "font-bold" : ""
+                }`}
+              >
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: st === "coated" ? "#2563eb" : "#9ca3af" }}
+                />
+                {st === "coated" ? "Coated" : "Uncoated"}
+                {sig.stockType === st && <Check className="ml-auto h-3 w-3" />}
+              </button>
+            ))}
+            {!onlySignature && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  removeSignature(si);
+                }}
+                className="flex w-full items-center gap-2 border-t border-border px-2.5 py-1.5 text-left text-[11px] text-red-500 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-3 w-3" /> Remove signature
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── Signature block ── */}
+      <div
+        className="rounded-lg p-2 pl-3.5"
         style={{
-          border: coated ? "1px solid rgba(59,130,246,0.45)" : "1px solid var(--border)",
+          border: coated ? "1px solid rgba(37,99,235,0.40)" : "1px solid var(--border)",
           background: coated
             ? "linear-gradient(180deg, rgba(219,234,254,0.45), rgba(255,255,255,0))"
             : "var(--card)",
           boxShadow: coated ? "inset 0 1px 0 rgba(255,255,255,0.7)" : undefined,
         }}
       >
-        {/* ── Signature header (drag to move the whole block) ── */}
-        <div
-          draggable
-          onDragStart={() => setSigDrag(si)}
-          onDragOver={(e) => {
-            e.preventDefault();
-            if (sigDrag !== null) setSigTarget(si);
-          }}
-          onDrop={onSigDrop}
-          className={`relative mb-2 flex cursor-grab items-center gap-2 rounded-md px-2 py-1 text-[11px] font-semibold active:cursor-grabbing ${
-            sigDrag === si ? "opacity-40" : ""
-          }`}
-          style={
-            coated
-              ? {
-                  background: "linear-gradient(180deg,#dbeafe,#eff6ff)",
-                  color: "#1e40af",
-                  border: "1px solid rgba(59,130,246,0.4)",
-                }
-              : { background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }
-          }
-          title="Drag to move this entire signature"
-        >
-          <GripVertical className="h-3.5 w-3.5 opacity-60" />
-          {/* Stock badge */}
-          <span
-            className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-extrabold"
-            style={
-              coated
-                ? { background: "#2563eb", color: "#fff" }
-                : { background: "var(--muted)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }
-            }
-          >
-            {coated ? "C" : "U"}
-          </span>
-          <span>Sig {si + 1}</span>
-          <span className="opacity-70">· {sig.pageCount}pp</span>
-          {/* Coating dropdown */}
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            className="rounded px-1 py-0.5 hover:bg-black/5"
-            title="Set paper stock for this signature"
-          >
-            {coated ? "Coated" : "Uncoated"} ▾
-          </button>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
-              <div className="absolute left-2 top-full z-30 mt-1 w-28 overflow-hidden rounded-md border border-border bg-popover text-foreground shadow-lg">
-                {(["coated", "uncoated"] as StockType[]).map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => {
-                      setSignatureStock(si, st);
-                      setMenuOpen(false);
-                    }}
-                    className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[11px] hover:bg-muted ${
-                      sig.stockType === st ? "font-bold" : ""
-                    }`}
-                  >
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ background: st === "coated" ? "#2563eb" : "#9ca3af" }}
-                    />
-                    {st === "coated" ? "Coated" : "Uncoated"}
-                    {sig.stockType === st && <Check className="ml-auto h-3 w-3" />}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          {!onlySignature && (
-            <button
-              type="button"
-              onClick={() => removeSignature(si)}
-              title="Remove this signature"
-              className="ml-1 rounded p-0.5 opacity-60 hover:bg-red-500/15 hover:text-red-500 hover:opacity-100"
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
         {/* ── Pages ── */}
-        <div className="flex flex-col gap-[5px]">
+        <div className="flex flex-col gap-[3px]">
           {/* Cover treatment row (first signature only) */}
           {isFirst && (coverSingle !== null || coverSpread) && (
-            <div className="flex items-start gap-[5px]">
+            <div className="flex items-start gap-[3px]">
               {coverSingle !== null && <PageSlot {...slotProps(coverSingle)} />}
               {coverSpread && (
                 <div className="flex gap-[1.5px]">
@@ -933,13 +918,13 @@ function SignatureBlock({
                 </div>
               )}
               {/* gap before the first ad / body starts */}
-              <div className="w-4" />
+              <div className="w-3" />
             </div>
           )}
 
           {/* Body rows of 16 (8 tight spreads) */}
           {rows.map((row, ri) => (
-            <div key={ri} className="flex items-start gap-[5px]">
+            <div key={ri} className="flex items-start gap-[3px]">
               {Array.from({ length: Math.ceil(row.length / 2) }, (_, sp) => {
                 const left = row[sp * 2];
                 const right = row[sp * 2 + 1];
@@ -996,6 +981,7 @@ function PageSlot({
   const isSpace = page.section === "Space" && !page.feature.trim();
   const isCover = globalIndex === 0;
   const isBack = globalIndex === total - 1;
+  const isGatefold = !!page.isGatefold;
   const dragging = pageDrag?.sig === si && pageDrag?.slot === slot;
 
   // The blue insertion rule renders on this card's left (insert before) or right
@@ -1025,13 +1011,15 @@ function PageSlot({
         onDragOver={onDragOver}
         onDrop={onPageDrop}
         onClick={() => onOpen(globalIndex)}
-        className={`group relative flex h-[86px] w-[64px] cursor-grab flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2 active:cursor-grabbing ${
-          dragging ? "opacity-40" : ""
-        }`}
+        className={`group relative flex h-[86px] cursor-grab flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2 active:cursor-grabbing ${
+          isGatefold ? "w-[96px]" : "w-[64px]"
+        } ${dragging ? "opacity-40" : ""}`}
         style={{
           background: isSpace ? "var(--secondary)" : `${colour}5e`, // ~37% tint
           // @ts-expect-error CSS custom prop for hover ring
           "--tw-ring-color": `${colour}99`,
+          outline: isGatefold ? `1px dashed ${colour}` : undefined,
+          outlineOffset: isGatefold ? "-3px" : undefined,
         }}
       >
         <span
@@ -1063,11 +1051,20 @@ function PageSlot({
           )}
         </div>
         <p className="mt-0.5 line-clamp-3 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-900">
-          {isSpace ? <span className="text-gray-500">Space</span> : truncate(page.feature, 28)}
+          {isSpace ? <span className="text-gray-500">Space</span> : truncate(page.feature, isGatefold ? 40 : 28)}
         </p>
-        {(isCover || isBack) && (
-          <span className="mt-auto pl-1 text-[6px] font-bold uppercase tracking-wide text-gray-700">
-            {isCover ? "Front Cover" : "Back Cover"}
+        {(isCover || isBack || isGatefold) && (
+          <span className="mt-auto flex flex-wrap gap-0.5 pl-1">
+            {isGatefold && (
+              <span className="rounded-sm bg-black/70 px-1 text-[6px] font-bold uppercase tracking-wide text-white">
+                Gatefold
+              </span>
+            )}
+            {(isCover || isBack) && (
+              <span className="text-[6px] font-bold uppercase tracking-wide text-gray-700">
+                {isCover ? "Front Cover" : "Back Cover"}
+              </span>
+            )}
           </span>
         )}
       </button>
@@ -1206,8 +1203,8 @@ function openPrintWindow(issueName: string, issueNumber: number, pages: Magazine
     .map((p) => {
       const colour = sectionColour(p.section);
       const isSpace = p.section === "Space" && !p.feature.trim();
-      return `<div class="card" style="border-top:4px solid ${isSpace ? "#ddd" : colour}">
-        <div class="pn">${p.pageNumber}</div>
+      return `<div class="card${p.isGatefold ? " gf" : ""}" style="border-top:4px solid ${isSpace ? "#ddd" : colour}">
+        <div class="pn">${p.pageNumber}${p.isGatefold ? ' <span class="gflbl">GATEFOLD</span>' : ""}</div>
         <div class="ft">${escapeHtml(isSpace ? "Space" : p.feature)}</div>
         <div class="sec" style="color:${colour}">${escapeHtml(p.section)}</div>
         <div class="ty">${escapeHtml(p.type)}</div>
@@ -1221,6 +1218,8 @@ function openPrintWindow(issueName: string, issueNumber: number, pages: Magazine
     .meta{font-size:11px;color:#666;margin-bottom:16px}
     .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
     .card{border:1px solid #e5e5e5;border-radius:4px;padding:6px;min-height:72px;break-inside:avoid}
+    .card.gf{grid-column:span 2;outline:1px dashed #999;outline-offset:-3px}
+    .gflbl{display:inline-block;background:#111;color:#fff;font-size:6px;padding:0 3px;border-radius:2px;vertical-align:middle}
     .pn{font-size:9px;font-weight:700;color:#999}
     .ft{font-size:9px;font-weight:600;line-height:1.2;margin-top:2px}
     .sec{font-size:7px;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;font-weight:700}
