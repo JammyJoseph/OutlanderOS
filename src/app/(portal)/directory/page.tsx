@@ -18,6 +18,7 @@ import {
   Tags,
   Clock,
   ChevronRight,
+  ChevronLeft,
   ExternalLink,
   Pencil,
   LayoutGrid,
@@ -248,6 +249,9 @@ function Directory() {
 
   const [editing, setEditing] = useState<ContactRecord | null | undefined>(undefined);
   const [addingRadar, setAddingRadar] = useState<ContactRecord | null | undefined>(undefined);
+
+  // Quick-view sidebar — index into the currently displayed contact list.
+  const [quickViewIndex, setQuickViewIndex] = useState<number | null>(null);
 
   const [importing, setImporting] = useState(false);
 
@@ -698,9 +702,21 @@ function Directory() {
             onToggleSelect={toggleSelect}
             onEdit={(c) => setEditing(c)}
             onAdd={() => setEditing(null)}
+            onOpen={(i) => setQuickViewIndex(i)}
           />
         )}
       </div>
+
+      {/* Quick-view slide-in sidebar */}
+      {quickViewIndex != null && sortedContacts[quickViewIndex] && (
+        <QuickViewSidebar
+          list={sortedContacts}
+          index={quickViewIndex}
+          onIndex={setQuickViewIndex}
+          onClose={() => setQuickViewIndex(null)}
+          onEdit={(c) => setEditing(c)}
+        />
+      )}
 
       {/* Floating share bar */}
       {selected.size > 0 && (
@@ -765,6 +781,7 @@ function ContactsView({
   onToggleSelect,
   onEdit,
   onAdd,
+  onOpen,
 }: {
   contacts: ContactRecord[];
   mode: DisplayMode;
@@ -772,6 +789,7 @@ function ContactsView({
   onToggleSelect: (id: string) => void;
   onEdit: (c: ContactRecord) => void;
   onAdd: () => void;
+  onOpen: (index: number) => void;
 }) {
   if (contacts.length === 0) {
     return (
@@ -795,6 +813,7 @@ function ContactsView({
             selected={selected.has(c.id)}
             onToggleSelect={() => onToggleSelect(c.id)}
             onEdit={() => onEdit(c)}
+            onOpen={() => onOpen(i)}
             last={i === contacts.length - 1}
           />
         ))}
@@ -804,13 +823,14 @@ function ContactsView({
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {contacts.map((c) => (
+      {contacts.map((c, i) => (
         <ContactCard
           key={c.id}
           contact={c}
           selected={selected.has(c.id)}
           onToggleSelect={() => onToggleSelect(c.id)}
           onEdit={() => onEdit(c)}
+          onOpen={() => onOpen(i)}
         />
       ))}
     </div>
@@ -890,16 +910,25 @@ function ContactCard({
   selected,
   onToggleSelect,
   onEdit,
+  onOpen,
 }: {
   contact: ContactRecord;
   selected: boolean;
   onToggleSelect: () => void;
   onEdit: () => void;
+  onOpen: () => void;
 }) {
   const handle = igHandle(c.instagram);
   return (
     <Link
       href={`/directory/${c.id}`}
+      onClick={(e) => {
+        // Plain click opens the quick-view sidebar; modifier-click still opens
+        // the full profile page (new tab etc.).
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        onOpen();
+      }}
       className={`group relative flex flex-col gap-2 rounded-xl border bg-card p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--ring)] hover:shadow-lg ${
         selected ? "border-[var(--ring)]" : "border-border"
       }`}
@@ -957,18 +986,25 @@ function ContactRow({
   selected,
   onToggleSelect,
   onEdit,
+  onOpen,
   last,
 }: {
   contact: ContactRecord;
   selected: boolean;
   onToggleSelect: () => void;
   onEdit: () => void;
+  onOpen: () => void;
   last: boolean;
 }) {
   const handle = igHandle(c.instagram);
   return (
     <Link
       href={`/directory/${c.id}`}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        onOpen();
+      }}
       className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary ${
         last ? "" : "border-b border-border"
       } ${selected ? "bg-secondary" : ""}`}
@@ -1001,6 +1037,330 @@ function ContactRow({
         <QuickActions contact={c} onEdit={onEdit} />
       </span>
     </Link>
+  );
+}
+
+// ── Quick-view sidebar ──────────────────────────────────────────────────────────
+
+interface Collaboration {
+  productionId: string;
+  productionTitle: string;
+  role: string;
+  source: "crew" | "team";
+}
+
+interface ContactDetail extends ContactRecord {
+  collaborations?: Collaboration[];
+}
+
+function QuickViewSidebar({
+  list,
+  index,
+  onIndex,
+  onClose,
+  onEdit,
+}: {
+  list: ContactRecord[];
+  index: number;
+  onIndex: (i: number) => void;
+  onClose: () => void;
+  onEdit: (c: ContactRecord) => void;
+}) {
+  const current = list[index];
+  const [shown, setShown] = useState(false);
+  const [detail, setDetail] = useState<ContactDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Trigger the slide-in once mounted.
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
+
+  // Arrow keys move through the list; Escape closes.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        onClose();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (index < list.length - 1) onIndex(index + 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (index > 0) onIndex(index - 1);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [index, list.length, onIndex, onClose]);
+
+  // Pull the full profile (collaborations, portfolio, etc.) for the current id.
+  const id = current?.id;
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    setLoading(true);
+    setDetail(null);
+    fetch(`/api/contacts/${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d) setDetail(d);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (!current) return null;
+
+  const c: ContactDetail = detail ?? current;
+  const handle = igHandle(c.instagram);
+  const collaborations = detail?.collaborations ?? [];
+  const portfolio = c.portfolioLinks ?? [];
+  const tags = c.tags ?? [];
+
+  return (
+    <div className="fixed inset-0 z-50">
+      {/* Overlay */}
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/40 backdrop-blur-[1px] transition-opacity duration-300 ${
+          shown ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      {/* Panel */}
+      <aside
+        className={`absolute top-0 right-0 h-full w-full max-w-[480px] overflow-y-auto border-l border-border bg-card shadow-2xl transition-transform duration-300 ${
+          shown ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* Nav header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-card/95 px-4 py-3 backdrop-blur">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => index > 0 && onIndex(index - 1)}
+              disabled={index === 0}
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40"
+              title="Previous (↑)"
+            >
+              <ChevronLeft size={14} /> Prev
+            </button>
+            <span className="px-2 text-xs font-medium text-gray-500 tabular-nums">
+              {index + 1} of {list.length}
+            </span>
+            <button
+              onClick={() => index < list.length - 1 && onIndex(index + 1)}
+              disabled={index >= list.length - 1}
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40"
+              title="Next (↓)"
+            >
+              Next <ChevronRight size={14} />
+            </button>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-gray-500 hover:bg-secondary hover:text-gray-900"
+            title="Close (Esc)"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="space-y-5 px-5 py-5">
+          {/* Identity */}
+          <div>
+            <div className="flex items-start gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-gray-500">
+                {c.name.slice(0, 2).toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl font-semibold leading-tight text-gray-900">{c.name}</h2>
+                {(c.role || c.company) && (
+                  <p className="mt-0.5 text-sm text-gray-500">
+                    {[c.role, c.company].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <CategoryBadge category={c.category} />
+              {c.source === "instagram_scan" && c.confidence && (
+                <ConfidenceBadge confidence={c.confidence} />
+              )}
+              {c.rating ? <Stars rating={c.rating} /> : null}
+            </div>
+          </div>
+
+          {/* Contact details */}
+          <div className="space-y-2">
+            {handle && (
+              <a
+                href={`https://www.instagram.com/${handle}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#dc2743] hover:underline"
+              >
+                <Instagram size={15} /> @{handle}
+              </a>
+            )}
+            <div className="grid grid-cols-1 gap-1.5 text-sm text-gray-600">
+              {c.email && (
+                <a href={`mailto:${c.email}`} className="inline-flex items-center gap-2 hover:text-gray-900">
+                  <Mail size={14} className="text-gray-400" /> {c.email}
+                </a>
+              )}
+              {c.phone && (
+                <a href={`tel:${c.phone}`} className="inline-flex items-center gap-2 hover:text-gray-900">
+                  <Phone size={14} className="text-gray-400" /> {c.phone}
+                </a>
+              )}
+              {c.location && (
+                <span className="inline-flex items-center gap-2">
+                  <MapPin size={14} className="text-gray-400" /> {c.location}
+                </span>
+              )}
+              {c.website && (
+                <a
+                  href={c.website.startsWith("http") ? c.website : `https://${c.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 hover:text-gray-900"
+                >
+                  <ExternalLink size={14} className="text-gray-400" /> {c.website}
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Instagram preview */}
+          {handle && (
+            <div>
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                Instagram
+              </p>
+              <div className="overflow-hidden rounded-xl border border-border bg-background">
+                <iframe
+                  key={handle}
+                  src={`https://www.instagram.com/${handle}/embed/`}
+                  title={`@${handle} on Instagram`}
+                  className="h-[320px] w-full"
+                  loading="lazy"
+                  scrolling="no"
+                />
+              </div>
+              <a
+                href={`https://www.instagram.com/${handle}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900"
+              >
+                <ExternalLink size={12} /> View on Instagram if the preview doesn&apos;t load
+              </a>
+            </div>
+          )}
+
+          {/* Bio / notes */}
+          {c.notes && (
+            <div>
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                Notes
+              </p>
+              <p className="whitespace-pre-wrap text-sm text-gray-600">{c.notes}</p>
+            </div>
+          )}
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                Tags
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-gray-600"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Portfolio */}
+          {portfolio.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                Portfolio
+              </p>
+              <div className="space-y-1.5">
+                {portfolio.map((p, i) => (
+                  <a
+                    key={i}
+                    href={p.url.startsWith("http") ? p.url : `https://${p.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-full items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-600 hover:border-[var(--ring)] hover:text-gray-900"
+                  >
+                    <ExternalLink size={13} className="text-gray-400" />
+                    <span className="truncate">{p.title || p.url}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Collaboration history */}
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              Collaboration history
+            </p>
+            {loading ? (
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <Loader2 size={14} className="animate-spin" /> Loading…
+              </div>
+            ) : collaborations.length === 0 ? (
+              <p className="text-xs text-gray-400">No productions linked yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {collaborations.map((col) => (
+                  <Link
+                    key={`${col.productionId}-${col.role}`}
+                    href={`/production/${col.productionId}`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm hover:border-[var(--ring)]"
+                  >
+                    <span className="truncate text-gray-700">{col.productionTitle}</span>
+                    <span className="shrink-0 text-xs text-gray-400">{col.role}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 border-t border-border pt-4">
+            <Link
+              href={`/directory/${c.id}`}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+              style={{ backgroundColor: ACCENT }}
+            >
+              Open full profile <ChevronRight size={15} />
+            </Link>
+            <button
+              onClick={() => onEdit(current)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900"
+            >
+              <Pencil size={14} /> Edit
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
   );
 }
 

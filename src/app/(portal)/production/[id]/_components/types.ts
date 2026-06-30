@@ -57,6 +57,7 @@ export interface BudgetLineItem {
   role: string | null;
   quantity: number | null;
   rate: number | null;
+  vatPercent: number | null;
   description: string;
   budgeted: number;
   actual: number;
@@ -350,6 +351,34 @@ export function lineTotal(item: {
 }): number {
   if (item.quantity != null && item.rate != null) return item.quantity * item.rate;
   return item.budgeted || 0;
+}
+
+// Default per-line VAT rate when none is set on the item.
+export const DEFAULT_LINE_VAT = 20;
+
+// Effective VAT rate for a line — its own value, else the 20% default.
+export function lineVatPercent(item: { vatPercent: number | null }): number {
+  return item.vatPercent != null ? item.vatPercent : DEFAULT_LINE_VAT;
+}
+
+// VAT amount on a line: (qty × unit cost) × VAT%.
+export function lineVatAmount(item: {
+  quantity: number | null;
+  rate: number | null;
+  vatPercent: number | null;
+  budgeted: number;
+}): number {
+  return lineTotal(item) * (lineVatPercent(item) / 100);
+}
+
+// Line total including VAT: (qty × unit cost) + VAT amount.
+export function lineTotalIncVat(item: {
+  quantity: number | null;
+  rate: number | null;
+  vatPercent: number | null;
+  budgeted: number;
+}): number {
+  return lineTotal(item) + lineVatAmount(item);
 }
 
 export const CREATIVE_TYPES: { key: string; label: string; color: string }[] = [

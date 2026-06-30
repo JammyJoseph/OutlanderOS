@@ -416,7 +416,8 @@ model BudgetLineItem {
   section      String? // industry-standard grouping: PRE_PRODUCTION | CAST_TALENT | CREW | STYLING_GLAM | LOCATIONS | EQUIPMENT | TRANSPORT | CATERING | ART_DEPARTMENT | POST_PRODUCTION
   role         String? // specific role/item name (e.g. "DOP", "Lead Talent", "Lighting Kit")
   quantity     Float? // number of days/units
-  rate         Float? // £ per unit
+  rate         Float? // £ per unit (unit cost)
+  vatPercent   Float? // per-line VAT rate; null treated as the 20% default in the UI
   description  String
   budgeted     Float      @default(0) // = quantity × rate when both set, else manual
   actual       Float      @default(0)

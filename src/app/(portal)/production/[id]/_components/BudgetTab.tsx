@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -22,6 +22,9 @@ import {
   BUDGET_SECTIONS,
   gbp,
   lineTotal,
+  lineVatPercent,
+  lineVatAmount,
+  lineTotalIncVat,
   ProductionFull,
   ProductionBudgetStatus,
   sectionOf,
@@ -67,6 +70,13 @@ export default function BudgetTab({
   const [isAdmin, setIsAdmin] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
+  // The line-item table flips between budget entry (with VAT columns) and a
+  // separate actuals-tracking view (budgeted vs actual vs variance).
+  const [view, setView] = useState<"budget" | "actuals">("budget");
+  // Section key whose freshly-added line should auto-focus its first input —
+  // set when a new line is created via the keyboard so data entry stays fluid.
+  const [focusSection, setFocusSection] = useState<string | null>(null);
+
   // Markup / VAT — live inputs, persisted on blur.
   const [markupInput, setMarkupInput] = useState(
     String(production.budgetMarkupPercent ?? DEFAULT_MARKUP)
@@ -111,10 +121,12 @@ export default function BudgetTab({
     const t = (items ?? []).reduce(
       (acc, it) => {
         acc.budgeted += lineTotal(it);
+        acc.vat += lineVatAmount(it);
+        acc.incVat += lineTotalIncVat(it);
         acc.actual += it.actual || 0;
         return acc;
       },
-      { budgeted: 0, actual: 0 }
+      { budgeted: 0, vat: 0, incVat: 0, actual: 0 }
     );
     return { ...t, variance: t.budgeted - t.actual };
   }, [items]);
@@ -152,11 +164,24 @@ export default function BudgetTab({
     refresh();
   }
 
-  async function addLine(section: string) {
+  async function addLine(section: string, opts?: { focus?: boolean }) {
+    // Append after the section's existing lines and default qty to 1 / VAT 20%.
+    const sectionLines = grouped[section] ?? [];
+    const nextSort = sectionLines.reduce((m, l) => Math.max(m, l.sortOrder), -1) + 1;
+    if (opts?.focus) setFocusSection(section);
     const res = await fetch(`/api/productions/${production.id}/budget`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ section, role: "", description: "", budgeted: 0, actual: 0 }),
+      body: JSON.stringify({
+        section,
+        role: "",
+        description: "",
+        quantity: 1,
+        vatPercent: 20,
+        budgeted: 0,
+        actual: 0,
+        sortOrder: nextSort,
+      }),
     });
     await handleResponse(res);
   }
@@ -495,9 +520,27 @@ export default function BudgetTab({
       {/* Line items grouped by section — this is the live P&L */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100 flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-600">
-            Production Budget
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-600">
+              Production Budget
+            </p>
+            {/* Budget entry ⇄ actuals tracking */}
+            <div className="flex items-center rounded-lg border border-gray-200 bg-white p-0.5">
+              {(["budget", "actuals"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    view === v
+                      ? "bg-[#ffd700] text-black"
+                      : "text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  {v === "budget" ? "Budget" : "Actuals"}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             {hasItems && canEditBudgeted && (
               <button
@@ -519,20 +562,31 @@ export default function BudgetTab({
           </div>
         </div>
         {/* Sticky column headers */}
-        <div className="grid grid-cols-12 px-5 py-2.5 bg-gray-50/60 border-b border-gray-100 text-[10px] font-bold uppercase tracking-widest text-gray-500 sticky top-0 z-10">
-          <div className="col-span-3">Role / Item</div>
-          <div className="col-span-3">Description</div>
-          <div className="col-span-1 text-right">Qty</div>
-          <div className="col-span-1 text-right">Rate</div>
-          <div className="col-span-1 text-right">Total</div>
-          <div className="col-span-1 text-right">Actuals</div>
-          <div className="col-span-2 text-right pr-6">Variance</div>
-        </div>
+        {view === "budget" ? (
+          <div className="grid grid-cols-12 px-5 py-2.5 bg-gray-50/60 border-b border-gray-100 text-[10px] font-bold uppercase tracking-widest text-gray-500 sticky top-0 z-10">
+            <div className="col-span-2">Role / Item</div>
+            <div className="col-span-3">Description</div>
+            <div className="col-span-1 text-right">Qty</div>
+            <div className="col-span-2 text-right">Unit Cost £</div>
+            <div className="col-span-1 text-right">VAT %</div>
+            <div className="col-span-1 text-right">VAT £</div>
+            <div className="col-span-2 text-right pr-6">Total inc. VAT</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-12 px-5 py-2.5 bg-gray-50/60 border-b border-gray-100 text-[10px] font-bold uppercase tracking-widest text-gray-500 sticky top-0 z-10">
+            <div className="col-span-3">Role / Item</div>
+            <div className="col-span-3">Description</div>
+            <div className="col-span-2 text-right">Budgeted</div>
+            <div className="col-span-2 text-right">Actuals</div>
+            <div className="col-span-2 text-right pr-6">Variance</div>
+          </div>
+        )}
 
         {sections.map((sec) => {
           const lines = grouped[sec.key] ?? [];
           if (!canEditBudgeted && lines.length === 0) return null;
           const secBudgeted = lines.reduce((s, l) => s + lineTotal(l), 0);
+          const secIncVat = lines.reduce((s, l) => s + lineTotalIncVat(l), 0);
           const secActual = lines.reduce((s, l) => s + (l.actual || 0), 0);
           const secVariance = secBudgeted - secActual;
           const isCollapsed = !!collapsed[sec.key];
@@ -556,29 +610,44 @@ export default function BudgetTab({
                   )}
                 </div>
                 <div className="flex items-center gap-5 text-xs tabular-nums">
-                  <span className="text-gray-500" title="Budgeted">{gbp(secBudgeted)}</span>
-                  <span className="text-gray-400" title="Actuals">{gbp(secActual)}</span>
-                  <span
-                    className={`font-medium w-20 text-right ${
-                      secVariance >= 0 ? "text-emerald-600" : "text-red-600"
-                    }`}
-                    title="Variance"
-                  >
-                    {secVariance >= 0 ? "" : "−"}
-                    {gbp(Math.abs(secVariance))}
-                  </span>
+                  {view === "budget" ? (
+                    <>
+                      <span className="text-gray-500" title="Subtotal (ex VAT)">{gbp(secBudgeted)}</span>
+                      <span className="text-gray-700 font-medium w-20 text-right" title="Total inc. VAT">
+                        {gbp(secIncVat)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-gray-500" title="Budgeted">{gbp(secBudgeted)}</span>
+                      <span className="text-gray-400" title="Actuals">{gbp(secActual)}</span>
+                      <span
+                        className={`font-medium w-20 text-right ${
+                          secVariance >= 0 ? "text-emerald-600" : "text-red-600"
+                        }`}
+                        title="Variance"
+                      >
+                        {secVariance >= 0 ? "" : "−"}
+                        {gbp(Math.abs(secVariance))}
+                      </span>
+                    </>
+                  )}
                 </div>
               </button>
               {!isCollapsed && (
                 <>
-                  {lines.map((line) => (
+                  {lines.map((line, idx) => (
                     <BudgetRow
                       key={line.id}
                       line={line}
+                      view={view}
                       canEditBudgeted={canEditBudgeted}
                       canEditActual={canEditActual}
                       onUpdate={(patch) => updateLine(line.id, patch)}
                       onDelete={() => deleteLine(line.id)}
+                      onEnterAtEnd={() => addLine(sec.key, { focus: true })}
+                      autoFocusFirst={focusSection === sec.key && idx === lines.length - 1}
+                      onAutoFocused={() => setFocusSection(null)}
                     />
                   ))}
                   {canEditBudgeted && (
@@ -597,22 +666,33 @@ export default function BudgetTab({
           );
         })}
 
-        {/* Grand budgeted/actual total row */}
-        <div className="grid grid-cols-12 px-5 py-3 bg-gray-50 border-t border-gray-100 text-sm font-semibold tabular-nums">
-          <div className="col-span-6 text-gray-700">Total</div>
-          <div className="col-span-1" />
-          <div className="col-span-1" />
-          <div className="col-span-1 text-right">{gbp(totals.budgeted)}</div>
-          <div className="col-span-1 text-right">{gbp(totals.actual)}</div>
-          <div
-            className={`col-span-2 text-right pr-6 ${
-              totals.variance >= 0 ? "text-emerald-600" : "text-red-600"
-            }`}
-          >
-            {totals.variance >= 0 ? "+" : "−"}
-            {gbp(Math.abs(totals.variance))}
+        {/* Grand total row */}
+        {view === "budget" ? (
+          <div className="grid grid-cols-12 px-5 py-3 bg-gray-50 border-t border-gray-100 text-sm font-semibold tabular-nums">
+            <div className="col-span-9 text-gray-700">
+              Total{" "}
+              <span className="text-xs font-normal text-gray-400">
+                (subtotal ex VAT {gbp(totals.budgeted)})
+              </span>
+            </div>
+            <div className="col-span-1 text-right text-gray-500">{gbp(totals.vat)}</div>
+            <div className="col-span-2 text-right pr-6 text-gray-900">{gbp(totals.incVat)}</div>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-12 px-5 py-3 bg-gray-50 border-t border-gray-100 text-sm font-semibold tabular-nums">
+            <div className="col-span-6 text-gray-700">Total</div>
+            <div className="col-span-2 text-right">{gbp(totals.budgeted)}</div>
+            <div className="col-span-2 text-right">{gbp(totals.actual)}</div>
+            <div
+              className={`col-span-2 text-right pr-6 ${
+                totals.variance >= 0 ? "text-emerald-600" : "text-red-600"
+              }`}
+            >
+              {totals.variance >= 0 ? "+" : "−"}
+              {gbp(Math.abs(totals.variance))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Budget summary — subtotal → markup → VAT → grand total */}
@@ -761,32 +841,150 @@ export default function BudgetTab({
   );
 }
 
+// Shared cell classes. Editable inputs sit a shade lighter than the (grey) row
+// with a subtle inset border; auto-calculated cells are visually locked.
+const EDIT_CELL =
+  "text-[12px] bg-white border border-gray-200 rounded-md px-2 py-1 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/30 disabled:bg-transparent disabled:border-transparent disabled:shadow-none disabled:text-gray-500";
+const AUTO_CELL = "text-[12px] tabular-nums text-gray-400 cursor-default select-none px-1";
+
 function BudgetRow({
   line,
+  view,
   canEditBudgeted,
   canEditActual,
   onUpdate,
   onDelete,
+  onEnterAtEnd,
+  autoFocusFirst,
+  onAutoFocused,
 }: {
   line: BudgetLineItem;
+  view: "budget" | "actuals";
   canEditBudgeted: boolean;
   canEditActual: boolean;
   onUpdate: (patch: Partial<BudgetLineItem>) => void;
   onDelete: () => void;
+  onEnterAtEnd: () => void;
+  autoFocusFirst: boolean;
+  onAutoFocused: () => void;
 }) {
   const [role, setRole] = useState(line.role ?? "");
   const [description, setDescription] = useState(line.description);
   const [quantity, setQuantity] = useState(line.quantity != null ? String(line.quantity) : "");
   const [rate, setRate] = useState(line.rate != null ? String(line.rate) : "");
+  const [vat, setVat] = useState(line.vatPercent != null ? String(line.vatPercent) : "");
   const [actual, setActual] = useState(String(line.actual ?? 0));
 
-  const total = lineTotal(line);
-  const variance = total - (line.actual || 0);
+  const rowRef = useRef<HTMLDivElement>(null);
 
+  const total = lineTotal(line);
+  const vatAmt = lineVatAmount(line);
+  const totalIncVat = lineTotalIncVat(line);
+  const variance = total - (line.actual || 0);
   const editAny = canEditActual || canEditBudgeted;
 
+  // Auto-focus the first editable cell when a new line is added via keyboard.
+  useEffect(() => {
+    if (!autoFocusFirst) return;
+    const first = rowRef.current?.querySelector<HTMLInputElement>("input:not([disabled])");
+    first?.focus();
+    first?.select();
+    onAutoFocused();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocusFirst]);
+
+  // Enter moves to the next editable cell in the row; at the end it creates a
+  // new line. Tab keeps its native behaviour (which already flows left→right).
+  function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const inputs = Array.from(
+      rowRef.current?.querySelectorAll<HTMLInputElement>("input:not([disabled])") ?? []
+    );
+    const idx = inputs.indexOf(e.currentTarget);
+    if (idx >= 0 && idx < inputs.length - 1) {
+      const next = inputs[idx + 1];
+      next.focus();
+      next.select();
+    } else {
+      onEnterAtEnd();
+    }
+  }
+
+  if (view === "actuals") {
+    return (
+      <div
+        ref={rowRef}
+        className="grid grid-cols-12 gap-1.5 px-5 py-1.5 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[30px]"
+      >
+        <input
+          type="text"
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          onBlur={() => {
+            if (role !== (line.role ?? "")) onUpdate({ role });
+          }}
+          onKeyDown={handleKey}
+          disabled={!canEditBudgeted}
+          placeholder="Role / item"
+          className={`col-span-3 font-medium truncate ${EDIT_CELL}`}
+        />
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onBlur={() => {
+            if (description !== line.description) onUpdate({ description });
+          }}
+          onKeyDown={handleKey}
+          disabled={!editAny}
+          placeholder="Description"
+          className={`col-span-3 text-gray-600 truncate ${EDIT_CELL}`}
+        />
+        <div className={`col-span-2 text-right ${AUTO_CELL}`} title="Budgeted (inc VAT)">
+          {gbp(totalIncVat)}
+        </div>
+        <input
+          type="number"
+          value={actual}
+          onChange={(e) => setActual(e.target.value)}
+          onBlur={() => onUpdate({ actual: actual === "" ? 0 : Number(actual) })}
+          onKeyDown={handleKey}
+          disabled={!canEditActual}
+          placeholder="0"
+          title={canEditActual ? undefined : "The budget is final — actuals are read-only"}
+          className={`col-span-2 text-right tabular-nums ${EDIT_CELL}`}
+        />
+        <div className="col-span-2 flex items-center justify-end gap-1 pr-1">
+          <span
+            className={`text-[12px] font-medium tabular-nums ${
+              variance >= 0 ? "text-emerald-600" : "text-red-600"
+            }`}
+          >
+            {variance >= 0 ? "" : "−"}
+            {gbp(Math.abs(variance))}
+          </span>
+          {canEditBudgeted ? (
+            <button
+              onClick={onDelete}
+              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 p-1"
+            >
+              <Trash2 size={12} />
+            </button>
+          ) : (
+            <span className="w-[22px]" />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Budget entry view — Qty / Unit Cost / VAT% editable, VAT £ + Total auto.
   return (
-    <div className="grid grid-cols-12 px-5 py-1.5 items-center hover:bg-amber-50/20 group min-h-[28px]">
+    <div
+      ref={rowRef}
+      className="grid grid-cols-12 gap-1.5 px-5 py-1.5 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[30px]"
+    >
       <input
         type="text"
         value={role}
@@ -794,9 +992,10 @@ function BudgetRow({
         onBlur={() => {
           if (role !== (line.role ?? "")) onUpdate({ role });
         }}
+        onKeyDown={handleKey}
         disabled={!canEditBudgeted}
         placeholder="Role / item"
-        className="col-span-3 text-[12px] font-medium bg-transparent border-none outline-none px-2 py-1 rounded-md focus:bg-white disabled:text-gray-500 truncate"
+        className={`col-span-2 font-medium truncate ${EDIT_CELL}`}
       />
       <input
         type="text"
@@ -805,9 +1004,10 @@ function BudgetRow({
         onBlur={() => {
           if (description !== line.description) onUpdate({ description });
         }}
-        disabled={!editAny}
+        onKeyDown={handleKey}
+        disabled={!canEditBudgeted}
         placeholder="Description"
-        className="col-span-3 text-[12px] text-gray-600 bg-transparent border-none outline-none px-2 py-1 rounded-md focus:bg-white disabled:text-gray-400 truncate"
+        className={`col-span-3 text-gray-600 truncate ${EDIT_CELL}`}
       />
       <input
         type="number"
@@ -817,9 +1017,10 @@ function BudgetRow({
           const v = quantity === "" ? null : Number(quantity);
           if (v !== line.quantity) onUpdate({ quantity: v });
         }}
+        onKeyDown={handleKey}
         disabled={!canEditBudgeted}
-        placeholder="—"
-        className="col-span-1 text-[12px] bg-transparent border-none outline-none px-1 py-1 rounded-md focus:bg-white text-right tabular-nums disabled:text-gray-500"
+        placeholder="1"
+        className={`col-span-1 text-right tabular-nums ${EDIT_CELL}`}
       />
       <input
         type="number"
@@ -829,31 +1030,33 @@ function BudgetRow({
           const v = rate === "" ? null : Number(rate);
           if (v !== line.rate) onUpdate({ rate: v });
         }}
+        onKeyDown={handleKey}
         disabled={!canEditBudgeted}
-        placeholder="—"
-        className="col-span-1 text-[12px] bg-transparent border-none outline-none px-1 py-1 rounded-md focus:bg-white text-right tabular-nums disabled:text-gray-500"
+        placeholder="0"
+        className={`col-span-2 text-right tabular-nums ${EDIT_CELL}`}
       />
-      <div className="col-span-1 text-[12px] text-right text-gray-400 tabular-nums px-1" title="Qty × Rate">
-        {gbp(total)}
-      </div>
       <input
         type="number"
-        value={actual}
-        onChange={(e) => setActual(e.target.value)}
-        onBlur={() => onUpdate({ actual: actual === "" ? 0 : Number(actual) })}
-        disabled={!canEditActual}
-        placeholder="0"
-        title={canEditActual ? undefined : "The budget is final — actuals are read-only"}
-        className="col-span-1 text-[12px] bg-transparent border-none outline-none px-1 py-1 rounded-md focus:bg-white text-right tabular-nums disabled:text-gray-500"
+        value={vat}
+        onChange={(e) => setVat(e.target.value)}
+        onBlur={() => {
+          const v = vat === "" ? null : Number(vat);
+          if (v !== line.vatPercent) onUpdate({ vatPercent: v });
+        }}
+        onKeyDown={handleKey}
+        disabled={!canEditBudgeted}
+        placeholder={String(lineVatPercent(line))}
+        className={`col-span-1 text-right tabular-nums ${EDIT_CELL}`}
       />
+      <div className={`col-span-1 text-right ${AUTO_CELL}`} title="(Qty × Unit Cost) × VAT%">
+        {gbp(vatAmt)}
+      </div>
       <div className="col-span-2 flex items-center justify-end gap-1 pr-1">
         <span
-          className={`text-[12px] font-medium tabular-nums ${
-            variance >= 0 ? "text-emerald-600" : "text-red-600"
-          }`}
+          className="text-[12px] font-semibold tabular-nums text-gray-700 cursor-default select-none"
+          title="Qty × Unit Cost + VAT"
         >
-          {variance >= 0 ? "" : "−"}
-          {gbp(Math.abs(variance))}
+          {gbp(totalIncVat)}
         </span>
         {canEditBudgeted ? (
           <button

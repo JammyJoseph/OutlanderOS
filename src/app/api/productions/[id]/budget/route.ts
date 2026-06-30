@@ -167,6 +167,8 @@ export const POST = withAuth(async (
         category: string;
         section: string;
         role: string;
+        quantity: number;
+        vatPercent: number;
         description: string;
         budgeted: number;
         actual: number;
@@ -181,6 +183,8 @@ export const POST = withAuth(async (
             category: sec.section,
             section: sec.section,
             role,
+            quantity: 1, // template lines default to a quantity of 1
+            vatPercent: 20,
             description: "",
             budgeted: 0,
             actual: 0,
@@ -192,9 +196,20 @@ export const POST = withAuth(async (
       return NextResponse.json({ seeded: rows.length });
     }
 
+    // New lines default to a quantity of 1 unless the caller says otherwise.
     const quantity =
-      body.quantity == null || body.quantity === "" ? null : Number(body.quantity);
+      body.quantity === undefined
+        ? 1
+        : body.quantity == null || body.quantity === ""
+          ? null
+          : Number(body.quantity);
     const rate = body.rate == null || body.rate === "" ? null : Number(body.rate);
+    const vatPercent =
+      body.vatPercent === undefined
+        ? 20
+        : body.vatPercent == null || body.vatPercent === ""
+          ? null
+          : Number(body.vatPercent);
     const computedBudgeted =
       quantity != null && rate != null
         ? quantity * rate
@@ -210,6 +225,7 @@ export const POST = withAuth(async (
         role: body.role || null,
         quantity,
         rate,
+        vatPercent,
         description: body.description || "",
         budgeted: computedBudgeted,
         actual: body.actual == null || body.actual === "" ? 0 : Number(body.actual),
@@ -274,6 +290,9 @@ export const PUT = withAuth(async (request: NextRequest) => {
     if (body.role !== undefined) data.role = body.role || null;
     if (body.quantity !== undefined) data.quantity = nextQuantity;
     if (body.rate !== undefined) data.rate = nextRate;
+    if (body.vatPercent !== undefined)
+      data.vatPercent =
+        body.vatPercent === "" || body.vatPercent == null ? null : Number(body.vatPercent);
     if (body.description !== undefined) data.description = body.description;
     // budgeted follows qty×rate when either is set, otherwise the manual value.
     if (body.budgeted !== undefined || recompute) data.budgeted = computedBudgeted;
