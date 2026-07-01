@@ -43,6 +43,12 @@ export default function CallSheetPage() {
   const [pdfOpen, setPdfOpen] = useState(false);
   const [docSections, setDocSections] = useState<Record<SectionKey, boolean>>(allSectionsVisible());
   const [docRedacted, setDocRedacted] = useState(false);
+  // Snapshot of the production deliverables so they render on the preview /
+  // printed / PDF call sheet (the editor keeps the live, editable copy). The
+  // public share views fetch these server-side; the in-app views need them here.
+  const [deliverables, setDeliverables] = useState<
+    { type: string; title: string; notes: string | null }[]
+  >([]);
 
   function handleExport(sections: Record<SectionKey, boolean>, includeContacts: boolean) {
     setDocSections(sections);
@@ -205,6 +211,26 @@ export default function CallSheetPage() {
     loadSheet();
   }, [loadSheet]);
 
+  // Pull the production deliverables for the read-only document views. Kept in
+  // its own fetch (not part of the call sheet row) so it always reflects the
+  // latest edits from either the Deliverables tab or the call sheet editor.
+  useEffect(() => {
+    fetch(`/api/productions/${id}/deliverables`)
+      .then((r) => r.json())
+      .then((d) =>
+        setDeliverables(
+          Array.isArray(d.deliverables)
+            ? d.deliverables.map((x: { type: string; title: string; notes: string | null }) => ({
+                type: x.type,
+                title: x.title,
+                notes: x.notes,
+              }))
+            : []
+        )
+      )
+      .catch(() => {});
+  }, [id, activeTab]);
+
   // Capture the loaded state as the saved baseline once everything settles.
   useEffect(() => {
     if (sheet && !lastSavedRef.current && shootDate) {
@@ -337,7 +363,7 @@ export default function CallSheetPage() {
 
   const viewData: CallSheetViewData = {
     shootTitle, shootDate, callTime, wrapTime, location, locationLat, locationLng,
-    locations, shotStyle, weatherData, schedule, shotlist, crew, talent, catering, documents,
+    locations, shotStyle, deliverables, weatherData, schedule, shotlist, crew, talent, catering, documents,
     notesGeneral, notesSafety, notesParking,
     header, clientTeam, agencyTeam, productionCompany, callTimes, productionMobiles,
     movementOrder, equipment,

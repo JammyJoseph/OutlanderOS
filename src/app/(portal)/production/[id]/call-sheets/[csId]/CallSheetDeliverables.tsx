@@ -105,10 +105,27 @@ export function CallSheetDeliverables({
   }
 
   async function runImport() {
-    const parsed = parseDeliverables(raw);
-    if (!parsed.length) return;
+    if (!raw.trim() || busy) return;
     setBusy(true);
     try {
+      // LLM parser first (digests any format); fall back to the regex parser if
+      // the endpoint is unavailable or returns nothing structured.
+      let parsed: { type: string; title: string; notes: string }[] = [];
+      try {
+        const res = await fetch("/api/ai/parse-content", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: raw, type: "deliverables" }),
+        });
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.deliverables) && data.deliverables.length > 0) {
+          parsed = data.deliverables;
+        }
+      } catch {
+        // fall through to regex below
+      }
+      if (parsed.length === 0) parsed = parseDeliverables(raw);
+      if (parsed.length === 0) return;
       for (const d of parsed) {
         await fetch(`/api/productions/${productionId}/deliverables`, {
           method: "POST",
@@ -189,8 +206,10 @@ export function CallSheetDeliverables({
         {importOpen && (
           <div className="mt-3 space-y-2">
             <p className="text-[11px] text-gray-400 leading-snug">
-              One deliverable per <span className="font-mono">Nx …</span> line (e.g.{" "}
-              <span className="font-mono">8x Edited Hero Images</span>); bullet lines beneath become spec notes.
+              Paste a deliverables brief in any format — an AI parser reads it and splits out each
+              deliverable with its type, quantity and spec notes. Simple{" "}
+              <span className="font-mono">Nx …</span> lists (e.g.{" "}
+              <span className="font-mono">8x Edited Hero Images</span>) also work if the AI is unavailable.
             </p>
             <textarea
               value={raw}

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CallSheetLocation, Shot, ShotStatus, ShotStyle } from "./types";
 import { SHOT_STATUS_LABELS, emptyShot, parseShotList } from "./types";
-import { Copy, ChevronDown, ChevronRight, Wand2, Package } from "lucide-react";
+import { Copy, ChevronDown, ChevronRight, Wand2, Package, Loader2, Sparkles } from "lucide-react";
 import { AddButton, DeleteButton, smallInputCls, inputCls, labelCls } from "./shared";
 
 // A deliverable this shot can feed — the SAME ProductionDeliverable records the
@@ -78,17 +78,46 @@ function ShotStyleEditor({
   );
 }
 
-// Paste-a-brief parser: turns raw text into structured shot cards.
-function ShotlistImporter({ onParsed }: { onParsed: (shots: Shot[]) => void }) {
+// Paste-a-brief parser: turns raw text into structured shot cards. Uses the
+// LLM parser (which digests any format) and falls back to the regex parser if
+// the endpoint is unavailable or the model can't structure the text.
+function ShotlistImporter({
+  onParsed,
+}: {
+  onParsed: (result: { shots: Shot[]; style?: ShotStyle | null }) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [raw, setRaw] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function run() {
-    const parsed = parseShotList(raw);
-    if (parsed.length > 0) {
-      onParsed(parsed);
-      setRaw("");
-      setOpen(false);
+  async function run() {
+    if (!raw.trim() || busy) return;
+    setBusy(true);
+    try {
+      let shots: Shot[] = [];
+      let style: ShotStyle | null = null;
+      try {
+        const res = await fetch("/api/ai/parse-content", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: raw, type: "shotlist" }),
+        });
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.shots) && data.shots.length > 0) {
+          shots = data.shots;
+          style = data.style ?? null;
+        }
+      } catch {
+        // fall through to regex below
+      }
+      if (shots.length === 0) shots = parseShotList(raw);
+      if (shots.length > 0) {
+        onParsed({ shots, style });
+        setRaw("");
+        setOpen(false);
+      }
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -99,16 +128,15 @@ function ShotlistImporter({ onParsed }: { onParsed: (shots: Shot[]) => void }) {
         className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800"
       >
         {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-        <Wand2 size={13} /> Paste a shot list to auto-format
+        <Sparkles size={13} /> Paste a shot list to auto-format
       </button>
       {open && (
         <div className="mt-3 space-y-2">
           <p className="text-[11px] text-gray-400 leading-snug">
-            Paste raw text. Use <span className="font-mono">Shot 1</span>, <span className="font-mono">Shot 2</span> …
-            as dividers, and <span className="font-mono">Scene:</span>,{" "}
-            <span className="font-mono">Video:</span>, <span className="font-mono">Dialogue:</span>,{" "}
-            <span className="font-mono">Stills:</span>, <span className="font-mono">Location:</span>,{" "}
-            <span className="font-mono">Tone:</span> headers within each shot.
+            Paste raw text in any format — an AI parser reads it and organises the shots, style and
+            per-shot notes for you. Structured layouts (<span className="font-mono">Shot 1</span>,{" "}
+            <span className="font-mono">Scene:</span>, <span className="font-mono">Video:</span>,{" "}
+            <span className="font-mono">Stills:</span> …) also work if the AI is unavailable.
           </p>
           <textarea
             value={raw}
@@ -120,10 +148,11 @@ function ShotlistImporter({ onParsed }: { onParsed: (shots: Shot[]) => void }) {
           <div className="flex items-center gap-2">
             <button
               onClick={run}
-              disabled={!raw.trim()}
+              disabled={!raw.trim() || busy}
               className="flex items-center gap-1.5 bg-[#ff4444] text-white px-3.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
             >
-              <Wand2 size={13} /> Parse into shots
+              {busy ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
+              {busy ? "Parsing…" : "Parse into shots"}
             </button>
             <span className="text-[11px] text-gray-400">Parsed shots are appended — you can edit any field after.</span>
           </div>
@@ -371,7 +400,17 @@ export function ShotlistEditor({
   return (
     <div className="space-y-3">
       <ShotStyleEditor shotStyle={shotStyle} setShotStyle={setShotStyle} />
-      <ShotlistImporter onParsed={(shots) => setShotlist([...shotlist, ...shots])} />
+      <ShotlistImporter
+        onParsed={({ shots, style }) => {
+          setShotlist([...shotlist, ...shots]);
+          // Only adopt a parsed style when the shoot doesn't already have one,
+          // so re-parsing never clobbers hand-edited style notes.
+          if (style && (style.tone || style.visualDevice || style.notes)) {
+            const empty = !shotStyle.tone && !shotStyle.visualDevice && !shotStyle.notes;
+            if (empty) setShotStyle(style);
+          }
+        }}
+      />
       {shotlist.map((shot, i) => (
         <ShotCard
           key={i}
