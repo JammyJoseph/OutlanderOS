@@ -31,7 +31,7 @@ import {
   ProductionBudgetStatus,
   sectionOf,
 } from "./types";
-import { getAPARate, getAPARatesForSection } from "@/lib/apa-rates";
+import { getAPARate, getAPARatesForSection, getReferenceRate } from "@/lib/apa-rates";
 import ApaRateCard from "./ApaRateCard";
 
 interface Props {
@@ -995,6 +995,11 @@ function BudgetRow({
   const isOverridden =
     apa != null && line.rate != null && line.rate !== apa.maxDailyRate;
 
+  // APA standard day rate shown as a greyed-out *reference* under the Unit Cost
+  // input. Alias-aware so friendly template roles (e.g. "DOP / Videographer")
+  // resolve too. Reference only — never auto-filled, never in any calculation.
+  const refRate = getReferenceRate(line.role);
+
   // Pick a role from the APA dropdown: set the role and auto-fill its default
   // rate (qty defaults to 1) plus the "APA 2025 rate" description hint.
   function pickRole(apaRole: string, apaRate: number) {
@@ -1149,28 +1154,39 @@ function BudgetRow({
         placeholder="1"
         className={`col-span-1 text-right tabular-nums ${EDIT_CELL}`}
       />
-      <div className="col-span-2 relative">
-        <input
-          type="number"
-          value={rate}
-          onChange={(e) => setRate(e.target.value)}
-          onBlur={() => {
-            const v = rate === "" ? null : Number(rate);
-            if (v !== line.rate) onUpdate({ rate: v });
-          }}
-          onKeyDown={handleKey}
-          disabled={!canEditBudgeted}
-          placeholder="0"
-          className={`w-full text-right tabular-nums ${EDIT_CELL} ${
-            isOverridden ? "pl-5 text-amber-700" : ""
-          }`}
-        />
-        {isOverridden && apa && (
+      <div className="col-span-2 flex flex-col">
+        <div className="relative">
+          <input
+            type="number"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+            onBlur={() => {
+              const v = rate === "" ? null : Number(rate);
+              if (v !== line.rate) onUpdate({ rate: v });
+            }}
+            onKeyDown={handleKey}
+            disabled={!canEditBudgeted}
+            placeholder="0"
+            className={`w-full text-right tabular-nums ${EDIT_CELL} ${
+              isOverridden ? "pl-5 text-amber-700" : ""
+            }`}
+          />
+          {isOverridden && apa && (
+            <span
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 text-amber-500"
+              title={`Manually overridden — APA default is ${gbp(apa.maxDailyRate)}/day`}
+            >
+              <Pencil size={10} />
+            </span>
+          )}
+        </div>
+        {/* APA standard rate — reference only, greyed out, never counted. */}
+        {refRate != null && (
           <span
-            className="absolute left-1.5 top-1/2 -translate-y-1/2 text-amber-500"
-            title={`Manually overridden — APA default is ${gbp(apa.maxDailyRate)}/day`}
+            className="mt-0.5 pr-1 text-right text-[10px] leading-none text-gray-400 dark:text-gray-500 select-none"
+            title={`APA standard day rate — reference only, not included in the budget`}
           >
-            <Pencil size={10} />
+            APA {gbp(refRate)}
           </span>
         )}
       </div>

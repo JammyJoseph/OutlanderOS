@@ -87,3 +87,24 @@ export function getAPARate(role: string): APARate | undefined {
 export function getAPARatesForSection(section: string): APARate[] {
   return APA_CREW_RATES.filter(r => r.section === section);
 }
+
+// The budget template uses friendly, generic role names; these aliases point
+// them at the canonical APA rate-card role. Shared with the seed route so both
+// the server and the budget UI resolve the same reference rate.
+export const TEMPLATE_ROLE_ALIASES: Record<string, string> = {
+  "DOP / Videographer": "Director of Photography",
+  "Camera Assistant": "Focus Puller (1st AC)",
+  "Sound Recordist": "Sound Mixer",
+  "Wardrobe Stylist": "Stylist",
+  "Hair Stylist": "Hairdresser",
+  MUA: "Make Up",
+};
+
+// The APA standard day rate to show as a greyed-out *reference* next to a line's
+// Unit Cost. Resolves friendly template names via the alias table. Returns
+// undefined for custom roles with no APA rate (nothing is shown for those).
+export function getReferenceRate(role: string | null | undefined): number | undefined {
+  if (!role) return undefined;
+  const rate = getAPARate(role) ?? getAPARate(TEMPLATE_ROLE_ALIASES[role] ?? "");
+  return rate?.maxDailyRate;
+}
