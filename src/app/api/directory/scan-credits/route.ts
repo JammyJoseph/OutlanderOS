@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/auth"
 import { scanCredits, normalizeHandle, type ScanCreditsResult } from "@/lib/instagram-scan"
 import { apifyScanCredits } from "@/lib/instagram-apify"
 import { getCachedScan, setCachedScan } from "@/lib/scan-cache"
+import { logger } from "@/lib/logger"
 
 // POST /api/directory/scan-credits
 // Body: { handle: string }
@@ -35,6 +36,20 @@ export const POST = withAuth(async (request: NextRequest) => {
     result = (await apifyScanCredits(handle)) ?? (await scanCredits(handle))
     if (result.ok) await setCachedScan(handle, "credits", result)
   }
+
+  // Log every scan with its outcome and the tier/confidence breakdown so we have
+  // an audit trail of what the scanner found (and filtered) for each handle.
+  logger.info("scan-credits", "scan complete", {
+    handle,
+    date: new Date().toISOString(),
+    cached,
+    ok: result.ok,
+    postsScanned: result.postsScanned,
+    credited: result.credits.filter((c) => c.tier === "credited").length,
+    likely: result.credits.filter((c) => c.tier === "likely").length,
+    social: result.socialMentions.length,
+    error: result.error,
+  })
 
   return NextResponse.json({ ...result, cached })
 })

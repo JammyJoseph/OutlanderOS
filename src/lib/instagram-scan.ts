@@ -14,6 +14,13 @@ import { logger } from "@/lib/logger"
 
 export type Confidence = "VERIFIED" | "LIKELY" | "UNVERIFIED"
 
+// Three-tier classification for a scanned @mention:
+//   "credited" — the caption gives them an explicit production role (Tier 1)
+//   "likely"   — no caption role, but their bio shows a production role (Tier 2)
+//   "social"   — no caption role and no matching bio; a casual/brand mention (Tier 3)
+// Only "credited" and "likely" are real crew credits worth adding to the directory.
+export type CreditTier = "credited" | "likely" | "social"
+
 // A single recent post captured at scan time, used for the 3×3 thumbnail grid.
 export interface RecentPost {
   shortcode: string
@@ -45,6 +52,8 @@ export interface CreditPerson {
   mentionCount: number
   posts: string[] // post shortcodes / ids the handle appeared in
   confidence: Confidence
+  tier: CreditTier // credited (Tier 1) | likely (Tier 2) | social (Tier 3)
+  bioMatched?: boolean // true when a bio-role check promoted a mention to "likely"
 }
 
 export interface CollaborationPair {
@@ -55,7 +64,8 @@ export interface CollaborationPair {
 
 export interface ScanCreditsResult {
   handle: string
-  credits: CreditPerson[]
+  credits: CreditPerson[] // Tier 1 (credited) + Tier 2 (likely) only — safe to add
+  socialMentions: CreditPerson[] // Tier 3 — casual/brand mentions, excluded from "Add All"
   collaborationPairs: CollaborationPair[]
   postsScanned: number
   ok: boolean
@@ -415,17 +425,22 @@ const CREDIT_PATTERNS: { role: string; category: string; res: RegExp[] }[] = [
   {
     role: "Styling",
     category: "Stylist",
-    res: [/(?:styling|stylist|styled|wardrobe|fashion)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
+    res: [/(?:styling|stylist|styled|wardrobe)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
   },
   {
     role: "Hair",
     category: "MUA",
-    res: [/hair\s*(?:by|stylist|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
+    res: [/hair\s*(?:by|stylist|styling|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
   },
   {
     role: "Makeup",
     category: "MUA",
     res: [/(?:makeup|make\s?up|make-up|mua|beauty)\s*(?:by|artist|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
+  },
+  {
+    role: "Grooming",
+    category: "MUA",
+    res: [/(?:grooming|groomer|groomed)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
   },
   {
     role: "Creative Direction",
@@ -435,12 +450,27 @@ const CREDIT_PATTERNS: { role: string; category: string; res: RegExp[] }[] = [
   {
     role: "Video",
     category: "Videographer",
-    res: [/(?:video|videographer|director|film|filmed|dop|d\.o\.p|cinematography|motion)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
+    res: [/(?:video|videographer|director|directed|film|filmed|dop|d\.o\.p|cinematography|cinematographer|motion)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
+  },
+  {
+    role: "Editing",
+    category: "Editor",
+    res: [/(?:edited|editor|edit|post\s*production|post-production)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
+  },
+  {
+    role: "Colour",
+    category: "Colorist",
+    res: [/(?:colour|color|colourist|colorist|grade|grading|graded)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
+  },
+  {
+    role: "Sound",
+    category: "Other",
+    res: [/(?:sound|audio|music)\s*(?:by|design|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
   },
   {
     role: "Set Design",
     category: "Set Designer",
-    res: [/(?:set\s*design|set\s*designer|props|set\s*build|production\s*design)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
+    res: [/(?:set\s*design|set\s*designer|props|prop\s*stylist|set\s*build|production\s*design|production\s*designer)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
   },
   {
     role: "Casting",
@@ -448,9 +478,14 @@ const CREDIT_PATTERNS: { role: string; category: string; res: RegExp[] }[] = [
     res: [/casting\s*(?:by|director|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
   },
   {
+    role: "Production",
+    category: "Producer",
+    res: [/(?:produced|producer|production)\s*(?:by|[:\-–])\s*@([a-z0-9._]{2,30})/gi],
+  },
+  {
     role: "Talent",
     category: "Model",
-    res: [/(?:talent|model|modelled\s*by|wearing|featuring)\s*(?:by|[:\-–])?\s*@([a-z0-9._]{2,30})/gi],
+    res: [/(?:talent|model|modelled\s*by|modeled\s*by|wearing|featuring)\s*(?:by|[:\-–])?\s*@([a-z0-9._]{2,30})/gi],
   },
 ]
 
@@ -477,6 +512,7 @@ export function parseCredits(
         mentionCount: 0,
         posts: [],
         confidence: "UNVERIFIED",
+        tier: "social", // default; promoted to "credited" if a role pattern hits
       }
       map.set(handle, p)
     }
@@ -496,6 +532,8 @@ export function parseCredits(
           const h = m[1].toLowerCase().replace(/\.$/, "")
           if (h === selfHandle || h.length < 2) continue
           const p = ensure(h)
+          // Explicit role in the caption → Tier 1 (credited).
+          p.tier = "credited"
           if (!p.role) {
             p.role = role
             p.category = category
@@ -530,11 +568,11 @@ export function parseCredits(
     }
   }
 
-  // Assign confidence per person.
+  // Confidence follows the tier, NOT the raw mention count — a friend @-tagged
+  // three times is still a social mention, not a crew credit. Bio verification
+  // (finalizeCredits) may later promote a "social" person to "likely".
   for (const p of map.values()) {
-    if (p.role && p.mentionCount >= 2) p.confidence = "VERIFIED"
-    else if (p.role || p.mentionCount >= 2) p.confidence = "LIKELY"
-    else p.confidence = "UNVERIFIED"
+    p.confidence = p.tier === "credited" ? "VERIFIED" : "UNVERIFIED"
   }
 
   const credits = [...map.values()].sort(
@@ -548,6 +586,74 @@ export function parseCredits(
   )
 
   return { credits, collaborationPairs }
+}
+
+// Looks up bios for a set of handles so mentions can be bio-verified (Tier 2).
+// Returns a map of normalised handle → bio text (or null when unknown). Callers
+// supply the actual fetch strategy (Apify batch, direct scrape, …).
+export type BioLookup = (handles: string[]) => Promise<Map<string, string | null>>
+
+// Splits raw parsed credits into the two buckets the directory cares about:
+//   • credits        — Tier 1 (explicit caption role) + Tier 2 (bio-verified)
+//   • socialMentions — Tier 3 (no role, no matching bio) — excluded from Add All
+// `bios` maps handle → bio text for the mentions we were able to look up.
+export function finalizeCredits(
+  raw: CreditPerson[],
+  bios: Map<string, string | null>
+): { credits: CreditPerson[]; socialMentions: CreditPerson[] } {
+  const credits: CreditPerson[] = []
+  const socialMentions: CreditPerson[] = []
+
+  for (const p of raw) {
+    if (p.tier === "credited") {
+      credits.push(p)
+      continue
+    }
+    // No caption role — try to verify via their bio (Tier 2).
+    const bio = bios.get(p.handle)
+    const bioCategory = categoryFromText(bio)
+    if (bioCategory) {
+      p.tier = "likely"
+      p.confidence = "LIKELY"
+      p.category = bioCategory
+      if (!p.role) p.role = bioCategory
+      p.bioMatched = true
+      credits.push(p)
+    } else {
+      // Tier 3 — a friend, brand, venue, or random mention. Keep it out of the
+      // directory, but surface it separately so a user can opt in explicitly.
+      p.tier = "social"
+      p.confidence = "UNVERIFIED"
+      socialMentions.push(p)
+    }
+  }
+
+  const byMentions = (a: CreditPerson, b: CreditPerson) =>
+    b.mentionCount - a.mentionCount || a.handle.localeCompare(b.handle)
+  credits.sort(byMentions)
+  socialMentions.sort(byMentions)
+  return { credits, socialMentions }
+}
+
+// Scrapes the bios of `handles` directly (rate-limited), capped so a caption
+// full of mentions can't fan out into dozens of blocking scrapes. Used as the
+// bio-lookup strategy for the direct (non-Apify) credits scan.
+const DIRECT_BIO_LOOKUP_CAP = 6
+export async function directProfileBios(handles: string[]): Promise<Map<string, string | null>> {
+  const out = new Map<string, string | null>()
+  const unique = [...new Set(handles.map((h) => normalizeHandle(h)).filter(Boolean) as string[])]
+  const limited = unique.slice(0, DIRECT_BIO_LOOKUP_CAP)
+  if (unique.length > limited.length) {
+    logger.info(
+      "instagram-scan",
+      `Bio-verifying ${limited.length}/${unique.length} mentions (cap ${DIRECT_BIO_LOOKUP_CAP}); the rest stay unverified`
+    )
+  }
+  for (const h of limited) {
+    const p = await scanProfile(h)
+    out.set(h, p.ok ? p.bio : null)
+  }
+  return out
 }
 
 // Extracts recent post captions from a profile's HTML, if Instagram embedded
@@ -575,7 +681,7 @@ function extractPostsFromHtml(html: string): ParsedPost[] {
 export async function scanCredits(handleInput: string): Promise<ScanCreditsResult> {
   const handle = normalizeHandle(handleInput)
   if (!handle) {
-    return { handle: String(handleInput), credits: [], collaborationPairs: [], postsScanned: 0, ok: false, error: "Invalid Instagram handle" }
+    return { handle: String(handleInput), credits: [], socialMentions: [], collaborationPairs: [], postsScanned: 0, ok: false, error: "Invalid Instagram handle" }
   }
 
   let posts: ParsedPost[] = []
@@ -596,6 +702,7 @@ export async function scanCredits(handleInput: string): Promise<ScanCreditsResul
     return {
       handle,
       credits: [],
+      socialMentions: [],
       collaborationPairs: [],
       postsScanned: 0,
       ok: false,
@@ -603,10 +710,15 @@ export async function scanCredits(handleInput: string): Promise<ScanCreditsResul
     }
   }
 
-  const { credits, collaborationPairs } = parseCredits(posts, handle)
+  const { credits: raw, collaborationPairs } = parseCredits(posts, handle)
+  // Bio-verify the non-credited mentions before deciding who's a real credit.
+  const candidates = raw.filter((p) => p.tier !== "credited").map((p) => p.handle)
+  const bios = candidates.length ? await directProfileBios(candidates) : new Map<string, string | null>()
+  const { credits, socialMentions } = finalizeCredits(raw, bios)
   return {
     handle,
     credits,
+    socialMentions,
     collaborationPairs,
     postsScanned: posts.length,
     ok: true,

@@ -130,6 +130,7 @@ model Contact {
   portfolioLinks  Json      @default("[]") // [{ title: string, url: string }] — work/portfolio links
   // ── Instagram scanner (Directory Intelligence) ──
   source          String? // "instagram_scan" for scanned contacts; null for manual entries
+  scanSource      String? // handle of the profile whose credit-scan surfaced this contact
   confidence      String? // VERIFIED | LIKELY | UNVERIFIED — how sure we are about scanned data
   followers       Int? // follower count captured at scan time
   profilePic      String? // profile picture URL captured at scan time

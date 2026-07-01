@@ -62,6 +62,8 @@ interface ScanProfileResult {
   existingContact?: { id: string; name: string } | null;
 }
 
+type CreditTier = "credited" | "likely" | "social";
+
 interface CreditPerson {
   handle: string;
   role: string | null;
@@ -69,6 +71,8 @@ interface CreditPerson {
   mentionCount: number;
   posts: string[];
   confidence: Confidence;
+  tier: CreditTier;
+  bioMatched?: boolean;
 }
 
 interface CollaborationPair {
@@ -80,6 +84,7 @@ interface CollaborationPair {
 interface ScanCreditsResult {
   handle: string;
   credits: CreditPerson[];
+  socialMentions?: CreditPerson[];
   collaborationPairs: CollaborationPair[];
   postsScanned: number;
   ok: boolean;
@@ -215,6 +220,9 @@ function SingleScanner({
   // Scan queue (Scan All)
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [queueRunning, setQueueRunning] = useState(false);
+
+  // Whether the filtered-out social mentions (Tier 3) are expanded.
+  const [showSocial, setShowSocial] = useState(false);
 
   async function scan() {
     if (!input.trim()) return;
@@ -393,13 +401,15 @@ function SingleScanner({
     setAddingAllCredits(true);
     try {
       const subjectHandle = profile.handle.toLowerCase();
-      // The subject profile itself, plus every credited person.
+      // The subject profile itself, plus every credited person (Tier 1 + Tier 2
+      // only — credits.credits already excludes Tier 3 social mentions).
       const contacts = [
         profileToInput(profile),
         ...credits.credits.map((c) => ({
           handle: c.handle,
           category: c.category,
           confidence: c.confidence,
+          scanSource: subjectHandle,
         })),
       ];
       // Link the subject to each credited person (they collaborated), alongside
@@ -440,6 +450,7 @@ function SingleScanner({
   }
 
   const creditsByRole = useMemo(() => groupByRole(credits?.credits ?? []), [credits]);
+  const socialMentions = credits?.socialMentions ?? [];
   const queueDone = queue.filter((q) => q.status === "done" || q.status === "failed").length;
 
   return (
@@ -703,6 +714,48 @@ function SingleScanner({
             </div>
           )}
 
+          {/* Tier 3 — social mentions filtered out of the credit list. Hidden by
+              default; a user can expand and add any individually (opt-in). */}
+          {socialMentions.length > 0 && (
+            <div className="mt-5 rounded-xl border border-border bg-background">
+              <button
+                onClick={() => setShowSocial((s) => !s)}
+                className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+              >
+                <span className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                  <AlertTriangle size={14} className="text-gray-400" />
+                  {socialMentions.length} social mention
+                  {socialMentions.length === 1 ? "" : "s"} filtered out
+                </span>
+                <span className="text-xs text-gray-400">
+                  {showSocial ? "Hide" : "Show"}
+                </span>
+              </button>
+              {showSocial && (
+                <div className="border-t border-border px-4 pb-4 pt-3">
+                  <p className="mb-2 text-[11px] text-gray-500">
+                    No production role in the caption and no matching bio — likely
+                    friends, brands, or venues. Not included in “Add All”. Add any
+                    you know are crew.
+                  </p>
+                  <div className="overflow-hidden rounded-lg border border-border">
+                    {socialMentions.map((p, i) => (
+                      <CreditRow
+                        key={p.handle}
+                        person={p}
+                        last={i === socialMentions.length - 1}
+                        subjectHandle={credits.handle}
+                        subjectInput={profile?.ok ? profileToInput(profile) : null}
+                        showToast={showToast}
+                        onChanged={onChanged}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Scan queue progress */}
           {queue.length > 0 && (
             <div className="mt-5 rounded-xl border border-border bg-background p-4">
@@ -794,7 +847,12 @@ function CreditRow({
       // Include the subject profile so the collaboration link can resolve both
       // ends; scan-import dedups by handle so neither side is duplicated.
       const contacts: unknown[] = [
-        { handle: person.handle, category: person.category, confidence: person.confidence },
+        {
+          handle: person.handle,
+          category: person.category,
+          confidence: person.confidence,
+          scanSource: subjectHandle ?? undefined,
+        },
       ];
       if (subjectInput) contacts.push(subjectInput);
       const collaborationPairs =
@@ -850,7 +908,8 @@ function CreditRow({
         </a>
         <ConfidenceBadge confidence={person.confidence} />
         <span className="hidden text-[11px] text-gray-500 sm:inline">
-          {person.mentionCount}× credited
+          {person.mentionCount}× {person.tier === "social" ? "mentioned" : "credited"}
+          {person.bioMatched ? " · bio" : ""}
         </span>
       </div>
       {added ? (

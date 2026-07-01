@@ -48,6 +48,7 @@ export interface ScannedContactInput {
   profilePic?: string | null
   recentPosts?: RecentPost[] | null
   confidence?: Confidence | null
+  scanSource?: string | null // handle of the credit-scan this contact came from
 }
 
 // Sanitises incoming post data into [{ shortcode, imageUrl, caption? }], capped
@@ -110,6 +111,9 @@ export async function upsertScannedContact(
     if ((!current.category || current.category === "Other") && category !== "Other")
       data.category = category
     if (!current.confidence && input.confidence) data.confidence = input.confidence
+    if (!current.scanSource && input.scanSource) {
+      data.scanSource = normalizeHandle(input.scanSource) ?? input.scanSource
+    }
     data.scannedAt = new Date()
     // Never flip a manually-added contact's source, but tag if it had none.
     if (!current.source) data.source = "instagram_scan"
@@ -135,6 +139,7 @@ export async function upsertScannedContact(
       recentPosts: sanitizeRecentPosts(input.recentPosts) as unknown as object,
       confidence: input.confidence ?? "UNVERIFIED",
       source: "instagram_scan",
+      scanSource: input.scanSource ? normalizeHandle(input.scanSource) ?? input.scanSource : null,
       scannedAt: new Date(),
       createdBy: userId,
     },
