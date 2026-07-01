@@ -48,6 +48,7 @@ export const GET = withAuth(async (request: NextRequest) => {
   const contacts = await prisma.contact.findMany({
     where: {
       isRadar: false,
+      archived: false,
       ...(category && category !== "all" ? { category } : {}),
       // When a period is selected, only rank people credited within it.
       ...(periodCutoff ? { scannedAt: { gte: new Date(periodCutoff) } } : {}),

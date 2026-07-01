@@ -8,7 +8,7 @@ import { CONTACT_CATEGORIES } from '@/lib/directory'
 export const GET = withAuth(async () => {
   const grouped = await prisma.contact.groupBy({
     by: ['category'],
-    where: { isRadar: false },
+    where: { isRadar: false, archived: false },
     _count: { _all: true },
   })
 

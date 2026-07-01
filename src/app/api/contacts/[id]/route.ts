@@ -150,6 +150,9 @@ const updateContact = withAuth(async (
       location: body.location !== undefined ? (body.location || null) : undefined,
       rating: body.rating !== undefined ? parseRating(body.rating) : undefined,
       isFavourite: body.isFavourite !== undefined ? Boolean(body.isFavourite) : undefined,
+      archived: body.archived !== undefined ? Boolean(body.archived) : undefined,
+      archivedAt:
+        body.archived !== undefined ? (body.archived ? new Date() : null) : undefined,
       notes: body.notes !== undefined ? (body.notes === null ? null : sanitizeString(body.notes, 4000)) : undefined,
       portfolioLinks: body.portfolioLinks !== undefined ? sanitizePortfolio(body.portfolioLinks) : undefined,
       isRadar: body.isRadar !== undefined ? Boolean(body.isRadar) : undefined,

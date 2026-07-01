@@ -9,6 +9,7 @@ export const GET = withAuth(async (request: NextRequest) => {
   const category = searchParams.get('category') || ''
   const categories = searchParams.get('categories') || ''
   const radar = searchParams.get('radar') // "true" | "false" | null
+  const includeArchived = searchParams.get('includeArchived') === 'true'
 
   const categoryFilter = categories
     ? { category: { in: categories.split(',').map((c) => c.trim()).filter(Boolean) } }
@@ -38,6 +39,8 @@ export const GET = withAuth(async (request: NextRequest) => {
           : {},
         categoryFilter,
         radarFilter,
+        // Archived contacts are hidden from the directory unless explicitly requested.
+        includeArchived ? {} : { archived: false },
       ],
     },
     include: { creator: { select: { id: true, name: true } } },

@@ -80,6 +80,7 @@ interface ContactRecord {
   location: string | null;
   rating: number | null;
   isFavourite?: boolean;
+  archived?: boolean;
   notes: string | null;
   portfolioLinks?: { title: string; url: string }[];
   isRadar: boolean;
@@ -434,6 +435,22 @@ function Directory() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isFavourite: next }),
     });
+  }
+
+  // Soft-archive a contact — drop it from the list optimistically, then persist.
+  async function archiveContact(contact: ContactRecord) {
+    setContacts((prev) => prev.filter((c) => c.id !== contact.id));
+    showToast(`Archived ${contact.name}`);
+    const res = await fetch(`/api/contacts/${contact.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archived: true }),
+    });
+    if (res.ok) await loadCategories();
+    else {
+      showToast("Could not archive — refreshing");
+      await loadContacts();
+    }
   }
 
   // Selection helpers
@@ -793,6 +810,7 @@ function Directory() {
             selected={selected}
             onToggleSelect={toggleSelect}
             onToggleFavourite={toggleFavourite}
+            onArchive={archiveContact}
             onEdit={(c) => setEditing(c)}
             onAdd={() => setEditing(null)}
           />
@@ -860,6 +878,7 @@ function SplitPanel({
   selected,
   onToggleSelect,
   onToggleFavourite,
+  onArchive,
   onEdit,
   onAdd,
 }: {
@@ -867,11 +886,16 @@ function SplitPanel({
   selected: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleFavourite: (c: ContactRecord) => void;
+  onArchive: (c: ContactRecord) => void;
   onEdit: (c: ContactRecord) => void;
   onAdd: () => void;
 }) {
   // The highlighted contact, tracked by id so it survives list re-sorts/filters.
   const [activeId, setActiveId] = useState<string | null>(contacts[0]?.id ?? null);
+  // Contact awaiting an archive confirmation (from the ← key), null when idle.
+  const [confirmArchive, setConfirmArchive] = useState<ContactRecord | null>(null);
+  // True for a beat after a → favourite so the detail-panel star pops.
+  const [favPulse, setFavPulse] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Default to (or fall back to) the first contact whenever the list changes.
@@ -885,24 +909,59 @@ function SplitPanel({
 
   const active = contacts.find((c) => c.id === activeId) ?? contacts[0] ?? null;
 
-  // Arrow keys move the highlight up/down the list (ignored while typing).
+  // Keyboard shortcuts (ignored while typing in a field):
+  //   ↑ ↓  move the highlight   →  favourite (instant)   ←  archive (confirm)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-      e.preventDefault();
+
+      // While an archive confirmation is up, Enter confirms, anything else cancels.
+      if (confirmArchive) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onArchive(confirmArchive);
+          setConfirmArchive(null);
+        } else if (e.key === "Escape" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          setConfirmArchive(null);
+        }
+        return;
+      }
+
       const idx = contacts.findIndex((c) => c.id === activeId);
       const cur = idx < 0 ? 0 : idx;
-      const next =
-        e.key === "ArrowDown"
-          ? Math.min(cur + 1, contacts.length - 1)
-          : Math.max(cur - 1, 0);
-      setActiveId(contacts[next]?.id ?? null);
+      const current = contacts[cur] ?? null;
+
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const next =
+          e.key === "ArrowDown"
+            ? Math.min(cur + 1, contacts.length - 1)
+            : Math.max(cur - 1, 0);
+        setActiveId(contacts[next]?.id ?? null);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (current) {
+          onToggleFavourite(current);
+          setFavPulse(true);
+          window.setTimeout(() => setFavPulse(false), 200);
+        }
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (current) setConfirmArchive(current);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [contacts, activeId]);
+  }, [contacts, activeId, confirmArchive, onArchive, onToggleFavourite]);
+
+  // Auto-dismiss the archive confirmation if it's left unanswered.
+  useEffect(() => {
+    if (!confirmArchive) return;
+    const t = setTimeout(() => setConfirmArchive(null), 4000);
+    return () => clearTimeout(t);
+  }, [confirmArchive]);
 
   // Keep the highlighted row visible as the selection moves.
   useEffect(() => {
@@ -927,7 +986,7 @@ function SplitPanel({
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100dvh-330px)] lg:min-h-[560px] lg:flex-row">
       {/* Left — contact list */}
-      <div className="flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card lg:w-2/5">
+      <div className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card lg:w-2/5">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-4 py-2.5 backdrop-blur">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
             {contacts.length} contact{contacts.length === 1 ? "" : "s"}
@@ -947,6 +1006,46 @@ function SplitPanel({
             />
           ))}
         </div>
+
+        {/* Key hint — subtle, muted, pinned to the bottom of the list. */}
+        <div className="border-t border-border bg-card/95 px-4 py-2 text-center text-[10px] font-medium tracking-wide text-gray-400">
+          <span className="text-gray-500">←</span> Archive
+          <span className="mx-1.5 text-gray-300">·</span>
+          <span className="text-gray-500">↑↓</span> Navigate
+          <span className="mx-1.5 text-gray-300">·</span>
+          <span className="text-gray-500">→</span> Favourite
+        </div>
+
+        {/* Archive confirmation — brief overlay, Enter to confirm / Esc to cancel. */}
+        {confirmArchive && (
+          <div className="absolute inset-x-3 bottom-12 z-20 rounded-xl border border-border bg-popover px-4 py-3 shadow-2xl">
+            <p className="text-sm font-semibold text-gray-900">
+              Archive {confirmArchive.name}?
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                onClick={() => {
+                  onArchive(confirmArchive);
+                  setConfirmArchive(null);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-black"
+                style={{ backgroundColor: ACCENT }}
+              >
+                Archive
+              </button>
+              <button
+                onClick={() => setConfirmArchive(null)}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-900"
+              >
+                Cancel
+              </button>
+              <span className="ml-auto text-[10px] text-gray-400">
+                <span className="font-semibold text-gray-500">Enter</span> confirm ·{" "}
+                <span className="font-semibold text-gray-500">Esc</span> cancel
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right — contact detail */}
@@ -957,6 +1056,7 @@ function SplitPanel({
             contact={active}
             onEdit={onEdit}
             onToggleFavourite={onToggleFavourite}
+            favPulse={favPulse}
           />
         )}
       </div>
@@ -1034,15 +1134,18 @@ function SelectBox({ selected, onToggle }: { selected: boolean; onToggle: () => 
   );
 }
 
-// Star toggle — gold when favourited, grey outline when not.
+// Star toggle — gold when favourited, grey outline when not. `pulse` briefly
+// pops the star (used for the → keyboard favourite so the change feels instant).
 function FavouriteStar({
   favourite,
   onToggle,
   size = 16,
+  pulse = false,
 }: {
   favourite: boolean;
   onToggle: () => void;
   size?: number;
+  pulse?: boolean;
 }) {
   return (
     <button
@@ -1057,6 +1160,10 @@ function FavouriteStar({
     >
       <Star
         size={size}
+        style={{
+          transform: pulse ? "scale(1.45)" : "scale(1)",
+          transition: "transform 0.18s ease",
+        }}
         className={
           favourite
             ? "fill-[#ffd700] text-[#ffd700]"
@@ -1084,10 +1191,12 @@ function ContactDetailPanel({
   contact,
   onEdit,
   onToggleFavourite,
+  favPulse = false,
 }: {
   contact: ContactRecord;
   onEdit: (c: ContactRecord) => void;
   onToggleFavourite: (c: ContactRecord) => void;
+  favPulse?: boolean;
 }) {
   const [detail, setDetail] = useState<ContactDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1129,6 +1238,7 @@ function ContactDetailPanel({
             favourite={Boolean(contact.isFavourite)}
             onToggle={() => onToggleFavourite(contact)}
             size={18}
+            pulse={favPulse}
           />
           <p className="min-w-0 truncate text-sm font-semibold text-gray-900">{c.name}</p>
         </div>
@@ -1444,7 +1554,7 @@ function HottestCreatives() {
       .then((r) => r.json())
       .then((data) => {
         if (!active) return;
-        setTop(Array.isArray(data.entries) ? data.entries : []);
+        setTop(Array.isArray(data?.entries) ? data.entries : []);
         setLoaded(true);
       })
       .catch(() => active && setLoaded(true));
