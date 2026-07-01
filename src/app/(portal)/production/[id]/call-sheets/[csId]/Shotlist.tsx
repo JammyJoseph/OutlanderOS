@@ -1,10 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CallSheetLocation, Shot, ShotStatus, ShotStyle } from "./types";
 import { SHOT_STATUS_LABELS, emptyShot, parseShotList } from "./types";
-import { Copy, ChevronDown, ChevronRight, Wand2 } from "lucide-react";
+import { Copy, ChevronDown, ChevronRight, Wand2, Package } from "lucide-react";
 import { AddButton, DeleteButton, smallInputCls, inputCls, labelCls } from "./shared";
+
+// A deliverable this shot can feed — the SAME ProductionDeliverable records the
+// Deliverables views edit. Linking here writes straight back to them.
+interface LinkedDeliverable {
+  id: string;
+  title: string;
+  type: string;
+  linkedShots?: string[];
+}
 
 const STATUS_STYLES: Record<ShotStatus, string> = {
   planned: "bg-gray-100 text-gray-500",
@@ -128,6 +137,8 @@ function ShotCard({
   shot,
   index,
   locations,
+  deliverables,
+  onToggleDeliverable,
   onChange,
   onDuplicate,
   onDelete,
@@ -135,11 +146,17 @@ function ShotCard({
   shot: Shot;
   index: number;
   locations: CallSheetLocation[];
+  deliverables: LinkedDeliverable[];
+  onToggleDeliverable: (d: LinkedDeliverable, shotNumber: string) => void;
   onChange: (patch: Partial<Shot>) => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const shotNumber = shot.shotNumber || String(index + 1);
+  const linkedDeliverables = deliverables.filter((d) =>
+    (d.linkedShots ?? []).map(String).includes(shotNumber)
+  );
   const bodyField = (label: string, key: keyof Shot, placeholder: string, rows = 2) => (
     <div>
       <label className={labelCls}>{label}</label>
@@ -184,6 +201,14 @@ function ShotCard({
             </option>
           ))}
         </select>
+        {linkedDeliverables.length > 0 && (
+          <span
+            title={`Feeds: ${linkedDeliverables.map((d) => d.title).join(", ")}`}
+            className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-[#ff4444]"
+          >
+            <Package size={10} /> {linkedDeliverables.length}
+          </span>
+        )}
         <button
           onClick={onDuplicate}
           title="Duplicate shot"
@@ -259,6 +284,34 @@ function ShotCard({
               className={inputCls}
             />
           </div>
+          <div>
+            <label className={labelCls}>Feeds deliverables</label>
+            {deliverables.length === 0 ? (
+              <p className="text-[11px] text-gray-400 italic">
+                No deliverables yet — add them in the Deliverables section.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {deliverables.map((d) => {
+                  const on = (d.linkedShots ?? []).map(String).includes(shotNumber);
+                  return (
+                    <button
+                      key={d.id}
+                      onClick={() => onToggleDeliverable(d, shotNumber)}
+                      title={on ? "Unlink from this deliverable" : "Link to this deliverable"}
+                      className={`text-[11px] font-medium px-2 py-1 rounded-lg border transition-colors ${
+                        on
+                          ? "bg-[#ff4444] text-white border-transparent"
+                          : "text-gray-600 border-gray-200 bg-gray-50 hover:bg-gray-100"
+                      }`}
+                    >
+                      {d.title}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -271,15 +324,48 @@ export function ShotlistEditor({
   shotStyle,
   setShotStyle,
   locations,
+  productionId,
 }: {
   shotlist: Shot[];
   setShotlist: (v: Shot[]) => void;
   shotStyle: ShotStyle;
   setShotStyle: (v: ShotStyle) => void;
   locations: CallSheetLocation[];
+  productionId: string;
 }) {
+  const [deliverables, setDeliverables] = useState<LinkedDeliverable[]>([]);
+
+  const loadDeliverables = useCallback(() => {
+    fetch(`/api/productions/${productionId}/deliverables`)
+      .then((r) => r.json())
+      .then((d) => setDeliverables(Array.isArray(d.deliverables) ? d.deliverables : []))
+      .catch(() => {});
+  }, [productionId]);
+
+  useEffect(() => {
+    loadDeliverables();
+  }, [loadDeliverables]);
+
   function update(i: number, patch: Partial<Shot>) {
     setShotlist(shotlist.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  }
+
+  // Toggle this shot on a deliverable's linkedShots — the mapping is stored on
+  // the deliverable, so this writes straight back to it (kept in sync with the
+  // Deliverables views).
+  function toggleDeliverable(d: LinkedDeliverable, shotNumber: string) {
+    const set = new Set((d.linkedShots ?? []).map(String));
+    if (set.has(shotNumber)) set.delete(shotNumber);
+    else set.add(shotNumber);
+    const next = Array.from(set);
+    setDeliverables((prev) =>
+      prev.map((x) => (x.id === d.id ? { ...x, linkedShots: next } : x))
+    );
+    fetch(`/api/productions/${productionId}/deliverables?deliverableId=${d.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ linkedShots: next }),
+    }).catch(() => {});
   }
 
   return (
@@ -292,6 +378,8 @@ export function ShotlistEditor({
           shot={shot}
           index={i}
           locations={locations}
+          deliverables={deliverables}
+          onToggleDeliverable={toggleDeliverable}
           onChange={(patch) => update(i, patch)}
           onDuplicate={() => {
             const next = [...shotlist];

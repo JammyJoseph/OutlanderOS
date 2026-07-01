@@ -13,7 +13,7 @@ import BudgetTab from "./_components/BudgetTab";
 import TeamTab from "./_components/TeamTab";
 import TasksTab from "./_components/TasksTab";
 import CreativeTab from "./_components/CreativeTab";
-import ScheduleTab from "./_components/ScheduleTab";
+import CampaignTimelineTab from "./_components/CampaignTimelineTab";
 import CallSheetsTab from "./_components/CallSheetsTab";
 import DeliverablesTab from "./_components/DeliverablesTab";
 
@@ -231,7 +231,7 @@ export default function ProjectDetail() {
     budget: (production.budgetItems ?? []).length,
     team: (production.teamMembers ?? []).length,
     creative: (production.creativeAssets ?? []).length,
-    schedule: (production.scheduleBlocks ?? []).length,
+    timeline: (production.milestones ?? []).length,
     callsheets: (production.callSheets ?? []).length,
     deliverables: (production.prodDeliverables ?? []).length,
   };
@@ -356,11 +356,10 @@ export default function ProjectDetail() {
               refresh={refresh}
             />
           )}
-          {tab === "schedule" && (
-            <ScheduleTab
+          {tab === "timeline" && (
+            <CampaignTimelineTab
               productionId={production.id}
-              blocks={production.scheduleBlocks ?? []}
-              numShootDays={(production.shootDates ?? []).length}
+              milestones={production.milestones ?? []}
               refresh={refresh}
             />
           )}

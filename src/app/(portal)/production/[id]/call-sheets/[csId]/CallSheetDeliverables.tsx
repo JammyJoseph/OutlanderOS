@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { parseDeliverables } from "./types";
 import { inputCls, labelCls, smallInputCls } from "./shared";
+import { LinkedShotsPicker, ShotOption } from "../../_components/LinkedShotsPicker";
 
 // A production deliverable — the SAME record the production Deliverables tab
 // edits. Reading/writing it here keeps the two views in sync (one source of
@@ -18,6 +19,7 @@ interface Deliverable {
   dueDate: string | null;
   url: string | null;
   notes: string | null;
+  linkedShots?: string[];
 }
 
 const TYPES = ["photo", "video", "reel", "bts", "other"];
@@ -46,10 +48,18 @@ export function CallSheetDeliverables({
   readOnly?: boolean;
 }) {
   const [items, setItems] = useState<Deliverable[]>([]);
+  const [shots, setShots] = useState<ShotOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [raw, setRaw] = useState("");
+
+  useEffect(() => {
+    fetch(`/api/productions/${productionId}/shots`)
+      .then((r) => r.json())
+      .then((d) => setShots(Array.isArray(d.shots) ? d.shots : []))
+      .catch(() => {});
+  }, [productionId]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -140,6 +150,11 @@ export function CallSheetDeliverables({
             </div>
             {d.notes && (
               <p className="text-xs text-gray-500 whitespace-pre-wrap mt-0.5">{d.notes}</p>
+            )}
+            {d.linkedShots && d.linkedShots.length > 0 && (
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                From shots {d.linkedShots.join(", ")}
+              </p>
             )}
           </div>
         ))}
@@ -252,6 +267,12 @@ export function CallSheetDeliverables({
                   className={`${inputCls} resize-none`}
                 />
               </div>
+              <LinkedShotsPicker
+                shots={shots}
+                selected={d.linkedShots ?? []}
+                onChange={(next) => patch(d.id, { linkedShots: next })}
+                accent="#ff4444"
+              />
             </div>
           ))}
         </div>

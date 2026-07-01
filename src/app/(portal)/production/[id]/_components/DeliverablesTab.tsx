@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Trash2, ExternalLink, Package, AlertTriangle, CalendarDays } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import {
@@ -9,6 +9,7 @@ import {
   DELIVERABLE_TYPES,
   CampaignDeliverable,
 } from "./types";
+import { LinkedShotsPicker, ShotOption } from "./LinkedShotsPicker";
 
 interface Props {
   productionId: string;
@@ -57,6 +58,14 @@ export default function DeliverablesTab({
   refresh,
 }: Props) {
   const [showAdd, setShowAdd] = useState(false);
+  const [shots, setShots] = useState<ShotOption[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/productions/${productionId}/shots`)
+      .then((r) => r.json())
+      .then((d) => setShots(Array.isArray(d.shots) ? d.shots : []))
+      .catch(() => {});
+  }, [productionId]);
 
   // Production can update status on the Commercial deliverables but can't
   // add/remove them — that's Commercial's job.
@@ -223,6 +232,7 @@ export default function DeliverablesTab({
               <DeliverableRow
                 key={d.id}
                 deliverable={d}
+                shots={shots}
                 onUpdate={(patch) => update(d.id, patch)}
                 onCycleStatus={() => cycleStatus(d)}
                 onRemove={() => remove(d.id)}
@@ -237,11 +247,13 @@ export default function DeliverablesTab({
 
 function DeliverableRow({
   deliverable,
+  shots,
   onUpdate,
   onCycleStatus,
   onRemove,
 }: {
   deliverable: ProductionDeliverable;
+  shots: ShotOption[];
   onUpdate: (patch: Partial<ProductionDeliverable>) => void;
   onCycleStatus: () => void;
   onRemove: () => void;
@@ -255,7 +267,8 @@ function DeliverableRow({
   const status = STATUS_STYLES[deliverable.status];
 
   return (
-    <div className="grid grid-cols-12 gap-3 px-5 py-3 items-center hover:bg-amber-50/20 group">
+    <div className="px-5 py-3 hover:bg-amber-50/20 group">
+    <div className="grid grid-cols-12 gap-3 items-center">
       <div className="col-span-1">
         <span
           className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${meta.color}`}
@@ -328,6 +341,15 @@ function DeliverableRow({
         >
           <Trash2 size={12} />
         </button>
+      </div>
+    </div>
+      <div className="mt-2 pl-[calc(8.333%+0.75rem)]">
+        <LinkedShotsPicker
+          shots={shots}
+          selected={deliverable.linkedShots ?? []}
+          onChange={(next) => onUpdate({ linkedShots: next })}
+          accent="#ffd700"
+        />
       </div>
     </div>
   );

@@ -571,6 +571,7 @@ export function CallSheetEditor(p: EditorProps) {
           shotStyle={p.shotStyle}
           setShotStyle={p.setShotStyle}
           locations={p.locations}
+          productionId={p.production.id}
         />
       </Section>
 

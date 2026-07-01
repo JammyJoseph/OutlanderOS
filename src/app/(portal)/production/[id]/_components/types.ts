@@ -120,6 +120,150 @@ export interface ProductionDeliverable {
   dueDate: string | null;
   url: string | null;
   notes: string | null;
+  // Shot numbers (from call-sheet shot lists) this deliverable is produced from.
+  linkedShots?: string[];
+}
+
+// ── Campaign Timeline ──
+export type MilestonePhase = "PRE_PRODUCTION" | "PRODUCTION" | "POST_PRODUCTION";
+export type MilestoneStatus = "PENDING" | "DONE" | "OVERDUE";
+
+export interface ProductionMilestone {
+  id: string;
+  productionId: string;
+  phase: MilestonePhase;
+  date: string;
+  title: string;
+  description: string | null;
+  done: boolean;
+  sortOrder: number;
+}
+
+export const MILESTONE_PHASES: { key: MilestonePhase; label: string }[] = [
+  { key: "PRE_PRODUCTION", label: "Pre-Production" },
+  { key: "PRODUCTION", label: "Production" },
+  { key: "POST_PRODUCTION", label: "Post-Production" },
+];
+
+export const MILESTONE_PHASE_STYLES: Record<
+  MilestonePhase,
+  { label: string; dot: string; chip: string; bar: string }
+> = {
+  PRE_PRODUCTION: {
+    label: "Pre-Production",
+    dot: "bg-blue-400",
+    chip: "bg-blue-50 text-blue-700",
+    bar: "bg-blue-400",
+  },
+  PRODUCTION: {
+    label: "Production",
+    dot: "bg-[#ffd700]",
+    chip: "bg-amber-50 text-amber-700",
+    bar: "bg-[#ffd700]",
+  },
+  POST_PRODUCTION: {
+    label: "Post-Production",
+    dot: "bg-indigo-400",
+    chip: "bg-indigo-50 text-indigo-700",
+    bar: "bg-indigo-400",
+  },
+};
+
+// Derive a milestone's status from its date + done flag (compared date-only,
+// ignoring time-of-day). DONE wins; otherwise a past date is OVERDUE.
+export function milestoneStatus(m: {
+  date: string;
+  done: boolean;
+}): MilestoneStatus {
+  if (m.done) return "DONE";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(m.date);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime() < today.getTime() ? "OVERDUE" : "PENDING";
+}
+
+const MONTHS: Record<string, number> = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
+// Parse a "WED 1 JUL" / "1 JUL 2026" / "3 July" style date into an ISO date
+// (YYYY-MM-DD). The weekday, if present, is ignored. Year defaults to the
+// current year; if the resulting date is far in the past it rolls to next year.
+export function parseMilestoneDate(raw: string): string | null {
+  const t = (raw || "").toLowerCase();
+  const dayMatch = t.match(/\b(\d{1,2})\b/);
+  const monMatch = t.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+  if (!dayMatch || !monMatch) return null;
+  const day = parseInt(dayMatch[1], 10);
+  const month = MONTHS[monMatch[1]];
+  const yearMatch = t.match(/\b(20\d{2})\b/);
+  let year = yearMatch ? parseInt(yearMatch[1], 10) : new Date().getFullYear();
+  if (!yearMatch) {
+    // Roll to next year if the date would land more than 6 months in the past.
+    const candidate = new Date(year, month, day);
+    const now = new Date();
+    if (candidate.getTime() < now.getTime() - 183 * 24 * 3600 * 1000) year += 1;
+  }
+  const d = new Date(Date.UTC(year, month, day, 12, 0, 0));
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+const PHASE_ALIASES: { re: RegExp; phase: MilestonePhase }[] = [
+  { re: /^\s*pre[\s-]*production/i, phase: "PRE_PRODUCTION" },
+  { re: /^\s*post[\s-]*production/i, phase: "POST_PRODUCTION" },
+  { re: /^\s*production/i, phase: "PRODUCTION" },
+];
+
+export interface ParsedMilestone {
+  phase: MilestonePhase;
+  date: string; // ISO
+  title: string;
+  description: string;
+}
+
+// Parse a pasted timeline. One milestone per line, fields separated by an
+// em/en dash or " - ":
+//   PRE-PRODUCTION — WED 1 JUL — PUMA FEEDBACK ON V1 DECK — Description
+// Phase and description are optional; a line with no recognised date is skipped.
+export function parseMilestones(raw: string): ParsedMilestone[] {
+  const text = (raw || "").replace(/\r\n/g, "\n");
+  if (!text.trim()) return [];
+  const out: ParsedMilestone[] = [];
+  let phase: MilestonePhase = "PRE_PRODUCTION";
+
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    // Split on em-dash, en-dash, or a spaced hyphen; collapse the parts.
+    const parts = line
+      .split(/\s*[—–]\s*|\s+-\s+/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length === 0) continue;
+
+    // Does the first part name a phase?
+    let idx = 0;
+    const first = parts[0];
+    const aliased = PHASE_ALIASES.find((a) => a.re.test(first));
+    // Only treat the first part as a phase if it has no parseable date (so a
+    // bare "PRODUCTION — TUE 7 JUL — SHOOT DAY" line reads phase then date).
+    if (aliased && !parseMilestoneDate(first)) {
+      phase = aliased.phase;
+      idx = 1;
+    }
+
+    const datePart = parts[idx];
+    if (!datePart) continue;
+    const iso = parseMilestoneDate(datePart);
+    if (!iso) continue;
+
+    const title = parts[idx + 1] || "Milestone";
+    const description = parts.slice(idx + 2).join(" — ");
+    out.push({ phase, date: iso, title, description });
+  }
+  return out;
 }
 
 // Commercial-side deliverable (contracted + additional/scope-creep) surfaced
@@ -181,6 +325,7 @@ export interface ProductionFull {
   creativeAssets: CreativeAsset[];
   scheduleBlocks: ScheduleBlock[];
   prodDeliverables: ProductionDeliverable[];
+  milestones: ProductionMilestone[];
 }
 
 export const PRODUCTION_STATUS_STYLES: Record<

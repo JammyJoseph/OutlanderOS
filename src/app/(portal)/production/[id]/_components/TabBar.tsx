@@ -17,7 +17,7 @@ export type TabKey =
   | "team"
   | "tasks"
   | "creative"
-  | "schedule"
+  | "timeline"
   | "callsheets"
   | "deliverables";
 
@@ -33,7 +33,7 @@ const TABS: { key: TabKey; label: string; Icon: React.ComponentType<{ size?: num
   { key: "team", label: "Team", Icon: Users },
   { key: "tasks", label: "Tasks", Icon: ListChecks },
   { key: "creative", label: "Creative", Icon: Palette },
-  { key: "schedule", label: "Campaign Timeline", Icon: CalendarRange },
+  { key: "timeline", label: "Campaign Timeline", Icon: CalendarRange },
   { key: "callsheets", label: "Call Sheets", Icon: ClipboardList },
   { key: "deliverables", label: "Deliverables", Icon: Package },
 ];

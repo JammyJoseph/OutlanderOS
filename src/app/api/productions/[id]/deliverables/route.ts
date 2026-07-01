@@ -34,6 +34,9 @@ export const POST = withAuth(async (
         dueDate: body.dueDate ? new Date(body.dueDate) : null,
         url: body.url || null,
         notes: body.notes || null,
+        linkedShots: Array.isArray(body.linkedShots)
+          ? body.linkedShots.map(String)
+          : [],
       },
     });
     return NextResponse.json({ item });
@@ -57,6 +60,10 @@ export const PUT = withAuth(async (request: NextRequest) => {
       data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     if (body.url !== undefined) data.url = body.url || null;
     if (body.notes !== undefined) data.notes = body.notes || null;
+    if (body.linkedShots !== undefined)
+      data.linkedShots = Array.isArray(body.linkedShots)
+        ? body.linkedShots.map(String)
+        : [];
 
     const item = await prisma.productionDeliverable.update({
       where: { id: deliverableId },

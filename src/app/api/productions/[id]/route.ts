@@ -43,6 +43,7 @@ export const GET = withAuth(async (
         creativeAssets: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         scheduleBlocks: { orderBy: [{ shootDay: "asc" }, { time: "asc" }] },
         prodDeliverables: { orderBy: [{ status: "asc" }, { createdAt: "asc" }] },
+        milestones: { orderBy: [{ date: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }] },
       },
     });
     if (!production) return NextResponse.json({ error: "Not found" }, { status: 404 });
