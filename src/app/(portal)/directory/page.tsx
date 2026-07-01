@@ -33,6 +33,7 @@ import {
   LayoutDashboard,
   TrendingUp,
   Handshake,
+  Trophy,
 } from "lucide-react";
 import {
   CONTACT_CATEGORIES,
@@ -1362,6 +1363,120 @@ function StatCard({
   );
 }
 
+// Compact top-5 preview of the leaderboard for the dashboard landing. Pulls
+// from the same scoring endpoint the full /directory/leaderboard page uses.
+type LeaderPreview = {
+  id: string;
+  name: string;
+  category: string;
+  followers: number | null;
+  profilePic: string | null;
+  collaborationCount: number;
+  score: number;
+};
+
+const MEDAL_COLORS: Record<number, string> = {
+  1: "#f5b301",
+  2: "#9ca3af",
+  3: "#cd7f32",
+};
+
+function HottestCreatives() {
+  const [top, setTop] = useState<LeaderPreview[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/directory/leaderboard?limit=5")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!active) return;
+        setTop(Array.isArray(data.entries) ? data.entries : []);
+        setLoaded(true);
+      })
+      .catch(() => active && setLoaded(true));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loaded && top.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-gray-500">
+          <Trophy size={15} style={{ color: ACCENT }} />
+          <span className="text-[11px] font-semibold uppercase tracking-wide">
+            Hottest creatives
+          </span>
+        </div>
+        <Link
+          href="/directory/leaderboard"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-900"
+        >
+          See all <ChevronRight size={13} />
+        </Link>
+      </div>
+
+      {!loaded ? (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 className="animate-spin text-gray-400" size={18} />
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {top.map((c, i) => {
+            const rank = i + 1;
+            const followers = fmtFollowers(c.followers);
+            return (
+              <Link
+                key={c.id}
+                href={`/directory/${c.id}`}
+                className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-secondary/50"
+              >
+                <span
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums"
+                  style={
+                    MEDAL_COLORS[rank]
+                      ? { backgroundColor: MEDAL_COLORS[rank], color: "#fff" }
+                      : { backgroundColor: "var(--secondary)", color: "#6b7280" }
+                  }
+                >
+                  {rank}
+                </span>
+                {c.profilePic ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={c.profilePic}
+                    alt={c.name}
+                    referrerPolicy="no-referrer"
+                    className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-gray-500">
+                    {c.name.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+                  {c.name}
+                </span>
+                {followers && (
+                  <span className="hidden shrink-0 items-center gap-1 text-xs text-gray-400 sm:inline-flex">
+                    <Users size={11} /> {followers}
+                  </span>
+                )}
+                <span className="shrink-0 text-xs font-semibold tabular-nums text-gray-400">
+                  {c.score}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Dashboard({
   contacts,
   radar,
@@ -1458,6 +1573,9 @@ function Dashboard({
           </div>
         </div>
       )}
+
+      {/* Hottest creatives preview */}
+      <HottestCreatives />
 
       {/* Quick access */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -20,6 +20,11 @@ export const CONTACT_CATEGORIES = [
   "Producer",
   "Set Designer",
   "Casting Director",
+  "Graphic Designer",
+  "Community",
+  "Agency",
+  "Venue",
+  "DJ",
   "Other",
 ] as const;
 

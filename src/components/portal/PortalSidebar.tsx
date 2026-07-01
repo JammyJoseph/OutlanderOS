@@ -25,6 +25,7 @@ import {
   Clock,
   Tags,
   Archive,
+  Trophy,
 } from "lucide-react";
 
 type NavItem = {
@@ -77,6 +78,7 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "All Contacts", href: "/directory", icon: Contact },
       { label: "By Category", href: "/directory?view=categories", icon: Tags },
       { label: "Radar", href: "/directory?view=radar", icon: Radar },
+      { label: "Leaderboard", href: "/directory/leaderboard", icon: Trophy },
       { label: "Recently Added", href: "/directory?view=recent", icon: Clock },
     ],
   },
