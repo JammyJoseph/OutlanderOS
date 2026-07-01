@@ -48,15 +48,83 @@ const LEGACY_TO_SECTION: Record<string, string> = {
 // Default line items seeded when a budget is set up from the template. Mirrors
 // BUDGET_SECTIONS in the UI types; kept here so the server can seed in one call.
 const BUDGET_TEMPLATE: { section: string; roles: string[] }[] = [
-  { section: "PRE_PRODUCTION", roles: ["Producer", "Production Manager", "Recce", "Insurance", "Contingency"] },
-  { section: "CAST_TALENT", roles: ["Lead Talent", "Extras / Background"] },
-  { section: "CREW", roles: ["DOP / Videographer", "Camera Assistant", "Sound Recordist", "BTS"] },
-  { section: "STYLING_GLAM", roles: ["Wardrobe Stylist", "Hair Stylist", "MUA"] },
-  { section: "LOCATIONS", roles: ["Location Fee", "Green Room / Base"] },
+  {
+    section: "PRE_PRODUCTION",
+    roles: [
+      "Producer",
+      "Production Manager",
+      "Production Assistant",
+      "Director",
+      "Script Supervisor",
+      "Recce",
+      "Insurance",
+      "Contingency",
+    ],
+  },
+  // Talent rates are negotiated individually — no APA rate card roles here.
+  { section: "CAST_TALENT", roles: ["Lead Talent", "Supporting Talent", "Extras / Background"] },
+  {
+    section: "CREW",
+    roles: [
+      "1st Assistant Director",
+      "2nd Assistant Director",
+      "3rd Assistant Director",
+      "Floor Runner",
+      "Production Runner",
+      "Director of Photography",
+      "Camera Operator",
+      "Focus Puller (1st AC)",
+      "Clapper Loader",
+      "DIT",
+      "Video Operator",
+      "Gaffer",
+      "Lighting Technician",
+      "Key Grip",
+      "Grip",
+      "Rigger",
+      "Sound Mixer",
+      "Boom Operator",
+      "Sound Maintenance",
+      "Sound Assistant",
+      "SFX Supervisor",
+      "SFX Technician",
+    ],
+  },
+  {
+    section: "STYLING_GLAM",
+    roles: [
+      "Stylist",
+      "Costume Designer",
+      "Wardrobe Buyer",
+      "Wardrobe",
+      "Chief Make Up Artist",
+      "Make Up",
+      "Chief Hair Designer",
+      "Hairdresser",
+    ],
+  },
+  { section: "LOCATIONS", roles: ["Location Manager", "Location Fee", "Green Room / Base"] },
+  // Equipment is rented, not staffed — no APA rate card roles here.
   { section: "EQUIPMENT", roles: ["Lighting Kit", "Camera Kit", "Grip Kit"] },
-  { section: "TRANSPORT", roles: ["Production Van", "Taxi / Mileage"] },
+  { section: "TRANSPORT", roles: ["Driver", "Production Van", "Taxi / Mileage"] },
+  // Catering is a service, not a crew rate — no APA rate card roles here.
   { section: "CATERING", roles: ["Crew Catering"] },
-  { section: "ART_DEPARTMENT", roles: ["Props"] },
+  {
+    section: "ART_DEPARTMENT",
+    roles: [
+      "Art Director",
+      "Asst. Art Director",
+      "Props Buyer",
+      "Master Props",
+      "Props",
+      "Props Assistant",
+      "Construction Manager",
+      "Carpenter",
+      "Scenic Artist",
+      "Home Economist",
+    ],
+  },
+  // Post rates are negotiated — no APA rate card roles here.
   { section: "POST_PRODUCTION", roles: ["Editor", "Colourist", "Retouching"] },
 ];
 

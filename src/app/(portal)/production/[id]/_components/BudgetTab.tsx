@@ -529,7 +529,9 @@ export default function BudgetTab({
             <p className="text-xs font-bold uppercase tracking-widest text-gray-600">
               Production Budget
             </p>
-            {/* Budget entry ⇄ actuals tracking */}
+            {/* Budget entry ⇄ post-wrap cost tracking. Budget entry is the
+                default; actuals vs budget is a review tool for after the shoot
+                once invoices are in — so it's clearly labelled, not inline. */}
             <div className="flex items-center rounded-lg border border-gray-200 bg-white p-0.5">
               {(["budget", "actuals"] as const).map((v) => (
                 <button
@@ -540,8 +542,13 @@ export default function BudgetTab({
                       ? "bg-[#ffd700] text-black"
                       : "text-gray-500 hover:text-gray-800"
                   }`}
+                  title={
+                    v === "budget"
+                      ? "Build the budget — roles, quantities, unit costs and VAT"
+                      : "Cost tracking — compare actual invoiced spend against budget after the shoot wraps"
+                  }
                 >
-                  {v === "budget" ? "Budget" : "Actuals"}
+                  {v === "budget" ? "Budget Entry" : "Cost Tracking"}
                 </button>
               ))}
             </div>
@@ -574,6 +581,13 @@ export default function BudgetTab({
             )}
           </div>
         </div>
+        {/* Cost-tracking context — this view is for after the shoot wraps */}
+        {view === "actuals" && (
+          <div className="px-5 py-2 bg-amber-50/50 border-b border-amber-100 text-[11px] text-amber-700">
+            Cost tracking compares actual invoiced spend against the budget. Fill this in after the
+            shoot wraps, once invoices are submitted — it isn&apos;t part of building the budget.
+          </div>
+        )}
         {/* Sticky column headers */}
         {view === "budget" ? (
           <div className="grid grid-cols-12 px-5 py-2.5 bg-gray-50/60 border-b border-gray-100 text-[10px] font-bold uppercase tracking-widest text-gray-500 sticky top-0 z-10">
@@ -1001,15 +1015,15 @@ function BudgetRow({
   const refRate = getReferenceRate(line.role);
 
   // Pick a role from the APA dropdown: set the role and auto-fill its default
-  // rate (qty defaults to 1) plus the "APA 2025 rate" description hint.
+  // rate (qty defaults to 1). The description is left untouched — the APA rate
+  // is already shown as a greyed-out reference under the Unit Cost, so there's
+  // no need to repeat it in the description.
   function pickRole(apaRole: string, apaRate: number) {
     setRole(apaRole);
     setRate(String(apaRate));
-    if (!description) setDescription("APA 2025 rate");
     onUpdate({
       role: apaRole,
       rate: apaRate,
-      ...(description ? {} : { description: "APA 2025 rate" }),
     });
   }
 
@@ -1045,7 +1059,7 @@ function BudgetRow({
     return (
       <div
         ref={rowRef}
-        className="grid grid-cols-12 gap-1.5 px-5 py-1.5 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[30px]"
+        className="grid grid-cols-12 gap-1.5 px-5 py-1 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[28px]"
       >
         <RolePicker
           section={section}

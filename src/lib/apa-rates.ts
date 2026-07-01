@@ -25,7 +25,7 @@ export const APA_CREW_RATES: APARate[] = [
   { role: 'Production Manager', section: 'PRE_PRODUCTION', minDailyRate: 489, maxDailyRate: 609, overtimeGrade: 'N/A', overtimeCoefficient: 0, basicHourlyRate: 0, doubleHourlyRate: 0, tripleHourlyRate: 0, standardOvertimeRate: 0 },
   { role: 'Production Assistant', section: 'PRE_PRODUCTION', minDailyRate: 340, maxDailyRate: 428, overtimeGrade: 'N/A', overtimeCoefficient: 0, basicHourlyRate: 0, doubleHourlyRate: 0, tripleHourlyRate: 0, standardOvertimeRate: 0 },
   { role: 'Location Manager', section: 'LOCATIONS', minDailyRate: 489, maxDailyRate: 580, overtimeGrade: 'II', overtimeCoefficient: 1.25, basicHourlyRate: 58, doubleHourlyRate: 116, tripleHourlyRate: 174, standardOvertimeRate: 73 },
-  { role: 'Script Supervisor', section: 'CREW', minDailyRate: 449, maxDailyRate: 558, overtimeGrade: 'II', overtimeCoefficient: 1.25, basicHourlyRate: 56, doubleHourlyRate: 112, tripleHourlyRate: 167, standardOvertimeRate: 70 },
+  { role: 'Script Supervisor', section: 'PRE_PRODUCTION', minDailyRate: 449, maxDailyRate: 558, overtimeGrade: 'II', overtimeCoefficient: 1.25, basicHourlyRate: 56, doubleHourlyRate: 112, tripleHourlyRate: 167, standardOvertimeRate: 70 },
 
   // CAMERA
   { role: 'Director of Photography', section: 'CREW', minDailyRate: 908, maxDailyRate: 1516, overtimeGrade: 'III', overtimeCoefficient: 1.0, basicHourlyRate: 152, doubleHourlyRate: 303, tripleHourlyRate: 455, standardOvertimeRate: 152 },
