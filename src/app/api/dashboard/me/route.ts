@@ -106,9 +106,9 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
     }),
     Promise.all([
       prisma.campaign.count({
-        where: { status: { not: "ARCHIVED" }, stage: { in: ACTIVE_STAGES } },
+        where: { archived: false, status: { not: "ARCHIVED" }, stage: { in: ACTIVE_STAGES } },
       }),
-      prisma.production.count({ where: { status: { not: "ARCHIVED" } } }),
+      prisma.production.count({ where: { archived: false, status: { not: "ARCHIVED" } } }),
       prisma.campaignBudget.count({
         where: { totalBudget: { gt: 0 }, status: { not: "RECONCILED" } },
       }),
