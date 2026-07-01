@@ -54,9 +54,6 @@ const STATUS_STYLES: Record<ProductionBudgetStatus, { bg: string; text: string; 
   FINAL: { bg: "bg-emerald-100", text: "text-emerald-700", label: "Final" },
 };
 
-const DEFAULT_MARKUP = 10;
-const DEFAULT_VAT = 20;
-
 export default function BudgetTab({
   production,
   items,
@@ -81,12 +78,6 @@ export default function BudgetTab({
   // Section key whose freshly-added line should auto-focus its first input —
   // set when a new line is created via the keyboard so data entry stays fluid.
   const [focusSection, setFocusSection] = useState<string | null>(null);
-
-  // Markup / VAT — live inputs, persisted on blur.
-  const [markupInput, setMarkupInput] = useState(
-    String(production.budgetMarkupPercent ?? DEFAULT_MARKUP)
-  );
-  const [vatInput, setVatInput] = useState(String(production.budgetVatPercent ?? DEFAULT_VAT));
 
   // Collapsed sections, remembered per-production in sessionStorage.
   const collapseKey = `prodBudgetCollapse:${production.id}`;
@@ -221,16 +212,6 @@ export default function BudgetTab({
     await handleResponse(res);
   }
 
-  // Persist a production-level patch (markup / VAT) and refresh.
-  async function saveProduction(patch: { budgetMarkupPercent?: number | null; budgetVatPercent?: number | null }) {
-    const res = await fetch(`/api/productions/${production.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
-    await handleResponse(res);
-  }
-
   function reopenBudget(current: ProductionBudgetStatus) {
     const target: ProductionBudgetStatus = current === "FINAL" ? "IN_PROGRESS" : "BUDGETING";
     const message =
@@ -268,17 +249,15 @@ export default function BudgetTab({
   const spentPct = allocation > 0 ? Math.min((totals.actual / allocation) * 100, 100) : 0;
   const overSpent = allocation > 0 && totals.actual > allocation;
 
-  // Summary maths — markup applies to the budgeted subtotal, VAT on top.
-  const markupPct = markupInput === "" ? 0 : Number(markupInput) || 0;
-  const vatPct = vatInput === "" ? 0 : Number(vatInput) || 0;
-  const subtotal = totals.budgeted;
-  const markupAmt = subtotal * (markupPct / 100);
-  const totalExcVat = subtotal + markupAmt;
-  const vatAmt = totalExcVat * (vatPct / 100);
-  const grandTotal = totalExcVat + vatAmt;
-  // The budget figure that matters is ALWAYS exc. VAT, so the allocation
-  // headroom check compares the campaign allocation against the exc-VAT total.
-  const budgetCoversCosts = campaignBudget != null ? campaignBudget - totalExcVat : null;
+  // Budget maths — the figures that matter ALWAYS exclude VAT. The subtotal is
+  // the sum of every line item exc. VAT; the VAT and inc-VAT totals come
+  // straight from the per-line figures (identical to the table above). Headroom
+  // / variance = allocation − subtotal exc. VAT — never the inc-VAT total, and
+  // with no markup applied. A positive variance is headroom; negative is over.
+  const subtotalExcVat = totals.budgeted;
+  const totalVat = totals.vat;
+  const totalIncVat = totals.incVat;
+  const variance = campaignBudget != null ? campaignBudget - subtotalExcVat : null;
 
   // Deal context + margin impact (commercial productions only).
   const deal = production.campaign;
@@ -731,74 +710,57 @@ export default function BudgetTab({
         )}
       </div>
 
-      {/* Budget summary — subtotal → markup → VAT → grand total */}
+      {/* Budget summary — matches the exported PDF exactly: subtotal exc. VAT,
+          VAT, inc. VAT, then the allocation and the variance. The total that
+          matters always excludes VAT, so the variance is allocation minus the
+          exc-VAT subtotal (positive = headroom / in the green, negative = over). */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-3 bg-gray-50/60 border-b border-gray-100">
           <p className="text-xs font-bold uppercase tracking-widest text-gray-600">Budget Summary</p>
         </div>
         <div className="px-5 py-4 space-y-2.5 max-w-xl ml-auto">
-          <SummaryRow label="Subtotal (all sections)" value={gbp(subtotal)} />
-          <SummaryRow
-            label="Markup"
-            editable={!isFinal}
-            percentValue={markupInput}
-            onPercentChange={setMarkupInput}
-            onPercentBlur={() =>
-              saveProduction({ budgetMarkupPercent: markupInput === "" ? null : Number(markupInput) })
-            }
-            value={gbp(markupAmt)}
-          />
-          <SummaryRow label="Total Budget (exc. VAT)" value={gbp(totalExcVat)} strong />
-          <SummaryRow
-            label="VAT"
-            editable={!isFinal}
-            percentValue={vatInput}
-            onPercentChange={setVatInput}
-            onPercentBlur={() =>
-              saveProduction({ budgetVatPercent: vatInput === "" ? null : Number(vatInput) })
-            }
-            value={gbp(vatAmt)}
-          />
+          <SummaryRow label="Subtotal Excl. VAT" value={gbp(subtotalExcVat)} strong />
+          <SummaryRow label="Total VAT Amount" value={gbp(totalVat)} />
           <div className="border-t border-gray-100 pt-2.5">
-            <SummaryRow label="Grand Total (inc. VAT)" value={gbp(grandTotal)} grand />
+            <SummaryRow label="Total Incl. VAT" value={gbp(totalIncVat)} grand />
           </div>
           <div className="border-t border-gray-100 pt-2.5 space-y-2.5">
             <SummaryRow
-              label={locked ? "Allocated Budget (Commercial)" : "Campaign Budget"}
+              label={locked ? "Allocated Budget (Commercial)" : "Allocated Budget"}
               value={gbp(allocation)}
               muted
             />
             {campaignBudget != null && (
               <div
                 className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${
-                  budgetCoversCosts! >= 0
+                  variance! >= 0
                     ? "bg-emerald-50 border border-emerald-200"
                     : "bg-red-50 border border-red-200"
                 }`}
               >
                 <span
                   className={`text-xs font-semibold inline-flex items-center gap-1.5 ${
-                    budgetCoversCosts! >= 0 ? "text-emerald-700" : "text-red-700"
+                    variance! >= 0 ? "text-emerald-700" : "text-red-700"
                   }`}
                 >
-                  {budgetCoversCosts! >= 0 ? (
+                  {variance! >= 0 ? (
                     <>
-                      <CheckCircle2 size={14} /> Budget covers the costs
+                      <CheckCircle2 size={14} /> Variance — in the green
                     </>
                   ) : (
                     <>
-                      <TrendingUp size={14} /> Costs exceed the allocated budget
+                      <TrendingUp size={14} /> Variance — over budget
                     </>
                   )}
                 </span>
                 <span
                   className={`text-sm font-bold tabular-nums ${
-                    budgetCoversCosts! >= 0 ? "text-emerald-700" : "text-red-700"
+                    variance! >= 0 ? "text-emerald-700" : "text-red-700"
                   }`}
                 >
-                  {budgetCoversCosts! >= 0
-                    ? `${gbp(budgetCoversCosts!)} headroom`
-                    : `${gbp(Math.abs(budgetCoversCosts!))} over`}
+                  {variance! >= 0
+                    ? `+${gbp(variance!)} headroom`
+                    : `−${gbp(Math.abs(variance!))} over`}
                 </span>
               </div>
             )}
