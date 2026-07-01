@@ -41,9 +41,14 @@ export default async function ClientCallSheetPage({
         include: {
           production: {
             select: {
+              id: true,
               title: true,
               clientName: true,
               campaign: { select: { client: { select: { name: true } } } },
+              prodDeliverables: {
+                select: { type: true, title: true, notes: true },
+                orderBy: { createdAt: "asc" },
+              },
             },
           },
         },

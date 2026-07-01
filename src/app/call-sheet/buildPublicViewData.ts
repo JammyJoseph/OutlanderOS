@@ -4,12 +4,14 @@ import type {
   LocationData,
 } from "@/app/(portal)/production/[id]/call-sheets/[csId]/types";
 import {
+  deriveLocations,
   emptyCatering,
   emptyEquipment,
   emptyHeader,
   emptyLocation,
   emptyMovementOrder,
   emptyProductionCompany,
+  emptyShotStyle,
 } from "@/app/(portal)/production/[id]/call-sheets/[csId]/types";
 
 function isObj(v: unknown): v is Record<string, unknown> {
@@ -28,6 +30,8 @@ interface RawSheet {
   weatherData: unknown;
   schedule: unknown;
   shotlist: unknown;
+  locations: unknown;
+  shotStyle: unknown;
   crew: unknown;
   talent: unknown;
   cateringDetails: unknown;
@@ -44,9 +48,11 @@ interface RawSheet {
   movementOrder: unknown;
   equipment: unknown;
   production: {
+    id: string;
     title: string;
     clientName: string | null;
     campaign: { client: { name: string } } | null;
+    prodDeliverables?: { type: string; title: string; notes: string | null }[];
   };
 }
 
@@ -74,6 +80,16 @@ export function buildPublicViewData(sheet: RawSheet): CallSheetViewData {
     location,
     locationLat: sheet.locationLat,
     locationLng: sheet.locationLng,
+    locations: deriveLocations(sheet.locations, location, sheet.locationLat, sheet.locationLng),
+    shotStyle: isObj(sheet.shotStyle)
+      ? { ...emptyShotStyle(), ...(sheet.shotStyle as object) }
+      : emptyShotStyle(),
+    productionId: sheet.production.id,
+    deliverables: (sheet.production.prodDeliverables ?? []).map((d) => ({
+      type: d.type,
+      title: d.title,
+      notes: d.notes,
+    })),
     weatherData: (sheet.weatherData as unknown as CallSheetViewData["weatherData"]) ?? null,
     schedule: arr(sheet.schedule),
     shotlist: arr(sheet.shotlist),

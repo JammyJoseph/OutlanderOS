@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Film, ChevronDown, Check, ExternalLink } from "lucide-react";
+import { Film, ChevronDown, Check, ExternalLink, Link2, Loader2 } from "lucide-react";
 import {
   ProductionFull,
   PRODUCTION_STATUS_STYLES,
@@ -21,8 +21,27 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
   const [showStatus, setShowStatus] = useState(false);
   const [title, setTitle] = useState(production.title);
   const [client, setClient] = useState(getClientName(production));
+  const [copied, setCopied] = useState(false);
+  const [linking, setLinking] = useState(false);
   const style =
     PRODUCTION_STATUS_STYLES[production.status] || PRODUCTION_STATUS_STYLES.DRAFT;
+
+  // Fetch (or create) an internal share link and copy it to the clipboard.
+  async function copyInternalLink() {
+    setLinking(true);
+    try {
+      const res = await fetch(`/api/productions/${production.id}/share-link`);
+      const data = await res.json();
+      if (res.ok && data.token) {
+        const url = `${window.location.origin}/production/share/${data.token}`;
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } finally {
+      setLinking(false);
+    }
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -106,6 +125,21 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={copyInternalLink}
+            disabled={linking}
+            title="Copy an internal link to share this project with Outlander staff"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            {linking ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : copied ? (
+              <Check size={13} className="text-emerald-600" />
+            ) : (
+              <Link2 size={13} />
+            )}
+            {copied ? "Copied!" : "Copy Internal Link"}
+          </button>
           {saving && <span className="text-xs text-gray-400">Saving…</span>}
           {!saving && saved && (
             <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">

@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Loader2, Search, Hospital, TrainFront, Crosshair } from "lucide-react";
-import type { LocationData, MovementOrder } from "./types";
+import {
+  MapPin, Loader2, Search, Hospital, TrainFront, Crosshair,
+  ChevronUp, ChevronDown, Plus, Trash2,
+} from "lucide-react";
+import type { CallSheetLocation, LocationData, MovementOrder } from "./types";
+import { emptyCallSheetLocation } from "./types";
 import { inputCls, labelCls } from "./shared";
 
 export async function geocodeAddress(
@@ -398,6 +402,241 @@ export function LocationEditor({
             className={`${inputCls} text-red-600 placeholder:text-red-300`}
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Multi-location editor ──
+// Renders an ordered list of location cards. Card order is the movement order
+// for the shoot day; each card can be moved up/down or removed.
+export function LocationsEditor({
+  locations,
+  setLocations,
+}: {
+  locations: CallSheetLocation[];
+  setLocations: (v: CallSheetLocation[]) => void;
+}) {
+  const update = (i: number, patch: Partial<CallSheetLocation>) =>
+    setLocations(locations.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+  const remove = (i: number) => setLocations(locations.filter((_, j) => j !== i));
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= locations.length) return;
+    const next = [...locations];
+    [next[i], next[j]] = [next[j], next[i]];
+    setLocations(next);
+  };
+  const add = () =>
+    setLocations([
+      ...locations,
+      { ...emptyCallSheetLocation(), name: `Location ${locations.length + 1}` },
+    ]);
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-gray-400">
+        Add every location for the day in order — the sequence here is the
+        movement order (stop&nbsp;1, stop&nbsp;2, …).
+      </p>
+      {locations.length === 0 && (
+        <p className="text-sm text-gray-400 italic">No locations added yet.</p>
+      )}
+      {locations.map((loc, i) => (
+        <LocationCard
+          key={i}
+          index={i}
+          total={locations.length}
+          location={loc}
+          onChange={(patch) => update(i, patch)}
+          onRemove={() => remove(i)}
+          onMove={(dir) => move(i, dir)}
+        />
+      ))}
+      <button
+        onClick={add}
+        className="flex items-center gap-1.5 text-sm font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors"
+      >
+        <Plus size={15} /> Add location
+      </button>
+    </div>
+  );
+}
+
+function LocationCard({
+  index,
+  total,
+  location,
+  onChange,
+  onRemove,
+  onMove,
+}: {
+  index: number;
+  total: number;
+  location: CallSheetLocation;
+  onChange: (patch: Partial<CallSheetLocation>) => void;
+  onRemove: () => void;
+  onMove: (dir: -1 | 1) => void;
+}) {
+  const [locating, setLocating] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [findingAE, setFindingAE] = useState(false);
+
+  async function findOnMap() {
+    setNotFound(false);
+    setLocating(true);
+    const coords = await geocodeAddress(location.address);
+    setLocating(false);
+    if (!coords) {
+      setNotFound(true);
+      return;
+    }
+    // Set coords immediately (re-including lat/lng in the A&E patch below keeps
+    // them if the async lookup resolves against a stale base).
+    onChange({ lat: coords.lat, lng: coords.lng });
+    setFindingAE(true);
+    const h = await findNearest(coords.lat, coords.lng, 'nwr["amenity"="hospital"]');
+    setFindingAE(false);
+    if (h) {
+      onChange({
+        lat: coords.lat,
+        lng: coords.lng,
+        nearestAE: h.address ? `${h.name} — ${h.address}` : h.name,
+      });
+    }
+  }
+
+  function findAE() {
+    if (location.lat == null || location.lng == null) return;
+    setFindingAE(true);
+    findNearest(location.lat, location.lng, 'nwr["amenity"="hospital"]')
+      .then((h) => {
+        if (h)
+          onChange({ nearestAE: h.address ? `${h.name} — ${h.address}` : h.name });
+      })
+      .finally(() => setFindingAE(false));
+  }
+
+  const field = (
+    label: string,
+    key: keyof CallSheetLocation,
+    placeholder: string
+  ) => (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <input
+        type="text"
+        value={(location[key] as string) ?? ""}
+        onChange={(e) => onChange({ [key]: e.target.value } as Partial<CallSheetLocation>)}
+        placeholder={placeholder}
+        className={inputCls}
+      />
+    </div>
+  );
+
+  return (
+    <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3.5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-gray-900 text-white text-xs font-bold">
+            {index + 1}
+          </span>
+          <input
+            type="text"
+            value={location.name}
+            onChange={(e) => onChange({ name: e.target.value })}
+            placeholder={`Location name (e.g. Studio A)`}
+            className="text-sm font-semibold text-gray-800 bg-transparent border-none outline-none placeholder-gray-300"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onMove(-1)}
+            disabled={index === 0}
+            title="Move up"
+            className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <ChevronUp size={14} />
+          </button>
+          <button
+            onClick={() => onMove(1)}
+            disabled={index === total - 1}
+            title="Move down"
+            className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <ChevronDown size={14} />
+          </button>
+          <button
+            onClick={onRemove}
+            title="Remove location"
+            className="p-1.5 rounded-lg text-gray-300 hover:text-[#ff4444] hover:bg-red-50"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label className={labelCls}>Address</label>
+        <textarea
+          value={location.address}
+          onChange={(e) => onChange({ address: e.target.value })}
+          placeholder="Full address"
+          rows={2}
+          className={`${inputCls} resize-none`}
+        />
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          <button
+            onClick={findOnMap}
+            disabled={locating || !(location.address || "").trim()}
+            className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors disabled:opacity-40"
+          >
+            {locating ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+            Find on map
+          </button>
+          {location.lat != null && location.lng != null && (
+            <>
+              <button
+                onClick={findAE}
+                disabled={findingAE}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 transition-colors disabled:opacity-40"
+              >
+                {findingAE ? <Loader2 size={13} className="animate-spin" /> : <Hospital size={13} />}
+                Find nearest A&amp;E
+              </button>
+              <span className="flex items-center gap-1 text-xs text-emerald-600">
+                <Crosshair size={11} /> Pinned ({location.lat.toFixed(4)}, {location.lng.toFixed(4)})
+              </span>
+            </>
+          )}
+          {notFound && (
+            <span className="text-xs text-red-500">Couldn&apos;t locate that address</span>
+          )}
+        </div>
+      </div>
+
+      {location.lat != null && location.lng != null && (
+        <div className="mt-3">
+          <LocationMap lat={location.lat} lng={location.lng} height={220} />
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+        {field("Postcode", "postcode", "e.g. EC1A 1BB")}
+        <div>
+          <label className={labelCls}>Nearest A&amp;E / Hospital</label>
+          <input
+            type="text"
+            value={location.nearestAE}
+            onChange={(e) => onChange({ nearestAE: e.target.value })}
+            placeholder="Auto-filled from map, or enter manually"
+            className={inputCls}
+          />
+        </div>
+        {field("Contact Person", "contactPerson", "On-site contact + phone")}
+        {field("what3words", "whatThreeWords", "///word.word.word")}
+        {field("Parking Notes", "parkingNotes", "Where to park")}
+        {field("Map Link", "mapLink", "Google Maps / other link")}
       </div>
     </div>
   );

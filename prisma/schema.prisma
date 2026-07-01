@@ -412,7 +412,22 @@ model Production {
   creativeAssets   CreativeAsset[]         @relation("productionCreative")
   scheduleBlocks   ScheduleBlock[]         @relation("productionSchedule")
   prodDeliverables ProductionDeliverable[] @relation("productionDeliverables")
+  shareLinks       ProductionShareLink[]   @relation("productionShareLinks")
   linkedTasks      Task[]                  @relation("productionLinkedTasks")
+}
+
+// Shareable internal deep-link to a production. Any signed-in Outlander user
+// (@outlandermag.com) can mint one; the token redirects straight into the
+// project portal. Budget is never exposed through this — the target is the
+// normal production page which enforces its own access.
+model ProductionShareLink {
+  id           String     @id @default(cuid())
+  token        String     @unique
+  productionId String
+  production   Production @relation("productionShareLinks", fields: [productionId], references: [id], onDelete: Cascade)
+  createdBy    String // userId who created the link
+  expiresAt    DateTime?
+  createdAt    DateTime   @default(now())
 }
 
 model BudgetLineItem {
@@ -537,6 +552,12 @@ model CallSheet {
   locationLng     Float?
   schedule        Json
   shotlist        Json            @default("[]")
+  // Ordered list of shoot locations — supersedes the single `location` above.
+  // [{ name, address, postcode, nearestAE, parkingNotes, contactPerson, whatThreeWords, mapLink, lat, lng }]
+  // Order is the movement sequence for the day.
+  locations       Json            @default("[]")
+  // Overall shot style / creative approach: { tone, visualDevice, notes }
+  shotStyle       Json            @default("{}")
   crew            Json
   talent          Json            @default("[]")
   cateringDetails Json            @default("{}")

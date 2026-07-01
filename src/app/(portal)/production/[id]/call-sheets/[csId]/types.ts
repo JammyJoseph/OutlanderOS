@@ -26,6 +26,21 @@ export interface LocationData {
   safetyNotes?: string;
 }
 
+// A single shoot location in the multi-location call sheet. The array order is
+// the movement sequence for the shoot day (stop 1, stop 2, …).
+export interface CallSheetLocation {
+  name: string;
+  address: string;
+  postcode: string;
+  nearestAE: string;
+  parkingNotes: string;
+  contactPerson: string;
+  whatThreeWords: string;
+  mapLink: string;
+  lat: number | null;
+  lng: number | null;
+}
+
 // ── Industry-standard call sheet sections ──
 export interface CallSheetHeader {
   productionCompany: string; // default "Outlander"
@@ -88,6 +103,21 @@ export interface Shot {
   equipment: string;
   duration: string;
   status: ShotStatus;
+  // ── Structured fields (from the shot-list parser; all optional/back-compat) ──
+  shotNumber?: string; // e.g. "1", "2a"
+  locationRef?: string; // name of a CallSheetLocation this shot is at
+  scene?: string; // scene description
+  video?: string; // camera direction / framing / movement
+  dialogue?: string; // dialogue / interview prompts
+  stills?: string; // stills the photographer should capture
+  tone?: string; // per-shot tone / style notes
+}
+
+// Overall creative approach shown at the top of the shot list.
+export interface ShotStyle {
+  tone: string;
+  visualDevice: string;
+  notes: string;
 }
 
 export interface DietaryItem {
@@ -197,6 +227,8 @@ export interface CallSheet {
   locationLng: number | null;
   schedule: ScheduleItem[];
   shotlist: Shot[];
+  locations: CallSheetLocation[];
+  shotStyle: ShotStyle;
   crew: CrewMember[];
   talent: TalentMember[];
   cateringDetails: CateringDetails;
@@ -220,7 +252,6 @@ export interface CallSheet {
   production: {
     id: string;
     title: string;
-    budgetTotal: number | null;
     clientName: string | null;
     campaign: {
       title: string;
@@ -354,6 +385,7 @@ export type SectionKey =
   | "location"
   | "schedule"
   | "shotlist"
+  | "deliverables"
   | "conduct"
   | "confidentiality"
   | "crew"
@@ -374,6 +406,7 @@ export const ALL_SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "weather", label: "Weather" },
   { key: "schedule", label: "Schedule" },
   { key: "shotlist", label: "Shotlist" },
+  { key: "deliverables", label: "Deliverables" },
   { key: "conduct", label: "Conduct Policy" },
   { key: "confidentiality", label: "Confidentiality Notice" },
   { key: "crew", label: "Unit List (Crew)" },
@@ -413,6 +446,167 @@ export function emptyShot(): Shot {
     duration: "",
     status: "planned",
   };
+}
+
+export function emptyCallSheetLocation(): CallSheetLocation {
+  return {
+    name: "",
+    address: "",
+    postcode: "",
+    nearestAE: "",
+    parkingNotes: "",
+    contactPerson: "",
+    whatThreeWords: "",
+    mapLink: "",
+    lat: null,
+    lng: null,
+  };
+}
+
+export function emptyShotStyle(): ShotStyle {
+  return { tone: "", visualDevice: "", notes: "" };
+}
+
+// Build the multi-location array for a call sheet, migrating older single-
+// location sheets. If `locations` already has entries they win; otherwise a
+// single stop is synthesised from the legacy `location` + lat/lng so existing
+// call sheets keep their location after the upgrade.
+export function deriveLocations(
+  locations: unknown,
+  legacy: LocationData | null | undefined,
+  lat: number | null,
+  lng: number | null
+): CallSheetLocation[] {
+  if (Array.isArray(locations) && locations.length > 0) {
+    return locations.map((l) => ({ ...emptyCallSheetLocation(), ...(l as object) }));
+  }
+  const base = legacy ?? emptyLocation();
+  const hasAny = !!(
+    base.address ||
+    base.parkingNotes ||
+    base.nearestHospital ||
+    base.whatThreeWords
+  );
+  if (!hasAny && lat == null) return [];
+  return [
+    {
+      ...emptyCallSheetLocation(),
+      name: "Location 1",
+      address: base.address || "",
+      parkingNotes: base.parkingNotes || "",
+      nearestAE: base.nearestHospital || "",
+      whatThreeWords: base.whatThreeWords || "",
+      lat,
+      lng,
+    },
+  ];
+}
+
+// Parse a raw pasted shot list into structured Shot cards. Shots are delimited
+// by "Shot N" or a leading number ("1.", "2)"). Within each shot, recognised
+// headers — Scene / Video / Dialogue / Stills / Location / Tone — capture the
+// text that follows (across multiple lines) until the next header or shot.
+export function parseShotList(raw: string): Shot[] {
+  const text = (raw || "").replace(/\r\n/g, "\n");
+  if (!text.trim()) return [];
+
+  const isShotStart = (l: string) =>
+    /^\s*shot\s*#?\s*\d+[a-z]?/i.test(l) || /^\s*\d+[a-z]?[.)]\s+\S/.test(l);
+  const shotNumOf = (l: string): string => {
+    const m = l.match(/^\s*shot\s*#?\s*(\d+[a-z]?)/i) || l.match(/^\s*(\d+[a-z]?)[.)]\s+/);
+    return m ? m[1] : "";
+  };
+
+  const headers: { re: RegExp; field: keyof Shot }[] = [
+    { re: /^\s*scene\s*:?\s*(.*)$/i, field: "scene" },
+    { re: /^\s*video(?:\s*notes)?\s*:?\s*(.*)$/i, field: "video" },
+    { re: /^\s*(?:dialogue|interview|vo)(?:\s*prompts?)?\s*:?\s*(.*)$/i, field: "dialogue" },
+    { re: /^\s*stills(?:\s*list)?\s*:?\s*(.*)$/i, field: "stills" },
+    { re: /^\s*(?:location|loc)\s*:?\s*(.*)$/i, field: "locationRef" },
+    { re: /^\s*(?:tone|style)\s*:?\s*(.*)$/i, field: "tone" },
+  ];
+
+  const shots: Shot[] = [];
+  let cur: Shot | null = null;
+  let field: keyof Shot | null = null;
+
+  const append = (val: string) => {
+    if (!cur || !field) return;
+    const existing = ((cur[field] as string | undefined) || "").trim();
+    (cur as Record<string, unknown>)[field] = existing ? `${existing}\n${val.trim()}` : val.trim();
+  };
+
+  for (const line of text.split("\n")) {
+    if (isShotStart(line)) {
+      if (cur) shots.push(cur);
+      const num = shotNumOf(line);
+      const after = line
+        .replace(/^\s*shot\s*#?\s*\d+[a-z]?\s*[:.\-–)]*\s*/i, "")
+        .replace(/^\s*\d+[a-z]?[.)]\s+/, "")
+        .trim();
+      cur = { ...emptyShot(), shotNumber: num, description: after };
+      field = "description";
+      continue;
+    }
+    if (!cur) continue; // preamble before the first shot
+    let matched = false;
+    for (const h of headers) {
+      const m = line.match(h.re);
+      if (m) {
+        field = h.field;
+        const rest = (m[1] || "").trim();
+        (cur as Record<string, unknown>)[h.field] = "";
+        if (rest) append(rest);
+        matched = true;
+        break;
+      }
+    }
+    if (matched) continue;
+    if (line.trim()) append(line);
+  }
+  if (cur) shots.push(cur);
+
+  for (const s of shots) {
+    if (!s.description && s.scene) s.description = s.scene.split("\n")[0];
+  }
+  return shots;
+}
+
+// A deliverable parsed from a pasted brief.
+export interface ParsedDeliverable {
+  type: string; // photo | video | reel | bts | other
+  title: string;
+  notes: string;
+}
+
+// Parse a raw pasted deliverables brief into structured items. Each item starts
+// with a quantity ("8x …" / "8 x …"); bullet lines beneath become spec notes.
+export function parseDeliverables(raw: string): ParsedDeliverable[] {
+  const text = (raw || "").replace(/\r\n/g, "\n");
+  if (!text.trim()) return [];
+  const isItem = (l: string) => /^\s*(?:[-*•]\s*)?\d+\s*x\b/i.test(l);
+  const inferType = (s: string): string => {
+    const t = s.toLowerCase();
+    if (/reel/.test(t)) return "reel";
+    if (/video|edit|film|motion/.test(t)) return "video";
+    if (/bts|behind the scenes/.test(t)) return "bts";
+    if (/image|still|photo|hero|shot/.test(t)) return "photo";
+    return "other";
+  };
+  const items: ParsedDeliverable[] = [];
+  let cur: ParsedDeliverable | null = null;
+  for (const line of text.split("\n")) {
+    if (isItem(line)) {
+      if (cur) items.push(cur);
+      const title = line.replace(/^\s*[-*•]\s*/, "").trim();
+      cur = { type: inferType(title), title, notes: "" };
+    } else if (cur && line.trim()) {
+      const spec = line.replace(/^\s*[-*•]\s*/, "").trim();
+      cur.notes = cur.notes ? `${cur.notes}\n${spec}` : spec;
+    }
+  }
+  if (cur) items.push(cur);
+  return items;
 }
 
 export function parseNotes(raw: string | null): NotesData {

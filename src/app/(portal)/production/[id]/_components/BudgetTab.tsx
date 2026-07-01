@@ -276,7 +276,9 @@ export default function BudgetTab({
   const totalExcVat = subtotal + markupAmt;
   const vatAmt = totalExcVat * (vatPct / 100);
   const grandTotal = totalExcVat + vatAmt;
-  const budgetCoversCosts = campaignBudget != null ? campaignBudget - grandTotal : null;
+  // The budget figure that matters is ALWAYS exc. VAT, so the allocation
+  // headroom check compares the campaign allocation against the exc-VAT total.
+  const budgetCoversCosts = campaignBudget != null ? campaignBudget - totalExcVat : null;
 
   // Deal context + margin impact (commercial productions only).
   const deal = production.campaign;
@@ -483,8 +485,8 @@ export default function BudgetTab({
             </>
           )}
         </div>
-        <SummaryCard label="Total Budgeted" value={gbp(totals.budgeted)} accent={
-          <span className="text-gray-500">Grand total inc. VAT: <span className="text-gray-700 font-semibold">{gbp(grandTotal)}</span></span>
+        <SummaryCard label="Total Budget (exc. VAT)" value={gbp(totals.budgeted)} accent={
+          <span className="text-gray-500">+ VAT {gbp(totals.vat)} · inc. VAT <span className="text-gray-700 font-semibold">{gbp(totals.incVat)}</span></span>
         } />
         <SummaryCard
           label="Total Actual"
@@ -588,6 +590,11 @@ export default function BudgetTab({
             shoot wraps, once invoices are submitted — it isn&apos;t part of building the budget.
           </div>
         )}
+        {view === "budget" && (
+          <div className="px-5 py-2 bg-blue-50/40 border-b border-blue-100 text-[11px] text-gray-600 dark:bg-blue-950/20 dark:border-blue-900 dark:text-gray-300">
+            All budget figures <span className="font-semibold text-gray-800 dark:text-gray-100">exclude VAT</span>. Per-line VAT is shown for information only and is never added to the budget total.
+          </div>
+        )}
         {/* Sticky column headers */}
         {view === "budget" ? (
           <div className="grid grid-cols-12 px-5 py-2.5 bg-gray-50/60 border-b border-gray-100 text-[10px] font-bold uppercase tracking-widest text-gray-500 sticky top-0 z-10">
@@ -597,7 +604,7 @@ export default function BudgetTab({
             <div className="col-span-2 text-right">Unit Cost £</div>
             <div className="col-span-1 text-right">VAT %</div>
             <div className="col-span-1 text-right">VAT £</div>
-            <div className="col-span-2 text-right pr-6">Total inc. VAT</div>
+            <div className="col-span-2 text-right pr-6">Total (exc. VAT)</div>
           </div>
         ) : (
           <div className="grid grid-cols-12 px-5 py-2.5 bg-gray-50/60 border-b border-gray-100 text-[10px] font-bold uppercase tracking-widest text-gray-500 sticky top-0 z-10">
@@ -614,6 +621,7 @@ export default function BudgetTab({
           if (!canEditBudgeted && lines.length === 0) return null;
           const secBudgeted = lines.reduce((s, l) => s + lineTotal(l), 0);
           const secIncVat = lines.reduce((s, l) => s + lineTotalIncVat(l), 0);
+          const secVat = secIncVat - secBudgeted;
           const secActual = lines.reduce((s, l) => s + (l.actual || 0), 0);
           const secVariance = secBudgeted - secActual;
           const isCollapsed = !!collapsed[sec.key];
@@ -639,9 +647,9 @@ export default function BudgetTab({
                 <div className="flex items-center gap-5 text-xs tabular-nums">
                   {view === "budget" ? (
                     <>
-                      <span className="text-gray-500" title="Subtotal (ex VAT)">{gbp(secBudgeted)}</span>
-                      <span className="text-gray-700 font-medium w-20 text-right" title="Total inc. VAT">
-                        {gbp(secIncVat)}
+                      <span className="text-gray-400" title="VAT (informational only — not in the budget total)">VAT {gbp(secVat)}</span>
+                      <span className="text-gray-700 font-medium w-20 text-right" title="Subtotal (exc. VAT)">
+                        {gbp(secBudgeted)}
                       </span>
                     </>
                   ) : (
@@ -700,11 +708,11 @@ export default function BudgetTab({
             <div className="col-span-9 text-gray-700">
               Total{" "}
               <span className="text-xs font-normal text-gray-400">
-                (subtotal ex VAT {gbp(totals.budgeted)})
+                (exc. VAT — inc. VAT {gbp(totals.incVat)})
               </span>
             </div>
-            <div className="col-span-1 text-right text-gray-500">{gbp(totals.vat)}</div>
-            <div className="col-span-2 text-right pr-6 text-gray-900">{gbp(totals.incVat)}</div>
+            <div className="col-span-1 text-right text-gray-400">{gbp(totals.vat)}</div>
+            <div className="col-span-2 text-right pr-6 text-gray-900">{gbp(totals.budgeted)}</div>
           </div>
         ) : (
           <div className="grid grid-cols-12 px-5 py-3 bg-gray-50 border-t border-gray-100 text-sm font-semibold tabular-nums">
@@ -740,7 +748,7 @@ export default function BudgetTab({
             }
             value={gbp(markupAmt)}
           />
-          <SummaryRow label="Total exc. VAT" value={gbp(totalExcVat)} strong />
+          <SummaryRow label="Total Budget (exc. VAT)" value={gbp(totalExcVat)} strong />
           <SummaryRow
             label="VAT"
             editable={!isFinal}
@@ -752,7 +760,7 @@ export default function BudgetTab({
             value={gbp(vatAmt)}
           />
           <div className="border-t border-gray-100 pt-2.5">
-            <SummaryRow label="Grand Total" value={gbp(grandTotal)} grand />
+            <SummaryRow label="Grand Total (inc. VAT)" value={gbp(grandTotal)} grand />
           </div>
           <div className="border-t border-gray-100 pt-2.5 space-y-2.5">
             <SummaryRow
@@ -999,7 +1007,6 @@ function BudgetRow({
 
   const total = lineTotal(line);
   const vatAmt = lineVatAmount(line);
-  const totalIncVat = lineTotalIncVat(line);
   const variance = total - (line.actual || 0);
   const editAny = canEditActual || canEditBudgeted;
 
@@ -1086,8 +1093,8 @@ function BudgetRow({
           placeholder="Description"
           className={`col-span-3 text-gray-600 truncate ${EDIT_CELL}`}
         />
-        <div className={`col-span-2 text-right ${AUTO_CELL}`} title="Budgeted (inc VAT)">
-          {gbp(totalIncVat)}
+        <div className={`col-span-2 text-right ${AUTO_CELL}`} title="Budgeted (exc. VAT)">
+          {gbp(total)}
         </div>
         <input
           type="number"
@@ -1223,9 +1230,9 @@ function BudgetRow({
       <div className="col-span-2 flex items-center justify-end gap-1 pr-1">
         <span
           className="text-[12px] font-semibold tabular-nums text-gray-700 cursor-default select-none"
-          title="Qty × Unit Cost + VAT"
+          title="Qty × Unit Cost (excludes VAT)"
         >
-          {gbp(totalIncVat)}
+          {gbp(total)}
         </span>
         {canEditBudgeted ? (
           <button

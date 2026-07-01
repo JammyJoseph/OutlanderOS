@@ -3,14 +3,14 @@
 import { useState } from "react";
 import {
   Clock, MapPin, Cloud, Camera, Users, Coffee, Paperclip, FileText,
-  GripVertical, UserPlus, Wallet, Contact as ContactIcon, Building2, Briefcase,
-  Phone, Shield, Lock, Route, Aperture, RefreshCw, Check, Plus,
+  GripVertical, UserPlus, Contact as ContactIcon, Building2, Briefcase,
+  Phone, Shield, Lock, Route, Aperture, RefreshCw, Check, Plus, Package,
 } from "lucide-react";
 import type {
-  AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallTimeRow,
-  CateringDetails, ClientTeamMember, CrewMember, EquipmentInfo, LocationData,
+  AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallSheetLocation,
+  CallTimeRow, CateringDetails, ClientTeamMember, CrewMember, EquipmentInfo,
   MovementOrder, ProductionCompanyInfo, ProductionMobile, ScheduleItem, Shot,
-  TalentMember, WeatherData,
+  ShotStyle, TalentMember, WeatherData,
 } from "./types";
 import {
   AGENCY_TEAM_ROLES, CLIENT_TEAM_ROLES, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE,
@@ -18,9 +18,10 @@ import {
 } from "./types";
 import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls } from "./shared";
 import { PeopleTable } from "./shared";
-import { LocationEditor, MovementOrderEditor } from "./LocationMap";
+import { LocationsEditor, MovementOrderEditor } from "./LocationMap";
 import { WeatherEditor } from "./WeatherWidget";
 import { ShotlistEditor } from "./Shotlist";
+import { CallSheetDeliverables } from "./CallSheetDeliverables";
 import { CateringEditor } from "./CateringSection";
 import { DocumentsEditor } from "./DocumentsSection";
 import { DirectoryPicker } from "./DirectoryPicker";
@@ -30,11 +31,12 @@ export interface EditorProps {
   callTime: string; setCallTime: (v: string) => void;
   wrapTime: string; setWrapTime: (v: string) => void;
   schedule: ScheduleItem[]; setSchedule: (v: ScheduleItem[]) => void;
-  location: LocationData; setLocation: (v: LocationData) => void;
+  locations: CallSheetLocation[]; setLocations: (v: CallSheetLocation[]) => void;
   locationLat: number | null; locationLng: number | null;
   setCoords: (lat: number | null, lng: number | null) => void;
   weatherData: WeatherData | null; setWeatherData: (v: WeatherData | null) => void;
   shotlist: Shot[]; setShotlist: (v: Shot[]) => void;
+  shotStyle: ShotStyle; setShotStyle: (v: ShotStyle) => void;
   crew: CrewMember[]; setCrew: (v: CrewMember[]) => void;
   talent: TalentMember[]; setTalent: (v: TalentMember[]) => void;
   catering: CateringDetails; setCatering: (v: CateringDetails) => void;
@@ -56,14 +58,6 @@ export interface EditorProps {
 }
 
 const iconCls = "text-gray-400";
-
-function gbp(n: number): string {
-  return n.toLocaleString("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    maximumFractionDigits: 0,
-  });
-}
 
 export function CallSheetEditor(p: EditorProps) {
   const rosterCount = p.crew.length + p.talent.length;
@@ -170,7 +164,9 @@ export function CallSheetEditor(p: EditorProps) {
   }
 
   const billingContact = p.production.campaign?.billingContact ?? null;
-  const hasReference = p.production.budgetTotal != null || billingContact != null;
+  // Budget is NEVER shown on a call sheet — only the client billing contact is
+  // surfaced here as a reference. (See portal overhaul rule #6.)
+  const hasReference = billingContact != null;
   const clientName =
     p.production.campaign?.client?.name || p.production.clientName || "";
 
@@ -251,16 +247,6 @@ export function CallSheetEditor(p: EditorProps) {
 
         {hasReference && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50">
-            {p.production.budgetTotal != null && (
-              <div className="rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5">
-                <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">
-                  <Wallet size={11} /> Budget reference
-                </p>
-                <p className="text-sm font-semibold text-gray-800">
-                  {gbp(p.production.budgetTotal)}
-                </p>
-              </div>
-            )}
             {billingContact && (
               <div className="rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5">
                 <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">
@@ -457,32 +443,46 @@ export function CallSheetEditor(p: EditorProps) {
         </div>
       </Section>
 
-      {/* 7. Location */}
-      <Section title="Location" icon={<MapPin size={15} className={iconCls} />}>
-        <LocationEditor
-          location={p.location}
-          setLocation={p.setLocation}
-          lat={p.locationLat}
-          lng={p.locationLng}
-          onCoordsChange={p.setCoords}
-        />
+      {/* 7. Locations */}
+      <Section title="Locations" icon={<MapPin size={15} className={iconCls} />}>
+        <LocationsEditor locations={p.locations} setLocations={p.setLocations} />
       </Section>
 
-      {/* 8. Movement Order */}
+      {/* 8. Movement Order — stops derived from the ordered locations above */}
       <Section title="Movement Order" icon={<Route size={15} className={iconCls} />}>
+        {p.locations.length > 0 && (
+          <div className="mb-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
+              Stops ({p.locations.length})
+            </p>
+            <ol className="space-y-1">
+              {p.locations.map((l, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  <span className="flex items-center justify-center w-5 h-5 rounded bg-gray-900 text-white text-[10px] font-bold shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span>
+                    <span className="font-medium">{l.name || `Location ${i + 1}`}</span>
+                    {l.address ? <span className="text-gray-400"> — {l.address}</span> : null}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
         <MovementOrderEditor
           movementOrder={p.movementOrder}
           setMovementOrder={p.setMovementOrder}
-          lat={p.locationLat}
-          lng={p.locationLng}
+          lat={p.locations[0]?.lat ?? p.locationLat}
+          lng={p.locations[0]?.lng ?? p.locationLng}
         />
       </Section>
 
-      {/* 9. Weather */}
+      {/* 9. Weather — uses the first location's coordinates */}
       <Section title="Weather" icon={<Cloud size={15} className={iconCls} />}>
         <WeatherEditor
-          lat={p.locationLat}
-          lng={p.locationLng}
+          lat={p.locations[0]?.lat ?? p.locationLat}
+          lng={p.locations[0]?.lng ?? p.locationLng}
           shootDate={p.shootDate}
           weatherData={p.weatherData}
           setWeatherData={p.setWeatherData}
@@ -565,7 +565,18 @@ export function CallSheetEditor(p: EditorProps) {
 
       {/* 11. Shotlist */}
       <Section title="Shotlist" icon={<Camera size={15} className={iconCls} />}>
-        <ShotlistEditor shotlist={p.shotlist} setShotlist={p.setShotlist} />
+        <ShotlistEditor
+          shotlist={p.shotlist}
+          setShotlist={p.setShotlist}
+          shotStyle={p.shotStyle}
+          setShotStyle={p.setShotStyle}
+          locations={p.locations}
+        />
+      </Section>
+
+      {/* 11b. Deliverables — synced two-way with the project Deliverables tab */}
+      <Section title="Deliverables" icon={<Package size={15} className={iconCls} />}>
+        <CallSheetDeliverables productionId={p.production.id} />
       </Section>
 
       {/* 12. Conduct Policy (auto-included, read-only) */}

@@ -3,16 +3,16 @@
 import {
   MapPin, Clock, Users, Coffee, FileText, Cloud, Camera, Paperclip,
   Building2, Briefcase, Phone, Shield, Lock, Route, Aperture, Hospital,
-  TrainFront, Navigation,
+  Navigation, Package,
 } from "lucide-react";
 import { format } from "date-fns";
 import type {
-  AgencyTeamMember, Attachment, CallSheetHeader, CallTimeRow, CateringDetails,
-  ClientTeamMember, CrewMember, EquipmentInfo, LocationData, MovementOrder,
-  ProductionCompanyInfo, ProductionMobile, ScheduleItem, SectionKey, Shot,
-  TalentMember, WeatherData,
+  AgencyTeamMember, Attachment, CallSheetHeader, CallSheetLocation, CallTimeRow,
+  CateringDetails, ClientTeamMember, CrewMember, EquipmentInfo, LocationData,
+  MovementOrder, ProductionCompanyInfo, ProductionMobile, ScheduleItem,
+  SectionKey, Shot, ShotStyle, TalentMember, WeatherData,
 } from "./types";
-import { CONDUCT_POLICY, CONFIDENTIALITY_NOTICE } from "./types";
+import { CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, emptyCallSheetLocation } from "./types";
 import { DocSection } from "./shared";
 import { LocationMap } from "./LocationMap";
 import { WeatherDisplay } from "./WeatherWidget";
@@ -30,6 +30,12 @@ export interface CallSheetViewData {
   location: LocationData;
   locationLat: number | null;
   locationLng: number | null;
+  locations: CallSheetLocation[];
+  shotStyle: ShotStyle;
+  productionId?: string;
+  // Production deliverables snapshot for the printed/public sheet (the editor
+  // manages the live, editable copy in its own section).
+  deliverables?: { type: string; title: string; notes: string | null }[];
   weatherData: WeatherData | null;
   schedule: ScheduleItem[];
   shotlist: Shot[];
@@ -63,7 +69,8 @@ export function CallSheetDocument({
 }) {
   const {
     shootTitle, clientName, shootDate, callTime, wrapTime, location, locationLat,
-    locationLng, weatherData, schedule, shotlist, crew, talent, catering, documents,
+    locationLng, locations, shotStyle, deliverables, weatherData, schedule,
+    shotlist, crew, talent, catering, documents,
     notesGeneral, notesSafety, notesParking, header, clientTeam, agencyTeam,
     productionCompany, callTimes, productionMobiles, movementOrder, equipment,
   } = data;
@@ -90,6 +97,21 @@ export function CallSheetDocument({
       movementOrder.crewParking || movementOrder.routeNotes);
   const hasEquipment =
     !!(equipment.cameraSupplier || equipment.lightingSupplier || equipment.otherNotes);
+
+  // Ordered location stops. Prefer the multi-location array; fall back to the
+  // legacy single location so pre-upgrade sheets still render.
+  const legacyStop: CallSheetLocation = {
+    ...emptyCallSheetLocation(),
+    address: location.address,
+    nearestAE: location.nearestHospital,
+    parkingNotes: location.parkingNotes,
+    whatThreeWords: location.whatThreeWords,
+    lat: locationLat,
+    lng: locationLng,
+  };
+  const stops: CallSheetLocation[] =
+    locations && locations.length > 0 ? locations : hasLocation ? [legacyStop] : [];
+  const hasShotStyle = !!(shotStyle && (shotStyle.tone || shotStyle.visualDevice || shotStyle.notes));
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden print:rounded-none print:border-0 print:shadow-none">
@@ -213,29 +235,46 @@ export function CallSheetDocument({
           </DocSection>
         )}
 
-        {/* Location */}
-        {show("location") && hasLocation && (
-          <DocSection title="Location" icon={<MapPin size={14} />}>
-            {location.address && <p className="text-sm text-gray-700 mb-3">{location.address}</p>}
-            {locationLat != null && locationLng != null && (
-              <div className="mb-3">
-                <LocationMap lat={locationLat} lng={locationLng} height={260} />
-              </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {location.nearestHospital && (
-                <DocField label="Nearest A&E" value={location.nearestHospital} icon={<Hospital size={11} />} />
-              )}
-              {location.nearestStation && (
-                <DocField label="Nearest Station" value={location.nearestStation} icon={<TrainFront size={11} />} />
-              )}
-              {location.whatThreeWords && (
-                <DocField label="what3words" value={location.whatThreeWords} />
-              )}
-              {location.parkingNotes && <DocField label="Parking" value={location.parkingNotes} />}
-              {location.transportNotes && (
-                <DocField label="Public Transport" value={location.transportNotes} />
-              )}
+        {/* Locations (ordered stops = movement order) */}
+        {show("location") && (stops.length > 0 || hasMovement) && (
+          <DocSection
+            title={stops.length > 1 ? "Locations & Movement Order" : "Location"}
+            icon={<MapPin size={14} />}
+          >
+            <div className="space-y-4">
+              {stops.map((loc, i) => (
+                <div
+                  key={i}
+                  className={stops.length > 1 ? "border border-gray-100 rounded-xl p-3" : ""}
+                >
+                  {stops.length > 1 && (
+                    <p className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-2">
+                      <span className="flex items-center justify-center w-5 h-5 rounded bg-gray-900 text-white text-[10px] font-bold">
+                        {i + 1}
+                      </span>
+                      {loc.name || `Location ${i + 1}`}
+                    </p>
+                  )}
+                  {loc.address && <p className="text-sm text-gray-700 mb-3">{loc.address}</p>}
+                  {loc.lat != null && loc.lng != null && (
+                    <div className="mb-3">
+                      <LocationMap lat={loc.lat} lng={loc.lng} height={220} />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {loc.nearestAE && (
+                      <DocField label="Nearest A&E" value={loc.nearestAE} icon={<Hospital size={11} />} />
+                    )}
+                    {loc.postcode && <DocField label="Postcode" value={loc.postcode} />}
+                    {loc.whatThreeWords && <DocField label="what3words" value={loc.whatThreeWords} />}
+                    {loc.parkingNotes && <DocField label="Parking" value={loc.parkingNotes} />}
+                    {loc.contactPerson && (
+                      <DocField label="Contact" value={loc.contactPerson} icon={<Phone size={11} />} />
+                    )}
+                    {loc.mapLink && <DocField label="Map link" value={loc.mapLink} icon={<Navigation size={11} />} />}
+                  </div>
+                </div>
+              ))}
             </div>
             {location.safetyNotes && (
               <p className="mt-3 text-sm font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
@@ -303,9 +342,33 @@ export function CallSheetDocument({
         )}
 
         {/* Shotlist */}
-        {show("shotlist") && shotlist.length > 0 && (
+        {show("shotlist") && (shotlist.length > 0 || hasShotStyle) && (
           <DocSection title="Shotlist" icon={<Camera size={14} />}>
-            <ShotlistDoc shotlist={shotlist} />
+            <ShotlistDoc shotlist={shotlist} shotStyle={shotStyle} />
+          </DocSection>
+        )}
+
+        {/* Deliverables (snapshot from the production Deliverables tab) */}
+        {show("deliverables") && (deliverables?.length ?? 0) > 0 && (
+          <DocSection title="Deliverables" icon={<Package size={14} />}>
+            <div className="border border-gray-100 rounded-xl overflow-hidden">
+              {deliverables!.map((d, i) => (
+                <div
+                  key={i}
+                  className={`px-4 py-2.5 text-sm ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                      {d.type}
+                    </span>
+                    <span className="text-gray-800 font-medium">{d.title}</span>
+                  </div>
+                  {d.notes && (
+                    <p className="text-xs text-gray-500 whitespace-pre-wrap mt-0.5">{d.notes}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </DocSection>
         )}
 

@@ -13,7 +13,7 @@ const productionInclude = {
       id: true,
       title: true,
       status: true,
-      budgetTotal: true,
+      // Budget is never surfaced on a call sheet (portal overhaul rule #6).
       clientName: true,
       campaign: {
         select: {
@@ -70,6 +70,8 @@ export const PUT = withAuth(async (
     if (body.locationLng !== undefined) updateData.locationLng = body.locationLng;
     if (body.schedule !== undefined) updateData.schedule = body.schedule;
     if (body.shotlist !== undefined) updateData.shotlist = body.shotlist;
+    if (body.locations !== undefined) updateData.locations = body.locations;
+    if (body.shotStyle !== undefined) updateData.shotStyle = body.shotStyle;
     if (body.crew !== undefined) updateData.crew = body.crew;
     if (body.talent !== undefined) updateData.talent = body.talent;
     if (body.cateringDetails !== undefined) updateData.cateringDetails = body.cateringDetails;

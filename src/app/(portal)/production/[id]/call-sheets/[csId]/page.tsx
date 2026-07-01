@@ -7,14 +7,15 @@ import {
   ArrowLeft, Save, Eye, Send, Edit2, Loader2, Check, Link2, FileDown,
 } from "lucide-react";
 import type {
-  AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallSheetStatus,
-  CallTimeRow, CateringDetails, ClientTeamMember, CrewMember, DistributionEntry,
-  EquipmentInfo, LocationData, MovementOrder, ProductionCompanyInfo,
-  ProductionMobile, ScheduleItem, Shot, TalentMember, WeatherData,
+  AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallSheetLocation,
+  CallSheetStatus, CallTimeRow, CateringDetails, ClientTeamMember, CrewMember,
+  DistributionEntry, EquipmentInfo, LocationData, MovementOrder,
+  ProductionCompanyInfo, ProductionMobile, ScheduleItem, Shot, ShotStyle,
+  TalentMember, WeatherData,
 } from "./types";
 import {
-  emptyCatering, emptyEquipment, emptyHeader, emptyLocation, emptyMovementOrder,
-  emptyProductionCompany, migrateCatering,
+  deriveLocations, emptyCatering, emptyEquipment, emptyHeader, emptyLocation,
+  emptyMovementOrder, emptyProductionCompany, emptyShotStyle, migrateCatering,
 } from "./types";
 import { CallSheetEditor } from "./CallSheetEditor";
 import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
@@ -66,6 +67,8 @@ export default function CallSheetPage() {
   const [locationLng, setLocationLng] = useState<number | null>(null);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [shotlist, setShotlist] = useState<Shot[]>([]);
+  const [locations, setLocations] = useState<CallSheetLocation[]>([]);
+  const [shotStyle, setShotStyle] = useState<ShotStyle>(emptyShotStyle());
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const [talent, setTalent] = useState<TalentMember[]>([]);
   const [catering, setCatering] = useState<CateringDetails>(emptyCatering());
@@ -89,14 +92,29 @@ export default function CallSheetPage() {
   const stateRef = useRef<Record<string, unknown>>({});
 
   function buildPayload(s: typeof stateRef.current) {
+    const locs = (s.locations as CallSheetLocation[]) ?? [];
+    const first = locs[0];
+    // Mirror the first stop into the legacy single-location columns so older
+    // readers (e.g. the call-sheet list) still show a location.
+    const legacyLocation = first
+      ? {
+          ...emptyLocation(),
+          address: first.address,
+          parkingNotes: first.parkingNotes,
+          nearestHospital: first.nearestAE,
+          whatThreeWords: first.whatThreeWords,
+        }
+      : (s.location as LocationData);
     return {
       shootTitle: s.shootTitle,
       shootDate: new Date(s.shootDate as string).toISOString(),
       callTime: s.callTime,
       wrapTime: s.wrapTime,
-      location: s.location,
-      locationLat: s.locationLat,
-      locationLng: s.locationLng,
+      location: legacyLocation,
+      locationLat: first ? first.lat : s.locationLat,
+      locationLng: first ? first.lng : s.locationLng,
+      locations: s.locations,
+      shotStyle: s.shotStyle,
       schedule: s.schedule,
       shotlist: s.shotlist,
       crew: s.crew,
@@ -120,9 +138,10 @@ export default function CallSheetPage() {
 
   stateRef.current = {
     shootTitle, shootDate, callTime, wrapTime, schedule, location, locationLat,
-    locationLng, weatherData, shotlist, crew, talent, catering, documents,
-    notesGeneral, notesSafety, notesParking, header, clientTeam, agencyTeam,
-    productionCompany, callTimes, productionMobiles, movementOrder, equipment,
+    locationLng, locations, shotStyle, weatherData, shotlist, crew, talent,
+    catering, documents, notesGeneral, notesSafety, notesParking, header,
+    clientTeam, agencyTeam, productionCompany, callTimes, productionMobiles,
+    movementOrder, equipment,
   };
 
   const loadSheet = useCallback(() => {
@@ -144,6 +163,14 @@ export default function CallSheetPage() {
         );
         setLocationLat(s.locationLat ?? null);
         setLocationLng(s.locationLng ?? null);
+        setLocations(
+          deriveLocations(s.locations, s.location, s.locationLat ?? null, s.locationLng ?? null)
+        );
+        setShotStyle(
+          s.shotStyle && typeof s.shotStyle === "object" && !Array.isArray(s.shotStyle)
+            ? { ...emptyShotStyle(), ...s.shotStyle }
+            : emptyShotStyle()
+        );
         setWeatherData(s.weatherData ?? null);
         setShotlist(Array.isArray(s.shotlist) ? s.shotlist : []);
         setCrew(Array.isArray(s.crew) ? s.crew : []);
@@ -310,12 +337,13 @@ export default function CallSheetPage() {
 
   const viewData: CallSheetViewData = {
     shootTitle, shootDate, callTime, wrapTime, location, locationLat, locationLng,
-    weatherData, schedule, shotlist, crew, talent, catering, documents,
+    locations, shotStyle, weatherData, schedule, shotlist, crew, talent, catering, documents,
     notesGeneral, notesSafety, notesParking,
     header, clientTeam, agencyTeam, productionCompany, callTimes, productionMobiles,
     movementOrder, equipment,
     clientName: sheet?.production.campaign?.client?.name || sheet?.production.clientName || "",
     productionTitle: sheet?.production.title || "",
+    productionId: sheet?.production.id || "",
   };
 
   if (loading) {
@@ -434,10 +462,11 @@ export default function CallSheetPage() {
               callTime={callTime} setCallTime={setCallTime}
               wrapTime={wrapTime} setWrapTime={setWrapTime}
               schedule={schedule} setSchedule={setSchedule}
-              location={location} setLocation={setLocation}
+              locations={locations} setLocations={setLocations}
               locationLat={locationLat} locationLng={locationLng} setCoords={setCoords}
               weatherData={weatherData} setWeatherData={setWeatherData}
               shotlist={shotlist} setShotlist={setShotlist}
+              shotStyle={shotStyle} setShotStyle={setShotStyle}
               crew={crew} setCrew={setCrew}
               talent={talent} setTalent={setTalent}
               catering={catering} setCatering={setCatering}
