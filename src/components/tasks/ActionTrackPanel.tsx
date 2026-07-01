@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 
@@ -57,6 +58,15 @@ function formatDue(dueDate: string): string {
   return new Date(dueDate).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
+  });
+}
+
+// Completion stamp for the DONE section — includes the year so old items read clearly.
+function formatDone(when: string): string {
+  return new Date(when).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 }
 
@@ -291,11 +301,88 @@ function TaskRow({
   );
 }
 
+// A completed task in the DONE section — muted, struck-through, green accent.
+function DoneRow({
+  task,
+  showBadge,
+  onReopen,
+  onDelete,
+}: {
+  task: PanelTask;
+  showBadge: boolean;
+  onReopen: (task: PanelTask) => void;
+  onDelete: (task: PanelTask) => void;
+}) {
+  const cameFromTrack = task.taskType === "TRACK";
+  const badge = showBadge ? badgeFor(task) : null;
+  const when = task.completedAt ?? task.createdAt;
+
+  return (
+    <li className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/70">
+      {/* Filled green checkmark — click to reopen */}
+      <button
+        onClick={() => onReopen(task)}
+        aria-label="Reopen task"
+        title="Reopen"
+        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 border-[#22A06B] bg-[#22A06B] text-white transition-colors hover:border-[#15803d] hover:bg-[#15803d]"
+      >
+        <Check className="h-3 w-3" strokeWidth={3} />
+      </button>
+
+      <span className="min-w-0 flex-1 truncate text-sm text-gray-400 line-through">
+        {task.title}
+      </span>
+
+      {/* Where it came from — ACTION or TRACK */}
+      <span
+        className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+          cameFromTrack ? "bg-blue-50 text-blue-600" : "bg-[#ffd700]/10 text-[#b08900]"
+        }`}
+      >
+        {cameFromTrack ? "was Track" : "was Action"}
+      </span>
+
+      {/* Completion date */}
+      <span className="hidden shrink-0 text-[11px] font-medium text-gray-400 sm:inline">
+        {formatDone(when)}
+      </span>
+
+      {badge && (
+        <span
+          className="max-w-[120px] shrink-0 truncate rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
+          style={{ backgroundColor: badge.bg, color: badge.text }}
+        >
+          {badge.label}
+        </span>
+      )}
+
+      {/* Hover actions — reopen, delete */}
+      <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <button
+          onClick={() => onReopen(task)}
+          title="Reopen task"
+          className="flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-100"
+        >
+          <RotateCcw className="h-3 w-3" /> Reopen
+        </button>
+        <button
+          onClick={() => onDelete(task)}
+          aria-label="Delete task"
+          title="Delete task"
+          className="rounded-md p-1 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      </span>
+    </li>
+  );
+}
+
 export function ActionTrackPanel({ projectId, productionId }: Props) {
   const [tasks, setTasks] = useState<PanelTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [fadingIds, setFadingIds] = useState<Set<string>>(new Set());
-  const [showDone, setShowDone] = useState(false);
+  const [showDone, setShowDone] = useState(true);
   const fadeTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const query = useMemo(() => {
@@ -325,14 +412,12 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
   const open = tasks.filter((t) => t.status !== "DONE");
   const actions = sortTasks(open.filter((t) => t.taskType !== "TRACK"));
   const tracks = sortTasks(open.filter((t) => t.taskType === "TRACK"));
-  const weekAgo = Date.now() - 7 * DAY_MS;
-  const completed = tasks
-    .filter((t) => {
-      if (t.status !== "DONE") return false;
-      const when = t.completedAt ?? t.createdAt;
-      return new Date(when).getTime() >= weekAgo;
-    })
-    .sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""));
+  // DONE — every completed task, most-recently-finished first.
+  const done = tasks
+    .filter((t) => t.status === "DONE")
+    .sort((a, b) =>
+      (b.completedAt ?? b.createdAt).localeCompare(a.completedAt ?? a.createdAt)
+    );
 
   async function patch(id: string, body: Record<string, unknown>) {
     await fetch(`/api/tasks/${id}`, {
@@ -390,6 +475,17 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
     fadeTimers.current.set(task.id, timer);
   }
 
+  // Reopen a completed task — it returns to whichever section it came from
+  // (ACTION or TRACK, preserved in taskType).
+  function reopen(task: PanelTask) {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id ? { ...t, status: "TODO", completedAt: null } : t
+      )
+    );
+    patch(task.id, { status: "TODO" });
+  }
+
   function move(task: PanelTask) {
     const next = task.taskType === "TRACK" ? "ACTION" : "TRACK";
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, taskType: next } : t)));
@@ -410,8 +506,8 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
     await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
   }
 
-  async function clearCompleted() {
-    const ids = completed.map((t) => t.id);
+  async function clearDone() {
+    const ids = done.map((t) => t.id);
     setTasks((prev) => prev.filter((t) => !ids.includes(t.id)));
     await Promise.all(ids.map((id) => fetch(`/api/tasks/${id}`, { method: "DELETE" })));
   }
@@ -493,31 +589,46 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
         )}
       </div>
 
-      {/* Completed — last 7 days, collapsed by default */}
-      {completed.length > 0 && (
-        <div className="border-t border-gray-100">
+      {/* DONE — green left border, visible by default, collapsible */}
+      {done.length > 0 && (
+        <div className="border-t border-gray-100 border-l-[3px] border-l-[#22A06B] bg-gray-50/40">
           <div className="flex items-center justify-between pr-3">
             <button
               onClick={() => setShowDone((v) => !v)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-gray-400 hover:text-gray-600"
+              className="flex items-center gap-2 px-4 pb-1 pt-3 text-sm font-bold tracking-wide text-gray-500 hover:text-gray-700"
             >
               {showDone ? (
                 <ChevronDown className="h-3.5 w-3.5" />
               ) : (
                 <ChevronRight className="h-3.5 w-3.5" />
               )}
-              Completed ({completed.length})
+              DONE
+              <span className="rounded-full bg-[#22A06B]/10 px-2 py-0.5 text-[11px] font-bold text-[#15803d]">
+                {done.length}
+              </span>
             </button>
             {showDone && (
               <button
-                onClick={clearCompleted}
+                onClick={clearDone}
                 className="rounded-md px-2 py-1 text-[11px] font-semibold text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
               >
-                Clear completed
+                Clear all
               </button>
             )}
           </div>
-          {showDone && <ul className="divide-y divide-gray-50 pb-1">{renderRows(completed)}</ul>}
+          {showDone && (
+            <ul className="divide-y divide-gray-100/70 pb-1 pt-1">
+              {done.map((t) => (
+                <DoneRow
+                  key={t.id}
+                  task={t}
+                  showBadge={showBadges}
+                  onReopen={reopen}
+                  onDelete={remove}
+                />
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </section>
