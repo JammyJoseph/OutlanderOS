@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -14,6 +14,8 @@ import {
   Clock,
   XCircle,
   Info,
+  Archive as ArchiveIcon,
+  RotateCcw,
 } from "lucide-react";
 
 type CampaignStatus =
@@ -65,6 +67,8 @@ interface ClientDetail {
   name: string;
   industry?: string;
   brandColor?: string;
+  archived: boolean;
+  archivedAt?: string | null;
   campaigns: Campaign[];
 }
 
@@ -152,9 +156,11 @@ function InviteButton() {
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [client, setClient] = useState<ClientDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [archiving, setArchiving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -167,6 +173,47 @@ export default function ClientDetailPage() {
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function archiveClient() {
+    if (!client) return;
+    const activeDeals = client.campaigns.length;
+    const dealNote =
+      activeDeals > 0
+        ? ` This client has ${activeDeals} active deal${activeDeals !== 1 ? "s" : ""}, which stay in the pipeline.`
+        : "";
+    if (
+      !confirm(
+        `Archive ${client.name}? They will be hidden from the main list but can be restored.${dealNote}`
+      )
+    )
+      return;
+    setArchiving(true);
+    try {
+      const res = await fetch(`/api/clients/${client.id}/archive`, { method: "PATCH" });
+      if (res.ok) {
+        router.push("/commercial/clients");
+      } else {
+        setArchiving(false);
+      }
+    } catch {
+      setArchiving(false);
+    }
+  }
+
+  async function unarchiveClient() {
+    if (!client) return;
+    setArchiving(true);
+    try {
+      const res = await fetch(`/api/clients/${client.id}/unarchive`, { method: "PATCH" });
+      if (res.ok) {
+        setClient({ ...client, archived: false, archivedAt: null });
+      }
+    } catch {
+      // no-op
+    } finally {
+      setArchiving(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -213,7 +260,14 @@ export default function ClientDetailPage() {
               {initials(client.name)}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{client.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-gray-900">{client.name}</h1>
+                {client.archived && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                    Archived
+                  </span>
+                )}
+              </div>
               <div className="mt-0.5 flex items-center gap-3 text-sm text-gray-500">
                 {client.industry && <span>{client.industry}</span>}
                 <span className="text-[var(--portal-commercial)] font-semibold">
@@ -352,6 +406,40 @@ export default function ClientDetailPage() {
             })}
           </div>
         )}
+
+        {/* Archive controls */}
+        <div className="mt-8 border-t border-gray-100 pt-6">
+          {client.archived ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-gray-500">
+                This client is archived and hidden from the main list and dropdowns.
+              </p>
+              <button
+                onClick={unarchiveClient}
+                disabled={archiving}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-60"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Unarchive Client
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-gray-500">
+                Archiving hides this client from the main list and dropdowns. Their deals stay in
+                the pipeline and it can be restored at any time.
+              </p>
+              <button
+                onClick={archiveClient}
+                disabled={archiving}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors disabled:opacity-60"
+              >
+                <ArchiveIcon className="h-4 w-4" />
+                Archive Client
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
