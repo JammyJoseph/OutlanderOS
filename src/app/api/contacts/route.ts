@@ -91,6 +91,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
       website: body.website ? sanitizeString(body.website, 300) : null,
       location: body.location ? sanitizeString(body.location, 160) : null,
       rating: body.rating != null ? parseRating(body.rating) : null,
+      isFavourite: Boolean(body.isFavourite),
       notes: body.notes ? sanitizeString(body.notes, 4000) : null,
       portfolioLinks: sanitizePortfolio(body.portfolioLinks),
       isRadar: Boolean(body.isRadar),

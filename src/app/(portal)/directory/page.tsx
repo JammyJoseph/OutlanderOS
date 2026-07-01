@@ -20,8 +20,6 @@ import {
   ChevronRight,
   ExternalLink,
   Pencil,
-  Download,
-  RefreshCw,
   Share2,
   CheckSquare,
   Square,
@@ -81,6 +79,7 @@ interface ContactRecord {
   website: string | null;
   location: string | null;
   rating: number | null;
+  isFavourite?: boolean;
   notes: string | null;
   portfolioLinks?: { title: string; url: string }[];
   isRadar: boolean;
@@ -105,7 +104,8 @@ type View =
   | "radar"
   | "recent"
   | "scanner"
-  | "network";
+  | "network"
+  | "lighthouse";
 type SortKey = "name" | "za" | "category" | "followers" | "recent";
 
 function isView(v: string | null): v is View {
@@ -142,8 +142,6 @@ function ConfidenceBadge({ confidence }: { confidence: string }) {
     </span>
   );
 }
-
-const MASTER_SHEET = "1RJFla1KOPRWN0-ue9H6clQ5bWuYEuo1RSHD6K8Zy2hY";
 
 function igHandle(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -255,7 +253,7 @@ function Stars({
 
 function CategoryBadge({ category }: { category: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-300">
+    <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
       {category}
     </span>
   );
@@ -294,6 +292,7 @@ function Directory() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("");
   const [country, setCountry] = useState<string>("");
+  const [favouritesOnly, setFavouritesOnly] = useState(false);
   const [radarStatusFilter, setRadarStatusFilter] = useState<string>("");
   // A–Z is always the landing sort for the contact list.
   const [sortKey, setSortKey] = useState<SortKey>("name");
@@ -303,8 +302,6 @@ function Directory() {
 
   const [editing, setEditing] = useState<ContactRecord | null | undefined>(undefined);
   const [addingRadar, setAddingRadar] = useState<ContactRecord | null | undefined>(undefined);
-
-  const [importing, setImporting] = useState(false);
 
   const setView = useCallback(
     (v: View) => router.push(v === "dashboard" ? "/directory" : `/directory?view=${v}`),
@@ -348,8 +345,6 @@ function Directory() {
     if (view === "radar") jobs.push(loadRadar());
     else jobs.push(loadContacts());
     if (view !== "radar") jobs.push(loadCategories());
-    // The dashboard needs the radar count alongside contacts/categories.
-    if (view === "dashboard") jobs.push(loadRadar());
     Promise.all(jobs).finally(() => {
       if (active) setLoading(false);
     });
@@ -428,29 +423,17 @@ function Directory() {
     }
   }
 
-  async function runImport(sync: boolean) {
-    setImporting(true);
-    try {
-      const res = await fetch("/api/directory/import-sheet", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sheetId: MASTER_SHEET }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast(
-          `${sync ? "Synced" : "Imported"} — ${data.imported} new, ${data.updated} updated`
-        );
-        await loadContacts();
-        await loadCategories();
-      } else {
-        showToast(data.error || "Import failed");
-      }
-    } catch {
-      showToast("Import failed — check the connection");
-    } finally {
-      setImporting(false);
-    }
+  // Toggle a contact's favourite (starred) flag, optimistically.
+  async function toggleFavourite(contact: ContactRecord) {
+    const next = !contact.isFavourite;
+    setContacts((prev) =>
+      prev.map((c) => (c.id === contact.id ? { ...c, isFavourite: next } : c))
+    );
+    await fetch(`/api/contacts/${contact.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isFavourite: next }),
+    });
   }
 
   // Selection helpers
@@ -474,7 +457,12 @@ function Directory() {
     const arr = [...contacts];
     switch (sortKey) {
       case "name":
-        arr.sort((a, b) => a.name.localeCompare(b.name));
+        // Default sort — favourites float to the top, then A–Z.
+        arr.sort(
+          (a, b) =>
+            Number(Boolean(b.isFavourite)) - Number(Boolean(a.isFavourite)) ||
+            a.name.localeCompare(b.name)
+        );
         break;
       case "za":
         arr.sort((a, b) => b.name.localeCompare(a.name));
@@ -504,11 +492,13 @@ function Directory() {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c);
   }, [contacts]);
 
-  // Country filtering happens client-side against the coarse countryOf().
-  const displayedContacts = useMemo(
-    () => (country ? sortedContacts.filter((c) => countryOf(c.location) === country) : sortedContacts),
-    [sortedContacts, country]
-  );
+  // Country + favourites filtering happens client-side.
+  const displayedContacts = useMemo(() => {
+    let list = sortedContacts;
+    if (country) list = list.filter((c) => countryOf(c.location) === country);
+    if (favouritesOnly) list = list.filter((c) => c.isFavourite);
+    return list;
+  }, [sortedContacts, country, favouritesOnly]);
 
   const selectedContacts = useMemo(
     () => contacts.filter((c) => selected.has(c.id)),
@@ -525,12 +515,17 @@ function Directory() {
     }
   }
 
-  const VIEW_TABS: { key: View; label: string; icon: React.ElementType }[] = [
+  const VIEW_TABS: {
+    key: View;
+    label: string;
+    icon: React.ElementType;
+    href?: string;
+  }[] = [
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { key: "contacts", label: "All Contacts", icon: ContactIcon },
     { key: "scanner", label: "Scanner", icon: ScanLine },
     { key: "network", label: "Network", icon: NetworkIcon },
-    { key: "radar", label: "Radar", icon: RadarIcon },
+    { key: "lighthouse", label: "Lighthouse", icon: Sparkles, href: "/directory/lighthouse" },
     { key: "recent", label: "Recently Added", icon: Clock },
   ];
 
@@ -576,31 +571,6 @@ function Directory() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {view !== "radar" && !isToolView && (
-              <>
-                <button
-                  onClick={() => runImport(false)}
-                  disabled={importing}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm font-medium text-gray-600 hover:border-[var(--ring)] disabled:opacity-50"
-                  title="Import contacts from the master Google Sheet"
-                >
-                  {importing ? (
-                    <Loader2 size={15} className="animate-spin" />
-                  ) : (
-                    <Download size={15} />
-                  )}
-                  Import from Google Sheet
-                </button>
-                <button
-                  onClick={() => runImport(true)}
-                  disabled={importing}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm font-medium text-gray-600 hover:border-[var(--ring)] disabled:opacity-50"
-                  title="Re-sync from the sheet (updates existing, adds new)"
-                >
-                  <RefreshCw size={15} className={importing ? "animate-spin" : ""} /> Sync Sheet
-                </button>
-              </>
-            )}
             {isToolView ? null : view === "radar" ? (
               <button
                 onClick={() => setAddingRadar(null)}
@@ -626,13 +596,24 @@ function Directory() {
           {VIEW_TABS.map((t) => {
             const Icon = t.icon;
             const isActive = view === t.key;
+            const cls = `inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+              isActive ? "text-black" : "text-gray-500 hover:text-gray-900"
+            }`;
+            // Lighthouse is its own route — render it as a link, everything else
+            // switches the in-page view.
+            if (t.href) {
+              return (
+                <Link key={t.key} href={t.href} className={cls}>
+                  <Icon size={14} />
+                  {t.label}
+                </Link>
+              );
+            }
             return (
               <button
                 key={t.key}
                 onClick={() => setView(t.key)}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-                  isActive ? "text-black" : "text-gray-500 hover:text-gray-900"
-                }`}
+                className={cls}
                 style={isActive ? { backgroundColor: ACCENT } : undefined}
               >
                 <Icon size={14} />
@@ -683,6 +664,22 @@ function Directory() {
                     ))}
                   </select>
                 )}
+                <button
+                  onClick={() => setFavouritesOnly((v) => !v)}
+                  title="Show favourites only"
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    favouritesOnly
+                      ? "border-[#ffd700] text-gray-900"
+                      : "border-border text-gray-500 hover:text-gray-900"
+                  }`}
+                  style={favouritesOnly ? { backgroundColor: "rgba(255,215,0,0.12)" } : undefined}
+                >
+                  <Star
+                    size={14}
+                    className={favouritesOnly ? "fill-[#ffd700] text-[#ffd700]" : "text-gray-400"}
+                  />
+                  Favourites
+                </button>
               </>
             )}
             {view === "radar" && (
@@ -699,13 +696,14 @@ function Directory() {
                 ))}
               </select>
             )}
-            {(search || category || country || radarStatusFilter || sortKey !== "name") && (
+            {(search || category || country || radarStatusFilter || favouritesOnly || sortKey !== "name") && (
               <button
                 onClick={() => {
                   setSearch("");
                   setCategory("");
                   setCountry("");
                   setRadarStatusFilter("");
+                  setFavouritesOnly(false);
                   setSortKey("name");
                 }}
                 className="px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-900"
@@ -770,7 +768,6 @@ function Directory() {
         ) : view === "dashboard" ? (
           <Dashboard
             contacts={contacts}
-            radar={radar}
             categories={categories}
             onNavigate={setView}
           />
@@ -795,6 +792,7 @@ function Directory() {
             contacts={displayedContacts}
             selected={selected}
             onToggleSelect={toggleSelect}
+            onToggleFavourite={toggleFavourite}
             onEdit={(c) => setEditing(c)}
             onAdd={() => setEditing(null)}
           />
@@ -861,12 +859,14 @@ function SplitPanel({
   contacts,
   selected,
   onToggleSelect,
+  onToggleFavourite,
   onEdit,
   onAdd,
 }: {
   contacts: ContactRecord[];
   selected: Set<string>;
   onToggleSelect: (id: string) => void;
+  onToggleFavourite: (c: ContactRecord) => void;
   onEdit: (c: ContactRecord) => void;
   onAdd: () => void;
 }) {
@@ -943,6 +943,7 @@ function SplitPanel({
               selected={selected.has(c.id)}
               onSelect={() => setActiveId(c.id)}
               onToggleSelect={() => onToggleSelect(c.id)}
+              onToggleFavourite={() => onToggleFavourite(c)}
             />
           ))}
         </div>
@@ -950,7 +951,14 @@ function SplitPanel({
 
       {/* Right — contact detail */}
       <div className="flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card lg:w-3/5">
-        {active && <ContactDetailPanel key={active.id} contact={active} onEdit={onEdit} />}
+        {active && (
+          <ContactDetailPanel
+            key={active.id}
+            contact={active}
+            onEdit={onEdit}
+            onToggleFavourite={onToggleFavourite}
+          />
+        )}
       </div>
     </div>
   );
@@ -962,12 +970,14 @@ function SplitRow({
   selected,
   onSelect,
   onToggleSelect,
+  onToggleFavourite,
 }: {
   contact: ContactRecord;
   active: boolean;
   selected: boolean;
   onSelect: () => void;
   onToggleSelect: () => void;
+  onToggleFavourite: () => void;
 }) {
   const handle = igHandle(c.instagram);
   const followers = fmtFollowers(c.followers);
@@ -981,6 +991,7 @@ function SplitRow({
       style={active ? { boxShadow: `inset 3px 0 0 ${ACCENT}` } : undefined}
     >
       <SelectBox selected={selected} onToggle={onToggleSelect} />
+      <FavouriteStar favourite={Boolean(c.isFavourite)} onToggle={onToggleFavourite} />
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500">
         {c.name.slice(0, 2).toUpperCase()}
       </span>
@@ -1023,6 +1034,39 @@ function SelectBox({ selected, onToggle }: { selected: boolean; onToggle: () => 
   );
 }
 
+// Star toggle — gold when favourited, grey outline when not.
+function FavouriteStar({
+  favourite,
+  onToggle,
+  size = 16,
+}: {
+  favourite: boolean;
+  onToggle: () => void;
+  size?: number;
+}) {
+  return (
+    <button
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggle();
+      }}
+      className="shrink-0"
+      title={favourite ? "Remove from favourites" : "Add to favourites"}
+      aria-pressed={favourite}
+    >
+      <Star
+        size={size}
+        className={
+          favourite
+            ? "fill-[#ffd700] text-[#ffd700]"
+            : "text-gray-400 hover:text-[#ffd700]"
+        }
+      />
+    </button>
+  );
+}
+
 // ── Contact detail panel ────────────────────────────────────────────────────────
 
 interface Collaboration {
@@ -1039,9 +1083,11 @@ interface ContactDetail extends Omit<ContactRecord, "collaborations"> {
 function ContactDetailPanel({
   contact,
   onEdit,
+  onToggleFavourite,
 }: {
   contact: ContactRecord;
   onEdit: (c: ContactRecord) => void;
+  onToggleFavourite: (c: ContactRecord) => void;
 }) {
   const [detail, setDetail] = useState<ContactDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1078,7 +1124,14 @@ function ContactDetailPanel({
     <>
       {/* Sticky header */}
       <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-card/95 px-5 py-3 backdrop-blur">
-        <p className="min-w-0 truncate text-sm font-semibold text-gray-900">{c.name}</p>
+        <div className="flex min-w-0 items-center gap-2">
+          <FavouriteStar
+            favourite={Boolean(contact.isFavourite)}
+            onToggle={() => onToggleFavourite(contact)}
+            size={18}
+          />
+          <p className="min-w-0 truncate text-sm font-semibold text-gray-900">{c.name}</p>
+        </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
             onClick={() => onEdit(contact)}
@@ -1479,12 +1532,10 @@ function HottestCreatives() {
 
 function Dashboard({
   contacts,
-  radar,
   categories,
   onNavigate,
 }: {
   contacts: ContactRecord[];
-  radar: ContactRecord[];
   categories: { category: string; count: number }[];
   onNavigate: (v: View) => void;
 }) {
@@ -1495,9 +1546,7 @@ function Dashboard({
   const collaborators = contacts.filter(
     (c) => Array.isArray(c.collaborations) && c.collaborations.length > 0
   ).length;
-  const radarWatching = radar.filter(
-    (r) => (r.radarStatus ?? "WATCHING") === "WATCHING"
-  ).length;
+  const favourites = contacts.filter((c) => c.isFavourite).length;
 
   // Most-populated categories first, for the breakdown card.
   const topCategories = [...categories]
@@ -1512,15 +1561,17 @@ function Dashboard({
     .slice(0, 5);
 
   const QUICK: {
-    key: View;
+    key: string;
     title: string;
     body: string;
     icon: React.ElementType;
+    view?: View;
+    href?: string;
   }[] = [
-    { key: "contacts", title: "Contacts", body: "Browse your full contact directory", icon: ContactIcon },
-    { key: "scanner", title: "Scanner", body: "Scan Instagram profiles to discover talent", icon: ScanLine },
-    { key: "network", title: "Network", body: "View collaboration connections", icon: NetworkIcon },
-    { key: "radar", title: "Radar", body: "Track emerging talent", icon: RadarIcon },
+    { key: "contacts", title: "Contacts", body: "Browse your full contact directory", icon: ContactIcon, view: "contacts" },
+    { key: "scanner", title: "Scanner", body: "Scan Instagram profiles to discover talent", icon: ScanLine, view: "scanner" },
+    { key: "network", title: "Network", body: "View collaboration connections", icon: NetworkIcon, view: "network" },
+    { key: "lighthouse", title: "Lighthouse", body: "Spotlight & radar — coming soon", icon: Sparkles, href: "/directory/lighthouse" },
   ];
 
   return (
@@ -1541,10 +1592,10 @@ function Dashboard({
           hint="with collaboration history"
         />
         <StatCard
-          icon={RadarIcon}
-          label="Radar Watching"
-          value={radarWatching}
-          hint={`${radar.length} on the radar`}
+          icon={Star}
+          label="Favourites"
+          value={favourites}
+          hint="starred contacts"
         />
       </div>
 
@@ -1581,12 +1632,8 @@ function Dashboard({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {QUICK.map((q) => {
           const Icon = q.icon;
-          return (
-            <button
-              key={q.key}
-              onClick={() => onNavigate(q.key)}
-              className="group flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 text-left transition-colors hover:border-[var(--ring)]"
-            >
+          const inner = (
+            <>
               <span
                 className="flex h-10 w-10 items-center justify-center rounded-xl"
                 style={{ backgroundColor: `${ACCENT}1a`, color: ACCENT }}
@@ -1603,6 +1650,17 @@ function Dashboard({
                 </p>
                 <p className="mt-0.5 text-xs text-gray-500">{q.body}</p>
               </div>
+            </>
+          );
+          const cls =
+            "group flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 text-left transition-colors hover:border-[var(--ring)]";
+          return q.href ? (
+            <Link key={q.key} href={q.href} className={cls}>
+              {inner}
+            </Link>
+          ) : (
+            <button key={q.key} onClick={() => q.view && onNavigate(q.view)} className={cls}>
+              {inner}
             </button>
           );
         })}
@@ -1704,10 +1762,10 @@ function CategoriesGrid({
 // ── Radar list ──────────────────────────────────────────────────────────────────
 
 const RADAR_STATUS_STYLE: Record<string, string> = {
-  WATCHING: "border-gray-600 text-gray-300",
-  REACHED_OUT: "border-amber-700 text-amber-300",
-  CONNECTED: "border-sky-700 text-sky-300",
-  COLLABORATING: "border-emerald-700 text-emerald-300",
+  WATCHING: "border-gray-300 text-gray-600",
+  REACHED_OUT: "border-amber-300 text-amber-700",
+  CONNECTED: "border-sky-300 text-sky-700",
+  COLLABORATING: "border-emerald-300 text-emerald-700",
 };
 
 function RadarList({

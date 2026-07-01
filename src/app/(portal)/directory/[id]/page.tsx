@@ -78,6 +78,7 @@ interface ContactDetail {
   website: string | null;
   location: string | null;
   rating: number | null;
+  isFavourite?: boolean;
   notes: string | null;
   portfolioLinks: PortfolioLink[];
   isRadar: boolean;
@@ -230,6 +231,21 @@ export default function ContactDetailPage({
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => patch({ isFavourite: !contact.isFavourite })}
+                title={contact.isFavourite ? "Remove from favourites" : "Add to favourites"}
+                aria-pressed={contact.isFavourite}
+                className="shrink-0"
+              >
+                <Star
+                  size={24}
+                  className={
+                    contact.isFavourite
+                      ? "fill-[#ffd700] text-[#ffd700]"
+                      : "text-gray-400 hover:text-[#ffd700]"
+                  }
+                />
+              </button>
               <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
                 {contact.name}
               </h1>
