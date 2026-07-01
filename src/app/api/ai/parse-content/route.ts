@@ -15,10 +15,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Claude model used for the intelligent parser. NB: this exact snapshot is on
-// the deprecated list — bump it to a current model (e.g. claude-sonnet-5) if the
-// API starts 404ing. The route falls back to the regex parser either way.
-const MODEL = "claude-sonnet-4-20250514";
+// Claude model used for the intelligent parser. The route falls back to the
+// regex parser if this ever 404s or the call fails.
+const MODEL = "claude-sonnet-4-6";
 
 type ContentType = "shotlist" | "deliverables";
 

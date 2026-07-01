@@ -30,8 +30,7 @@ live portal after deploy.
 - [ ] **Graceful fallback** — with no `ANTHROPIC_API_KEY` (or on any model error) the route
       falls back to the regex parser and the UI still populates.
 - [ ] Confirm whether `ANTHROPIC_API_KEY` is set in the prod `.env` (feature is LLM-powered
-      only when present; otherwise regex fallback). Model: `claude-sonnet-4-20250514` — see
-      note below.
+      only when present; otherwise regex fallback). Model: `claude-sonnet-4-6`.
 
 ## Campaign Timeline
 - [ ] **Campaign Timeline milestones** exist as a separate view from the shoot schedule.
@@ -43,10 +42,8 @@ live portal after deploy.
 ---
 
 ### Notes / follow-ups
-- **AI model:** the parser is pinned to `claude-sonnet-4-20250514`, which the current
-  Anthropic model catalogue lists as **deprecated (retired ~2026-06-15)**. If the endpoint
-  starts 404ing, bump `MODEL` in `src/app/api/ai/parse-content/route.ts` to a current model
-  (e.g. `claude-sonnet-5`). The route degrades to the regex parser regardless, so this is
-  non-blocking.
+- **AI model:** the parser uses `claude-sonnet-4-6` (`MODEL` in
+  `src/app/api/ai/parse-content/route.ts`). The route degrades to the regex parser if the
+  model call ever fails, so a model swap is non-blocking.
 - **Budget headroom (Issue 1):** already correct exc-VAT in code (`392de6a`); this deploy
   makes it live if prod was on an older build.
