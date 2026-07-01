@@ -274,14 +274,15 @@ export default function ProductionDashboard() {
     let upcoming = 0;
     let drafts = 0;
     for (const p of list) {
-      for (const cs of p.callSheets ?? []) {
-        const d = parseISO(cs.shootDate);
+      // A call sheet and a freeform shootDate on the SAME day are one shoot,
+      // not two. getAllShootDates dedupes both sources by day, so count off
+      // that instead of iterating callSheets + shootDates separately (which
+      // double-counted a day covered by both).
+      for (const d of getAllShootDates(p)) {
         if (!isBefore(d, today) && isBefore(d, horizon)) upcoming += 1;
-        if (cs.status === "DRAFT") drafts += 1;
       }
-      for (const d of p.shootDates ?? []) {
-        const dd = parseISO(d);
-        if (!isBefore(dd, today) && isBefore(dd, horizon)) upcoming += 1;
+      for (const cs of p.callSheets ?? []) {
+        if (cs.status === "DRAFT") drafts += 1;
       }
     }
     const monthStart = startOfMonth(today);
