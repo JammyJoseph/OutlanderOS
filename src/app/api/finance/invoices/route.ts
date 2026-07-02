@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 // ?status=RECEIVED|UNDER_REVIEW|APPROVED|PAID|REJECTED
 // ?project=<campaignBudgetId>  ?flagged=true
 // ?from=YYYY-MM-DD&to=YYYY-MM-DD (receivedAt range)
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAdminDb(async (request: NextRequest) => {
   try {
     const params = request.nextUrl.searchParams
     const status = params.get('status') || undefined
@@ -40,13 +40,13 @@ export const GET = withAuth(async (request: NextRequest) => {
 
     return NextResponse.json({ invoices, totalOwed, pendingApproval, count: invoices.length })
   } catch (e) {
-    return NextResponse.json({ invoices: [], totalOwed: 0, pendingApproval: 0, count: 0, error: String(e) }, { status: 500 })
+    return NextResponse.json({ invoices: [], totalOwed: 0, pendingApproval: 0, count: 0, error: "An error occurred" }, { status: 500 })
   }
 })
 
 // Create an invoice submission — from the email scanner or manual entry.
 // Dedups on emailMessageId. Payment deadline defaults to 30 days after receipt.
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withAdminDb(async (request: NextRequest) => {
   try {
     const body = await request.json()
     if (!body.supplierName) {
@@ -89,6 +89,6 @@ export const POST = withAuth(async (request: NextRequest) => {
     })
     return NextResponse.json({ invoice }, { status: 201 })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
   }
 })

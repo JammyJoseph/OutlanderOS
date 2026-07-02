@@ -33,6 +33,6 @@ export const POST = withAuth(async (request: NextRequest) => {
     });
     return NextResponse.json({ issue });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });

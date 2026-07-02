@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 import { getXeroInvoices, getXeroStatus } from '@/lib/xero-finance'
 
 export const dynamic = 'force-dynamic'
 
 // Xero invoices sent to clients (outgoing receivables) with payment status.
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAdminDb(async (request: NextRequest) => {
   try {
     const status = request.nextUrl.searchParams.get('status') || undefined
     const [conn, invoices] = await Promise.all([getXeroStatus(), getXeroInvoices(status)])
@@ -20,6 +20,6 @@ export const GET = withAuth(async (request: NextRequest) => {
       count: invoices.length,
     })
   } catch (e) {
-    return NextResponse.json({ invoices: [], total: 0, totalDue: 0, count: 0, error: String(e) }, { status: 500 })
+    return NextResponse.json({ invoices: [], total: 0, totalDue: 0, count: 0, error: "An error occurred" }, { status: 500 })
   }
 })

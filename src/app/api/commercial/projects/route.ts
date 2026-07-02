@@ -37,7 +37,7 @@ export const GET = withAuth(async () => {
 
     return NextResponse.json({ projects });
   } catch (e) {
-    return NextResponse.json({ projects: [], error: String(e) }, { status: 500 });
+    return NextResponse.json({ projects: [], error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -116,6 +116,6 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
       project: { ...budget, productionId: production?.id ?? null, production },
     });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
+import { isAdminInDb } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   const me = getCurrentUser(request)
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     })
     return NextResponse.json({ notifications, unreadCount })
   } catch (e) {
-    return NextResponse.json({ notifications: [], unreadCount: 0, error: String(e) })
+    return NextResponse.json({ notifications: [], unreadCount: 0, error: "An error occurred" })
   }
 }
 
@@ -27,6 +28,14 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   if (!body.userId || !body.type || !body.message) {
     return NextResponse.json({ error: 'userId, type, message required' }, { status: 400 })
+  }
+  // Users can only create notifications for themselves; targeting another
+  // user requires ADMIN (checked against the DB, not the stale JWT role).
+  if (body.userId !== me.userId && !(await isAdminInDb(me))) {
+    return NextResponse.json(
+      { error: 'You can only create notifications for yourself' },
+      { status: 403 }
+    )
   }
   try {
     const notification = await prisma.notification.create({
@@ -39,6 +48,6 @@ export async function POST(request: NextRequest) {
     })
     return NextResponse.json({ notification })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
   }
 }

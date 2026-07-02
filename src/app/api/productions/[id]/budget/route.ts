@@ -204,7 +204,7 @@ export const GET = withAuth(async (
     });
     return NextResponse.json({ items });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -308,11 +308,15 @@ export const POST = withAuth(async (
     await syncCostEntry(item);
     return NextResponse.json({ item });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
-export const PUT = withAuth(async (request: NextRequest) => {
+export const PUT = withAuth(async (
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id: productionId } = await params;
   const url = new URL(request.url);
   const itemId = url.searchParams.get("itemId");
   if (!itemId) return NextResponse.json({ error: "itemId required" }, { status: 400 });
@@ -322,7 +326,11 @@ export const PUT = withAuth(async (request: NextRequest) => {
       where: { id: itemId },
       select: { productionId: true, budgeted: true, quantity: true, rate: true },
     });
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    // The line item must belong to the production in the URL — prevents
+    // cross-production edits via a guessed itemId.
+    if (!existing || existing.productionId !== productionId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
     // Resolve quantity/rate after the patch so we can recompute the line total
     // and tell whether the budgeted amount is effectively changing.
@@ -377,11 +385,15 @@ export const PUT = withAuth(async (request: NextRequest) => {
     await syncCostEntry(item);
     return NextResponse.json({ item });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
-export const DELETE = withAuth(async (request: NextRequest) => {
+export const DELETE = withAuth(async (
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id: productionId } = await params;
   const url = new URL(request.url);
   const itemId = url.searchParams.get("itemId");
   if (!itemId) return NextResponse.json({ error: "itemId required" }, { status: 400 });
@@ -390,7 +402,9 @@ export const DELETE = withAuth(async (request: NextRequest) => {
       where: { id: itemId },
       select: { productionId: true },
     });
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!existing || existing.productionId !== productionId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     const blocked = await budgetGuard(existing.productionId, { structure: true });
     if (blocked) return NextResponse.json({ error: blocked }, { status: 403 });
 
@@ -398,6 +412,6 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     await prisma.budgetLineItem.delete({ where: { id: itemId } });
     return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });

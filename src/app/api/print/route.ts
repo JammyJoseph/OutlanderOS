@@ -416,7 +416,7 @@ async function fetchPrintData(): Promise<PrintData> {
     const res = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID })
     meta = res.data
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Failed to load sheet metadata'
+    const msg = 'Failed to load sheet metadata'
     return emptyData(msg, true)
   }
 
@@ -470,7 +470,7 @@ export const GET = withAuth(async (request: Request) => {
     cache = { data, expires: Date.now() + CACHE_TTL_MS }
     return NextResponse.json({ ...data, cached: false })
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Unknown error'
+    const msg = 'Unknown error'
     return NextResponse.json({ ...emptyData(msg, false), cached: false }, { status: 200 })
   }
 })

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 import { getXeroAgedPayables, getXeroStatus } from '@/lib/xero-finance'
 
 export const dynamic = 'force-dynamic'
 
 // Aged payables — who you owe, bucketed by how overdue the bills are.
-export const GET = withAuth(async () => {
+export const GET = withAdminDb(async () => {
   try {
     const [conn, rows] = await Promise.all([getXeroStatus(), getXeroAgedPayables()])
     const total = rows.reduce((s, r) => s + r.total, 0)
@@ -17,6 +17,6 @@ export const GET = withAuth(async () => {
       count: rows.length,
     })
   } catch (e) {
-    return NextResponse.json({ rows: [], total: 0, count: 0, error: String(e) }, { status: 500 })
+    return NextResponse.json({ rows: [], total: 0, count: 0, error: "An error occurred" }, { status: 500 })
   }
 })

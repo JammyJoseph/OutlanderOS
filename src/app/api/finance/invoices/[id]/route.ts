@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 // General invoice update: amount, project coding, notes, mark paid/rejected.
 // Approval goes through /approve so the overage check can't be skipped.
-export const PATCH = withAuth(async (request: NextRequest, context, user) => {
+export const PATCH = withAdminDb(async (request: NextRequest, context, user) => {
   try {
     const params = context.params ? await context.params : {}
     const id = params.id
@@ -77,6 +77,6 @@ export const PATCH = withAuth(async (request: NextRequest, context, user) => {
 
     return NextResponse.json({ invoice })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
   }
 })

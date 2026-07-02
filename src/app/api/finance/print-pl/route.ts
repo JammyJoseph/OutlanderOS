@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth } from "@/lib/auth";
+import { withAdminDb } from "@/lib/auth";
 import {
   groupBudgetRows,
   computeBudgetRow,
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // Aggregated Print P&L for the Finance portal: per-issue revenue / production
 // cost / print cost / margin, a split of paid (advertiser revenue) vs at-cost
 // (editorial) features, and the magazine-wide totals across every issue.
-export const GET = withAuth(async () => {
+export const GET = withAdminDb(async () => {
   try {
     const plans = await prisma.magazinePlan.findMany({ orderBy: { issueNumber: "desc" } });
 
@@ -103,6 +103,6 @@ export const GET = withAuth(async () => {
 
     return NextResponse.json({ issues, totals });
   } catch (e) {
-    return NextResponse.json({ issues: [], totals: null, error: String(e) }, { status: 500 });
+    return NextResponse.json({ issues: [], totals: null, error: "An error occurred" }, { status: 500 });
   }
 });

@@ -34,7 +34,7 @@ export const GET = withAuth(async () => {
   } catch (err) {
     console.error("GET /api/content-tracker/brands", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err), brands: [] },
+      { error: "An error occurred", brands: [] },
       { status: 500 }
     );
   }

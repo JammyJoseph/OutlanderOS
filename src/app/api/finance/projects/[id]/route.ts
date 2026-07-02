@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 import { getXeroInvoices, getXeroStatus } from '@/lib/xero-finance'
 import { overageStatusFor } from '@/lib/finance-projects'
 import { parseAllocations, productionAllocationOf } from '@/lib/deal-stages'
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 // production budget vs actuals, margin analysis, cost line items grouped by
 // category, supplier invoices coded to the project, and Xero payment status
 // for the client's invoices.
-export const GET = withAuth(async (request: NextRequest, context) => {
+export const GET = withAdminDb(async (request: NextRequest, context) => {
   try {
     const params = context.params ? await context.params : {}
     const id = params.id
@@ -218,6 +218,6 @@ export const GET = withAuth(async (request: NextRequest, context) => {
       },
     })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
   }
 })

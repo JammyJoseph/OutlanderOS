@@ -16,7 +16,7 @@ export async function GET() {
     logger.error('health', 'Database check failed', error)
     database = {
       status: 'disconnected',
-      error: error instanceof Error ? error.message : String(error),
+      error: "An error occurred",
     }
   }
 

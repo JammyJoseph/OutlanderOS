@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
+import { isAdminInDb } from '@/lib/auth'
 
 const TASK_INCLUDE = {
   assignedTo: { select: { id: true, name: true, email: true } },
@@ -21,7 +22,8 @@ export async function GET(request: NextRequest) {
   const projectId = searchParams.get('projectId') || undefined
   const productionId = searchParams.get('productionId') || undefined
   const scope = searchParams.get('scope') // "mine" | "all"
-  const isAdmin = me.role === 'ADMIN'
+  // Admin-only scopes check the DB role — the JWT role can be stale.
+  const isAdmin = Boolean(assignedToId || scope === 'all') && (await isAdminInDb(me))
 
   const where: Record<string, unknown> = {}
   if (projectId) {
@@ -67,7 +69,7 @@ export async function GET(request: NextRequest) {
     })
     return NextResponse.json({ tasks })
   } catch (e) {
-    return NextResponse.json({ tasks: [], error: String(e) })
+    return NextResponse.json({ tasks: [], error: "An error occurred" })
   }
 }
 
@@ -112,6 +114,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ task })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
   }
 }

@@ -158,7 +158,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     });
   } catch (e) {
     return NextResponse.json(
-      { error: String(e), forecast: [], unavailable: true },
+      { error: "An error occurred", forecast: [], unavailable: true },
       { status: 200 }
     );
   }

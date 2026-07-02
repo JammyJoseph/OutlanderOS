@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 import { getXeroBills, getXeroStatus } from '@/lib/xero-finance'
 
 export const dynamic = 'force-dynamic'
 
 // Xero bills received from suppliers (payables).
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAdminDb(async (request: NextRequest) => {
   try {
     const status = request.nextUrl.searchParams.get('status') || undefined
     const [conn, bills] = await Promise.all([getXeroStatus(), getXeroBills(status)])
@@ -20,6 +20,6 @@ export const GET = withAuth(async (request: NextRequest) => {
       count: bills.length,
     })
   } catch (e) {
-    return NextResponse.json({ bills: [], total: 0, totalDue: 0, count: 0, error: String(e) }, { status: 500 })
+    return NextResponse.json({ bills: [], total: 0, totalDue: 0, count: 0, error: "An error occurred" }, { status: 500 })
   }
 })

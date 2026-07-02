@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 import {
   getXeroProfitAndLoss,
   getXeroBankBalance,
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 // pending approval, active projects with budget, overage counts, P&L snapshot,
 // bank balance, and recent invoice activity. Defaults to year-to-date P&L;
 // accepts ?from=YYYY-MM-DD&to=YYYY-MM-DD. Degrades gracefully without Xero.
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAdminDb(async (request: NextRequest) => {
   try {
     const now = new Date()
     const params = request.nextUrl.searchParams
@@ -117,6 +117,6 @@ export const GET = withAuth(async (request: NextRequest) => {
       recentActivity,
     })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
   }
 })

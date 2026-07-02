@@ -58,7 +58,7 @@ export const POST = withAuth(async (req: NextRequest) => {
   } catch (err) {
     console.error("POST /api/content-tracker/bulk-tag", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err) },
+      { error: "An error occurred" },
       { status: 500 }
     );
   }

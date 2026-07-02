@@ -14,7 +14,7 @@ export const GET = withAuth(async (
     });
     return NextResponse.json({ assets });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -37,7 +37,7 @@ export const POST = withAuth(async (
     });
     return NextResponse.json({ asset });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -57,7 +57,7 @@ export const PUT = withAuth(async (request: NextRequest) => {
     const asset = await prisma.creativeAsset.update({ where: { id: assetId }, data });
     return NextResponse.json({ asset });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -69,6 +69,6 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     await prisma.creativeAsset.delete({ where: { id: assetId } });
     return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });

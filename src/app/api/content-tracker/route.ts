@@ -49,7 +49,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   } catch (err) {
     console.error("GET /api/content-tracker", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err), posts: [], total: 0 },
+      { error: "An error occurred", posts: [], total: 0 },
       { status: 500 }
     );
   }

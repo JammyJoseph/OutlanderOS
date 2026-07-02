@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 import { sanitizeString } from '@/lib/validate'
 import {
   extractSheetId,
@@ -79,7 +79,8 @@ function dedupeKey(name: string, email: string): string {
 
 // POST /api/directory/import-sheet
 // Body: { sheetId?: string }  — reads the master contact sheet and upserts Contacts.
-export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
+// Bulk import can overwrite the whole directory, so it's admin-only.
+export const POST = withAdminDb(async (request: NextRequest, _ctx, user) => {
   let body: { sheetId?: string } = {}
   try {
     body = await request.json()
@@ -98,12 +99,15 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
     sheetTitle = meta.sheetNames[0] || 'Sheet1'
     rows = await readRange(spreadsheetId, `${sheetTitle}!A1:Z`)
   } catch (err) {
+    // The raw Google error is only logged — it can contain credential and
+    // infrastructure details that don't belong in the response.
     const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error('POST /api/directory/import-sheet', err)
     const hint = /credential|GOOGLE_|permission|denied|auth/i.test(message)
       ? 'Check the Google service-account credentials and that the sheet is shared with the service account.'
       : undefined
     return NextResponse.json(
-      { error: `Could not read the Google Sheet: ${message}`, hint },
+      { error: 'Could not read the Google Sheet.', hint },
       { status: 502 }
     )
   }

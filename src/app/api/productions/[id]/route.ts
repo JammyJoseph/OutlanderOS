@@ -49,7 +49,7 @@ export const GET = withAuth(async (
     if (!production) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ production });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -215,7 +215,7 @@ export const PUT = withAuth(async (
 
     return NextResponse.json({ production });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 

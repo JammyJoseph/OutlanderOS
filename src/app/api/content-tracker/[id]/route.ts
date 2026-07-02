@@ -36,7 +36,7 @@ export const PUT = withAuth(async (
   } catch (err) {
     console.error("PUT /api/content-tracker/[id]", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err) },
+      { error: "An error occurred" },
       { status: 500 }
     );
   }
@@ -54,7 +54,7 @@ export const GET = withAuth(async (
   } catch (err) {
     console.error("GET /api/content-tracker/[id]", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err) },
+      { error: "An error occurred" },
       { status: 500 }
     );
   }

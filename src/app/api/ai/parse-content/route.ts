@@ -180,6 +180,6 @@ export const POST = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ source: "llm", deliverables });
   } catch (e) {
     // Any model/parse failure degrades to the regex parser rather than erroring.
-    return NextResponse.json({ ...regex(), warning: e instanceof Error ? e.message : "AI parse failed" });
+    return NextResponse.json({ ...regex(), warning: "AI parse failed" });
   }
 });

@@ -14,7 +14,7 @@ export const GET = withAuth(async (
     });
     return NextResponse.json({ blocks });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -38,7 +38,7 @@ export const POST = withAuth(async (
     });
     return NextResponse.json({ block });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -59,7 +59,7 @@ export const PUT = withAuth(async (request: NextRequest) => {
     const block = await prisma.scheduleBlock.update({ where: { id: blockId }, data });
     return NextResponse.json({ block });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -71,6 +71,6 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     await prisma.scheduleBlock.delete({ where: { id: blockId } });
     return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });

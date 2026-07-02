@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { randomInt } from "crypto";
 
 // Valid team assignments. Mirrors the labels surfaced in the admin UI.
 export const TEAMS = ["COMMERCIAL", "PRODUCTION", "FINANCE", "OPERATIONS", "ADMIN"] as const;
@@ -42,10 +43,13 @@ function generateTempPassword(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
   let out = "";
   for (let i = 0; i < 8; i++) {
-    out += chars[Math.floor(Math.random() * chars.length)];
+    out += chars[randomInt(chars.length)];
   }
   return out;
 }
+
+// Basic shape check — not RFC-complete, just enough to catch typos and garbage.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // POST /api/admin/users — create a staff member (admin only). A temporary
 // password is auto-generated and returned ONCE in the response so the admin can
@@ -61,6 +65,9 @@ export const POST = withAdmin(async (request: NextRequest) => {
 
     if (!name || !email) {
       return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
+    }
+    if (!EMAIL_RE.test(email)) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
+import { isAdminInDb } from '@/lib/auth'
 
 const SELECT = {
   id: true,
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     })
     return NextResponse.json({ user })
   } catch (e) {
-    return NextResponse.json({ user: null, error: String(e) }, { status: 500 })
+    return NextResponse.json({ user: null, error: "An error occurred" }, { status: 500 })
   }
 }
 
@@ -49,10 +50,13 @@ export async function PUT(request: NextRequest) {
   if (typeof avatarUrl === 'string' || avatarUrl === null) data.avatarUrl = avatarUrl
   if (typeof avatar === 'string' || avatar === null) data.avatar = avatar
 
-  if (me.role === 'ADMIN') {
+  // Admin-gated fields check the DB role — the JWT role can be stale.
+  if (await isAdminInDb(me)) {
     if (typeof salary === 'number' || salary === null) data.salary = salary
     if (typeof holidayAllowance === 'number') data.holidayAllowance = holidayAllowance
-    if (role === 'ADMIN' || role === 'MEMBER') data.role = role
+    // /me only ever updates the caller, so a role change away from ADMIN
+    // would be a self-demotion — only allow confirming ADMIN here.
+    if (role === 'ADMIN') data.role = role
   }
 
   const user = await prisma.user.update({

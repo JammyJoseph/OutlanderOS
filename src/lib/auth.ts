@@ -166,3 +166,18 @@ export function withAdmin(handler: AuthedHandler) {
     return handler(request, context, user)
   }
 }
+
+// Like withAdmin, but resolves the role from the database (via isAdminInDb) so
+// users promoted after login aren't blocked by a stale JWT role.
+export function withAdminDb(handler: AuthedHandler) {
+  return async (request: NextRequest, context: RouteContext) => {
+    let user: AuthUser
+    try {
+      user = await getAuthUser(request)
+      if (!(await isAdminInDb(user))) throw new AuthError("Admin access required", 403)
+    } catch (err) {
+      return authErrorResponse(err)
+    }
+    return handler(request, context, user)
+  }
+}

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 import { getXeroPayments, getXeroStatus } from '@/lib/xero-finance'
 
 export const dynamic = 'force-dynamic'
 
 // Payments made/received in a date range. Defaults to the last 90 days.
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAdminDb(async (request: NextRequest) => {
   try {
     const params = request.nextUrl.searchParams
     const now = new Date()
@@ -25,6 +25,6 @@ export const GET = withAuth(async (request: NextRequest) => {
       count: payments.length,
     })
   } catch (e) {
-    return NextResponse.json({ payments: [], total: 0, count: 0, error: String(e) }, { status: 500 })
+    return NextResponse.json({ payments: [], total: 0, count: 0, error: "An error occurred" }, { status: 500 })
   }
 })

@@ -47,6 +47,6 @@ export const GET = withAuth(async (
 
     return NextResponse.json({ shots });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { withAuth } from '@/lib/auth'
+import { withAdminDb } from '@/lib/auth'
 import { overageStatusFor } from '@/lib/finance-projects'
 
 export const dynamic = 'force-dynamic'
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 // Approve a supplier invoice. If the invoice is coded to a project, checks
 // whether paying it would push that project's costs over budget — returns
 // 409 with the overage details unless { confirmOverage: true } is sent.
-export const PATCH = withAuth(async (request: NextRequest, context, user) => {
+export const PATCH = withAdminDb(async (request: NextRequest, context, user) => {
   try {
     const params = context.params ? await context.params : {}
     const id = params.id
@@ -77,6 +77,6 @@ export const PATCH = withAuth(async (request: NextRequest, context, user) => {
 
     return NextResponse.json({ invoice: updated, overage })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
   }
 })

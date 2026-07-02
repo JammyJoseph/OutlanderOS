@@ -39,11 +39,25 @@ export const PATCH = withAdmin(async (
 
     const data: Record<string, unknown> = {};
     if (typeof body.name === "string" && body.name.trim()) data.name = body.name.trim();
-    if (typeof body.email === "string" && body.email.trim())
-      data.email = body.email.trim().toLowerCase();
+    if (typeof body.email === "string" && body.email.trim()) {
+      const email = body.email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+      }
+      data.email = email;
+    }
     if (typeof body.department === "string" || body.department === null)
       data.department = body.department ? String(body.department).trim() || null : null;
-    if (body.role === "ADMIN" || body.role === "MEMBER") data.role = body.role;
+    if (body.role === "ADMIN" || body.role === "MEMBER") {
+      // Guard against an admin demoting themselves and locking admin access.
+      if (body.role !== "ADMIN" && id === me.userId) {
+        return NextResponse.json(
+          { error: "You can't remove your own admin role" },
+          { status: 400 }
+        );
+      }
+      data.role = body.role;
+    }
     if (Array.isArray(body.teams)) data.teams = cleanTeams(body.teams);
     if (typeof body.isActive === "boolean") {
       // Guard against an admin locking themselves out.

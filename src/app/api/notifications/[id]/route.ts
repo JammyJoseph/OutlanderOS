@@ -27,7 +27,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     })
     return NextResponse.json({ notification })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
   }
 }
 
@@ -43,6 +43,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await prisma.notification.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 })
   }
 }

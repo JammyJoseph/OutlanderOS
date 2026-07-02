@@ -54,6 +54,6 @@ export const GET = withAuth(async (_request: NextRequest) => {
 
     return NextResponse.json({ deals });
   } catch (e) {
-    return NextResponse.json({ deals: [], error: String(e) }, { status: 500 });
+    return NextResponse.json({ deals: [], error: "An error occurred" }, { status: 500 });
   }
 });

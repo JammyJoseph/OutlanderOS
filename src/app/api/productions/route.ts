@@ -29,7 +29,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     });
     return NextResponse.json({ productions });
   } catch (e) {
-    return NextResponse.json({ productions: [], error: String(e) });
+    return NextResponse.json({ productions: [], error: "An error occurred" });
   }
 });
 
@@ -70,6 +70,6 @@ export const POST = withAuth(async (request: NextRequest) => {
     });
     return NextResponse.json({ production });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });

@@ -51,7 +51,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     });
     return NextResponse.json({ issues });
   } catch (e) {
-    return NextResponse.json({ issues: [], plan: null, error: String(e) }, { status: 500 });
+    return NextResponse.json({ issues: [], plan: null, error: "An error occurred" }, { status: 500 });
   }
 });
 
@@ -102,7 +102,7 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
       }
       return NextResponse.json({ ok: true, created });
     } catch (e) {
-      return NextResponse.json({ error: String(e) }, { status: 500 });
+      return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
   }
 
@@ -165,6 +165,6 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
     });
     return NextResponse.json({ plan });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });

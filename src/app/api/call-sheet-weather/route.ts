@@ -101,6 +101,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ forecast, hourly, hourlyDate: targetDay, fetchedAt: new Date().toISOString() });
   } catch (e) {
-    return NextResponse.json({ error: String(e), forecast: [], hourly: [], unavailable: true }, { status: 200 });
+    return NextResponse.json({ error: "An error occurred", forecast: [], hourly: [], unavailable: true }, { status: 200 });
   }
 }
