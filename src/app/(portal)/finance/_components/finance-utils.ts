@@ -193,8 +193,10 @@ export interface OverviewResponse {
 
 export interface ProjectSummary {
   id: string
+  source: 'commercial' | 'production'
   campaignName: string
   clientName: string
+  clientId: string | null
   status: string
   productionId: string | null
   deal: { id: string; title: string; stage: string } | null
@@ -202,18 +204,76 @@ export interface ProjectSummary {
   targetMarginPercent: number | null
   budgetLocked: boolean
   totalBudget: number
+  budgetExVat: number
   productionBudget: number
   mediaBudget: number
   internalBudget: number
   otherBudget: number
   totalCosts: number
+  productionActuals: number
+  spent: number
   totalPaid: number
   remaining: number
   spendPct: number | null
   overageStatus: string
   pendingInvoices: number
+  shootDate: string | null
   archived: boolean
   updatedAt: string
+}
+
+// Per-client financial rollup, computed from the project summaries.
+export interface ClientRollup {
+  clientId: string | null
+  clientName: string
+  projects: ProjectSummary[]
+  dealCount: number
+  totalBudget: number // exc. VAT
+  totalSpent: number
+  totalOutstanding: number // budget − spent (remaining commitment)
+  mediaSpend: number
+  productionCost: number
+  margin: number
+  updatedAt: string // most recent project update
+}
+
+// Groups project summaries by client for the Client View. Sorted by most
+// recently active client first; projects within a client stay most-recent-first.
+export function rollupByClient(projects: ProjectSummary[]): ClientRollup[] {
+  const map = new Map<string, ClientRollup>()
+  for (const p of projects) {
+    const key = p.clientId ?? p.clientName.trim().toLowerCase()
+    let r = map.get(key)
+    if (!r) {
+      r = {
+        clientId: p.clientId,
+        clientName: p.clientName,
+        projects: [],
+        dealCount: 0,
+        totalBudget: 0,
+        totalSpent: 0,
+        totalOutstanding: 0,
+        mediaSpend: 0,
+        productionCost: 0,
+        margin: 0,
+        updatedAt: p.updatedAt,
+      }
+      map.set(key, r)
+    }
+    r.projects.push(p)
+    r.dealCount += 1
+    r.totalBudget += p.budgetExVat
+    r.totalSpent += p.spent
+    r.mediaSpend += p.mediaBudget
+    r.productionCost += p.productionActuals > 0 ? p.productionActuals : p.productionBudget
+    r.margin += p.targetMarginAmount ?? 0
+    if (p.updatedAt > r.updatedAt) r.updatedAt = p.updatedAt
+  }
+  for (const r of map.values()) {
+    r.totalOutstanding = r.totalBudget - r.totalSpent
+    r.projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  }
+  return Array.from(map.values()).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 }
 
 export interface ProjectsResponse {

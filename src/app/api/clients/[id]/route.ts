@@ -20,6 +20,16 @@ export const GET = withAuth(async (
             assets: {
               select: { id: true, fileName: true, fileUrl: true, fileType: true },
             },
+            production: {
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                budgetTotal: true,
+                productionBudgetStatus: true,
+                shootDates: true,
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
         },

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
-import { AlertTriangle, ArrowLeft, ArrowUpRight, Briefcase, Clapperboard, FolderOpen, Lock, TrendingDown, TrendingUp } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowUpRight, Briefcase, Clapperboard, FolderOpen, LayoutGrid, List, Lock, TrendingDown, TrendingUp } from 'lucide-react'
 import { StatusBadge, ErrorBox, TabSkeleton, EmptyState, BudgetBar } from './FinanceBits'
 import {
   useFinanceFetch,
@@ -648,6 +648,94 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
   )
 }
 
+// Compact line-by-line list, grouped by client (all Puma projects together,
+// all Nike together…). Clients are ordered by their most recently updated
+// project so a freshly submitted budget's client floats to the top.
+function ClientGroupedList({ projects, onOpen }: { projects: ProjectSummary[]; onOpen: (p: ProjectSummary) => void }) {
+  const groups = useMemo(() => {
+    const map = new Map<string, { clientName: string; rows: ProjectSummary[]; latest: string }>()
+    for (const p of projects) {
+      const key = p.clientId ?? p.clientName.trim().toLowerCase()
+      const g = map.get(key) ?? { clientName: p.clientName, rows: [], latest: p.updatedAt }
+      g.rows.push(p)
+      if (p.updatedAt > g.latest) g.latest = p.updatedAt
+      map.set(key, g)
+    }
+    const arr = Array.from(map.values())
+    arr.forEach((g) => g.rows.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)))
+    return arr.sort((a, b) => b.latest.localeCompare(a.latest))
+  }, [projects])
+
+  return (
+    <div className="space-y-4">
+      {groups.map((g) => {
+        const clientBudget = g.rows.reduce((s, p) => s + p.budgetExVat, 0)
+        const clientSpent = g.rows.reduce((s, p) => s + p.spent, 0)
+        return (
+          <div key={g.clientName} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/70 px-4 py-2.5">
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-700">
+                {g.clientName} <span className="ml-1 font-medium normal-case tracking-normal text-gray-400">· {g.rows.length} project{g.rows.length === 1 ? '' : 's'}</span>
+              </p>
+              <p className="font-mono text-[11px] text-gray-500">
+                {fmtGBP(clientBudget)} budget · <span className={clientSpent > clientBudget ? 'text-red-500' : 'text-gray-700'}>{fmtGBP(clientSpent)} spent</span>
+              </p>
+            </div>
+            {/* Column headers */}
+            <div className="hidden grid-cols-12 gap-2 border-b border-gray-100 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 sm:grid">
+              <div className="col-span-4">Project</div>
+              <div className="col-span-2 text-right">Budget (exc. VAT)</div>
+              <div className="col-span-2 text-right">Spent</div>
+              <div className="col-span-1 text-right">Variance</div>
+              <div className="col-span-2">Status</div>
+              <div className="col-span-1 text-right">Updated</div>
+            </div>
+            <ul className="divide-y divide-gray-50">
+              {g.rows.map((p) => {
+                const variance = p.budgetExVat - p.spent
+                return (
+                  <li
+                    key={p.id}
+                    onClick={() => onOpen(p)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') onOpen(p)
+                    }}
+                    className={`grid cursor-pointer grid-cols-2 gap-2 px-4 py-2.5 text-xs transition-colors hover:bg-gray-50/70 sm:grid-cols-12 ${p.archived ? 'opacity-60' : ''}`}
+                  >
+                    <div className="col-span-2 min-w-0 sm:col-span-4">
+                      <p className="flex items-center gap-1.5 truncate font-semibold text-gray-900">
+                        {p.source === 'production' && <Clapperboard className="h-3 w-3 shrink-0 text-[#ff4444]" />}
+                        <span className="truncate">{p.campaignName}</span>
+                        {p.archived && <span className="shrink-0 rounded-full bg-gray-200 px-1.5 py-0.5 text-[9px] font-semibold text-gray-500">Archived</span>}
+                      </p>
+                      {p.shootDate && <p className="text-[10px] text-gray-400">Shoot {fmtDate(p.shootDate)}</p>}
+                    </div>
+                    <div className="text-right font-mono text-gray-900 sm:col-span-2">
+                      <span className="text-gray-400 sm:hidden">Budget </span>{fmtGBP(p.budgetExVat)}
+                    </div>
+                    <div className={`text-right font-mono sm:col-span-2 ${p.spent > p.budgetExVat ? 'text-red-500' : 'text-gray-700'}`}>
+                      <span className="text-gray-400 sm:hidden">Spent </span>{fmtGBP(p.spent)}
+                    </div>
+                    <div className={`text-right font-mono sm:col-span-1 ${variance < 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                      {variance < 0 ? '−' : ''}{fmtGBP(Math.abs(variance))}
+                    </div>
+                    <div className="sm:col-span-2">
+                      <StatusBadge status={displayStatus(p.status)} rawKey={p.status} map={BUDGET_STATUS_STYLES} />
+                    </div>
+                    <div className="text-right font-mono text-[10px] text-gray-400 sm:col-span-1">{fmtDate(p.updatedAt)}</div>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function ProjectFoldersTab() {
   const router = useRouter()
   const params = useSearchParams()
@@ -655,6 +743,7 @@ export default function ProjectFoldersTab() {
   const res = useFinanceFetch<ProjectsResponse>('/api/finance/projects')
   const [filter, setFilter] = useState('ALL')
   const [showArchived, setShowArchived] = useState(false)
+  const [view, setView] = useState<'cards' | 'list'>('list')
 
   const projects = useMemo(() => {
     // Archived projects (deal archived in Commercial) are hidden by default —
@@ -664,6 +753,16 @@ export default function ProjectFoldersTab() {
     if (filter === 'ATTENTION') return all.filter((p) => p.overageStatus === 'OVERAGE' || p.overageStatus === 'WARNING')
     return all.filter((p) => p.status === filter)
   }, [res.data, filter, showArchived])
+
+  // Standalone productions don't have a finance detail folder — open them in
+  // the Production portal. Commercial folders open the finance detail view.
+  function openProject(p: ProjectSummary) {
+    if (p.source === 'production' && p.productionId) {
+      router.push(`/production/${p.productionId}`)
+    } else {
+      router.push(`/finance?tab=projects&project=${p.id}`)
+    }
+  }
 
   function open(id: string | null) {
     router.push(id ? `/finance?tab=projects&project=${id}` : '/finance?tab=projects')
@@ -704,15 +803,32 @@ export default function ProjectFoldersTab() {
             {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
           </button>
         )}
+        {/* Cards ⇄ compact list, grouped by client */}
+        <div className="ml-auto flex items-center rounded-lg border border-gray-200 bg-white p-0.5">
+          {([
+            { key: 'list', label: 'List', Icon: List },
+            { key: 'cards', label: 'Cards', Icon: LayoutGrid },
+          ] as const).map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${view === key ? 'bg-[#ffd700] text-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
+            >
+              <Icon className="h-3 w-3" /> {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {projects.length === 0 ? (
-        <EmptyState message={all.length === 0 ? 'No projects with financial activity yet — budgets created in the Commercial portal appear here.' : 'No projects match this filter.'} />
+        <EmptyState message={all.length === 0 ? 'No projects with financial activity yet — budgets from Commercial and production budgets appear here.' : 'No projects match this filter.'} />
+      ) : view === 'list' ? (
+        <ClientGroupedList projects={projects} onOpen={openProject} />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
             <div key={p.id} className={p.archived ? 'opacity-60 grayscale' : undefined}>
-              <ProjectCard p={p} onOpen={() => open(p.id)} />
+              <ProjectCard p={p} onOpen={() => openProject(p)} />
             </div>
           ))}
         </div>
@@ -721,7 +837,7 @@ export default function ProjectFoldersTab() {
       {all.length > 0 && (
         <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
           <FolderOpen className="h-3.5 w-3.5" />
-          {all.length} project{all.length === 1 ? '' : 's'} · {fmtGBP(res.data?.totalBudget)} total budget · {fmtGBP(res.data?.totalCosts)} costs logged
+          {all.length} project{all.length === 1 ? '' : 's'} · {fmtGBP(res.data?.totalBudget)} total budget (exc. VAT) · {fmtGBP(res.data?.totalCosts)} spent
         </p>
       )}
     </div>

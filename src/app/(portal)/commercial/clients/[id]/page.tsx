@@ -16,6 +16,7 @@ import {
   Info,
   Archive as ArchiveIcon,
   RotateCcw,
+  Clapperboard,
 } from "lucide-react";
 
 type CampaignStatus =
@@ -46,6 +47,15 @@ interface AssetSummary {
   fileType: string;
 }
 
+interface ProductionSummary {
+  id: string;
+  title: string;
+  status: string;
+  budgetTotal?: number | null;
+  productionBudgetStatus?: string | null;
+  shootDates: string[];
+}
+
 interface Campaign {
   id: string;
   title: string;
@@ -60,6 +70,7 @@ interface Campaign {
   notes?: string;
   mediaPlans: MediaPlanSummary[];
   assets: AssetSummary[];
+  production?: ProductionSummary | null;
 }
 
 interface ClientDetail {
@@ -388,6 +399,20 @@ export default function ClientDetailPage() {
                       <Calendar className="h-3 w-3" />
                       Content Tracker
                     </Link>
+
+                    {/* Production project (if the deal has been kicked into production) */}
+                    {campaign.production && (
+                      <Link
+                        href={`/production/${campaign.production.id}`}
+                        className="flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-100 transition-colors"
+                      >
+                        <Clapperboard className="h-3 w-3" />
+                        Production
+                        {campaign.production.budgetTotal != null && (
+                          <span className="text-red-400">· {fmt(campaign.production.budgetTotal, campaign.currency)}</span>
+                        )}
+                      </Link>
+                    )}
 
                     {/* Assets */}
                     {campaign.assets.length > 0 && (
