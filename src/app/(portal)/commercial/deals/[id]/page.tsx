@@ -972,8 +972,8 @@ function TypePills({
           </button>
           {adding && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setAdding(false)} />
-              <div className="absolute z-20 mt-1.5 w-52 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg p-1.5">
+              <div className="fixed inset-0 z-40" onClick={() => setAdding(false)} />
+              <div className="absolute z-50 mt-1.5 w-52 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg p-1.5">
                 {remaining.map((t) => {
                   const style = TYPE_STYLES[t];
                   return (
