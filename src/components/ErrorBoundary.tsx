@@ -41,15 +41,15 @@ export function ErrorFallback({
 }) {
   return (
     <div className="flex min-h-[60vh] w-full items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center ring-1 ring-gray-200 shadow-sm">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
-          <WarningIcon className="h-6 w-6 text-amber-500" />
+      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 p-8 text-center ring-1 ring-gray-200 dark:ring-gray-700 shadow-sm">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30">
+          <WarningIcon className="h-6 w-6 text-amber-500 dark:text-amber-400" />
         </div>
-        <h2 className="mt-5 text-lg font-semibold text-gray-900">{title}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-gray-500">{message}</p>
+        <h2 className="mt-5 text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{message}</p>
 
         {isDev && error?.message && (
-          <pre className="mt-4 max-h-32 overflow-auto rounded-lg bg-gray-50 p-3 text-left text-xs text-gray-600 ring-1 ring-gray-200">
+          <pre className="mt-4 max-h-32 overflow-auto rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-left text-xs text-gray-600 dark:text-gray-400 ring-1 ring-gray-200 dark:ring-gray-700">
             {error.message}
             {error.digest ? `\n\ndigest: ${error.digest}` : ''}
           </pre>
@@ -67,7 +67,7 @@ export function ErrorFallback({
           )}
           <Link
             href="/"
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             Go to dashboard
           </Link>

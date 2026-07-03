@@ -25,9 +25,9 @@ import type { SectionKey } from "./types";
 import { allSectionsVisible } from "./types";
 
 const STATUS_BADGES: Record<CallSheetStatus, { cls: string; label: string }> = {
-  DRAFT: { cls: "bg-gray-100 text-gray-500", label: "Draft" },
-  SAVED: { cls: "bg-blue-100 text-blue-700", label: "Saved" },
-  PUBLISHED: { cls: "bg-emerald-100 text-emerald-700", label: "Published" },
+  DRAFT: { cls: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400", label: "Draft" },
+  SAVED: { cls: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300", label: "Saved" },
+  PUBLISHED: { cls: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300", label: "Published" },
 };
 
 export default function CallSheetPage() {
@@ -375,7 +375,7 @@ export default function CallSheetPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-card flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-gray-400" />
+        <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
       </div>
     );
   }
@@ -384,7 +384,7 @@ export default function CallSheetPage() {
     return (
       <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 mb-4">Call sheet not found.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">Call sheet not found.</p>
           <Link
             href={`/production/${id}`}
             className="text-[#ff4444] text-sm font-medium hover:underline"
@@ -418,26 +418,26 @@ export default function CallSheetPage() {
         <div className="flex items-center justify-between mb-6 print:hidden">
           <Link
             href={`/production/${id}`}
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             <ArrowLeft size={15} />
             {sheet.production.title}
           </Link>
           <div className="flex items-center gap-2">
             {saved && (
-              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+              <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                 <Check size={13} /> Saved
               </span>
             )}
             {!saved && autoSavedAt && (
-              <span className="text-xs text-gray-400">Auto-saved {autoSavedAt}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">Auto-saved {autoSavedAt}</span>
             )}
             {sheet.shareToken && (
               <button
                 onClick={copyShareLink}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
-                {copied ? <Check size={13} className="text-emerald-600" /> : <Link2 size={13} />}
+                {copied ? <Check size={13} className="text-emerald-600 dark:text-emerald-400" /> : <Link2 size={13} />}
                 {copied ? "Copied!" : "Copy share link"}
               </button>
             )}
@@ -458,21 +458,21 @@ export default function CallSheetPage() {
             value={shootTitle}
             onChange={(e) => setShootTitle(e.target.value)}
             placeholder="Shoot Title"
-            className="text-2xl font-semibold text-gray-900 bg-transparent border-none outline-none w-full placeholder-gray-300 tracking-tight"
+            className="text-2xl font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none w-full placeholder-gray-300 dark:placeholder-gray-600 tracking-tight"
           />
           <div className="flex items-center gap-3 mt-1">
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
               {badge.label}
             </span>
             {sheet.production.campaign?.client?.name && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-400 dark:text-gray-500">
                 {sheet.production.campaign.client.name}
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit print:hidden">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6 w-fit print:hidden">
           <TabButton active={activeTab === "editor"} onClick={() => setActiveTab("editor")}>
             <Edit2 size={13} /> Editor
           </TabButton>
@@ -515,16 +515,16 @@ export default function CallSheetPage() {
         ) : (
           <div>
             <CallSheetDocument data={viewData} sections={docSections} redacted={docRedacted} />
-            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-100 print:hidden">
+            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 print:hidden">
               <button
                 onClick={() => setActiveTab("editor")}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <Edit2 size={14} /> Back to Editor
               </button>
               <button
                 onClick={() => setPdfOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <FileDown size={14} /> Download PDF
               </button>
@@ -558,7 +558,7 @@ function TabButton({
     <button
       onClick={onClick}
       className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-        active ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+        active ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
       }`}
     >
       <span className="flex items-center gap-1.5">{children}</span>

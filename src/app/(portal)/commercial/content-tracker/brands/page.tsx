@@ -35,23 +35,23 @@ export default function BrandPerformancePage() {
         <div>
           <Link
             href="/commercial/content-tracker"
-            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900"
+            className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Content Tracker
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold text-gray-900">Brand Performance</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">Brand Performance</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             How brands are performing across your tagged content.
           </p>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex h-64 items-center justify-center text-gray-400">
+        <div className="flex h-64 items-center justify-center text-gray-400 dark:text-gray-500">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : brands.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-gray-500">
+        <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
           <p className="text-sm">No brands tagged yet.</p>
           <p className="mt-2 text-xs">
             Tag posts with brand names from the Content Tracker to see them here.
@@ -75,7 +75,7 @@ function BrandCard({ brand, onClick }: { brand: BrandSummary; onClick: () => voi
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left transition-shadow hover:shadow-md"
+      className="flex flex-col items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 text-left transition-shadow hover:shadow-md"
     >
       <div
         className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium ${c.bg} ${c.text} ${c.border}`}
@@ -106,8 +106,8 @@ function Stat({
 }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
-      <p className="mt-0.5 inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
+      <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="mt-0.5 inline-flex items-center gap-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
         {icon}
         {value}
       </p>

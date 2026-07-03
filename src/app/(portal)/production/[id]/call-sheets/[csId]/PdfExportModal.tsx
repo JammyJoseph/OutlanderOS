@@ -24,25 +24,25 @@ export function PdfExportModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-          <h3 className="text-sm font-bold text-gray-800">Export PDF</h3>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Export PDF</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500">
             <X size={16} />
           </button>
         </div>
 
         <div className="px-5 py-3 overflow-y-auto">
-          <p className="text-xs text-gray-500 mb-3">Choose the sections to include.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Choose the sections to include.</p>
           <div className="space-y-1">
             {ALL_SECTIONS.map((s) => (
               <Row key={s.key} label={s.label} checked={sections[s.key]} onToggle={() => toggle(s.key)} />
             ))}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-gray-100">
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
             <Row
               label="Contact Details (phone / email)"
               checked={includeContacts}
@@ -52,10 +52,10 @@ export function PdfExportModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-800">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+            className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             Cancel
           </button>
@@ -86,18 +86,18 @@ function Row({
     <button
       type="button"
       onClick={onToggle}
-      className="flex items-start gap-2.5 w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50"
+      className="flex items-start gap-2.5 w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
     >
       <span
         className={`mt-0.5 shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-          checked ? "bg-[#ff4444] border-[#ff4444]" : "border-gray-300"
+          checked ? "bg-[#ff4444] border-[#ff4444]" : "border-gray-300 dark:border-gray-600"
         }`}
       >
         {checked && <Check size={11} className="text-white" />}
       </span>
       <span>
-        <span className="text-sm text-gray-700">{label}</span>
-        {hint && <span className="block text-[11px] text-gray-400">{hint}</span>}
+        <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+        {hint && <span className="block text-[11px] text-gray-400 dark:text-gray-500">{hint}</span>}
       </span>
     </button>
   );

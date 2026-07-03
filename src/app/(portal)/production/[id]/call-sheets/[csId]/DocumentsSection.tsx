@@ -66,14 +66,14 @@ export function DocumentsDoc({ documents }: { documents: Attachment[] }) {
       {valid.map((doc, i) => {
         const inner = (
           <>
-            <FileText size={15} className="text-gray-400 flex-shrink-0" />
+            <FileText size={15} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#ff4444]/10 text-[#ff4444] flex-shrink-0">
               {DOC_TYPE_LABELS[doc.type]}
             </span>
-            <span className="text-sm text-gray-800 flex-1 truncate">
+            <span className="text-sm text-gray-800 dark:text-gray-200 flex-1 truncate">
               {doc.title || doc.url}
             </span>
-            {doc.url && <ExternalLink size={13} className="text-gray-400 flex-shrink-0" />}
+            {doc.url && <ExternalLink size={13} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />}
           </>
         );
         return doc.url ? (
@@ -82,14 +82,14 @@ export function DocumentsDoc({ documents }: { documents: Attachment[] }) {
             href={doc.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2 hover:border-[#ff4444]/50 hover:bg-[#ff4444]/5 transition-colors"
+            className="flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-gray-800 px-3 py-2 hover:border-[#ff4444]/50 hover:bg-[#ff4444]/5 transition-colors"
           >
             {inner}
           </a>
         ) : (
           <div
             key={i}
-            className="flex items-center gap-2.5 rounded-xl border border-gray-100 px-3 py-2"
+            className="flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-gray-800 px-3 py-2"
           >
             {inner}
           </div>

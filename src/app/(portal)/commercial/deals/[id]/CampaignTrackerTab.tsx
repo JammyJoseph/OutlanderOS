@@ -30,10 +30,10 @@ import type { Deliverable } from "./DeliverablesTab";
 
 // Schedule status drives the deliverable dot colours.
 const SCHEDULE_STATUSES = [
-  { key: "PENDING", label: "Pending", dot: "bg-gray-400", chip: "bg-gray-100 text-gray-600" },
-  { key: "SCHEDULED", label: "Scheduled", dot: "bg-sky-400", chip: "bg-sky-100 text-sky-700" },
-  { key: "LIVE", label: "Live", dot: "bg-emerald-400", chip: "bg-emerald-100 text-emerald-700" },
-  { key: "LATE", label: "Late", dot: "bg-red-400", chip: "bg-red-100 text-red-700" },
+  { key: "PENDING", label: "Pending", dot: "bg-gray-400", chip: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400" },
+  { key: "SCHEDULED", label: "Scheduled", dot: "bg-sky-400", chip: "bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300" },
+  { key: "LIVE", label: "Live", dot: "bg-emerald-400", chip: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300" },
+  { key: "LATE", label: "Late", dot: "bg-red-400", chip: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300" },
 ];
 
 function schedStyle(s: string) {
@@ -126,14 +126,14 @@ export default function CampaignTrackerTab({
       push(parseISO(d.dueDate), { kind: "deliverable", label: d.title || d.type, dot: st.dot, chip: st.chip });
     }
     for (const sd of production?.shootDates ?? []) {
-      push(parseISO(sd), { kind: "shoot", label: "Shoot day", dot: "bg-red-500", chip: "bg-red-100 text-red-700" });
+      push(parseISO(sd), { kind: "shoot", label: "Shoot day", dot: "bg-red-500", chip: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300" });
     }
     if (dueDate) {
       push(parseISO(dueDate), {
         kind: "payment",
         label: "Payment due",
         dot: "bg-blue-500",
-        chip: "bg-blue-100 text-blue-700",
+        chip: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
       });
     }
     return map;
@@ -189,18 +189,18 @@ export default function CampaignTrackerTab({
     <div className="space-y-5 max-w-4xl">
       {/* Bespoke milestones */}
       {bespoke && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <Film size={15} className="text-red-600" />
               Production Milestones
             </h3>
             {production ? (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-[11px] font-medium text-red-600">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/30 text-[11px] font-medium text-red-600 dark:text-red-400">
                 {PRODUCTION_STATUS_LABELS[production.status] ?? production.status}
               </span>
             ) : (
-              <span className="text-[11px] text-gray-400">Not yet cleared for production</span>
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">Not yet cleared for production</span>
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -208,14 +208,14 @@ export default function CampaignTrackerTab({
               <div
                 key={m.key}
                 className={`rounded-xl border px-3 py-3 ${
-                  m.done ? "border-emerald-100 bg-emerald-50/50" : "border-gray-100 bg-gray-50/60"
+                  m.done ? "border-emerald-100 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/30" : "border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/60"
                 }`}
               >
-                <div className={`flex items-center gap-1.5 text-xs font-semibold ${m.done ? "text-emerald-700" : "text-gray-600"}`}>
+                <div className={`flex items-center gap-1.5 text-xs font-semibold ${m.done ? "text-emerald-700 dark:text-emerald-300" : "text-gray-600 dark:text-gray-400"}`}>
                   {m.done ? <CheckCircle2 size={14} /> : m.icon}
                   {m.label}
                 </div>
-                <p className="text-[11px] text-gray-400 mt-1 leading-snug">{m.detail}</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 leading-snug">{m.detail}</p>
               </div>
             ))}
           </div>
@@ -224,22 +224,22 @@ export default function CampaignTrackerTab({
 
       {/* Link banking — supplied/print go-live tracking */}
       {!bespoke && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <LinkIcon size={15} className="text-[var(--portal-commercial)]" />
               Link Banking
             </h3>
-            <span className="text-sm font-semibold text-gray-700">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               {liveCount}/{items.length} live
             </span>
           </div>
-          <p className="text-xs text-gray-400 mb-4">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
             Paste the live URL for each post once it goes out. Status colours track go-live.
           </p>
 
           {items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-200 py-8 text-center text-sm text-gray-400">
+            <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
               No deliverables yet — add them on the Deliverables tab and they appear here.
             </div>
           ) : (
@@ -249,12 +249,12 @@ export default function CampaignTrackerTab({
                 return (
                   <div
                     key={d.id}
-                    className="flex items-center gap-3 rounded-xl border border-gray-100 px-4 py-3 hover:bg-gray-50/60 transition-colors"
+                    className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 px-4 py-3 hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{d.title || d.type}</p>
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{d.title || d.type}</p>
                       {d.dueDate && (
-                        <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
                           <CalendarDays size={11} /> {format(parseISO(d.dueDate), "d MMM yyyy")}
                         </p>
                       )}
@@ -280,19 +280,19 @@ export default function CampaignTrackerTab({
                         }
                       }}
                       placeholder="Paste live link…"
-                      className="w-44 px-3 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                      className="w-44 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
                     />
                     {d.postedUrl ? (
                       <a
                         href={d.postedUrl.startsWith("http") ? d.postedUrl : `https://${d.postedUrl}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 shrink-0"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 shrink-0"
                       >
                         <CheckCircle2 size={12} /> Live <ExternalLink size={11} />
                       </a>
                     ) : (
-                      <span className="text-[11px] text-gray-300 shrink-0 w-12 text-center">—</span>
+                      <span className="text-[11px] text-gray-300 dark:text-gray-600 shrink-0 w-12 text-center">—</span>
                     )}
                   </div>
                 );
@@ -303,25 +303,25 @@ export default function CampaignTrackerTab({
       )}
 
       {/* Campaign calendar — deliverables, shoots, and payment due date */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <CalendarDays size={15} className="text-[var(--portal-commercial)]" />
             Campaign Calendar
           </h3>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setMonth((m) => subMonths(m, 1))}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="text-sm font-medium text-gray-700 w-32 text-center">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 text-center">
               {format(month, "MMMM yyyy")}
             </span>
             <button
               onClick={() => setMonth((m) => addMonths(m, 1))}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
             >
               <ChevronRight size={16} />
             </button>
@@ -330,23 +330,23 @@ export default function CampaignTrackerTab({
 
         {/* Legend */}
         <div className="flex items-center gap-4 mb-3 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500">
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
             <span className="w-2 h-2 rounded-full bg-red-500" /> Shoot
           </span>
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500">
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400" /> Content live
           </span>
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500">
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
             <span className="w-2 h-2 rounded-full bg-sky-400" /> Scheduled
           </span>
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500">
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
             <Banknote size={12} className="text-blue-500" /> Payment due
           </span>
         </div>
 
         <div className="grid grid-cols-7 gap-1 text-center mb-1">
           {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-            <div key={d} className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 py-1">
+            <div key={d} className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 py-1">
               {d}
             </div>
           ))}
@@ -361,10 +361,10 @@ export default function CampaignTrackerTab({
               <div
                 key={key}
                 className={`min-h-[72px] rounded-lg border p-1.5 ${
-                  inMonth ? "border-gray-100 bg-white" : "border-gray-50 bg-gray-50/50"
+                  inMonth ? "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900" : "border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50"
                 } ${today ? "ring-1 ring-[#ffd700]" : ""}`}
               >
-                <p className={`text-[10px] font-semibold ${inMonth ? "text-gray-500" : "text-gray-300"}`}>
+                <p className={`text-[10px] font-semibold ${inMonth ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-600"}`}>
                   {format(day, "d")}
                 </p>
                 <div className="space-y-1 mt-0.5">
@@ -385,7 +385,7 @@ export default function CampaignTrackerTab({
         </div>
 
         {unscheduled.length > 0 && (
-          <p className="text-[11px] text-gray-400 mt-3">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3">
             {unscheduled.length} deliverable{unscheduled.length === 1 ? "" : "s"} have no due date — set one
             on the Deliverables tab to schedule them.
           </p>

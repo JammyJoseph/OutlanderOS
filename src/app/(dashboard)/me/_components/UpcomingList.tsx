@@ -27,27 +27,27 @@ function formatDate(iso: string): string {
 // Next few dated items across all portals, soonest first.
 export function UpcomingList({ items }: Props) {
   return (
-    <section className="rounded-xl border border-gray-100 bg-white shadow-sm">
-      <div className="border-b border-gray-100 px-4 py-3">
-        <h2 className="text-sm font-bold text-gray-900">Upcoming</h2>
+    <section className="rounded-xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+        <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">Upcoming</h2>
       </div>
       {items.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-gray-400">
+        <p className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
           Nothing on the horizon yet.
         </p>
       ) : (
-        <ul className="divide-y divide-gray-50">
+        <ul className="divide-y divide-gray-50 dark:divide-gray-800">
           {items.slice(0, 3).map((item) => {
             const colors = PORTAL_COLORS[item.portal] ?? PORTAL_COLORS.personal;
             return (
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50"
+                  className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm text-gray-800">{item.title}</div>
-                    <div className="truncate text-xs text-gray-400">
+                    <div className="truncate text-sm text-gray-800 dark:text-gray-200">{item.title}</div>
+                    <div className="truncate text-xs text-gray-400 dark:text-gray-500">
                       {formatDate(item.date)}
                       {item.context ? ` · ${item.context}` : ""}
                     </div>

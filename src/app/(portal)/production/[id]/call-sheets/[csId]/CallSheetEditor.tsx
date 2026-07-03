@@ -57,7 +57,7 @@ export interface EditorProps {
   onSyncDirectory: () => Promise<void>;
 }
 
-const iconCls = "text-gray-400";
+const iconCls = "text-gray-400 dark:text-gray-500";
 
 export function CallSheetEditor(p: EditorProps) {
   const rosterCount = p.crew.length + p.talent.length;
@@ -202,7 +202,7 @@ export function CallSheetEditor(p: EditorProps) {
               value={clientName}
               readOnly
               placeholder="From linked campaign"
-              className={`${inputCls} bg-gray-50 text-gray-500`}
+              className={`${inputCls} bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400`}
             />
           </div>
           <div>
@@ -211,7 +211,7 @@ export function CallSheetEditor(p: EditorProps) {
               type="text"
               value={p.production.title}
               readOnly
-              className={`${inputCls} bg-gray-50 text-gray-500`}
+              className={`${inputCls} bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400`}
             />
           </div>
           <div>
@@ -246,19 +246,19 @@ export function CallSheetEditor(p: EditorProps) {
         </div>
 
         {hasReference && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50 dark:border-gray-800">
             {billingContact && (
-              <div className="rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2.5">
-                <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 px-3.5 py-2.5">
+                <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
                   <ContactIcon size={11} /> Client contact
                 </p>
-                <p className="text-sm font-semibold text-gray-800">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                   {billingContact.name}
                   {billingContact.role ? (
-                    <span className="text-gray-400 font-normal"> · {billingContact.role}</span>
+                    <span className="text-gray-400 dark:text-gray-500 font-normal"> · {billingContact.role}</span>
                   ) : null}
                 </p>
-                <p className="text-[11px] text-gray-500">
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
                   {[billingContact.email, billingContact.phone].filter(Boolean).join(" · ") || "—"}
                 </p>
               </div>
@@ -451,19 +451,19 @@ export function CallSheetEditor(p: EditorProps) {
       {/* 8. Movement Order — stops derived from the ordered locations above */}
       <Section title="Movement Order" icon={<Route size={15} className={iconCls} />}>
         {p.locations.length > 0 && (
-          <div className="mb-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
+          <div className="mb-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 p-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
               Stops ({p.locations.length})
             </p>
             <ol className="space-y-1">
               {p.locations.map((l, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <span className="flex items-center justify-center w-5 h-5 rounded bg-gray-900 text-white text-[10px] font-bold shrink-0 mt-0.5">
                     {i + 1}
                   </span>
                   <span>
                     <span className="font-medium">{l.name || `Location ${i + 1}`}</span>
-                    {l.address ? <span className="text-gray-400"> — {l.address}</span> : null}
+                    {l.address ? <span className="text-gray-400 dark:text-gray-500"> — {l.address}</span> : null}
                   </span>
                 </li>
               ))}
@@ -516,13 +516,13 @@ export function CallSheetEditor(p: EditorProps) {
               }}
               className={`grid grid-cols-[20px_100px_1fr_1fr_32px] gap-2 items-center rounded-lg transition-colors ${
                 dragOverIndex === i && dragIndex !== null && dragIndex !== i
-                  ? "bg-red-50/70 ring-1 ring-[#ff4444]/30"
+                  ? "bg-red-50/70 dark:bg-red-900/30 ring-1 ring-[#ff4444]/30"
                   : dragIndex === i
                   ? "opacity-50"
                   : ""
               }`}
             >
-              <span className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex justify-center">
+              <span className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 flex justify-center">
                 <GripVertical size={14} />
               </span>
               <input
@@ -582,18 +582,18 @@ export function CallSheetEditor(p: EditorProps) {
 
       {/* 12. Conduct Policy (auto-included, read-only) */}
       <Section title="Conduct Policy" icon={<Shield size={15} className={iconCls} />}>
-        <p className="text-xs text-gray-400 mb-2">
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
           Auto-included on every call sheet — not editable.
         </p>
-        <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{CONDUCT_POLICY}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{CONDUCT_POLICY}</p>
       </Section>
 
       {/* 13. Confidentiality Notice (auto-included, read-only) */}
       <Section title="Confidentiality Notice" icon={<Lock size={15} className={iconCls} />}>
-        <p className="text-xs text-gray-400 mb-2">
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
           Auto-included on every call sheet — not editable.
         </p>
-        <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{CONFIDENTIALITY_NOTICE}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{CONFIDENTIALITY_NOTICE}</p>
       </Section>
 
       {/* 14. Unit List (Crew) */}
@@ -604,14 +604,14 @@ export function CallSheetEditor(p: EditorProps) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setPickerOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800"
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             >
               <ContactIcon size={13} /> Import Directory
             </button>
             {(p.production.teamMembers ?? []).length > 0 && (
               <button
                 onClick={importTeam}
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800"
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               >
                 <UserPlus size={13} /> Import Team
               </button>
@@ -625,7 +625,7 @@ export function CallSheetEditor(p: EditorProps) {
               {syncing ? (
                 <RefreshCw size={13} className="animate-spin" />
               ) : synced ? (
-                <Check size={13} className="text-emerald-600" />
+                <Check size={13} className="text-emerald-600 dark:text-emerald-400" />
               ) : (
                 <RefreshCw size={13} />
               )}
@@ -651,7 +651,7 @@ export function CallSheetEditor(p: EditorProps) {
             href="/directory"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-800"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
           >
             <ContactIcon size={12} /> Browse Directory
           </a>
@@ -673,7 +673,7 @@ export function CallSheetEditor(p: EditorProps) {
       <Section title="Equipment" icon={<Aperture size={15} className={iconCls} />}>
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Camera</p>
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Camera</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input
                 type="text"
@@ -699,7 +699,7 @@ export function CallSheetEditor(p: EditorProps) {
             </div>
           </div>
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Lighting</p>
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Lighting</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input
                 type="text"

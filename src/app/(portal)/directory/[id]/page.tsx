@@ -93,9 +93,9 @@ interface ContactDetail {
 }
 
 const CONFIDENCE_STYLE: Record<string, string> = {
-  VERIFIED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
-  LIKELY: "border-amber-500/40 bg-amber-500/10 text-amber-600",
-  UNVERIFIED: "border-border bg-secondary text-gray-500",
+  VERIFIED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  LIKELY: "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  UNVERIFIED: "border-border bg-secondary text-gray-500 dark:text-gray-400",
 };
 const CONFIDENCE_LABEL: Record<string, string> = {
   VERIFIED: "Verified",
@@ -105,9 +105,9 @@ const CONFIDENCE_LABEL: Record<string, string> = {
 
 const cardCls = "rounded-2xl border border-border bg-card p-5";
 const inputCls =
-  "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
+  "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
 const labelCls =
-  "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2";
+  "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2";
 
 function igHandle(raw: string | null): string | null {
   if (!raw) return null;
@@ -142,7 +142,7 @@ function Stars({
             className={
               i <= (rating ?? 0)
                 ? "fill-[#ffd700] text-[#ffd700]"
-                : "text-gray-300 hover:text-gray-400"
+                : "text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500"
             }
           />
         </button>
@@ -200,14 +200,14 @@ export default function ContactDetailPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
-        <Loader2 className="animate-spin text-gray-600" size={24} />
+        <Loader2 className="animate-spin text-gray-600 dark:text-gray-400" size={24} />
       </div>
     );
   }
   if (notFound || !contact) {
     return (
       <div className="px-6 py-20 text-center">
-        <p className="text-sm text-gray-500">This contact could not be found.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">This contact could not be found.</p>
         <Link href="/directory" className="mt-4 inline-block text-sm" style={{ color: ACCENT }}>
           ← Back to directory
         </Link>
@@ -222,7 +222,7 @@ export default function ContactDetailPage({
       <div className="mx-auto max-w-5xl">
         <button
           onClick={() => router.back()}
-          className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         >
           <ArrowLeft size={15} /> Back
         </button>
@@ -242,14 +242,14 @@ export default function ContactDetailPage({
                   className={
                     contact.isFavourite
                       ? "fill-[#ffd700] text-[#ffd700]"
-                      : "text-gray-400 hover:text-[#ffd700]"
+                      : "text-gray-400 dark:text-gray-500 hover:text-[#ffd700]"
                   }
                 />
               </button>
-              <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+              <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
                 {contact.name}
               </h1>
-              <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+              <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                 {contact.category}
               </span>
               {contact.source === "instagram_scan" && contact.confidence && (
@@ -265,7 +265,7 @@ export default function ContactDetailPage({
               )}
             </div>
             {(contact.role || contact.company) && (
-              <p className="mt-1 text-base text-gray-500">
+              <p className="mt-1 text-base text-gray-500 dark:text-gray-400">
                 {[contact.role, contact.company].filter(Boolean).join(" · ")}
               </p>
             )}
@@ -278,11 +278,11 @@ export default function ContactDetailPage({
           <div className="space-y-5 lg:col-span-2">
             {/* Contact info */}
             <div className={cardCls}>
-              <h2 className="mb-4 text-sm font-semibold text-gray-900">Contact details</h2>
+              <h2 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Contact details</h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <InfoRow icon={<Mail size={14} />} label="Email">
                   {contact.email ? (
-                    <a href={`mailto:${contact.email}`} className="hover:text-gray-900">
+                    <a href={`mailto:${contact.email}`} className="hover:text-gray-900 dark:hover:text-gray-100">
                       {contact.email}
                     </a>
                   ) : (
@@ -291,7 +291,7 @@ export default function ContactDetailPage({
                 </InfoRow>
                 <InfoRow icon={<Phone size={14} />} label="Phone">
                   {contact.phone ? (
-                    <a href={`tel:${contact.phone}`} className="hover:text-gray-900">
+                    <a href={`tel:${contact.phone}`} className="hover:text-gray-900 dark:hover:text-gray-100">
                       {contact.phone}
                     </a>
                   ) : (
@@ -310,7 +310,7 @@ export default function ContactDetailPage({
                       href={contact.website.startsWith("http") ? contact.website : `https://${contact.website}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="truncate hover:text-gray-900"
+                      className="truncate hover:text-gray-900 dark:hover:text-gray-100"
                     >
                       {contact.website}
                     </a>
@@ -341,11 +341,11 @@ export default function ContactDetailPage({
 
             {/* Collaboration history */}
             <div className={cardCls}>
-              <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                 <Film size={15} style={{ color: ACCENT }} /> Collaboration history
               </h2>
               {contact.collaborations.length === 0 ? (
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                   No productions on record yet. When {contact.name.split(" ")[0]} is added to a
                   production team or call sheet, it&apos;ll show up here.
                 </p>
@@ -357,12 +357,12 @@ export default function ContactDetailPage({
                         href={`/production/${c.productionId}`}
                         className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2.5 transition-colors hover:border-[var(--ring)]"
                       >
-                        <span className="text-sm text-gray-900">
+                        <span className="text-sm text-gray-900 dark:text-gray-100">
                           Worked with us on{" "}
                           <span className="font-semibold">{c.productionTitle}</span>{" "}
-                          as <span className="text-gray-400">{c.role}</span>
+                          as <span className="text-gray-400 dark:text-gray-500">{c.role}</span>
                         </span>
-                        <ExternalLink size={13} className="text-gray-600" />
+                        <ExternalLink size={13} className="text-gray-600 dark:text-gray-400" />
                       </Link>
                     </li>
                   ))}
@@ -373,10 +373,10 @@ export default function ContactDetailPage({
             {/* Collaboration network (from Instagram credit scans) */}
             {contact.network && contact.network.length > 0 && (
               <div className={cardCls}>
-                <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-gray-900">
+                <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   <NetworkIcon size={15} style={{ color: ACCENT }} /> Network
                 </h2>
-                <p className="mb-3 text-xs text-gray-500">
+                <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
                   Has worked with {contact.network.length} other
                   {contact.network.length === 1 ? "" : "s"}, mapped from scanned post credits.
                 </p>
@@ -384,11 +384,11 @@ export default function ContactDetailPage({
                   {contact.network.map((c) => {
                     const inner = (
                       <>
-                        <Users size={12} className="shrink-0 text-gray-500" />
-                        <span className="font-medium text-gray-700">
+                        <Users size={12} className="shrink-0 text-gray-500 dark:text-gray-400" />
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
                           {c.contactName || `@${c.handle}`}
                         </span>
-                        {c.role && <span className="text-gray-500"> · {c.role}</span>}
+                        {c.role && <span className="text-gray-500 dark:text-gray-400"> · {c.role}</span>}
                         <span
                           className="ml-1 rounded-full px-1.5 text-[10px] font-semibold text-black"
                           style={{ backgroundColor: ACCENT }}
@@ -441,10 +441,10 @@ export default function ContactDetailPage({
                     <Instagram size={22} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
                       Instagram
                     </p>
-                    <p className="truncate text-sm font-semibold text-gray-900">@{handle}</p>
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">@{handle}</p>
                   </div>
                 </div>
                 {/* Embedded profile preview — falls back to the link below if IG blocks it. */}
@@ -470,17 +470,17 @@ export default function ContactDetailPage({
               </div>
             ) : (
               <div className={cardCls}>
-                <p className="flex items-center gap-2 text-sm text-gray-500">
+                <p className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <Instagram size={15} /> No Instagram on file
                 </p>
               </div>
             )}
 
             <div className={cardCls}>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Added
               </p>
-              <p className="mt-1 text-sm text-gray-400">
+              <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">
                 {new Date(contact.createdAt).toLocaleDateString("en-GB", {
                   day: "numeric",
                   month: "long",
@@ -507,17 +507,17 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <span className="mt-0.5 text-gray-600">{icon}</span>
+      <span className="mt-0.5 text-gray-600 dark:text-gray-400">{icon}</span>
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-        <div className="truncate text-sm text-gray-400">{children}</div>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
+        <div className="truncate text-sm text-gray-400 dark:text-gray-500">{children}</div>
       </div>
     </div>
   );
 }
 
 function Muted() {
-  return <span className="text-gray-600">—</span>;
+  return <span className="text-gray-600 dark:text-gray-400">—</span>;
 }
 
 function TagEditor({
@@ -539,17 +539,17 @@ function TagEditor({
   }
   return (
     <div>
-      <h2 className="mb-3 text-sm font-semibold text-gray-900">Tags</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Tags</h2>
       <div className="flex flex-wrap items-center gap-2">
         {tags.map((t) => (
           <span
             key={t}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-gray-600"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-gray-600 dark:text-gray-400"
           >
             {t}
             <button
               onClick={() => onChange(tags.filter((x) => x !== t))}
-              className="text-gray-500 hover:text-red-400"
+              className="text-gray-500 dark:text-gray-400 hover:text-red-400"
             >
               <X size={12} />
             </button>
@@ -566,7 +566,7 @@ function TagEditor({
           }}
           onBlur={add}
           placeholder="Add tag…"
-          className="min-w-[100px] flex-1 rounded-full border border-dashed border-border bg-transparent px-3 py-1 text-xs text-gray-900 placeholder:text-gray-400 focus:border-[var(--ring)] focus:outline-none"
+          className="min-w-[100px] flex-1 rounded-full border border-dashed border-border bg-transparent px-3 py-1 text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[var(--ring)] focus:outline-none"
         />
       </div>
     </div>
@@ -585,7 +585,7 @@ function NotesEditor({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-900">Notes</h2>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notes</h2>
         {dirty && (
           <button
             onClick={() => {
@@ -635,7 +635,7 @@ function PortfolioEditor({
   }
   return (
     <div>
-      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
         <Briefcase size={15} style={{ color: ACCENT }} /> Work &amp; portfolio
       </h2>
       {links.length > 0 && (
@@ -649,14 +649,14 @@ function PortfolioEditor({
                 href={l.url.startsWith("http") ? l.url : `https://${l.url}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 truncate text-sm text-gray-600 hover:text-gray-900"
+                className="inline-flex items-center gap-2 truncate text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
               >
-                <ExternalLink size={13} className="shrink-0 text-gray-600" />
+                <ExternalLink size={13} className="shrink-0 text-gray-600 dark:text-gray-400" />
                 <span className="truncate">{l.title}</span>
               </a>
               <button
                 onClick={() => onChange(links.filter((_, idx) => idx !== i))}
-                className="ml-2 shrink-0 text-gray-600 hover:text-red-400"
+                className="ml-2 shrink-0 text-gray-600 dark:text-gray-400 hover:text-red-400"
               >
                 <Trash2 size={13} />
               </button>

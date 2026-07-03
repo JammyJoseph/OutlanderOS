@@ -48,14 +48,10 @@ export default function ChangePasswordPage() {
   }
 
   const inputCls =
-    "w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#ffd700] focus:border-transparent transition-all";
+    "w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#ffd700] focus:border-transparent transition-all";
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#05060a] p-4">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_20%,#10131f_0%,#05060a_55%,#020308_100%)]"
-      />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-900 p-4">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-32 right-1/4 h-[420px] w-[420px] rounded-full bg-[#ffd700]/8 blur-3xl"
@@ -66,26 +62,26 @@ export default function ChangePasswordPage() {
           <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#ffd700]/15 ring-1 ring-[#ffd700]/30">
             <ShieldCheck className="h-6 w-6 text-[#ffd700]" />
           </span>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-400">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
             Outlander Magazine
           </p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white">
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
             Welcome to Outlander<span className="text-[#ffd700]">OS</span>
           </h1>
-          <p className="mt-2 text-sm text-gray-400">Please set your new password to get started.</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Please set your new password to get started.</p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 rounded-2xl border border-[#2a2a2a] bg-[#0e1018]/80 p-6 shadow-2xl shadow-black/50 backdrop-blur-md"
+          className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-xl"
         >
           {error && (
-            <div className="rounded-lg border border-[#ff6b6b]/20 bg-[#ff6b6b]/10 px-3 py-2 text-sm text-[#ff6b6b]">
+            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-3 py-2 text-sm text-red-700 dark:text-red-300">
               {error}
             </div>
           )}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-300">Current password</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Current password</label>
             <input
               type="password"
               value={currentPassword}
@@ -96,7 +92,7 @@ export default function ChangePasswordPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-300">New password</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">New password</label>
             <input
               type="password"
               value={newPassword}
@@ -107,7 +103,7 @@ export default function ChangePasswordPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-300">Confirm new password</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm new password</label>
             <input
               type="password"
               value={confirm}
@@ -126,7 +122,7 @@ export default function ChangePasswordPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-[11px] text-gray-500">
+        <p className="mt-6 text-center text-[11px] text-gray-500 dark:text-gray-400">
           Internal operating system · Outlander Magazine
         </p>
       </div>

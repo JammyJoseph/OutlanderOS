@@ -25,12 +25,12 @@ export default function BusinessPlanPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
           <FileText size={20} className="text-[#ffd700]" />
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Business Plan</h1>
-            <p className="text-xs text-gray-500">Outlander Magazine — Strategic Plan</p>
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Business Plan</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Outlander Magazine — Strategic Plan</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -42,7 +42,7 @@ export default function BusinessPlanPage() {
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 activeDoc === i
                   ? 'bg-[#ffd700] text-black'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               {d.label}
@@ -61,7 +61,7 @@ export default function BusinessPlanPage() {
       </div>
 
       {/* Embedded Document */}
-      <div className="flex-1 bg-gray-50">
+      <div className="flex-1 bg-gray-50 dark:bg-gray-800">
         <iframe
           src={embedUrl}
           className="w-full h-full border-0"

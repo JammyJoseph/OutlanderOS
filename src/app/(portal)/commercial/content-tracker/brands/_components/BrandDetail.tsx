@@ -102,28 +102,28 @@ export default function BrandDetail({ name, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="my-8 w-full max-w-5xl rounded-2xl bg-white shadow-2xl"
+        className="my-8 w-full max-w-5xl rounded-2xl bg-white dark:bg-gray-900 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between border-b border-gray-100 p-5">
+        <div className="flex items-start justify-between border-b border-gray-100 dark:border-gray-800 p-5">
           <div>
             <span
               className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium ${c.bg} ${c.text} ${c.border}`}
             >
               {name}
             </span>
-            <h2 className="mt-2 text-xl font-semibold text-gray-900">Brand Performance</h2>
+            <h2 className="mt-2 text-xl font-semibold text-gray-900 dark:text-gray-100">Brand Performance</h2>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-full p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-400"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {loading || !data ? (
-          <div className="flex h-64 items-center justify-center text-gray-400">
+          <div className="flex h-64 items-center justify-center text-gray-400 dark:text-gray-500">
             <Loader2 className="h-6 w-6 animate-spin" />
           </div>
         ) : (
@@ -137,14 +137,14 @@ export default function BrandDetail({ name, onClose }: Props) {
             </div>
 
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Reach over time
               </h3>
               <Timeline timeline={data.timeline} />
             </div>
 
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-medium uppercase tracking-wide text-gray-500">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Performance Summary
               </h3>
               <button
@@ -157,13 +157,13 @@ export default function BrandDetail({ name, onClose }: Props) {
               </button>
             </div>
             {report && (
-              <pre className="whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed text-gray-800">
+              <pre className="whitespace-pre-wrap rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 text-sm leading-relaxed text-gray-800 dark:text-gray-200">
                 {report}
               </pre>
             )}
 
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 All posts ({data.posts.length})
               </h3>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-6">
@@ -173,7 +173,7 @@ export default function BrandDetail({ name, onClose }: Props) {
                     href={p.permalink ?? "#"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100"
+                    className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
                   >
                     {p.thumbnailUrl || p.mediaUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -205,9 +205,9 @@ export default function BrandDetail({ name, onClose }: Props) {
 
 function Big({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-3">
-      <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-gray-900">{value}</p>
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
+      <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{value}</p>
     </div>
   );
 }
@@ -218,20 +218,20 @@ function Timeline({
   timeline: { month: string; posts: number; reach: number }[];
 }) {
   if (timeline.length === 0) {
-    return <p className="text-sm text-gray-400">No timeline data yet.</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500">No timeline data yet.</p>;
   }
   const max = Math.max(...timeline.map((t) => t.reach), 1);
   return (
-    <div className="flex h-32 items-end gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+    <div className="flex h-32 items-end gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 p-3">
       {timeline.map((t) => (
         <div key={t.month} className="flex flex-1 flex-col items-center gap-1">
-          <div className="text-[10px] text-gray-500">{compactNumber(t.reach)}</div>
+          <div className="text-[10px] text-gray-500 dark:text-gray-400">{compactNumber(t.reach)}</div>
           <div
             className="w-full rounded-t bg-[#ffd700]/80"
             style={{ height: `${(t.reach / max) * 100}%`, minHeight: "2px" }}
             title={`${t.month}: ${t.posts} posts, ${compactNumber(t.reach)} reach`}
           />
-          <div className="text-[10px] text-gray-500">{t.month.slice(5)}</div>
+          <div className="text-[10px] text-gray-500 dark:text-gray-400">{t.month.slice(5)}</div>
         </div>
       ))}
     </div>

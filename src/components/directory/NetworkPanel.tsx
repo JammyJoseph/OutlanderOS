@@ -44,7 +44,7 @@ export default function NetworkPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="animate-spin text-gray-600" size={24} />
+        <Loader2 className="animate-spin text-gray-600 dark:text-gray-400" size={24} />
       </div>
     );
   }
@@ -52,9 +52,9 @@ export default function NetworkPanel() {
   if (nodes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-20 text-center">
-        <NetworkIcon size={28} className="mb-3 text-gray-600" />
-        <p className="text-sm font-semibold text-gray-900">No collaborations mapped yet</p>
-        <p className="mt-1 max-w-md text-xs text-gray-500">
+        <NetworkIcon size={28} className="mb-3 text-gray-600 dark:text-gray-400" />
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">No collaborations mapped yet</p>
+        <p className="mt-1 max-w-md text-xs text-gray-500 dark:text-gray-400">
           Scan a profile&apos;s credits and add the credited people to the directory — anyone
           co-credited on the same post becomes a collaboration link here.
         </p>
@@ -71,17 +71,17 @@ export default function NetworkPanel() {
               href={`/directory/${n.id}`}
               className="group flex items-center gap-2"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-gray-500">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-gray-500 dark:text-gray-400">
                 {n.name.slice(0, 2).toUpperCase()}
               </span>
               <div>
-                <p className="text-sm font-semibold text-gray-900 group-hover:underline">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:underline">
                   {n.name}
                 </p>
-                <p className="text-[11px] text-gray-500">{n.category}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">{n.category}</p>
               </div>
             </Link>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-medium text-gray-500">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">
               <Users size={12} /> {n.collaborations.length} collaborator
               {n.collaborations.length === 1 ? "" : "s"}
             </span>
@@ -91,10 +91,10 @@ export default function NetworkPanel() {
             {n.collaborations.map((c) => {
               const inner = (
                 <>
-                  <span className="font-medium text-gray-700">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
                     {c.contactName || `@${c.handle}`}
                   </span>
-                  {c.role && <span className="text-gray-500"> · {c.role}</span>}
+                  {c.role && <span className="text-gray-500 dark:text-gray-400"> · {c.role}</span>}
                   <span
                     className="ml-1 rounded-full px-1.5 text-[10px] font-semibold text-black"
                     style={{ backgroundColor: ACCENT }}

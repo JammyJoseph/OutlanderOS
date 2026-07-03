@@ -33,7 +33,7 @@ interface AgedResponse {
   error?: string
 }
 
-const inputCls = 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:border-[#ffd700] focus:outline-none'
+const inputCls = 'rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:border-[#ffd700] focus:outline-none'
 
 function AddInvoiceForm({ projects, onDone }: { projects: ProjectsResponse['projects']; onDone: () => void }) {
   const [supplierName, setSupplierName] = useState('')
@@ -74,8 +74,8 @@ function AddInvoiceForm({ projects, onDone }: { projects: ProjectsResponse['proj
   }
 
   return (
-    <div className="rounded-xl border border-[#ffd700]/40 bg-amber-50/40 p-4">
-      <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Log a Supplier Invoice</p>
+    <div className="rounded-xl border border-[#ffd700]/40 bg-amber-50/40 dark:bg-amber-900/30 p-4">
+      <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Log a Supplier Invoice</p>
       <div className="flex flex-wrap items-center gap-2">
         <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Supplier name *" className={inputCls} />
         <input value={supplierEmail} onChange={(e) => setSupplierEmail(e.target.value)} placeholder="Supplier email" className={inputCls} />
@@ -175,7 +175,7 @@ function Incoming({
     }
   }
 
-  if (res.loading) return <div className="h-40 animate-pulse rounded-xl border border-gray-200 bg-white" />
+  if (res.loading) return <div className="h-40 animate-pulse rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900" />
   if (res.error || res.data?.error) return <ErrorBox message={`Failed to load invoices: ${res.error ?? res.data?.error}`} />
 
   const all = res.data?.invoices ?? []
@@ -201,7 +201,7 @@ function Incoming({
           <button
             key={f.value}
             onClick={() => setStatusFilter(f.value)}
-            className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${statusFilter === f.value ? 'bg-gray-900 text-white' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+            className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${statusFilter === f.value ? 'bg-gray-900 text-white' : 'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
           >
             {f.label}
           </button>
@@ -209,11 +209,11 @@ function Incoming({
       </div>
 
       {confirmOverage && (
-        <div className="rounded-xl border border-red-300 bg-red-50 p-4">
-          <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-red-700">
+        <div className="rounded-xl border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/30 p-4">
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-red-700 dark:text-red-300">
             <AlertTriangle className="h-4 w-4" /> This invoice pushes “{confirmOverage.overage.campaignName}” over budget
           </p>
-          <p className="mb-3 text-[11px] text-red-600">
+          <p className="mb-3 text-[11px] text-red-600 dark:text-red-400">
             Budget {fmtGBP(confirmOverage.overage.totalBudget)} · costs after approval {fmtGBP(confirmOverage.overage.projectedCosts)} ·{' '}
             <span className="font-semibold">{fmtGBP(confirmOverage.overage.overBy)} over</span>
           </p>
@@ -226,7 +226,7 @@ function Incoming({
             </button>
             <button
               onClick={() => setConfirmOverage(null)}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-50"
+              className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Cancel
             </button>
@@ -237,16 +237,16 @@ function Incoming({
       {invoices.length === 0 ? (
         <EmptyState message="No supplier invoices in this view." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
+              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 {['Supplier', 'Amount', 'Project', 'Received', 'Deadline', 'Status', 'Actions'].map((h) => (
-                  <th key={h} className={`px-3 py-2.5 font-medium text-gray-500 ${h === 'Amount' ? 'text-right' : 'text-left'}`}>{h}</th>
+                  <th key={h} className={`px-3 py-2.5 font-medium text-gray-500 dark:text-gray-400 ${h === 'Amount' ? 'text-right' : 'text-left'}`}>{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
               {invoices.map((inv) => {
                 const settled = inv.status === 'PAID' || inv.status === 'REJECTED'
                 const days = daysUntil(inv.paymentDeadline)
@@ -255,20 +255,20 @@ function Incoming({
                 const project = inv.campaignBudgetId ? projectById.get(inv.campaignBudgetId) : null
                 const canApprove = inv.status === 'RECEIVED' || inv.status === 'UNDER_REVIEW' || inv.status === 'REVIEWED'
                 return (
-                  <tr key={inv.id} className={`transition-colors hover:bg-gray-50 ${overdue ? 'bg-red-50/50' : soon ? 'bg-amber-50/40' : ''}`}>
+                  <tr key={inv.id} className={`transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${overdue ? 'bg-red-50/50 dark:bg-red-900/30' : soon ? 'bg-amber-50/40 dark:bg-amber-900/30' : ''}`}>
                     <td className="px-3 py-2.5">
-                      <p className="flex max-w-[200px] items-center gap-1.5 truncate font-medium text-gray-900">
+                      <p className="flex max-w-[200px] items-center gap-1.5 truncate font-medium text-gray-900 dark:text-gray-100">
                         {inv.flagged && <Flag className="h-3 w-3 shrink-0 text-red-500" />}
                         {inv.supplierName}
                       </p>
-                      {inv.description && <p className="max-w-[200px] truncate text-[10px] text-gray-400">{inv.description}</p>}
+                      {inv.description && <p className="max-w-[200px] truncate text-[10px] text-gray-400 dark:text-gray-500">{inv.description}</p>}
                       {inv.flagged && inv.flagNote && <p className="max-w-[200px] truncate text-[10px] font-medium text-red-500">⚑ {inv.flagNote}</p>}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono text-gray-800">{inv.amount != null ? fmtGBP(inv.amount, { decimals: true }) : '—'}</td>
-                    <td className="max-w-[160px] truncate px-3 py-2.5 text-gray-500">{project ? project.campaignName : <span className="text-gray-300">—</span>}</td>
-                    <td className="px-3 py-2.5 text-gray-500">{fmtDate(inv.receivedAt)}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-800 dark:text-gray-200">{inv.amount != null ? fmtGBP(inv.amount, { decimals: true }) : '—'}</td>
+                    <td className="max-w-[160px] truncate px-3 py-2.5 text-gray-500 dark:text-gray-400">{project ? project.campaignName : <span className="text-gray-300 dark:text-gray-600">—</span>}</td>
+                    <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400">{fmtDate(inv.receivedAt)}</td>
                     <td className="px-3 py-2.5">
-                      <span className={overdue ? 'font-semibold text-red-500' : soon ? 'font-semibold text-amber-600' : 'text-gray-500'}>
+                      <span className={overdue ? 'font-semibold text-red-500 dark:text-red-400' : soon ? 'font-semibold text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}>
                         {settled ? '—' : days === null ? fmtDate(inv.paymentDeadline) : overdue ? `${Math.abs(days)}d overdue` : `${days}d left`}
                       </span>
                     </td>
@@ -282,12 +282,12 @@ function Incoming({
                             onKeyDown={(e) => e.key === 'Enter' && flag(inv.id)}
                             placeholder="Why is this flagged?"
                             autoFocus
-                            className="w-36 rounded-md border border-gray-200 px-2 py-0.5 text-[10px] focus:border-[#ffd700] focus:outline-none"
+                            className="w-36 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[10px] focus:border-[#ffd700] focus:outline-none"
                           />
                           <button onClick={() => flag(inv.id)} disabled={busy === inv.id || !flagNote.trim()} className="rounded-md bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50">
                             Flag
                           </button>
-                          <button onClick={() => { setFlagging(null); setFlagNote('') }} className="text-gray-400 hover:text-gray-600">
+                          <button onClick={() => { setFlagging(null); setFlagNote('') }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                             <X className="h-3 w-3" />
                           </button>
                         </div>
@@ -306,7 +306,7 @@ function Incoming({
                             <button
                               onClick={() => setFlagging(inv.id)}
                               disabled={busy === inv.id}
-                              className="rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+                              className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 text-[10px] font-medium text-red-600 dark:text-red-400 transition-colors hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50"
                             >
                               Flag
                             </button>
@@ -320,7 +320,7 @@ function Incoming({
                               Mark Paid
                             </button>
                           )}
-                          {settled && <span className="text-[10px] text-gray-400">—</span>}
+                          {settled && <span className="text-[10px] text-gray-400 dark:text-gray-500">—</span>}
                         </div>
                       )}
                     </td>
@@ -338,7 +338,7 @@ function Incoming({
 function Outgoing() {
   const res = useFinanceFetch<AgedResponse>('/api/finance/aged-receivables')
 
-  if (res.loading) return <div className="h-40 animate-pulse rounded-xl border border-gray-200 bg-white" />
+  if (res.loading) return <div className="h-40 animate-pulse rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900" />
   if (res.error || res.data?.error) return <ErrorBox message={`Failed to load receivables: ${res.error ?? res.data?.error}`} />
 
   const data = res.data!
@@ -346,31 +346,31 @@ function Outgoing() {
   if (data.rows.length === 0) return <EmptyState message="No outstanding client invoices — everything is collected." />
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200">
+    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50">
+          <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             {['Client', 'Outstanding', 'Current', '1–30d Overdue', '31–60d', '60d+'].map((h, i) => (
-              <th key={h} className={`px-3 py-2.5 font-medium text-gray-500 ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
+              <th key={h} className={`px-3 py-2.5 font-medium text-gray-500 dark:text-gray-400 ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
           {data.rows.map((r) => (
             <tr key={r.contact} className="transition-colors hover:bg-gray-50">
-              <td className="max-w-[200px] truncate px-3 py-2.5 font-medium text-gray-900">{r.contact || '—'}</td>
-              <td className="px-3 py-2.5 text-right font-mono font-semibold text-gray-900">{fmtGBP(r.total, { decimals: true })}</td>
-              <td className="px-3 py-2.5 text-right font-mono text-gray-500">{r.current > 0 ? fmtGBP(r.current, { decimals: true }) : '—'}</td>
-              <td className={`px-3 py-2.5 text-right font-mono ${r.period1 > 0 ? 'text-amber-600' : 'text-gray-300'}`}>{r.period1 > 0 ? fmtGBP(r.period1, { decimals: true }) : '—'}</td>
-              <td className={`px-3 py-2.5 text-right font-mono ${r.period2 > 0 ? 'text-red-500' : 'text-gray-300'}`}>{r.period2 > 0 ? fmtGBP(r.period2, { decimals: true }) : '—'}</td>
-              <td className={`px-3 py-2.5 text-right font-mono ${r.period3 > 0 ? 'font-semibold text-red-600' : 'text-gray-300'}`}>{r.period3 > 0 ? fmtGBP(r.period3, { decimals: true }) : '—'}</td>
+              <td className="max-w-[200px] truncate px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100">{r.contact || '—'}</td>
+              <td className="px-3 py-2.5 text-right font-mono font-semibold text-gray-900 dark:text-gray-100">{fmtGBP(r.total, { decimals: true })}</td>
+              <td className="px-3 py-2.5 text-right font-mono text-gray-500 dark:text-gray-400">{r.current > 0 ? fmtGBP(r.current, { decimals: true }) : '—'}</td>
+              <td className={`px-3 py-2.5 text-right font-mono ${r.period1 > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-300 dark:text-gray-600'}`}>{r.period1 > 0 ? fmtGBP(r.period1, { decimals: true }) : '—'}</td>
+              <td className={`px-3 py-2.5 text-right font-mono ${r.period2 > 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-300 dark:text-gray-600'}`}>{r.period2 > 0 ? fmtGBP(r.period2, { decimals: true }) : '—'}</td>
+              <td className={`px-3 py-2.5 text-right font-mono ${r.period3 > 0 ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-300 dark:text-gray-600'}`}>{r.period3 > 0 ? fmtGBP(r.period3, { decimals: true }) : '—'}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr className="border-t-2 border-gray-300 bg-gray-50">
-            <td className="px-3 py-2.5 font-semibold text-gray-500">Total ({data.count})</td>
-            <td className="px-3 py-2.5 text-right font-mono font-bold text-gray-900">{fmtGBP(data.total, { decimals: true })}</td>
+          <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+            <td className="px-3 py-2.5 font-semibold text-gray-500 dark:text-gray-400">Total ({data.count})</td>
+            <td className="px-3 py-2.5 text-right font-mono font-bold text-gray-900 dark:text-gray-100">{fmtGBP(data.total, { decimals: true })}</td>
             <td colSpan={4} />
           </tr>
         </tfoot>
@@ -396,7 +396,7 @@ export default function InvoicesApprovalsTab() {
             <button
               key={s}
               onClick={() => setSection(s)}
-              className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold capitalize transition-colors ${section === s ? 'bg-[#ffd700] text-gray-900' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold capitalize transition-colors ${section === s ? 'bg-[#ffd700] text-gray-900' : 'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
             >
               {s === 'incoming' ? 'Incoming — Supplier Invoices' : 'Outgoing — Client Invoices'}
             </button>
@@ -405,7 +405,7 @@ export default function InvoicesApprovalsTab() {
         {section === 'incoming' && (
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             {showAdd ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
             {showAdd ? 'Close' : 'Log Invoice'}

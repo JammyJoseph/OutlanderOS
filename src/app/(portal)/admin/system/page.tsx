@@ -38,7 +38,7 @@ interface DashboardData {
 function StatusDot({ connected }: { connected: boolean }) {
   return (
     <span
-      className={`inline-block w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
+      className={`inline-block w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
     />
   )
 }
@@ -139,19 +139,19 @@ export default function SystemPage() {
     <div className="max-w-5xl mx-auto space-y-10 pb-16">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">System Overview</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">System Overview</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           How OutlanderOS works — data flows, integrations, and where your input matters
         </p>
       </div>
 
       {/* ── Section 1: Data Flow Diagram ── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-5">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">
           Data Flow
         </h2>
 
-        <div className="relative bg-gray-50 border border-gray-200 rounded-xl p-6 overflow-x-auto">
+        <div className="relative bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 overflow-x-auto">
           <div className="flex items-stretch gap-0 min-w-[680px]">
 
             {/* Sources column */}
@@ -190,7 +190,7 @@ export default function SystemPage() {
                 return (
                   <div
                     key={src.label}
-                    className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm flex flex-col gap-1.5"
+                    className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-sm flex flex-col gap-1.5"
                   >
                     <div className="flex items-center gap-2">
                       <div
@@ -199,12 +199,12 @@ export default function SystemPage() {
                       >
                         <Icon size={13} style={{ color: src.color }} />
                       </div>
-                      <span className="text-xs font-semibold text-gray-800 truncate">{src.label}</span>
+                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{src.label}</span>
                       <StatusDot connected={src.connected} />
                     </div>
                     <ul className="space-y-0.5 pl-0.5">
                       {src.points.map(p => (
-                        <li key={p} className="text-[10px] text-gray-500 leading-tight">— {p}</li>
+                        <li key={p} className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">— {p}</li>
                       ))}
                     </ul>
                   </div>
@@ -271,17 +271,17 @@ export default function SystemPage() {
                   <a
                     key={out.label}
                     href={out.href}
-                    className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm flex flex-col gap-1.5 hover:border-amber-300 transition-colors"
+                    className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-sm flex flex-col gap-1.5 hover:border-amber-300 dark:hover:border-amber-800 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-amber-50 flex items-center justify-center shrink-0">
+                      <div className="w-6 h-6 rounded bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
                         <Icon size={13} className="text-[#ffd700]" />
                       </div>
-                      <span className="text-xs font-semibold text-gray-800">{out.label}</span>
+                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{out.label}</span>
                     </div>
                     <ul className="space-y-0.5 pl-0.5">
                       {out.points.map(p => (
-                        <li key={p} className="text-[10px] text-gray-500 leading-tight">— {p}</li>
+                        <li key={p} className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">— {p}</li>
                       ))}
                     </ul>
                   </a>
@@ -294,7 +294,7 @@ export default function SystemPage() {
 
       {/* ── Section 2: Integration Status ── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-5">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">
           Integration Status
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -303,7 +303,7 @@ export default function SystemPage() {
             return (
               <div
                 key={int.id}
-                className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-2 shadow-sm"
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-2 shadow-sm"
               >
                 <div className="flex items-center justify-between">
                   <div
@@ -314,14 +314,14 @@ export default function SystemPage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <StatusDot connected={int.connected} />
-                    <span className={`text-[10px] font-medium ${int.connected ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span className={`text-[10px] font-medium ${int.connected ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                       {int.connected ? 'Connected' : 'Not linked'}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-800">{int.label}</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">{int.description}</p>
+                  <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{int.label}</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{int.description}</p>
                 </div>
               </div>
             )
@@ -331,26 +331,26 @@ export default function SystemPage() {
 
       {/* ── Section 3: Where Quinn's Input is Required ── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-5">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">
           Where Your Input is Required
         </h2>
-        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-800 shadow-sm overflow-hidden">
           {quinnActions.map((action, i) => {
             const Icon = action.icon
             return (
               <a
                 key={i}
                 href={action.href}
-                className="flex items-start gap-4 px-5 py-4 hover:bg-amber-50 transition-colors group"
+                className="flex items-start gap-4 px-5 py-4 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors group"
               >
-                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-amber-100 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/50 transition-colors">
                   <Icon size={15} className="text-[#ffd700]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{action.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{action.detail}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{action.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{action.detail}</p>
                 </div>
-                <ChevronRight size={14} className="text-gray-300 group-hover:text-[#ffd700] mt-1.5 shrink-0 transition-colors" />
+                <ChevronRight size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-[#ffd700] mt-1.5 shrink-0 transition-colors" />
               </a>
             )
           })}
@@ -359,47 +359,47 @@ export default function SystemPage() {
 
       {/* ── Section 5: System Health ── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-5">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">
           System Health
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
               <Wifi size={13} className="text-green-500" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Server</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Server</span>
             </div>
-            <p className="text-sm font-semibold text-gray-900">Online</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Online</p>
             <p className="text-[10px] text-green-500 mt-0.5">All systems running</p>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
-              <RefreshCw size={13} className={loading ? 'text-amber-400 animate-spin' : 'text-gray-400'} />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Last Refresh</span>
+              <RefreshCw size={13} className={loading ? 'text-amber-400 animate-spin' : 'text-gray-400 dark:text-gray-500'} />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Last Refresh</span>
             </div>
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {loading ? 'Loading…' : loadedAt || '—'}
             </p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Auto on page load</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Auto on page load</p>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
               <FileCheck size={13} className="text-[#ffd700]" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Connected</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Connected</span>
             </div>
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {loading ? '—' : `${connectedCount} / 4`}
             </p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Data sources active</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Data sources active</p>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
-              <AlertCircle size={13} className="text-gray-300" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Errors</span>
+              <AlertCircle size={13} className="text-gray-300 dark:text-gray-600" />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Errors</span>
             </div>
-            <p className="text-sm font-semibold text-gray-900">None</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">None</p>
             <p className="text-[10px] text-green-500 mt-0.5">No recent errors</p>
           </div>
         </div>

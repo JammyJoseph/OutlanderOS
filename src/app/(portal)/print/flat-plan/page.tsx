@@ -209,8 +209,8 @@ function FlatPlanInner() {
 
   if (!plan) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-background text-center text-gray-500">
-        <Cloud className="mb-3 h-8 w-8 text-gray-400" />
+      <div className="flex h-full flex-col items-center justify-center bg-background text-center text-gray-500 dark:text-gray-400">
+        <Cloud className="mb-3 h-8 w-8 text-gray-400 dark:text-gray-500" />
         <p className="text-sm">Couldn&apos;t load the magazine plan.</p>
         {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
         <Link href="/print" className="mt-3 text-xs text-[#00ff88] hover:underline">
@@ -227,7 +227,7 @@ function FlatPlanInner() {
         <div className="flex items-center gap-3">
           <Link
             href="/print"
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-secondary text-gray-500 hover:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-secondary text-gray-500 dark:text-gray-400 hover:text-foreground"
             title="All issues"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -237,7 +237,7 @@ function FlatPlanInner() {
               <span className="h-2 w-2 rounded-full bg-[#00ff88]" />
               Issue {String(plan.issueNumber).padStart(2, "0")} — {plan.issueName}
             </h1>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {pages.length} pages · {signatures.length} signature{signatures.length === 1 ? "" : "s"}
               {saving ? " · saving…" : plan.updatedBy ? ` · last edit ${plan.updatedBy}` : ""}
             </p>
@@ -250,7 +250,7 @@ function FlatPlanInner() {
             <button
               onClick={() => setView("tracker")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "tracker" ? "bg-[#00ff88] text-black" : "text-gray-500 hover:text-foreground"
+                view === "tracker" ? "bg-[#00ff88] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <Table2 className="h-3.5 w-3.5" /> Tracker
@@ -258,7 +258,7 @@ function FlatPlanInner() {
             <button
               onClick={() => setView("flatplan")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "flatplan" ? "bg-[#00ff88] text-black" : "text-gray-500 hover:text-foreground"
+                view === "flatplan" ? "bg-[#00ff88] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" /> Flat Plan
@@ -266,7 +266,7 @@ function FlatPlanInner() {
             <button
               onClick={() => setView("budget")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "budget" ? "bg-[#00ff88] text-black" : "text-gray-500 hover:text-foreground"
+                view === "budget" ? "bg-[#00ff88] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <PoundSterling className="h-3.5 w-3.5" /> Budget
@@ -326,7 +326,7 @@ function FlatPlanInner() {
         <Total label="Total In Progress" value={`${stats.inProgressPct}%`} accent="#c084fc" />
         <Total label="% Progress" value={`${stats.progressPct}%`} accent="#60a5fa" />
         <Total label="Total Complete" value={`${stats.completePct}%`} accent="#34d399" />
-        <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-gray-700">
+        <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-gray-700 dark:text-gray-300">
           {SECTION_KEYS.map((k) => (
             <span key={k} className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full" style={{ background: SECTIONS[k].hex }} />
@@ -354,14 +354,14 @@ function renumber(pages: MagazinePage[]): MagazinePage[] {
 }
 
 const btnGhost =
-  "flex items-center gap-1 rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:bg-muted";
+  "flex items-center gap-1 rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-muted";
 const btnSolid =
   "flex items-center gap-1 rounded-lg bg-gray-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-gray-700";
 
 function Total({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-gray-500">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</span>
       <span className="font-mono text-sm font-bold" style={{ color: accent ?? "var(--foreground)" }}>
         {value}
       </span>
@@ -398,7 +398,7 @@ function TrackerView({
     <div className="h-full overflow-auto">
       <table className="w-full border-separate border-spacing-0 text-[11px]">
         <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wider text-gray-500">
+          <tr className="text-left text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
             <th className={th}>#</th>
             <th className={`${th} text-center`}>Sig</th>
             <th className={`${th} text-center`}>Stock</th>
@@ -437,13 +437,13 @@ function TrackerView({
                 className={`group h-7 ${dragIndex === i ? "opacity-40" : ""} ${i % 2 ? "bg-muted/40" : ""}`}
               >
                 <td className={td} style={{ borderLeft: `3px solid ${colour}` }}>
-                  <span className="flex items-center gap-1 font-semibold text-gray-900">
-                    <GripVertical className="h-3 w-3 cursor-grab text-gray-400 group-hover:text-gray-600" />
+                  <span className="flex items-center gap-1 font-semibold text-gray-900 dark:text-gray-100">
+                    <GripVertical className="h-3 w-3 cursor-grab text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400" />
                     {p.pageNumber}
                   </span>
                 </td>
                 <td className={`${td} text-center`}>
-                  <span className="font-mono text-[10px] font-bold text-gray-600">{sig.sigNumber}</span>
+                  <span className="font-mono text-[10px] font-bold text-gray-600 dark:text-gray-400">{sig.sigNumber}</span>
                 </td>
                 <td className={`${td} text-center`}>
                   <select
@@ -492,10 +492,10 @@ function TrackerView({
                 />
                 <td className={td}>
                   <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-                    <button onClick={() => addRowAfter(i)} title="Add row" className="rounded p-0.5 text-gray-500 hover:text-[#00ff88]">
+                    <button onClick={() => addRowAfter(i)} title="Add row" className="rounded p-0.5 text-gray-500 dark:text-gray-400 hover:text-[#00ff88]">
                       <Plus className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => removeRow(i)} title="Remove row" className="rounded p-0.5 text-gray-500 hover:text-red-400">
+                    <button onClick={() => removeRow(i)} title="Remove row" className="rounded p-0.5 text-gray-500 dark:text-gray-400 hover:text-red-400">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -532,7 +532,7 @@ function CellInput({
         type={date ? "date" : "text"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`${wide ? "min-w-[150px]" : "min-w-[80px]"} w-full rounded bg-transparent px-1 py-0.5 text-[11px] text-gray-800 placeholder-gray-400 focus:bg-muted focus:outline-none`}
+        className={`${wide ? "min-w-[150px]" : "min-w-[80px]"} w-full rounded bg-transparent px-1 py-0.5 text-[11px] text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:bg-muted focus:outline-none`}
         placeholder="—"
       />
     </td>
@@ -579,7 +579,7 @@ function AssetsCell({
               title="Remove link"
               className="opacity-0 transition group-hover/link:opacity-100"
             >
-              <X className="h-2.5 w-2.5 text-gray-400 hover:text-red-400" />
+              <X className="h-2.5 w-2.5 text-gray-400 dark:text-gray-500 hover:text-red-400" />
             </button>
           </span>
         ))}
@@ -597,12 +597,12 @@ function AssetsCell({
               }
             }}
             placeholder="Paste URL…"
-            className="w-full rounded bg-muted px-1 py-0.5 text-[10px] text-gray-800 focus:outline-none"
+            className="w-full rounded bg-muted px-1 py-0.5 text-[10px] text-gray-800 dark:text-gray-200 focus:outline-none"
           />
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="flex items-center gap-0.5 text-[10px] text-gray-400 hover:text-[#00ff88]"
+            className="flex items-center gap-0.5 text-[10px] text-gray-400 dark:text-gray-500 hover:text-[#00ff88]"
           >
             <Plus className="h-2.5 w-2.5" /> {links.length ? "Add" : "Link"}
           </button>
@@ -870,7 +870,7 @@ function SignatureBlock({
         <>
           <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
           <div className="absolute -left-3 top-[58px] z-30 w-36 overflow-hidden rounded-md border border-border bg-popover text-foreground shadow-lg">
-            <div className="border-b border-border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+            <div className="border-b border-border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Sig {si + 1} · {sig.pageCount}pp
             </div>
             {(["coated", "uncoated"] as StockType[]).map((st) => (
@@ -1067,7 +1067,7 @@ function PageSlot({
           <X className="h-2.5 w-2.5" />
         </span>
         <div className="flex items-start justify-between pl-1">
-          <span className="font-mono text-[7px] font-bold text-gray-900">{page.pageNumber}</span>
+          <span className="font-mono text-[7px] font-bold text-gray-900 dark:text-gray-100">{page.pageNumber}</span>
           {!isSpace && (
             <span
               className="rounded px-0.5 text-[6px] font-bold uppercase leading-tight tracking-wide text-black"
@@ -1077,8 +1077,8 @@ function PageSlot({
             </span>
           )}
         </div>
-        <p className="mt-0.5 line-clamp-3 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-900">
-          {isSpace ? <span className="text-gray-500">Space</span> : truncate(page.feature, 28)}
+        <p className="mt-0.5 line-clamp-3 pl-1 text-[8px] font-semibold leading-[1.1] text-gray-900 dark:text-gray-100">
+          {isSpace ? <span className="text-gray-500 dark:text-gray-400">Space</span> : truncate(page.feature, 28)}
         </p>
         {(isCover || isBack || isGatefold) && (
           <span className="mt-auto flex flex-wrap gap-0.5 pl-1">
@@ -1088,7 +1088,7 @@ function PageSlot({
               </span>
             )}
             {(isCover || isBack) && (
-              <span className="text-[6px] font-bold uppercase tracking-wide text-gray-700">
+              <span className="text-[6px] font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300">
                 {isCover ? "Front Cover" : "Back Cover"}
               </span>
             )}
@@ -1146,7 +1146,7 @@ function EditModal({
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: colour }} />
             Page {page.pageNumber}
           </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-foreground">
+          <button onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -1203,19 +1203,19 @@ function EditModal({
           </Field>
         </div>
 
-        <p className="mt-3 text-[10px] text-gray-600">Index {index} · changes save automatically.</p>
+        <p className="mt-3 text-[10px] text-gray-600 dark:text-gray-400">Index {index} · changes save automatically.</p>
       </div>
     </div>
   );
 }
 
 const modalInput =
-  "w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 focus:border-[#00ff88]/50 focus:outline-none";
+  "w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[#00ff88]/50 focus:outline-none";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
     <label className={`flex flex-col gap-1 ${full ? "col-span-2" : ""}`}>
-      <span className="text-[10px] uppercase tracking-wider text-gray-500">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</span>
       {children}
     </label>
   );

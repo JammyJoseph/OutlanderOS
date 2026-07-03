@@ -114,7 +114,7 @@ export function CallSheetDocument({
   const hasShotStyle = !!(shotStyle && (shotStyle.tone || shotStyle.visualDevice || shotStyle.notes));
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden print:rounded-none print:border-0 print:shadow-none">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden print:rounded-none print:border-0 print:shadow-none">
       {/* Header */}
       <div className="bg-gray-900 text-white px-8 py-6 print:bg-white print:text-gray-900 print:border-b-2 print:border-gray-900">
         <div className="flex items-center justify-between mb-4">
@@ -180,10 +180,10 @@ export function CallSheetDocument({
           (productionCompany.name || productionCompany.execProducer || productionCompany.producer) && (
             <DocSection title="Production Company" icon={<Building2 size={14} />}>
               {productionCompany.name && (
-                <p className="text-sm font-semibold text-gray-800">{productionCompany.name}</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{productionCompany.name}</p>
               )}
               {productionCompany.address && (
-                <p className="text-sm text-gray-600 whitespace-pre-wrap">{productionCompany.address}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{productionCompany.address}</p>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                 {productionCompany.execProducer && (
@@ -199,20 +199,20 @@ export function CallSheetDocument({
         {/* Call Times */}
         {show("callTimes") && callTimes.some((c) => c.time || c.department) && (
           <DocSection title="Call Times" icon={<Clock size={14} />}>
-            <div className="border border-gray-100 rounded-xl overflow-hidden">
+            <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
               {callTimes
                 .filter((c) => c.time || c.department)
                 .map((c, i) => (
                   <div
                     key={i}
                     className={`flex items-center gap-4 px-4 py-2.5 ${
-                      i % 2 === 0 ? "bg-gray-50/50" : "bg-white"
+                      i % 2 === 0 ? "bg-gray-50/50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"
                     }`}
                   >
                     <span className="text-sm font-mono font-bold text-[#ff4444] w-16 shrink-0">
                       {c.time}
                     </span>
-                    <span className="text-sm text-gray-700">{c.department}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{c.department}</span>
                   </div>
                 ))}
             </div>
@@ -245,17 +245,17 @@ export function CallSheetDocument({
               {stops.map((loc, i) => (
                 <div
                   key={i}
-                  className={stops.length > 1 ? "border border-gray-100 rounded-xl p-3" : ""}
+                  className={stops.length > 1 ? "border border-gray-100 dark:border-gray-800 rounded-xl p-3" : ""}
                 >
                   {stops.length > 1 && (
-                    <p className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-2">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                       <span className="flex items-center justify-center w-5 h-5 rounded bg-gray-900 text-white text-[10px] font-bold">
                         {i + 1}
                       </span>
                       {loc.name || `Location ${i + 1}`}
                     </p>
                   )}
-                  {loc.address && <p className="text-sm text-gray-700 mb-3">{loc.address}</p>}
+                  {loc.address && <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{loc.address}</p>}
                   {loc.lat != null && loc.lng != null && (
                     <div className="mb-3">
                       <LocationMap lat={loc.lat} lng={loc.lng} height={220} />
@@ -277,13 +277,13 @@ export function CallSheetDocument({
               ))}
             </div>
             {location.safetyNotes && (
-              <p className="mt-3 text-sm font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              <p className="mt-3 text-sm font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-lg px-3 py-2">
                 NB: {location.safetyNotes}
               </p>
             )}
             {hasMovement && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <p className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">
                   <Route size={12} /> Movement Order
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -298,7 +298,7 @@ export function CallSheetDocument({
                   )}
                 </div>
                 {movementOrder.routeNotes && (
-                  <p className="text-sm text-gray-600 whitespace-pre-wrap mt-2">{movementOrder.routeNotes}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap mt-2">{movementOrder.routeNotes}</p>
                 )}
               </div>
             )}
@@ -320,20 +320,20 @@ export function CallSheetDocument({
         {/* Schedule */}
         {show("schedule") && schedule.length > 0 && (
           <DocSection title="Schedule" icon={<Clock size={14} />}>
-            <div className="border border-gray-100 rounded-xl overflow-hidden">
+            <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
               {schedule.map((item, i) => (
                 <div
                   key={i}
                   className={`flex items-start gap-4 px-4 py-3 ${
-                    i % 2 === 0 ? "bg-gray-50/50" : "bg-white"
+                    i % 2 === 0 ? "bg-gray-50/50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"
                   }`}
                 >
                   <span className="text-xs font-mono font-semibold text-[#ff4444] w-12 flex-shrink-0 pt-0.5">
                     {item.time}
                   </span>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">{item.description}</p>
-                    {item.notes && <p className="text-xs text-gray-500 mt-0.5">{item.notes}</p>}
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.description}</p>
+                    {item.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.notes}</p>}
                   </div>
                 </div>
               ))}
@@ -351,20 +351,20 @@ export function CallSheetDocument({
         {/* Deliverables (snapshot from the production Deliverables tab) */}
         {show("deliverables") && (deliverables?.length ?? 0) > 0 && (
           <DocSection title="Deliverables" icon={<Package size={14} />}>
-            <div className="border border-gray-100 rounded-xl overflow-hidden">
+            <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
               {deliverables!.map((d, i) => (
                 <div
                   key={i}
-                  className={`px-4 py-2.5 text-sm ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
+                  className={`px-4 py-2.5 text-sm ${i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/50"}`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                       {d.type}
                     </span>
-                    <span className="text-gray-800 font-medium">{d.title}</span>
+                    <span className="text-gray-800 dark:text-gray-200 font-medium">{d.title}</span>
                   </div>
                   {d.notes && (
-                    <p className="text-xs text-gray-500 whitespace-pre-wrap mt-0.5">{d.notes}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap mt-0.5">{d.notes}</p>
                   )}
                 </div>
               ))}
@@ -415,7 +415,7 @@ export function CallSheetDocument({
               )}
             </div>
             {equipment.otherNotes && (
-              <p className="text-sm text-gray-600 whitespace-pre-wrap mt-2">{equipment.otherNotes}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap mt-2">{equipment.otherNotes}</p>
             )}
           </DocSection>
         )}
@@ -441,14 +441,14 @@ export function CallSheetDocument({
         {/* Conduct Policy (auto-included) */}
         {show("conduct") && (
           <DocSection title="Conduct Policy" icon={<Shield size={14} />}>
-            <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{CONDUCT_POLICY}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{CONDUCT_POLICY}</p>
           </DocSection>
         )}
 
         {/* Confidentiality (auto-included) */}
         {show("confidentiality") && (
           <DocSection title="Confidentiality Notice" icon={<Lock size={14} />}>
-            <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{CONFIDENTIALITY_NOTICE}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{CONFIDENTIALITY_NOTICE}</p>
           </DocSection>
         )}
       </div>
@@ -469,27 +469,27 @@ function DocField({
 }) {
   return (
     <div>
-      <p className="flex items-center gap-1 text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
+      <p className="flex items-center gap-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-0.5">
         {icon}
         {label}
       </p>
-      <p className={`text-sm text-gray-700 ${pre ? "whitespace-pre-wrap" : ""}`}>{value}</p>
+      <p className={`text-sm text-gray-700 dark:text-gray-300 ${pre ? "whitespace-pre-wrap" : ""}`}>{value}</p>
     </div>
   );
 }
 
 function TwoColTable({ rows }: { rows: [string, string][] }) {
   return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden">
+    <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
       {rows.map(([a, b], i) => (
         <div
           key={i}
           className={`grid grid-cols-[1fr_1fr] gap-0 px-4 py-2.5 text-sm ${
-            i % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+            i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/50"
           }`}
         >
-          <span className="text-gray-500 font-medium">{a}</span>
-          <span className="text-gray-800">{b}</span>
+          <span className="text-gray-500 dark:text-gray-400 font-medium">{a}</span>
+          <span className="text-gray-800 dark:text-gray-200">{b}</span>
         </div>
       ))}
     </div>
@@ -502,8 +502,8 @@ function ContactTable({
   rows: { role: string; name: string; phone: string; email: string }[];
 }) {
   return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden">
-      <div className="grid grid-cols-[1fr_1fr_1fr_1.2fr] gap-0 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 px-4 py-2">
+    <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+      <div className="grid grid-cols-[1fr_1fr_1fr_1.2fr] gap-0 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide bg-gray-50 dark:bg-gray-800 px-4 py-2">
         <span>Role</span>
         <span>Name</span>
         <span>Phone</span>
@@ -513,13 +513,13 @@ function ContactTable({
         <div
           key={i}
           className={`grid grid-cols-[1fr_1fr_1fr_1.2fr] gap-0 px-4 py-2.5 text-sm ${
-            i % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+            i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/50"
           }`}
         >
-          <span className="text-gray-600 font-medium">{r.role}</span>
-          <span className="text-gray-800">{r.name}</span>
-          <span className="text-gray-500 text-xs">{r.phone}</span>
-          <span className="text-gray-500 text-xs truncate">{r.email}</span>
+          <span className="text-gray-600 dark:text-gray-400 font-medium">{r.role}</span>
+          <span className="text-gray-800 dark:text-gray-200">{r.name}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs">{r.phone}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs truncate">{r.email}</span>
         </div>
       ))}
     </div>
@@ -538,8 +538,8 @@ function CrewTable({
   careOf: string;
 }) {
   return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden">
-      <div className="grid grid-cols-[1fr_1fr_70px_1fr_1.2fr] gap-0 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 px-4 py-2">
+    <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+      <div className="grid grid-cols-[1fr_1fr_70px_1fr_1.2fr] gap-0 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide bg-gray-50 dark:bg-gray-800 px-4 py-2">
         <span>Role</span>
         <span>Name</span>
         <span>Call</span>
@@ -550,14 +550,14 @@ function CrewTable({
         <div
           key={i}
           className={`grid grid-cols-[1fr_1fr_70px_1fr_1.2fr] gap-0 px-4 py-2.5 text-sm ${
-            i % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+            i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/50"
           }`}
         >
-          <span className="text-gray-600 font-medium">{p.role}</span>
-          <span className="text-gray-800">{p.name}</span>
+          <span className="text-gray-600 dark:text-gray-400 font-medium">{p.role}</span>
+          <span className="text-gray-800 dark:text-gray-200">{p.name}</span>
           <span className="text-[#ff4444] font-mono text-xs">{p.callTime}</span>
-          <span className="text-gray-500 text-xs">{redacted ? careOf : p.phone}</span>
-          <span className="text-gray-500 text-xs truncate">{redacted ? "" : p.email}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs">{redacted ? careOf : p.phone}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs truncate">{redacted ? "" : p.email}</span>
         </div>
       ))}
     </div>

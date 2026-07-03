@@ -34,7 +34,7 @@ type TeamMember = {
 }
 
 const INPUT_CLS =
-  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
+  'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
 
 function getInitials(name: string): string {
   if (!name) return '?'
@@ -135,7 +135,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-6 py-10">
-        <div className="rounded-2xl bg-white p-10 text-center text-sm text-gray-400 shadow-sm">Loading profile…</div>
+        <div className="rounded-2xl bg-white dark:bg-gray-900 p-10 text-center text-sm text-gray-400 dark:text-gray-500 shadow-sm">Loading profile…</div>
       </div>
     )
   }
@@ -143,8 +143,8 @@ export default function ProfilePage() {
   if (!me) {
     return (
       <div className="mx-auto max-w-5xl px-6 py-10">
-        <div className="rounded-2xl bg-white p-10 text-center text-sm text-gray-400 shadow-sm">
-          Could not load profile. <Link href="/login" className="text-amber-600 underline">Sign in</Link>
+        <div className="rounded-2xl bg-white dark:bg-gray-900 p-10 text-center text-sm text-gray-400 dark:text-gray-500 shadow-sm">
+          Could not load profile. <Link href="/login" className="text-amber-600 dark:text-amber-400 underline">Sign in</Link>
         </div>
       </div>
     )
@@ -155,20 +155,20 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-        <p className="mt-1 text-sm text-gray-500">Your details, role and team directory</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Profile</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Your details, role and team directory</p>
       </div>
 
-      <div className="rounded-2xl bg-white p-8 shadow-sm border border-gray-100">
+      <div className="rounded-2xl bg-white dark:bg-gray-900 p-8 shadow-sm border border-gray-100 dark:border-gray-800">
         <div className="flex items-start justify-between gap-6">
           <div className="flex items-center gap-5">
             <Avatar name={me.name} src={avatarSrc(me)} size={88} />
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-semibold text-gray-900">{me.name}</h2>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{me.name}</h2>
                 <RoleBadge role={me.role} />
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
                 <span className="inline-flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {me.email}</span>
                 {me.department && <span className="inline-flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> {me.department}</span>}
                 {me.startDate && <span className="inline-flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> Since {formatDate(me.startDate)}</span>}
@@ -177,7 +177,7 @@ export default function ProfilePage() {
           </div>
           <button
             onClick={() => setEditing((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
             {editing ? 'Cancel' : 'Edit'}
@@ -238,7 +238,7 @@ export default function ProfilePage() {
             <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setEditing(false)}
-                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 Cancel
               </button>
@@ -261,8 +261,8 @@ export default function ProfilePage() {
         )}
 
         {isAdmin && !editing && (
-          <div className="mt-8 rounded-xl bg-amber-50/60 p-5 border border-amber-100/70">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-700">
+          <div className="mt-8 rounded-xl bg-amber-50/60 dark:bg-amber-900/30 p-5 border border-amber-100/70 dark:border-amber-800">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
               <ShieldCheck className="h-3.5 w-3.5" /> Admin information
             </div>
             <div className="mt-3 grid grid-cols-1 gap-x-10 gap-y-3 sm:grid-cols-3">
@@ -274,12 +274,12 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div className="mt-8 rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
+      <div className="mt-8 rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-sm border border-gray-100 dark:border-gray-800">
         <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-[#ffd700]"><Sun className="h-4 w-4" /></div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#ffd700]"><Sun className="h-4 w-4" /></div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Appearance</h2>
-            <p className="mt-0.5 text-xs text-gray-500">Choose how OutlanderOS looks for you</p>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Appearance</h2>
+            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Choose how OutlanderOS looks for you</p>
           </div>
         </div>
         <div className="mt-5">
@@ -289,13 +289,13 @@ export default function ProfilePage() {
 
       <div className="mt-10">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Team directory</h2>
-          <span className="text-xs text-gray-400">{team.length} {team.length === 1 ? 'member' : 'members'}</span>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Team directory</h2>
+          <span className="text-xs text-gray-400 dark:text-gray-500">{team.length} {team.length === 1 ? 'member' : 'members'}</span>
         </div>
-        <div className="mt-4 overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm">
+        <div className="mt-4 overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <tr className="border-b border-gray-100 dark:border-gray-800 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                 <th className="px-5 py-3">Name</th>
                 <th className="px-5 py-3">Role</th>
                 <th className="px-5 py-3">Department</th>
@@ -306,25 +306,25 @@ export default function ProfilePage() {
             </thead>
             <tbody>
               {team.length === 0 ? (
-                <tr><td colSpan={isAdmin ? 6 : 5} className="px-5 py-8 text-center text-gray-400">No team members yet.</td></tr>
+                <tr><td colSpan={isAdmin ? 6 : 5} className="px-5 py-8 text-center text-gray-400 dark:text-gray-500">No team members yet.</td></tr>
               ) : (
                 team.map((u) => (
-                  <tr key={u.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
+                  <tr key={u.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50/60 dark:hover:bg-gray-800/60">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <Avatar name={u.name} src={avatarSrc(u)} size={32} />
-                        <span className="font-medium text-gray-900">{u.name}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{u.name}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3"><RoleBadge role={u.role} /></td>
-                    <td className="px-5 py-3 text-gray-600">{u.department || '—'}</td>
-                    <td className="px-5 py-3 text-gray-600">{u.email}</td>
-                    <td className="px-5 py-3 text-gray-600">{u.holidayAllowance} days</td>
+                    <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{u.department || '—'}</td>
+                    <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{u.email}</td>
+                    <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{u.holidayAllowance} days</td>
                     {isAdmin && (
                       <td className="px-5 py-3 text-right">
                         <button
                           onClick={() => setEditTarget(u)}
-                          className="text-xs font-medium text-amber-700 hover:text-amber-900"
+                          className="text-xs font-medium text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-200"
                         >
                           Edit
                         </button>
@@ -369,16 +369,16 @@ function ThemeChooser() {
             onClick={() => setTheme(opt.value)}
             className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
               active
-                ? 'border-[#ffd700] bg-amber-50 ring-2 ring-amber-200/60'
-                : 'border-gray-200 bg-gray-50/40 hover:bg-gray-50'
+                ? 'border-[#ffd700] bg-amber-50 dark:bg-amber-900/30 ring-2 ring-amber-200/60'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
           >
-            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-[#ffd700] text-black' : 'bg-gray-200 text-gray-600'}`}>
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-[#ffd700] text-black' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
               {opt.icon}
             </div>
             <div className="flex-1">
-              <div className="text-sm font-semibold text-gray-900">{opt.label}</div>
-              <div className="text-xs text-gray-500">{opt.desc}</div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{opt.label}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{opt.desc}</div>
             </div>
             {active && <Check className="h-4 w-4 text-[#ffd700]" />}
           </button>
@@ -391,7 +391,7 @@ function ThemeChooser() {
 function Field({ label, wide, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
   return (
     <div className={wide ? 'sm:col-span-2' : ''}>
-      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</label>
+      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</label>
       {children}
     </div>
   )
@@ -400,11 +400,11 @@ function Field({ label, wide, children }: { label: string; wide?: boolean; child
 function Stat({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
     <div>
-      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
         {icon}
         {label}
       </div>
-      <div className="mt-1 text-sm font-medium text-gray-900">{value}</div>
+      <div className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">{value}</div>
     </div>
   )
 }
@@ -434,13 +434,13 @@ function Avatar({ name, src, size }: { name: string; src: string | null; size: n
 function RoleBadge({ role }: { role: 'ADMIN' | 'MEMBER' }) {
   if (role === 'ADMIN') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800">
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-300">
         <ShieldCheck className="h-3 w-3" /> Admin
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-600">
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
       <UserIcon className="h-3 w-3" /> Member
     </span>
   )
@@ -493,10 +493,10 @@ function EditUserModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Edit {user.name}</h3>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><X className="h-4 w-4" /></button>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit {user.name}</h3>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"><X className="h-4 w-4" /></button>
         </div>
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Name"><input className={INPUT_CLS} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
@@ -514,7 +514,7 @@ function EditUserModal({
           </Field>
         </div>
         <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
           <button onClick={save} disabled={saving} className="rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
             {saving ? 'Saving…' : 'Save'}
           </button>

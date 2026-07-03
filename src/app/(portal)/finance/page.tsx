@@ -47,8 +47,8 @@ function FinanceInner() {
           <p className="text-xs font-semibold uppercase tracking-widest text-[#4d9fff]">
             OutlanderOS · Finance
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900">Finance</h1>
-          <p className="mt-0.5 text-xs text-gray-500">Budgets, costs, invoices &amp; the company P&amp;L — one source of truth</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Finance</h1>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Budgets, costs, invoices &amp; the company P&amp;L — one source of truth</p>
         </div>
 
         <div className="flex overflow-x-auto border-b border-border">
@@ -59,7 +59,7 @@ function FinanceInner() {
               className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                 active === tab.id
                   ? 'border-[#4d9fff] font-semibold text-[#4d9fff]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
               {tab.label}
@@ -86,7 +86,7 @@ export default function FinancePage() {
     <Suspense
       fallback={
         <div className="flex h-full items-center justify-center">
-          <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+          <Loader2 className="h-4 w-4 animate-spin text-gray-400 dark:text-gray-500" />
         </div>
       }
     >

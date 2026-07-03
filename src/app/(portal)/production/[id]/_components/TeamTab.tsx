@@ -41,21 +41,21 @@ const STATUS_CYCLE: TeamStatus[] = ["SUGGESTED", "CONFIRMED", "CONTRACTED"];
 
 const STATUS_STYLES: Record<TeamStatus, { bg: string; text: string; border: string; label: string }> = {
   SUGGESTED: {
-    bg: "bg-white",
-    text: "text-gray-500",
-    border: "border-gray-200",
+    bg: "bg-white dark:bg-gray-900",
+    text: "text-gray-500 dark:text-gray-400",
+    border: "border-gray-200 dark:border-gray-700",
     label: "Suggested",
   },
   CONFIRMED: {
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-    border: "border-amber-200",
+    bg: "bg-amber-50 dark:bg-amber-900/30",
+    text: "text-amber-700 dark:text-amber-300",
+    border: "border-amber-200 dark:border-amber-800",
     label: "Confirmed",
   },
   CONTRACTED: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    border: "border-emerald-200",
+    bg: "bg-emerald-50 dark:bg-emerald-900/30",
+    text: "text-emerald-700 dark:text-emerald-300",
+    border: "border-emerald-200 dark:border-emerald-800",
     label: "Contracted",
   },
 };
@@ -129,22 +129,22 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
     <div className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Stat label="Crew" value={String(counts.total)} icon={<Users size={14} />} />
-        <Stat label="Suggested" value={String(counts.suggested)} dot="bg-gray-300" />
+        <Stat label="Suggested" value={String(counts.suggested)} dot="bg-gray-300 dark:bg-gray-600" />
         <Stat label="Confirmed" value={String(counts.confirmed)} dot="bg-[#ffd700]" />
         <Stat label="Contracted" value={String(counts.contracted)} dot="bg-emerald-500" />
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800">Team & Talent</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Team & Talent</h2>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               Total crew cost:{" "}
-              <span className="font-semibold text-gray-800">{gbp(totalCost)}</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200">{gbp(totalCost)}</span>
             </span>
             <button
               onClick={() => setShowPicker(true)}
-              className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-800"
+              className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               title="Pick crew & talent from Outlander's directory"
             >
               <Contact size={13} /> Browse Directory
@@ -162,7 +162,7 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
 
         {members.length === 0 && !showAdd ? (
           <div className="px-5 py-12 text-center">
-            <p className="text-sm text-gray-500">No team members yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No team members yet.</p>
             <button
               onClick={() => setShowAdd(true)}
               className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
@@ -171,7 +171,7 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-gray-800">
             {(members ?? []).map((m) => (
               <MemberRow
                 key={m.id}
@@ -247,33 +247,33 @@ function DirectoryPicker({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl rounded-2xl border border-gray-100 bg-white shadow-2xl"
+        className="w-full max-w-2xl rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Browse Directory</h2>
-            <p className="text-xs text-gray-500">Add crew &amp; talent from Outlander&apos;s contacts.</p>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Browse Directory</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Add crew &amp; talent from Outlander&apos;s contacts.</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
             <X size={18} />
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-b border-gray-50 px-5 py-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-50 dark:border-gray-800 px-5 py-3">
           <div className="relative flex-1 min-w-[180px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search contacts…"
-              className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-8 pr-3 text-sm focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
             />
           </div>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
+            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
           >
             <option value="">All categories</option>
             {PICKER_CATEGORIES.map((c) => (
@@ -286,29 +286,29 @@ function DirectoryPicker({
 
         <div className="max-h-[55vh] overflow-y-auto">
           {loading ? (
-            <p className="px-5 py-12 text-center text-sm text-gray-400">Loading…</p>
+            <p className="px-5 py-12 text-center text-sm text-gray-400 dark:text-gray-500">Loading…</p>
           ) : contacts.length === 0 ? (
-            <p className="px-5 py-12 text-center text-sm text-gray-400">No contacts found.</p>
+            <p className="px-5 py-12 text-center text-sm text-gray-400 dark:text-gray-500">No contacts found.</p>
           ) : (
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50 dark:divide-gray-800">
               {contacts.map((c) => {
                 const isAdded = added.has(c.id);
                 const alreadyOnTeam = existingNames.has(c.name.trim().toLowerCase());
                 return (
-                  <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-amber-50/30">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[11px] font-semibold text-gray-500">
+                  <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-amber-50/30 dark:hover:bg-amber-900/30">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                       {c.name.slice(0, 2).toUpperCase()}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-medium text-gray-900">{c.name}</p>
+                        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{c.name}</p>
                         {c.rating ? (
                           <span className="inline-flex items-center gap-0.5 text-[11px] text-[#e6c200]">
                             <Star size={11} className="fill-[#ffd700] text-[#ffd700]" /> {c.rating}
                           </span>
                         ) : null}
                       </div>
-                      <p className="truncate text-xs text-gray-500">
+                      <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                         {[c.role || c.category, c.company].filter(Boolean).join(" · ")}
                       </p>
                     </div>
@@ -317,7 +317,7 @@ function DirectoryPicker({
                       disabled={isAdded}
                       className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                         isAdded
-                          ? "bg-emerald-50 text-emerald-600"
+                          ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
                           : "bg-[#ffd700] text-black hover:bg-[#e6c200]"
                       }`}
                       title={alreadyOnTeam ? "Already has a member with this name" : "Add to team"}
@@ -331,7 +331,7 @@ function DirectoryPicker({
           )}
         </div>
 
-        <div className="flex justify-end border-t border-gray-100 px-5 py-3">
+        <div className="flex justify-end border-t border-gray-100 dark:border-gray-800 px-5 py-3">
           <button
             onClick={onClose}
             className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
@@ -362,7 +362,7 @@ function MemberRow({
   const style = STATUS_STYLES[member.status] || STATUS_STYLES.SUGGESTED;
 
   return (
-    <div className="grid grid-cols-12 gap-3 px-5 py-3 items-center hover:bg-amber-50/20 group">
+    <div className="grid grid-cols-12 gap-3 px-5 py-3 items-center hover:bg-amber-50/20 dark:hover:bg-amber-900/20 group">
       <div className="col-span-3">
         <input
           type="text"
@@ -371,7 +371,7 @@ function MemberRow({
           onBlur={() => {
             if (name !== member.name) onUpdate({ name });
           }}
-          className="text-sm font-medium text-gray-900 bg-transparent border-none outline-none w-full px-1 py-0.5 rounded-md focus:bg-white"
+          className="text-sm font-medium text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none w-full px-1 py-0.5 rounded-md focus:bg-white dark:focus:bg-gray-800"
         />
         <input
           type="text"
@@ -380,10 +380,10 @@ function MemberRow({
           onBlur={() => {
             if (role !== member.role) onUpdate({ role });
           }}
-          className="text-xs text-gray-500 bg-transparent border-none outline-none w-full px-1 py-0.5 mt-0.5 rounded-md focus:bg-white"
+          className="text-xs text-gray-500 dark:text-gray-400 bg-transparent border-none outline-none w-full px-1 py-0.5 mt-0.5 rounded-md focus:bg-white dark:focus:bg-gray-800"
         />
       </div>
-      <div className="col-span-3 flex items-center gap-2 text-xs text-gray-500 min-w-0">
+      <div className="col-span-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 min-w-0">
         {member.email && (
           <a
             href={`mailto:${member.email}`}
@@ -404,7 +404,7 @@ function MemberRow({
         )}
       </div>
       <div className="col-span-3 flex items-center gap-1.5">
-        <span className="text-xs text-gray-400">£</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">£</span>
         <input
           type="number"
           value={rate}
@@ -414,16 +414,16 @@ function MemberRow({
             if (next !== member.rate) onUpdate({ rate: next });
           }}
           placeholder="0"
-          className="w-20 text-sm bg-transparent border-none outline-none px-1 py-0.5 rounded-md focus:bg-white tabular-nums"
+          className="w-20 text-sm bg-transparent border-none outline-none px-1 py-0.5 rounded-md focus:bg-white dark:focus:bg-gray-800 tabular-nums"
         />
-        <span className="text-xs text-gray-400">/</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">/</span>
         <select
           value={ratePer}
           onChange={(e) => {
             setRatePer(e.target.value);
             onUpdate({ ratePer: e.target.value });
           }}
-          className="text-xs text-gray-500 bg-transparent border-none outline-none focus:bg-white rounded-md py-0.5"
+          className="text-xs text-gray-500 dark:text-gray-400 bg-transparent border-none outline-none focus:bg-white dark:focus:bg-gray-800 rounded-md py-0.5"
         >
           <option value="day">day</option>
           <option value="hour">hour</option>
@@ -439,7 +439,7 @@ function MemberRow({
         </button>
         <button
           onClick={onRemove}
-          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 p-1"
+          className="opacity-0 group-hover:opacity-100 text-gray-300 dark:text-gray-600 hover:text-red-500 p-1"
         >
           <Trash2 size={13} />
         </button>
@@ -482,42 +482,42 @@ function AddMemberForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="text"
         value={role}
         onChange={(e) => setRole(e.target.value)}
         placeholder="Role (Director, DP, MUA…)"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="tel"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Phone"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <div className="md:col-span-2 flex items-center gap-1">
-        <span className="text-xs text-gray-400">£</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">£</span>
         <input
           type="number"
           value={rate}
           onChange={(e) => setRate(e.target.value)}
           placeholder="Rate"
-          className="flex-1 px-2 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+          className="flex-1 px-2 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
         />
         <select
           value={ratePer}
           onChange={(e) => setRatePer(e.target.value)}
-          className="text-xs text-gray-500 border border-gray-200 rounded-lg px-1 py-2 bg-white"
+          className="text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg px-1 py-2 bg-white dark:bg-gray-900"
         >
           <option value="day">day</option>
           <option value="hour">hour</option>
@@ -533,7 +533,7 @@ function AddMemberForm({
         </button>
         <button
           onClick={onCancel}
-          className="text-xs text-gray-400 hover:text-gray-600 px-2 py-2"
+          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-2"
         >
           Cancel
         </button>
@@ -554,13 +554,13 @@ function Stat({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-      <div className="flex items-center gap-1.5 text-gray-400">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+      <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
         {dot && <span className={`w-2 h-2 rounded-full ${dot}`} />}
         {icon && <span className="text-[#ffd700]">{icon}</span>}
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
-      <p className="text-2xl font-semibold text-gray-900 mt-2">{value}</p>
+      <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">{value}</p>
     </div>
   );
 }

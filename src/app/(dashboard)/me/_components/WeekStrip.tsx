@@ -51,7 +51,7 @@ export function WeekStrip({ tasks, shoots, culturalEvents }: Props) {
   }, [tasks, shoots, culturalEvents]);
 
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+    <section className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
       <div className="grid grid-cols-7 gap-1">
         {days.map((d, i) => (
           <div
@@ -60,12 +60,12 @@ export function WeekStrip({ tasks, shoots, culturalEvents }: Props) {
               d.isToday ? "bg-[#ffd700]/10 ring-1 ring-[#ffd700]" : ""
             }`}
           >
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
               {WEEKDAYS[i]}
             </span>
             <span
               className={`mt-0.5 text-sm font-bold ${
-                d.isToday ? "text-[#e6c200]" : "text-gray-700"
+                d.isToday ? "text-[#e6c200]" : "text-gray-700 dark:text-gray-300"
               }`}
             >
               {d.date.getDate()}

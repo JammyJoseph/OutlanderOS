@@ -119,15 +119,15 @@ export default function ContentTrackerPage() {
     <div className="mx-auto max-w-7xl px-6 py-6 font-[Manrope,system-ui,sans-serif]">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Content Tracker</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Content Tracker</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Track every post, classify it, attribute it to brands and campaigns.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/commercial/content-tracker/brands"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <BarChart2 className="h-4 w-4" />
             Brand Performance
@@ -139,7 +139,7 @@ export default function ContentTrackerPage() {
         <FilterBar filters={filters} brands={brands} onChange={setFilters} />
       </div>
 
-      <div className="mb-2 flex items-center justify-between text-xs text-gray-500">
+      <div className="mb-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <span>
           {loading ? "Loading…" : `${posts.length} of ${total} posts`}
           {filters.brand && ` · brand: ${filters.brand}`}
@@ -150,11 +150,11 @@ export default function ContentTrackerPage() {
       </div>
 
       {loading && posts.length === 0 ? (
-        <div className="flex h-64 items-center justify-center text-gray-400">
+        <div className="flex h-64 items-center justify-center text-gray-400 dark:text-gray-500">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : posts.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-gray-500">
+        <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
           <p className="text-sm">No posts found.</p>
         </div>
       ) : (

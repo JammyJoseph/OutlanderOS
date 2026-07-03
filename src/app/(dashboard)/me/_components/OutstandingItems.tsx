@@ -36,9 +36,9 @@ export function OutstandingItems() {
   if (failed) return null;
 
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+    <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
       <div className="flex items-center justify-between">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
           Outstanding Items
         </h2>
         <ReceiptText className="h-4 w-4 text-[#4d9fff] opacity-70" />
@@ -46,32 +46,32 @@ export function OutstandingItems() {
 
       {!data ? (
         <div className="mt-3 space-y-2">
-          <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100" />
-          <div className="h-4 w-1/2 animate-pulse rounded bg-gray-100" />
+          <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
         </div>
       ) : (
         <>
           <ul className="mt-2 space-y-2">
             <li className="flex items-baseline justify-between text-sm">
-              <span className="text-gray-600">Overdue invoices</span>
+              <span className="text-gray-600 dark:text-gray-400">Overdue invoices</span>
               <span
                 className={`font-semibold ${
-                  data.overdueReceivableCount > 0 ? "text-red-500" : "text-gray-900"
+                  data.overdueReceivableCount > 0 ? "text-red-500 dark:text-red-400" : "text-gray-900 dark:text-gray-100"
                 }`}
               >
                 {data.xeroConnected ? data.overdueReceivableCount : "—"}
                 {data.xeroConnected && data.overdueReceivableCount > 0 && (
-                  <span className="ml-1.5 text-xs font-medium text-gray-400">
+                  <span className="ml-1.5 text-xs font-medium text-gray-400 dark:text-gray-500">
                     {formatGBP(data.overdueReceivables)}
                   </span>
                 )}
               </span>
             </li>
             <li className="flex items-baseline justify-between text-sm">
-              <span className="text-gray-600">Pending approval</span>
+              <span className="text-gray-600 dark:text-gray-400">Pending approval</span>
               <span
                 className={`font-semibold ${
-                  data.pendingApprovals > 0 ? "text-amber-600" : "text-gray-900"
+                  data.pendingApprovals > 0 ? "text-amber-600 dark:text-amber-400" : "text-gray-900 dark:text-gray-100"
                 }`}
               >
                 {data.pendingApprovals}
@@ -79,7 +79,7 @@ export function OutstandingItems() {
             </li>
           </ul>
           {!data.xeroConnected && (
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
               Connect Xero in Finance to track overdue invoices.
             </p>
           )}

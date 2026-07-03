@@ -16,9 +16,9 @@ interface LinkedDeliverable {
 }
 
 const STATUS_STYLES: Record<ShotStatus, string> = {
-  planned: "bg-gray-100 text-gray-500",
-  in_progress: "bg-amber-100 text-amber-700",
-  completed: "bg-emerald-100 text-emerald-700",
+  planned: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400",
+  in_progress: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
+  completed: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300",
 };
 
 export function StatusBadge({ status }: { status: ShotStatus }) {
@@ -40,8 +40,8 @@ function ShotStyleEditor({
   setShotStyle: (v: ShotStyle) => void;
 }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3.5 space-y-3">
-      <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Shot Style</p>
+    <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 p-3.5 space-y-3">
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Shot Style</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>Overall Tone</label>
@@ -122,17 +122,17 @@ function ShotlistImporter({
   }
 
   return (
-    <div className="rounded-xl border border-dashed border-gray-200 bg-white p-3">
+    <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800"
+        className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
       >
         {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         <Sparkles size={13} /> Paste a shot list to auto-format
       </button>
       {open && (
         <div className="mt-3 space-y-2">
-          <p className="text-[11px] text-gray-400 leading-snug">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
             Paste raw text in any format — an AI parser reads it and organises the shots, style and
             per-shot notes for you. Structured layouts (<span className="font-mono">Shot 1</span>,{" "}
             <span className="font-mono">Scene:</span>, <span className="font-mono">Video:</span>,{" "}
@@ -154,7 +154,7 @@ function ShotlistImporter({
               {busy ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
               {busy ? "Parsing…" : "Parse into shots"}
             </button>
-            <span className="text-[11px] text-gray-400">Parsed shots are appended — you can edit any field after.</span>
+            <span className="text-[11px] text-gray-400 dark:text-gray-500">Parsed shots are appended — you can edit any field after.</span>
           </div>
         </div>
       )}
@@ -200,11 +200,11 @@ function ShotCard({
   );
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+    <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 p-3">
       <div className="flex items-center gap-2 mb-2">
         <button
           onClick={() => setOpen((o) => !o)}
-          className="text-gray-300 hover:text-gray-600 p-0.5"
+          className="text-gray-300 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 p-0.5"
           title={open ? "Collapse" : "Expand"}
         >
           {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
@@ -233,7 +233,7 @@ function ShotCard({
         {linkedDeliverables.length > 0 && (
           <span
             title={`Feeds: ${linkedDeliverables.map((d) => d.title).join(", ")}`}
-            className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-[#ff4444]"
+            className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-900/30 text-[#ff4444]"
           >
             <Package size={10} /> {linkedDeliverables.length}
           </span>
@@ -241,7 +241,7 @@ function ShotCard({
         <button
           onClick={onDuplicate}
           title="Duplicate shot"
-          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-[#ff4444] transition-colors"
+          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-300 dark:text-gray-600 hover:text-[#ff4444] transition-colors"
         >
           <Copy size={13} />
         </button>
@@ -316,7 +316,7 @@ function ShotCard({
           <div>
             <label className={labelCls}>Feeds deliverables</label>
             {deliverables.length === 0 ? (
-              <p className="text-[11px] text-gray-400 italic">
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 italic">
                 No deliverables yet — add them in the Deliverables section.
               </p>
             ) : (
@@ -331,7 +331,7 @@ function ShotCard({
                       className={`text-[11px] font-medium px-2 py-1 rounded-lg border transition-colors ${
                         on
                           ? "bg-[#ff4444] text-white border-transparent"
-                          : "text-gray-600 border-gray-200 bg-gray-50 hover:bg-gray-100"
+                          : "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
                       }`}
                     >
                       {d.title}
@@ -452,23 +452,23 @@ export function ShotlistDoc({
   return (
     <div className="space-y-4">
       {hasStyle && (
-        <div className="rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+        <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 px-4 py-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5">
             Shot Style
           </p>
-          <div className="text-sm text-gray-700 space-y-0.5">
+          <div className="text-sm text-gray-700 dark:text-gray-300 space-y-0.5">
             {shotStyle!.tone && (
               <p>
-                <span className="text-gray-400">Tone:</span> {shotStyle!.tone}
+                <span className="text-gray-400 dark:text-gray-500">Tone:</span> {shotStyle!.tone}
               </p>
             )}
             {shotStyle!.visualDevice && (
               <p>
-                <span className="text-gray-400">Visual device:</span> {shotStyle!.visualDevice}
+                <span className="text-gray-400 dark:text-gray-500">Visual device:</span> {shotStyle!.visualDevice}
               </p>
             )}
             {shotStyle!.notes && (
-              <p className="whitespace-pre-wrap text-gray-600">{shotStyle!.notes}</p>
+              <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-400">{shotStyle!.notes}</p>
             )}
           </div>
         </div>
@@ -476,19 +476,19 @@ export function ShotlistDoc({
 
       {structured
         ? shotlist.map((shot, i) => (
-            <div key={i} className="rounded-xl border border-gray-100 overflow-hidden">
-              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2">
+            <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2">
                 <span className="flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg bg-[#ff4444] text-white text-xs font-bold">
                   {shot.shotNumber || i + 1}
                 </span>
-                <span className="text-sm font-semibold text-gray-800">
+                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                   {shot.description || "Untitled shot"}
                 </span>
                 {shot.locationRef && (
-                  <span className="ml-auto text-xs text-gray-400">{shot.locationRef}</span>
+                  <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{shot.locationRef}</span>
                 )}
               </div>
-              <div className="px-3 py-2.5 text-sm text-gray-600 space-y-1.5">
+              <div className="px-3 py-2.5 text-sm text-gray-600 dark:text-gray-400 space-y-1.5">
                 {shot.scene && <DocLine label="Scene" value={shot.scene} />}
                 {shot.video && <DocLine label="Video" value={shot.video} />}
                 {shot.dialogue && <DocLine label="Dialogue" value={shot.dialogue} />}
@@ -501,8 +501,8 @@ export function ShotlistDoc({
             </div>
           ))
         : shotlist.length > 0 && (
-            <div className="border border-gray-100 rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[32px_1.6fr_1fr_1fr_1fr_70px_90px] gap-0 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 px-3 py-2">
+            <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-[32px_1.6fr_1fr_1fr_1fr_70px_90px] gap-0 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide bg-gray-50 dark:bg-gray-800 px-3 py-2">
                 <span>#</span>
                 <span>Description</span>
                 <span>Setup</span>
@@ -515,15 +515,15 @@ export function ShotlistDoc({
                 <div
                   key={i}
                   className={`grid grid-cols-[32px_1.6fr_1fr_1fr_1fr_70px_90px] gap-0 px-3 py-2.5 text-sm items-center ${
-                    i % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                    i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/50"
                   }`}
                 >
                   <span className="font-bold text-[#ff4444]">{i + 1}</span>
-                  <span className="text-gray-800 font-medium pr-2">{shot.description || "—"}</span>
-                  <span className="text-gray-600 text-xs pr-2">{shot.setup}</span>
-                  <span className="text-gray-600 text-xs pr-2">{shot.talent}</span>
-                  <span className="text-gray-600 text-xs pr-2">{shot.equipment}</span>
-                  <span className="text-gray-600 text-xs">{shot.duration}</span>
+                  <span className="text-gray-800 dark:text-gray-200 font-medium pr-2">{shot.description || "—"}</span>
+                  <span className="text-gray-600 dark:text-gray-400 text-xs pr-2">{shot.setup}</span>
+                  <span className="text-gray-600 dark:text-gray-400 text-xs pr-2">{shot.talent}</span>
+                  <span className="text-gray-600 dark:text-gray-400 text-xs pr-2">{shot.equipment}</span>
+                  <span className="text-gray-600 dark:text-gray-400 text-xs">{shot.duration}</span>
                   <span>
                     <StatusBadge status={shot.status} />
                   </span>
@@ -538,7 +538,7 @@ export function ShotlistDoc({
 function DocLine({ label, value }: { label: string; value: string }) {
   return (
     <p className="whitespace-pre-wrap">
-      <span className="text-gray-400 font-medium">{label}:</span> {value}
+      <span className="text-gray-400 dark:text-gray-500 font-medium">{label}:</span> {value}
     </p>
   );
 }

@@ -37,14 +37,14 @@ const CATEGORIES = [
 ] as const;
 
 const CATEGORY_COLORS: Record<string, string> = {
-  fashion: "bg-pink-50 text-pink-700",
-  luxury: "bg-amber-50 text-amber-700",
-  culture: "bg-orange-50 text-orange-700",
-  food: "bg-lime-50 text-lime-700",
-  art: "bg-violet-50 text-violet-700",
-  music: "bg-blue-50 text-blue-700",
-  lifestyle: "bg-teal-50 text-teal-700",
-  tech: "bg-slate-100 text-slate-700",
+  fashion: "bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300",
+  luxury: "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
+  culture: "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300",
+  food: "bg-lime-50 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300",
+  art: "bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300",
+  music: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
+  lifestyle: "bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300",
+  tech: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300",
 };
 
 function label(category: string): string {
@@ -125,18 +125,18 @@ export default function ThinkTankPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900">
+            <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100">
               <span className="h-2.5 w-2.5 rounded-full bg-orange-400" />
               Think Tank
             </h1>
-            <p className="mt-0.5 text-sm text-gray-400">
+            <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
               Culture and trend signals from across fashion, art, music and more.
             </p>
           </div>
           <button
             onClick={refresh}
             disabled={refreshing}
-            className="flex items-center gap-1.5 rounded-xl bg-orange-50 px-3.5 py-2 text-sm font-semibold text-orange-700 transition-colors hover:bg-orange-100 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-orange-50 dark:bg-orange-900/30 px-3.5 py-2 text-sm font-semibold text-orange-700 dark:text-orange-300 transition-colors hover:bg-orange-100 dark:hover:bg-orange-900/30 disabled:opacity-50"
           >
             {refreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -156,7 +156,7 @@ export default function ThinkTankPage() {
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                 category === c
                   ? "bg-gray-900 text-white"
-                  : "bg-white text-gray-500 shadow-sm hover:text-gray-800"
+                  : "bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 shadow-sm hover:text-gray-800 dark:hover:text-gray-200"
               }`}
             >
               {c === "all" ? "All" : label(c)}
@@ -168,12 +168,12 @@ export default function ThinkTankPage() {
         {signals === null ? (
           <div className="space-y-3">
             {Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="h-20 animate-pulse rounded-xl bg-gray-100" />
+              <div key={i} className="h-20 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-12 text-center shadow-sm">
-            <p className="text-sm text-gray-400">
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-12 text-center shadow-sm">
+            <p className="text-sm text-gray-400 dark:text-gray-500">
               {category === "all"
                 ? "No stories yet. RSS feeds will populate automatically."
                 : `No ${label(category)} stories yet.`}
@@ -184,7 +184,7 @@ export default function ThinkTankPage() {
             {filtered.map((s) => (
               <li
                 key={s.id}
-                className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
+                className="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -193,29 +193,29 @@ export default function ThinkTankPage() {
                         href={s.sourceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group inline-flex items-start gap-1.5 text-sm font-semibold text-gray-900 hover:text-[#e6c200]"
+                        className="group inline-flex items-start gap-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-[#e6c200]"
                       >
                         {s.title}
-                        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-gray-300 group-hover:text-[#e6c200]" />
+                        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-gray-300 dark:text-gray-600 group-hover:text-[#e6c200]" />
                       </a>
                     ) : (
-                      <span className="text-sm font-semibold text-gray-900">{s.title}</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{s.title}</span>
                     )}
                     {s.summary && (
-                      <p className="mt-1 line-clamp-2 text-xs text-gray-500">{s.summary}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">{s.summary}</p>
                     )}
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <span
                     className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-                      CATEGORY_COLORS[s.category] ?? "bg-gray-100 text-gray-600"
+                      CATEGORY_COLORS[s.category] ?? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                     }`}
                   >
                     {label(s.category)}
                   </span>
-                  <span className="text-[11px] font-medium text-gray-500">{s.source}</span>
-                  <span className="text-[11px] text-gray-400">{timeAgo(s.createdAt)}</span>
+                  <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">{s.source}</span>
+                  <span className="text-[11px] text-gray-400 dark:text-gray-500">{timeAgo(s.createdAt)}</span>
                 </div>
               </li>
             ))}
@@ -223,39 +223,39 @@ export default function ThinkTankPage() {
         )}
 
         {/* Brand watchlist */}
-        <section className="rounded-xl border border-gray-100 bg-white shadow-sm">
-          <div className="border-b border-gray-100 px-4 py-3">
-            <h2 className="text-sm font-bold text-gray-900">Brand Watchlist</h2>
+        <section className="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+          <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+            <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">Brand Watchlist</h2>
           </div>
           {brands.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-gray-400">
+            <p className="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
               No brands being tracked yet.
             </p>
           ) : (
-            <ul className="divide-y divide-gray-50">
+            <ul className="divide-y divide-gray-50 dark:divide-gray-800">
               {brands.map((b) => {
                 const mentions = mentionsFor(b);
                 return (
                   <li key={b.id} className="px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-gray-900">
+                        <span className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
                           {b.name}
                         </span>
                         {b.category && (
                           <span
                             className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
                               CATEGORY_COLORS[b.category.toLowerCase()] ??
-                              "bg-gray-100 text-gray-600"
+                              "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                             }`}
                           >
                             {label(b.category)}
                           </span>
                         )}
                       </div>
-                      <div className="flex shrink-0 items-center gap-1.5 text-xs text-gray-400">
+                      <div className="flex shrink-0 items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
                         {b.trajectory === "rising" && (
-                          <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                          <TrendingUp className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
                         )}
                         {b.trajectory === "falling" && (
                           <TrendingDown className="h-3.5 w-3.5 text-red-400" />
@@ -266,7 +266,7 @@ export default function ThinkTankPage() {
                     {mentions.length > 0 && (
                       <ul className="mt-1.5 space-y-1">
                         {mentions.map((m) => (
-                          <li key={m.id} className="truncate text-xs text-gray-500">
+                          <li key={m.id} className="truncate text-xs text-gray-500 dark:text-gray-400">
                             {m.sourceUrl ? (
                               <a
                                 href={m.sourceUrl}
@@ -279,7 +279,7 @@ export default function ThinkTankPage() {
                             ) : (
                               m.title
                             )}
-                            <span className="text-gray-300"> · {timeAgo(m.createdAt)}</span>
+                            <span className="text-gray-300 dark:text-gray-600"> · {timeAgo(m.createdAt)}</span>
                           </li>
                         ))}
                       </ul>

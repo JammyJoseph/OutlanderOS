@@ -71,11 +71,11 @@ const PORTALS = [
 function StatBadge({ value, label, loading }: { value?: number | string; label: string | null; loading: boolean }) {
   if (!label) return null
   if (loading) {
-    return <div className="mt-2 h-3 w-16 rounded bg-gray-200 animate-pulse" />
+    return <div className="mt-2 h-3 w-16 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
   }
   if (value === undefined || value === null) return null
   return (
-    <p className="mt-2 text-[10px] font-semibold text-gray-400">
+    <p className="mt-2 text-[10px] font-semibold text-gray-400 dark:text-gray-500">
       {typeof value === 'number' ? `${value} ${label}` : value}
     </p>
   )
@@ -126,10 +126,10 @@ export default function HubPage() {
     <div className="flex flex-col items-center justify-center min-h-full py-16 px-6">
       <div className="w-full max-w-5xl">
         <div className="text-center mb-10">
-          <p className="text-xs font-semibold tracking-[0.3em] text-gray-400 uppercase mb-2">
+          <p className="text-xs font-semibold tracking-[0.3em] text-gray-400 dark:text-gray-500 uppercase mb-2">
             OutlanderOS
           </p>
-          <h1 className="text-3xl font-bold text-gray-900">Choose your workspace</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Choose your workspace</h1>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -140,11 +140,11 @@ export default function HubPage() {
               <Link
                 key={portal.href}
                 href={portal.href}
-                className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-border bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-border bg-white dark:bg-gray-900 p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                 style={{ borderTop: `3px solid ${portal.accent}` }}
               >
                 {portal.restricted && (
-                  <span className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
+                  <span className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
                     <Lock className="h-2.5 w-2.5" />
                     Admin Only
                   </span>
@@ -158,11 +158,11 @@ export default function HubPage() {
                 </div>
 
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm leading-tight flex items-center gap-1.5">
+                  <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight flex items-center gap-1.5">
                     {portal.name}
-                    {portal.restricted && <Lock className="h-3 w-3 text-gray-400" />}
+                    {portal.restricted && <Lock className="h-3 w-3 text-gray-400 dark:text-gray-500" />}
                   </p>
-                  <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">
                     {portal.description}
                   </p>
                   <StatBadge value={statValue} label={portal.statLabel ?? null} loading={loadingStats && portal.statKey !== null} />

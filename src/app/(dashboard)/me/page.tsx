@@ -34,15 +34,15 @@ function PageSkeleton() {
   return (
     <div className="min-h-full bg-background p-6">
       <div className="mx-auto max-w-6xl space-y-4">
-        <div className="h-8 w-72 animate-pulse rounded-lg bg-gray-100" />
+        <div className="h-8 w-72 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="h-[92px] animate-pulse rounded-xl bg-gray-100" />
+            <div key={i} className="h-[92px] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
           ))}
         </div>
         <div className="grid gap-4 lg:grid-cols-[65fr_35fr]">
-          <div className="h-72 animate-pulse rounded-xl bg-gray-100" />
-          <div className="h-72 animate-pulse rounded-xl bg-gray-100" />
+          <div className="h-72 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+          <div className="h-72 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
         </div>
       </div>
     </div>
@@ -71,7 +71,7 @@ export default function MePage() {
   if (error && !data) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 bg-background">
-        <p className="text-sm text-gray-500">{error}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
         <button
           onClick={loadData}
           className="flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black"
@@ -91,10 +91,10 @@ export default function MePage() {
       <div className="mx-auto max-w-6xl space-y-4">
         {/* Top strip — greeting + date */}
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {greeting()}, {firstName}
           </h1>
-          <span className="text-sm text-gray-400">{todayLabel()}</span>
+          <span className="text-sm text-gray-400 dark:text-gray-500">{todayLabel()}</span>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[65fr_35fr]">

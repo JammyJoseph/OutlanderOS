@@ -68,44 +68,44 @@ interface CreativeDeal {
 }
 
 const CREATIVE_STATUS_META: Record<string, { label: string; cls: string }> = {
-  AWAITING_RESPONSE: { label: "Awaiting Response", cls: "bg-amber-100 text-amber-700" },
-  RESPONSE_SENT: { label: "Response Sent", cls: "bg-sky-100 text-sky-700" },
-  IN_REVIEW: { label: "In Review", cls: "bg-blue-100 text-blue-700" },
-  REVISIONS_REQUESTED: { label: "Revisions Requested", cls: "bg-orange-100 text-orange-700" },
-  APPROVED: { label: "Creative Approved", cls: "bg-emerald-100 text-emerald-700" },
+  AWAITING_RESPONSE: { label: "Awaiting Response", cls: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" },
+  RESPONSE_SENT: { label: "Response Sent", cls: "bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300" },
+  IN_REVIEW: { label: "In Review", cls: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" },
+  REVISIONS_REQUESTED: { label: "Revisions Requested", cls: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300" },
+  APPROVED: { label: "Creative Approved", cls: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300" },
 };
 
 const STATUS_STYLES: Record<
   ProductionStatus,
   { bg: string; text: string; dot: string; label: string }
 > = {
-  DRAFT: { bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", label: "Planning" },
-  BRIEFED: { bg: "bg-blue-100", text: "text-blue-700", dot: "bg-blue-400", label: "Briefed" },
+  DRAFT: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400", dot: "bg-gray-400", label: "Planning" },
+  BRIEFED: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300", dot: "bg-blue-400", label: "Briefed" },
   PRE_PRODUCTION: {
-    bg: "bg-purple-100",
-    text: "text-purple-700",
+    bg: "bg-purple-100 dark:bg-purple-900/30",
+    text: "text-purple-700 dark:text-purple-300",
     dot: "bg-purple-400",
     label: "Pre-Production",
   },
   SHOOTING: {
-    bg: "bg-amber-100",
-    text: "text-amber-700",
+    bg: "bg-amber-100 dark:bg-amber-900/30",
+    text: "text-amber-700 dark:text-amber-300",
     dot: "bg-[#ffd700]",
     label: "Shooting",
   },
   POST_PRODUCTION: {
-    bg: "bg-orange-100",
-    text: "text-orange-700",
+    bg: "bg-orange-100 dark:bg-orange-900/30",
+    text: "text-orange-700 dark:text-orange-300",
     dot: "bg-orange-400",
     label: "Wrap",
   },
   DELIVERED: {
-    bg: "bg-emerald-100",
-    text: "text-emerald-700",
+    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+    text: "text-emerald-700 dark:text-emerald-300",
     dot: "bg-emerald-400",
     label: "Complete",
   },
-  ARCHIVED: { bg: "bg-gray-100", text: "text-gray-400", dot: "bg-gray-300", label: "Archived" },
+  ARCHIVED: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-400 dark:text-gray-500", dot: "bg-gray-300 dark:bg-gray-600", label: "Archived" },
 };
 
 const STATUS_OPTIONS: ProductionStatus[] = [
@@ -133,12 +133,12 @@ function callSheetChip(p: { callSheets: CallSheetSummary[] }): {
 } {
   const sheets = p.callSheets ?? [];
   if (sheets.some((cs) => cs.status === "PUBLISHED")) {
-    return { label: "Published ✓", cls: "bg-emerald-50 text-emerald-700" };
+    return { label: "Published ✓", cls: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300" };
   }
   if (sheets.length > 0) {
-    return { label: "Draft", cls: "bg-blue-50 text-blue-600" };
+    return { label: "Draft", cls: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" };
   }
-  return { label: "No call sheet", cls: "bg-gray-100 text-gray-400" };
+  return { label: "No call sheet", cls: "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500" };
 }
 
 const CS_BADGE: Record<CallSheetStatus, { label: string; cls: string }> = {
@@ -212,10 +212,10 @@ function countdownLabel(date: Date): string {
 
 function countdownTone(date: Date): { bg: string; text: string } {
   if (isToday(date)) return { bg: "bg-[#ffd700]", text: "text-black" };
-  if (isTomorrow(date)) return { bg: "bg-amber-100", text: "text-amber-800" };
+  if (isTomorrow(date)) return { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-800 dark:text-amber-300" };
   const days = differenceInCalendarDays(date, new Date());
-  if (days <= 7) return { bg: "bg-amber-50", text: "text-amber-700" };
-  return { bg: "bg-gray-100", text: "text-gray-600" };
+  if (days <= 7) return { bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300" };
+  return { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400" };
 }
 
 export default function ProductionDashboard() {
@@ -332,24 +332,24 @@ export default function ProductionDashboard() {
             <p className="text-xs font-semibold uppercase tracking-widest text-[#ff4444]">
               OutlanderOS · Production
             </p>
-            <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">
+            <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
               Production Studio
             </h1>
-            <p className="text-gray-500 mt-1 text-sm">
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
               {list.length} project{list.length !== 1 ? "s" : ""} · live overview
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowArchived((v) => !v)}
-              className={`flex items-center gap-1.5 rounded-xl border bg-white px-3 py-2.5 text-sm transition-colors ${
+              className={`flex items-center gap-1.5 rounded-xl border bg-white dark:bg-gray-900 px-3 py-2.5 text-sm transition-colors ${
                 showArchived
-                  ? "border-gray-400 text-gray-700 font-medium"
-                  : "border-gray-200 text-gray-500"
+                  ? "border-gray-400 dark:border-gray-500 text-gray-700 dark:text-gray-300 font-medium"
+                  : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
               }`}
               title={showArchived ? "Hide archived projects" : "Show archived projects"}
             >
-              <Archive size={14} className="text-gray-400" />
+              <Archive size={14} className="text-gray-400 dark:text-gray-500" />
               {showArchived ? "Showing archived" : "Archived"}
             </button>
             <button
@@ -365,7 +365,7 @@ export default function ProductionDashboard() {
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-24">
-            <Loader2 size={24} className="animate-spin text-gray-400" />
+            <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
           </div>
         )}
 
@@ -423,12 +423,12 @@ export default function ProductionDashboard() {
             {/* Projects */}
             <section id="projects">
               {list.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mb-4">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12 flex flex-col items-center justify-center text-center">
+                  <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-4">
                     <Film size={28} className="text-[#ffd700]" />
                   </div>
-                  <h2 className="text-lg font-semibold text-gray-800 mb-1">No projects yet</h2>
-                  <p className="text-gray-500 text-sm mb-6 max-w-sm">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">No projects yet</h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-sm">
                     Productions you create will land here with their shoot dates, call sheets, and crew.
                   </p>
                   <button
@@ -443,7 +443,7 @@ export default function ProductionDashboard() {
                 <>
                   {active.length > 0 && (
                     <div className="mb-8">
-                      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+                      <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
                         Active — {active.length}
                       </h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -456,7 +456,7 @@ export default function ProductionDashboard() {
 
                   {archived.length > 0 && (
                     <div>
-                      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+                      <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
                         Completed — {archived.length}
                       </h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -473,7 +473,7 @@ export default function ProductionDashboard() {
                   Commercial projects are unarchived from the parent deal. */}
               {showArchived && archivedProjects.length > 0 && (
                 <div className="mt-8">
-                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                  <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                     <Archive size={12} /> Archived — {archivedProjects.length}
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60 grayscale">
@@ -484,7 +484,7 @@ export default function ProductionDashboard() {
                 </div>
               )}
               {showArchived && archivedProjects.length === 0 && (
-                <p className="mt-8 text-xs text-gray-400">No archived projects.</p>
+                <p className="mt-8 text-xs text-gray-400 dark:text-gray-500">No archived projects.</p>
               )}
             </section>
           </>
@@ -515,14 +515,14 @@ function HotSeatBanner({
 }) {
   if (!hot) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center">
-            <Sparkles size={20} className="text-gray-300" />
+          <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center justify-center">
+            <Sparkles size={20} className="text-gray-300 dark:text-gray-600" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-700">No upcoming shoots</p>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">No upcoming shoots</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
               When you schedule a shoot it will appear here.
             </p>
           </div>
@@ -627,23 +627,23 @@ function StatCard({
   subtitle?: string;
 }) {
   const TONE: Record<typeof tone, { bg: string; fg: string }> = {
-    amber: { bg: "bg-amber-50", fg: "text-[#ffd700]" },
-    emerald: { bg: "bg-emerald-50", fg: "text-emerald-600" },
-    blue: { bg: "bg-blue-50", fg: "text-blue-600" },
-    orange: { bg: "bg-orange-50", fg: "text-orange-600" },
+    amber: { bg: "bg-amber-50 dark:bg-amber-900/30", fg: "text-[#ffd700]" },
+    emerald: { bg: "bg-emerald-50 dark:bg-emerald-900/30", fg: "text-emerald-600 dark:text-emerald-400" },
+    blue: { bg: "bg-blue-50 dark:bg-blue-900/30", fg: "text-blue-600 dark:text-blue-400" },
+    orange: { bg: "bg-orange-50 dark:bg-orange-900/30", fg: "text-orange-600 dark:text-orange-400" },
   };
   const t = TONE[tone];
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-gray-500">{label}</p>
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
         <div className={`w-7 h-7 rounded-lg ${t.bg} ${t.fg} flex items-center justify-center`}>
           {icon}
         </div>
       </div>
       <div className="flex items-baseline gap-2">
-        <p className="text-3xl font-semibold text-gray-900 tracking-tight">{value}</p>
-        {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+        <p className="text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">{value}</p>
+        {subtitle && <p className="text-xs text-gray-400 dark:text-gray-500">{subtitle}</p>}
       </div>
     </div>
   );
@@ -673,31 +673,31 @@ function OverviewCalendar({
   const selected = selectedKey ? shootMap.get(selectedKey) : null;
 
   return (
-    <div id="overview" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+    <div id="overview" className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CalendarIcon size={15} className="text-[#ffd700]" />
-          <h2 className="text-sm font-semibold text-gray-800">
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {format(month, "MMMM yyyy")}
           </h2>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setMonth(new Date())}
-            className="text-xs font-medium text-gray-500 hover:text-gray-800 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+            className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-2 py-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             Today
           </button>
           <button
             onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
             aria-label="Previous month"
           >
             <ChevronLeft size={15} />
           </button>
           <button
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
             aria-label="Next month"
           >
             <ChevronRight size={15} />
@@ -710,7 +710,7 @@ function OverviewCalendar({
           {dayLabels.map((d) => (
             <div
               key={d}
-              className="text-center text-[10px] font-semibold text-gray-400 py-1 uppercase tracking-wide"
+              className="text-center text-[10px] font-semibold text-gray-400 dark:text-gray-500 py-1 uppercase tracking-wide"
             >
               {d}
             </div>
@@ -731,19 +731,19 @@ function OverviewCalendar({
                   has ? "cursor-pointer" : "cursor-default"
                 } ${
                   isSelected
-                    ? "bg-amber-50/80 ring-1 ring-[#ffd700]/30"
+                    ? "bg-amber-50/80 dark:bg-amber-900/30 ring-1 ring-[#ffd700]/30"
                     : has
-                    ? "hover:bg-gray-50"
+                    ? "hover:bg-gray-50 dark:hover:bg-gray-800"
                     : ""
                 }`}
               >
                 <span
                   className={`text-xs font-semibold leading-none ${
                     !inMonth
-                      ? "text-gray-300"
+                      ? "text-gray-300 dark:text-gray-600"
                       : isCurrentDay
                       ? "text-[#ffd700]"
-                      : "text-gray-700"
+                      : "text-gray-700 dark:text-gray-300"
                   }`}
                 >
                   {format(day, "d")}
@@ -753,14 +753,14 @@ function OverviewCalendar({
                     {has.entries.slice(0, 2).map((e, i) => (
                       <span
                         key={i}
-                        className="block w-full text-[9px] font-medium text-amber-800 bg-amber-100 rounded px-1 py-0.5 truncate text-center"
+                        className="block w-full text-[9px] font-medium text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 rounded px-1 py-0.5 truncate text-center"
                         title={e.production.title}
                       >
                         {e.production.title}
                       </span>
                     ))}
                     {has.entries.length > 2 && (
-                      <span className="text-[9px] font-medium text-gray-500">
+                      <span className="text-[9px] font-medium text-gray-500 dark:text-gray-400">
                         +{has.entries.length - 2}
                       </span>
                     )}
@@ -776,8 +776,8 @@ function OverviewCalendar({
       </div>
 
       {selected && (
-        <div className="px-5 py-4 border-t border-gray-50 bg-gray-50/50">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <div className="px-5 py-4 border-t border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
             {format(selected.date, "EEEE d MMMM")}
           </p>
           <div className="space-y-1.5">
@@ -789,22 +789,22 @@ function OverviewCalendar({
                     ? `/production/${e.production.id}/call-sheets/${e.cs.id}`
                     : `/production/${e.production.id}`
                 }
-                className="flex items-center justify-between text-sm bg-white rounded-lg px-3 py-2 hover:bg-amber-50/50 transition-colors group"
+                className="flex items-center justify-between text-sm bg-white dark:bg-gray-900 rounded-lg px-3 py-2 hover:bg-amber-50/50 dark:hover:bg-amber-900/30 transition-colors group"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <Film size={13} className="text-[#ffd700] shrink-0" />
-                  <span className="font-medium text-gray-800 truncate">
+                  <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
                     {e.production.title}
                   </span>
                   {getClientName(e.production) && (
-                    <span className="text-xs text-gray-400 truncate">
+                    <span className="text-xs text-gray-400 dark:text-gray-500 truncate">
                       · {getClientName(e.production)}
                     </span>
                   )}
                 </div>
                 <ChevronRight
                   size={13}
-                  className="text-gray-300 group-hover:text-[#ffd700] transition-colors shrink-0"
+                  className="text-gray-300 dark:text-gray-600 group-hover:text-[#ffd700] transition-colors shrink-0"
                 />
               </Link>
             ))}
@@ -813,7 +813,7 @@ function OverviewCalendar({
       )}
 
       {!selected && shootMap.size === 0 && (
-        <div className="px-5 py-6 border-t border-gray-50 text-center text-xs text-gray-400">
+        <div className="px-5 py-6 border-t border-gray-50 dark:border-gray-800 text-center text-xs text-gray-400 dark:text-gray-500">
           No shoots scheduled yet — add shoot dates to a project to see them here.
         </div>
       )}
@@ -846,19 +846,19 @@ function UpcomingList({ productions }: { productions: Production[] }) {
   const top = items.slice(0, 6);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-50">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm h-full overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800">
+        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
           <Clock size={15} className="text-[#ffd700]" />
           Upcoming
         </h2>
       </div>
       {top.length === 0 ? (
-        <div className="px-5 py-10 text-center text-xs text-gray-400">
+        <div className="px-5 py-10 text-center text-xs text-gray-400 dark:text-gray-500">
           No upcoming shoots
         </div>
       ) : (
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-gray-50 dark:divide-gray-800">
           {top.map((it, i) => {
             const tone = countdownTone(it.date);
             return (
@@ -869,22 +869,22 @@ function UpcomingList({ productions }: { productions: Production[] }) {
                     ? `/production/${it.production.id}/call-sheets/${it.cs.id}`
                     : `/production/${it.production.id}`
                 }
-                className="flex items-center justify-between px-5 py-3 hover:bg-gray-50/60 transition-colors group"
+                className="flex items-center justify-between px-5 py-3 hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors group"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="text-center w-10 shrink-0">
                     <div className="text-[9px] font-bold text-[#ffd700] uppercase leading-none">
                       {format(it.date, "MMM")}
                     </div>
-                    <div className="text-base font-bold text-gray-800 leading-tight mt-0.5">
+                    <div className="text-base font-bold text-gray-800 dark:text-gray-200 leading-tight mt-0.5">
                       {format(it.date, "d")}
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate group-hover:text-[#ffd700] transition-colors">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-[#ffd700] transition-colors">
                       {it.production.title}
                     </p>
-                    <p className="text-[11px] text-gray-400 truncate">
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
                       {getClientName(it.production) || "—"}
                       {it.cs?.callTime ? ` · ${it.cs.callTime}` : ""}
                     </p>
@@ -909,44 +909,44 @@ function UpcomingList({ productions }: { productions: Production[] }) {
 function CreativeInProgress({ deals }: { deals: CreativeDeal[] }) {
   return (
     <section className="mb-8">
-      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-        <Sparkles size={13} className="text-purple-500" />
+      <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <Sparkles size={13} className="text-purple-500 dark:text-purple-400" />
         Creative in Progress — {deals.length}
-        <span className="font-normal normal-case tracking-normal text-gray-400">· incoming work, not yet cleared for production</span>
+        <span className="font-normal normal-case tracking-normal text-gray-400 dark:text-gray-500">· incoming work, not yet cleared for production</span>
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {deals.map((d) => {
           const meta = CREATIVE_STATUS_META[d.creativeStatus ?? ""] ?? {
             label: d.creativeStatus ?? "In Progress",
-            cls: "bg-purple-100 text-purple-700",
+            cls: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300",
           };
           const approved = d.creativeStatus === "APPROVED";
           return (
             <Link
               key={d.id}
               href={`/commercial/deals/${d.id}`}
-              className={`block rounded-2xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
-                approved ? "border-emerald-200" : "border-purple-100"
+              className={`block rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                approved ? "border-emerald-200 dark:border-emerald-800" : "border-purple-100 dark:border-purple-800"
               }`}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.cls}`}>
                   {meta.label}
                 </span>
-                <ArrowUpRight size={14} className="text-gray-300" />
+                <ArrowUpRight size={14} className="text-gray-300 dark:text-gray-600" />
               </div>
-              <p className="text-sm font-semibold text-gray-900 truncate">{d.title}</p>
-              {d.clientName && <p className="text-xs text-gray-500 mt-0.5">{d.clientName}</p>}
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{d.title}</p>
+              {d.clientName && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{d.clientName}</p>}
               {d.briefExcerpt && (
-                <p className="text-[11px] text-gray-400 mt-2 line-clamp-2">{d.briefExcerpt}</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-2 line-clamp-2">{d.briefExcerpt}</p>
               )}
               <div className="mt-3 flex items-center gap-3 flex-wrap">
                 {approved && d.figmaUrl && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-purple-600">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-purple-600 dark:text-purple-400">
                     <CheckCircle2 size={12} /> Approved deck attached
                   </span>
                 )}
-                {d.assignedTo && <span className="text-[11px] text-gray-400">{d.assignedTo}</span>}
+                {d.assignedTo && <span className="text-[11px] text-gray-400 dark:text-gray-500">{d.assignedTo}</span>}
               </div>
             </Link>
           );
@@ -982,7 +982,7 @@ function ProjectCard({ production: p }: { production: Production }) {
 
   return (
     <Link href={`/production/${p.id}`}>
-      <div className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-5 group cursor-pointer h-full flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-5 group cursor-pointer h-full flex flex-col">
         <div className="flex items-start justify-between mb-3">
           <div className="w-10 h-10 bg-[#ff4444]/10 rounded-xl flex items-center justify-center flex-shrink-0">
             <Film size={18} className="text-[#ff4444]" />
@@ -1003,17 +1003,17 @@ function ProjectCard({ production: p }: { production: Production }) {
         </div>
 
         <div className="flex-1 mb-3">
-          <h3 className="font-semibold text-gray-900 text-base leading-snug group-hover:text-[#ffd700] transition-colors line-clamp-2">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-base leading-snug group-hover:text-[#ffd700] transition-colors line-clamp-2">
             {p.title}
           </h3>
           {client && (
-            <p className="text-gray-500 text-sm mt-0.5 truncate">{client}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5 truncate">{client}</p>
           )}
         </div>
 
         {/* Progress */}
         <div className="mb-3">
-          <div className="h-1 w-full rounded-full bg-gray-100 overflow-hidden">
+          <div className="h-1 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
             <div
               className="h-full bg-[#ffd700] rounded-full transition-all"
               style={{ width: `${progress}%` }}
@@ -1021,7 +1021,7 @@ function ProjectCard({ production: p }: { production: Production }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center gap-3">
             <span
               className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${callSheetChip(p).cls}`}
@@ -1036,12 +1036,12 @@ function ProjectCard({ production: p }: { production: Production }) {
             </span>
           </div>
           {next ? (
-            <span className="flex items-center gap-1 text-gray-700 font-medium">
+            <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
               <CalendarIcon size={12} className="text-[#ffd700]" />
               {format(next.date, "d MMM")}
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-gray-400">
+            <span className="flex items-center gap-1 text-gray-400 dark:text-gray-500">
               <CalendarIcon size={12} />
               No date
             </span>
@@ -1117,19 +1117,19 @@ function CreateProjectModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-50 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-lg font-semibold text-gray-900">New Project</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-50 dark:border-gray-800 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">New Project</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
           >
             <X size={18} />
           </button>
         </div>
         <form onSubmit={handleCreate} className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
               Project Name <span className="text-red-400">*</span>
             </label>
             <input
@@ -1137,12 +1137,12 @@ function CreateProjectModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Summer Campaign 2026"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
               Client
             </label>
             <input
@@ -1150,11 +1150,11 @@ function CreateProjectModal({
               value={client}
               onChange={(e) => setClient(e.target.value)}
               placeholder="e.g. Aston Martin"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
               Description
             </label>
             <textarea
@@ -1162,11 +1162,11 @@ function CreateProjectModal({
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="Concept, deliverables, anything worth remembering…"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
               Shoot Dates
             </label>
             <div className="space-y-2">
@@ -1176,13 +1176,13 @@ function CreateProjectModal({
                     type="date"
                     value={d}
                     onChange={(e) => updateDate(i, e.target.value)}
-                    className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                    className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
                   />
                   {shootDates.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeDate(i)}
-                      className="p-2 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"
+                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                     >
                       <X size={14} />
                     </button>
@@ -1200,13 +1200,13 @@ function CreateProjectModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
                 Status
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as ProductionStatus)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] bg-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] bg-white dark:bg-gray-900"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
@@ -1216,7 +1216,7 @@ function CreateProjectModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
                 Budget (£)
               </label>
               <input
@@ -1225,12 +1225,12 @@ function CreateProjectModal({
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="0"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
               Figma Link
             </label>
             <input
@@ -1238,14 +1238,14 @@ function CreateProjectModal({
               value={figmaUrl}
               onChange={(e) => setFigmaUrl(e.target.value)}
               placeholder="https://figma.com/file/…"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
             />
           </div>
           <div className="flex gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancel
             </button>

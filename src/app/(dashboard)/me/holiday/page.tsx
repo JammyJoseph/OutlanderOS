@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Calendar, Plus, X, Check, AlertTriangle, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 
 const INPUT_CLS =
-  'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
+  'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
 
 type HolidayStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 type HolidayType = 'ANNUAL' | 'SICK' | 'PERSONAL' | 'OTHER'
@@ -143,7 +143,7 @@ export default function HolidayPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-6 py-10">
-        <div className="rounded-2xl bg-white p-10 text-center text-sm text-gray-400 shadow-sm">Loading holiday…</div>
+        <div className="rounded-2xl bg-white dark:bg-gray-900 p-10 text-center text-sm text-gray-400 dark:text-gray-500 shadow-sm">Loading holiday…</div>
       </div>
     )
   }
@@ -159,16 +159,16 @@ export default function HolidayPage() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Holiday</h1>
-        <p className="mt-1 text-sm text-gray-500">Request time off and view your balance</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Holiday</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Request time off and view your balance</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
+        <div className="lg:col-span-2 rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-sm border border-gray-100 dark:border-gray-800">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Holiday balance</h2>
-              <p className="mt-0.5 text-xs text-gray-500">Annual leave for {balance?.year ?? new Date().getFullYear()}</p>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Holiday balance</h2>
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Annual leave for {balance?.year ?? new Date().getFullYear()}</p>
             </div>
             <button
               onClick={() => setShowForm((v) => !v)}
@@ -186,22 +186,22 @@ export default function HolidayPage() {
           </div>
 
           <div className="mt-5">
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
               <div className="flex h-full">
                 <div className="h-full bg-emerald-400" style={{ width: `${usedPct}%` }} />
                 <div className="h-full bg-amber-300" style={{ width: `${pendingPct}%` }} />
               </div>
             </div>
-            <div className="mt-2 flex items-center gap-4 text-[11px] text-gray-500">
+            <div className="mt-2 flex items-center gap-4 text-[11px] text-gray-500 dark:text-gray-400">
               <Legend color="bg-emerald-400" label="Used" />
               <Legend color="bg-amber-300" label="Pending" />
-              <Legend color="bg-gray-100" label="Remaining" />
+              <Legend color="bg-gray-100 dark:bg-gray-800" label="Remaining" />
             </div>
           </div>
 
           {showForm && (
-            <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50/60 p-5">
-              <h3 className="text-sm font-semibold text-gray-900">New request</h3>
+            <div className="mt-6 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/60 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">New request</h3>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Start date">
                   <input type="date" className={INPUT_CLS} value={form.startDate}
@@ -226,12 +226,12 @@ export default function HolidayPage() {
                 </Field>
               </div>
               {error && (
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700">
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 px-3 py-1.5 text-xs font-medium text-red-700 dark:text-red-300">
                   <AlertTriangle className="h-3.5 w-3.5" /> {error}
                 </div>
               )}
               <div className="mt-4 flex justify-end gap-2">
-                <button onClick={() => setShowForm(false)} className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button onClick={() => setShowForm(false)} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
                 <button onClick={submitRequest} disabled={submitting}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
                   <Check className="h-4 w-4" /> {submitting ? 'Submitting…' : 'Submit'}
@@ -241,31 +241,31 @@ export default function HolidayPage() {
           )}
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900">This month</h3>
-          <p className="mt-0.5 text-xs text-gray-500">Booked days at a glance</p>
+        <div className="rounded-2xl bg-white dark:bg-gray-900 p-5 shadow-sm border border-gray-100 dark:border-gray-800">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">This month</h3>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Booked days at a glance</p>
           <MiniCalendar dateMap={dateMap} />
         </div>
       </div>
 
       <section className="mt-10">
         <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-900">Team calendar</h2>
+          <Users className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Team calendar</h2>
         </div>
-        <p className="mt-0.5 text-xs text-gray-500">Approved time off across the team</p>
+        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Approved time off across the team</p>
         <TeamCalendar requests={teamApproved} />
       </section>
 
       <section className="mt-10">
-        <h2 className="text-lg font-semibold text-gray-900">My requests</h2>
-        <div className="mt-4 overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">My requests</h2>
+        <div className="mt-4 overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
           {requests.length === 0 ? (
-            <div className="px-6 py-10 text-center text-sm text-gray-400">No requests yet. Click <span className="font-medium text-gray-600">Request time off</span> to book some leave.</div>
+            <div className="px-6 py-10 text-center text-sm text-gray-400 dark:text-gray-500">No requests yet. Click <span className="font-medium text-gray-600 dark:text-gray-400">Request time off</span> to book some leave.</div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                <tr className="border-b border-gray-100 dark:border-gray-800 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   <th className="px-5 py-3">Dates</th>
                   <th className="px-5 py-3">Days</th>
                   <th className="px-5 py-3">Type</th>
@@ -276,16 +276,16 @@ export default function HolidayPage() {
               </thead>
               <tbody>
                 {requests.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
-                    <td className="px-5 py-3 font-medium text-gray-900">{formatRange(r.startDate, r.endDate)}</td>
-                    <td className="px-5 py-3 text-gray-700">{r.days}</td>
-                    <td className="px-5 py-3 text-gray-600">{prettyType(r.type)}</td>
+                  <tr key={r.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50/60 dark:hover:bg-gray-800/60">
+                    <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{formatRange(r.startDate, r.endDate)}</td>
+                    <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{r.days}</td>
+                    <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{prettyType(r.type)}</td>
                     <td className="px-5 py-3"><StatusBadge status={r.status} /></td>
-                    <td className="px-5 py-3 text-gray-500 text-xs max-w-xs truncate">{r.notes || '—'}</td>
+                    <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate">{r.notes || '—'}</td>
                     <td className="px-5 py-3 text-right">
                       {r.status === 'PENDING' && (
                         <button onClick={() => updateStatus(r.id, 'CANCELLED')}
-                          className="text-xs font-medium text-gray-500 hover:text-red-700">Cancel</button>
+                          className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-300">Cancel</button>
                       )}
                     </td>
                   </tr>
@@ -299,16 +299,16 @@ export default function HolidayPage() {
       {isAdmin && (
         <section className="mt-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Pending approvals</h2>
-            <span className="text-xs text-gray-400">{pendingTeam.length} {pendingTeam.length === 1 ? 'request' : 'requests'}</span>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Pending approvals</h2>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{pendingTeam.length} {pendingTeam.length === 1 ? 'request' : 'requests'}</span>
           </div>
-          <div className="mt-4 overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm">
+          <div className="mt-4 overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
             {pendingTeam.length === 0 ? (
-              <div className="px-6 py-10 text-center text-sm text-gray-400">All clear — no pending requests.</div>
+              <div className="px-6 py-10 text-center text-sm text-gray-400 dark:text-gray-500">All clear — no pending requests.</div>
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                  <tr className="border-b border-gray-100 dark:border-gray-800 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                     <th className="px-5 py-3">Requester</th>
                     <th className="px-5 py-3">Dates</th>
                     <th className="px-5 py-3">Days</th>
@@ -319,21 +319,21 @@ export default function HolidayPage() {
                 </thead>
                 <tbody>
                   {pendingTeam.map((r) => (
-                    <tr key={r.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60">
+                    <tr key={r.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50/60 dark:hover:bg-gray-800/60">
                       <td className="px-5 py-3">
-                        <div className="font-medium text-gray-900">{r.user?.name ?? 'Unknown'}</div>
-                        <div className="text-xs text-gray-500">{r.user?.department || r.user?.email}</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">{r.user?.name ?? 'Unknown'}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{r.user?.department || r.user?.email}</div>
                       </td>
-                      <td className="px-5 py-3 text-gray-700">{formatRange(r.startDate, r.endDate)}</td>
-                      <td className="px-5 py-3 text-gray-700">{r.days}</td>
-                      <td className="px-5 py-3 text-gray-600">{prettyType(r.type)}</td>
-                      <td className="px-5 py-3 text-gray-500 text-xs max-w-xs truncate">{r.notes || '—'}</td>
+                      <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{formatRange(r.startDate, r.endDate)}</td>
+                      <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{r.days}</td>
+                      <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{prettyType(r.type)}</td>
+                      <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate">{r.notes || '—'}</td>
                       <td className="px-5 py-3 text-right">
                         <div className="inline-flex gap-1.5">
                           <button onClick={() => updateStatus(r.id, 'APPROVED')}
-                            className="rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100">Approve</button>
+                            className="rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30">Approve</button>
                           <button onClick={() => updateStatus(r.id, 'REJECTED')}
-                            className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100">Reject</button>
+                            className="rounded-lg bg-red-50 dark:bg-red-900/30 px-2.5 py-1.5 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30">Reject</button>
                         </div>
                       </td>
                     </tr>
@@ -350,16 +350,16 @@ export default function HolidayPage() {
 
 function BalanceTile({ label, value, suffix, tone }: { label: string; value: string; suffix: string; tone?: 'green' | 'amber' | 'primary' }) {
   const toneClass =
-    tone === 'green' ? 'text-emerald-600' :
-    tone === 'amber' ? 'text-amber-600' :
+    tone === 'green' ? 'text-emerald-600 dark:text-emerald-400' :
+    tone === 'amber' ? 'text-amber-600 dark:text-amber-400' :
     tone === 'primary' ? 'text-[#ffd700]' :
-    'text-gray-900'
+    'text-gray-900 dark:text-gray-100'
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/40 p-4">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{label}</div>
+    <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-800/40 p-4">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</div>
       <div className="mt-1 flex items-baseline gap-1">
         <span className={`text-2xl font-semibold ${toneClass}`}>{value}</span>
-        <span className="text-xs text-gray-500">{suffix}</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{suffix}</span>
       </div>
     </div>
   )
@@ -376,7 +376,7 @@ function Legend({ color, label }: { color: string; label: string }) {
 function Field({ label, wide, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
   return (
     <div className={wide ? 'sm:col-span-2' : ''}>
-      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</label>
+      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</label>
       {children}
     </div>
   )
@@ -384,10 +384,10 @@ function Field({ label, wide, children }: { label: string; wide?: boolean; child
 
 function StatusBadge({ status }: { status: HolidayStatus }) {
   const map: Record<HolidayStatus, { bg: string; text: string; label: string; icon?: React.ReactNode }> = {
-    PENDING: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'Pending', icon: <Clock className="h-3 w-3" /> },
-    APPROVED: { bg: 'bg-emerald-100', text: 'text-emerald-800', label: 'Approved', icon: <Check className="h-3 w-3" /> },
-    REJECTED: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected', icon: <X className="h-3 w-3" /> },
-    CANCELLED: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Cancelled' },
+    PENDING: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-800 dark:text-amber-300', label: 'Pending', icon: <Clock className="h-3 w-3" /> },
+    APPROVED: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-800 dark:text-emerald-300', label: 'Approved', icon: <Check className="h-3 w-3" /> },
+    REJECTED: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', label: 'Rejected', icon: <X className="h-3 w-3" /> },
+    CANCELLED: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-400', label: 'Cancelled' },
   }
   const cfg = map[status]
   return (
@@ -408,7 +408,7 @@ const TEAM_COLORS = [
   { bar: 'bg-[#00ff88]', text: 'text-[#00ff88]', dot: 'bg-[#00ff88]' },
   { bar: 'bg-[#ff4444]', text: 'text-[#ff4444]', dot: 'bg-[#ff4444]' },
   { bar: 'bg-[#c77dff]', text: 'text-[#c77dff]', dot: 'bg-[#c77dff]' },
-  { bar: 'bg-pink-400', text: 'text-pink-700', dot: 'bg-pink-400' },
+  { bar: 'bg-pink-400', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-400' },
 ]
 
 function localISO(d: Date): string {
@@ -460,14 +460,14 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
   const monthLabel = monthDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
 
   return (
-    <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
-        <span className="text-sm font-semibold text-gray-900">{monthLabel}</span>
+    <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+      <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-3">
+        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{monthLabel}</span>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setMonthDate(new Date(year, month - 1, 1))}
             aria-label="Previous month"
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+            className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -476,14 +476,14 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
               const d = new Date()
               setMonthDate(new Date(d.getFullYear(), d.getMonth(), 1))
             }}
-            className="rounded-lg px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+            className="rounded-lg px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
           >
             Today
           </button>
           <button
             onClick={() => setMonthDate(new Date(year, month + 1, 1))}
             aria-label="Next month"
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+            className="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -491,7 +491,7 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
       </div>
 
       {people.length === 0 ? (
-        <div className="px-6 py-10 text-center text-sm text-gray-400">
+        <div className="px-6 py-10 text-center text-sm text-gray-400 dark:text-gray-500">
           No approved time off yet — approved holidays will show up here.
         </div>
       ) : (
@@ -499,7 +499,7 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
           <table className="w-full border-separate" style={{ borderSpacing: '1px 4px' }}>
             <thead>
               <tr>
-                <th className="w-32 min-w-32 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                <th className="w-32 min-w-32 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   Person
                 </th>
                 {Array.from({ length: daysInMonth }, (_, i) => {
@@ -510,7 +510,7 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
                     <th
                       key={i}
                       className={`min-w-5 pb-1 text-center text-[9px] font-medium ${
-                        isToday ? 'text-[#ffd700] font-bold' : isWeekend ? 'text-gray-300' : 'text-gray-400'
+                        isToday ? 'text-[#ffd700] font-bold' : isWeekend ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-gray-500'
                       }`}
                     >
                       {i + 1}
@@ -540,7 +540,7 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
                           <div
                             title={off ? `${p.name} — off ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : undefined}
                             className={`h-5 rounded-sm ${
-                              off ? color.bar : isWeekend ? 'bg-gray-50' : 'bg-gray-100/60'
+                              off ? color.bar : isWeekend ? 'bg-gray-50 dark:bg-gray-800' : 'bg-gray-100/60 dark:bg-gray-800/60'
                             }`}
                           />
                         </td>
@@ -577,10 +577,10 @@ function MiniCalendar({ dateMap }: { dateMap: Map<string, HolidayStatus> }) {
 
   return (
     <div className="mt-4">
-      <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-gray-700">
-        <Calendar className="h-3.5 w-3.5 text-gray-400" /> {monthName}
+      <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+        <Calendar className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" /> {monthName}
       </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
         {['M','T','W','T','F','S','S'].map((d, i) => <div key={i} className="py-1">{d}</div>)}
       </div>
       <div className="grid grid-cols-7 gap-1 mt-1">
@@ -589,9 +589,9 @@ function MiniCalendar({ dateMap }: { dateMap: Map<string, HolidayStatus> }) {
           const status = c.iso ? dateMap.get(c.iso) : undefined
           const isToday = c.iso === todayKey
           let cls = 'aspect-square flex items-center justify-center rounded-md text-[11px] font-medium '
-          if (status === 'APPROVED') cls += 'bg-emerald-100 text-emerald-800'
-          else if (status === 'PENDING') cls += 'bg-amber-100 text-amber-800'
-          else cls += 'text-gray-600 hover:bg-gray-100'
+          if (status === 'APPROVED') cls += 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'
+          else if (status === 'PENDING') cls += 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+          else cls += 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
           if (isToday) cls += ' ring-2 ring-[#ffd700]'
           return <div key={i} className={cls}>{c.day}</div>
         })}

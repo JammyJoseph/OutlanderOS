@@ -173,10 +173,10 @@ export default function CommercialDashboard() {
             <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
               OutlanderOS · Commercial
             </p>
-            <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">
+            <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
               Operations Dashboard
             </h1>
-            <p className="text-gray-500 mt-1 text-sm">
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
               {data?.metrics.activeDeals ?? 0} active job
               {(data?.metrics.activeDeals ?? 0) !== 1 ? "s" : ""} across the pipeline
             </p>
@@ -184,7 +184,7 @@ export default function CommercialDashboard() {
           <div className="flex items-center gap-2">
             <Link
               href="/commercial/pipeline"
-              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm"
             >
               <Kanban size={16} className="text-[var(--portal-commercial)]" />
               Open Pipeline
@@ -201,7 +201,7 @@ export default function CommercialDashboard() {
 
         {loading && (
           <div className="flex items-center justify-center py-24">
-            <Loader2 size={24} className="animate-spin text-gray-400" />
+            <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
           </div>
         )}
 
@@ -307,23 +307,23 @@ function StatCard({
   subtitle?: string;
 }) {
   const TONE: Record<typeof tone, { bg: string; fg: string }> = {
-    amber: { bg: "bg-amber-50", fg: "text-[var(--portal-commercial)]" },
-    red: { bg: "bg-red-50", fg: "text-red-600" },
-    blue: { bg: "bg-blue-50", fg: "text-blue-600" },
-    green: { bg: "bg-green-50", fg: "text-green-600" },
+    amber: { bg: "bg-amber-50 dark:bg-amber-900/30", fg: "text-[var(--portal-commercial)]" },
+    red: { bg: "bg-red-50 dark:bg-red-900/30", fg: "text-red-600 dark:text-red-400" },
+    blue: { bg: "bg-blue-50 dark:bg-blue-900/30", fg: "text-blue-600 dark:text-blue-400" },
+    green: { bg: "bg-green-50 dark:bg-green-900/30", fg: "text-green-600 dark:text-green-400" },
   };
   const t = TONE[tone];
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-gray-500">{label}</p>
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
         <div className={`w-7 h-7 rounded-lg ${t.bg} ${t.fg} flex items-center justify-center`}>
           {icon}
         </div>
       </div>
       <div className="flex items-baseline gap-2">
-        <p className="text-2xl font-semibold text-gray-900 tracking-tight">{value}</p>
-        {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+        <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">{value}</p>
+        {subtitle && <p className="text-xs text-gray-400 dark:text-gray-500">{subtitle}</p>}
       </div>
     </div>
   );
@@ -349,12 +349,12 @@ function ActiveJobs({
   onRowClick: (id: string) => void;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
+        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
           <Briefcase size={15} className="text-[var(--portal-commercial)]" />
           Active Jobs
-          <span className="text-gray-400 font-normal">
+          <span className="text-gray-400 dark:text-gray-500 font-normal">
             {deals.length}
             {stageFilter ? ` of ${total}` : ""}
           </span>
@@ -369,7 +369,7 @@ function ActiveJobs({
         </h2>
         <button
           onClick={onToggleSort}
-          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-500 hover:text-gray-800 rounded-lg border border-gray-200 px-2.5 py-1.5"
+          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded-lg border border-gray-200 dark:border-gray-700 px-2.5 py-1.5"
           title="Toggle sort"
         >
           {sortMode === "stage" ? <ArrowDown size={12} /> : <ArrowUp size={12} />}
@@ -379,8 +379,8 @@ function ActiveJobs({
 
       {deals.length === 0 ? (
         <div className="px-5 py-12 text-center">
-          <p className="text-sm text-gray-500 font-medium">No active jobs</p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">No active jobs</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
             {stageFilter ? "No deals in this stage." : "Create a deal to get started."}
           </p>
         </div>
@@ -388,7 +388,7 @@ function ActiveJobs({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-50">
+              <tr className="text-left text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 border-b border-gray-50 dark:border-gray-800">
                 <th className="px-5 py-2.5 font-semibold">Deal</th>
                 <th className="px-3 py-2.5 font-semibold">Type</th>
                 <th className="px-3 py-2.5 font-semibold">Stage</th>
@@ -398,7 +398,7 @@ function ActiveJobs({
                 <th className="px-3 py-2.5 font-semibold">Owner</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
               {deals.map((d) => {
                 const style = STAGE_STYLES[d.stage] ?? STAGE_STYLES.NEW_BRIEF;
                 const days = daysInStage(d);
@@ -409,13 +409,13 @@ function ActiveJobs({
                   <tr
                     key={d.id}
                     onClick={() => onRowClick(d.id)}
-                    className="cursor-pointer hover:bg-gray-50/60 transition-colors"
+                    className="cursor-pointer hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
                   >
                     <td className="px-5 py-3">
-                      <p className="font-semibold text-gray-900 leading-tight truncate max-w-[220px]">
+                      <p className="font-semibold text-gray-900 dark:text-gray-100 leading-tight truncate max-w-[220px]">
                         {d.title}
                       </p>
-                      <p className="text-[11px] text-gray-400 truncate">{d.client.name}</p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{d.client.name}</p>
                     </td>
                     <td className="px-3 py-3">
                       {primaryType ? (
@@ -425,7 +425,7 @@ function ActiveJobs({
                           {typeStyle(primaryType).label}
                         </span>
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-gray-300 dark:text-gray-600">—</span>
                       )}
                     </td>
                     <td className="px-3 py-3">
@@ -436,12 +436,12 @@ function ActiveJobs({
                         {style.label}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-right font-semibold text-gray-900 tabular-nums">
+                    <td className="px-3 py-3 text-right font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
                       {formatMoney(d.value)}
                     </td>
                     <td className="px-3 py-3 text-right">
                       <span
-                        className={`inline-flex items-center gap-1 tabular-nums ${stuck ? "text-red-500 font-semibold" : "text-gray-500"}`}
+                        className={`inline-flex items-center gap-1 tabular-nums ${stuck ? "text-red-500 font-semibold" : "text-gray-500 dark:text-gray-400"}`}
                         title={stuck ? "Stuck — over 2 weeks in this stage" : "Days in current stage"}
                       >
                         <Clock size={11} />
@@ -454,23 +454,23 @@ function ActiveJobs({
                           <Film size={11} />
                           {PRODUCTION_STATUS_LABELS[d.production.status] ?? d.production.status}
                           {d.production.nextShoot && (
-                            <span className="text-gray-400">
+                            <span className="text-gray-400 dark:text-gray-500">
                               · {format(parseISO(d.production.nextShoot), "d MMM")}
                             </span>
                           )}
                         </span>
                       ) : (
-                        <span className="text-gray-300 text-xs">—</span>
+                        <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
                       )}
                     </td>
                     <td className="px-3 py-3">
                       {d.assignedTo ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-gray-500 truncate max-w-[90px]">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[90px]">
                           <UserIcon size={11} />
                           {d.assignedTo.name.split(" ")[0]}
                         </span>
                       ) : (
-                        <span className="text-gray-300 text-xs">Unassigned</span>
+                        <span className="text-gray-300 dark:text-gray-600 text-xs">Unassigned</span>
                       )}
                     </td>
                   </tr>
@@ -496,9 +496,9 @@ function StageSummary({
   onPick: (s: DealStage) => void;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm h-full overflow-hidden">
-      <div className="px-4 py-4 border-b border-gray-50">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm h-full overflow-hidden">
+      <div className="px-4 py-4 border-b border-gray-50 dark:border-gray-800">
+        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
           <Kanban size={15} className="text-[var(--portal-commercial)]" />
           By Stage
         </h2>
@@ -512,15 +512,15 @@ function StageSummary({
               key={s.stage}
               onClick={() => onPick(s.stage)}
               className={`w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
-                isActive ? "bg-[#ffd700]/10" : "hover:bg-gray-50"
+                isActive ? "bg-[#ffd700]/10" : "hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
-              <span className="flex items-center gap-2 text-xs font-medium text-gray-700 min-w-0">
+              <span className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300 min-w-0">
                 <span className={`w-2 h-2 rounded-full ${style.dot} shrink-0`} />
                 <span className="truncate">{style.label}</span>
               </span>
               <span
-                className={`text-xs font-semibold tabular-nums shrink-0 ${isActive ? "text-[var(--portal-commercial)]" : "text-gray-500"}`}
+                className={`text-xs font-semibold tabular-nums shrink-0 ${isActive ? "text-[var(--portal-commercial)]" : "text-gray-500 dark:text-gray-400"}`}
               >
                 {s.count}
               </span>
@@ -561,25 +561,25 @@ function CampaignCalendar({
   }, [events]);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
           <CalendarDays size={15} className="text-[var(--portal-commercial)]" />
           Campaign Calendar
         </h2>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
           >
             <ChevronLeft size={16} />
           </button>
-          <span className="text-sm font-medium text-gray-700 w-32 text-center">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 text-center">
             {format(month, "MMMM yyyy")}
           </span>
           <button
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
           >
             <ChevronRight size={16} />
           </button>
@@ -589,7 +589,7 @@ function CampaignCalendar({
       {/* Legend */}
       <div className="flex items-center gap-4 mb-3 flex-wrap">
         {(Object.keys(EVENT_STYLES) as CalEvent["type"][]).map((k) => (
-          <span key={k} className="inline-flex items-center gap-1.5 text-[11px] text-gray-500">
+          <span key={k} className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
             <span className={`w-2 h-2 rounded-full ${EVENT_STYLES[k].dot}`} /> {EVENT_STYLES[k].label}
           </span>
         ))}
@@ -597,7 +597,7 @@ function CampaignCalendar({
 
       <div className="grid grid-cols-7 gap-1 text-center mb-1">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-          <div key={d} className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 py-1">
+          <div key={d} className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 py-1">
             {d}
           </div>
         ))}
@@ -612,10 +612,10 @@ function CampaignCalendar({
             <div
               key={key}
               className={`min-h-[84px] rounded-lg border p-1.5 ${
-                inMonth ? "border-gray-100 bg-white" : "border-gray-50 bg-gray-50/50"
+                inMonth ? "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900" : "border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50"
               } ${today ? "ring-1 ring-[#ffd700]" : ""}`}
             >
-              <p className={`text-[10px] font-semibold ${inMonth ? "text-gray-500" : "text-gray-300"}`}>
+              <p className={`text-[10px] font-semibold ${inMonth ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-600"}`}>
                 {format(day, "d")}
               </p>
               <div className="space-y-1 mt-0.5">
@@ -624,14 +624,14 @@ function CampaignCalendar({
                     key={i}
                     onClick={() => onPick(ev.dealId)}
                     title={ev.label}
-                    className="w-full text-[10px] leading-tight px-1.5 py-0.5 rounded bg-gray-50 flex items-center gap-1 truncate hover:bg-gray-100"
+                    className="w-full text-[10px] leading-tight px-1.5 py-0.5 rounded bg-gray-50 dark:bg-gray-800 flex items-center gap-1 truncate hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${EVENT_STYLES[ev.type].dot} shrink-0`} />
-                    <span className="truncate text-gray-600">{ev.dealTitle}</span>
+                    <span className="truncate text-gray-600 dark:text-gray-400">{ev.dealTitle}</span>
                   </button>
                 ))}
                 {dayEvents.length > 4 && (
-                  <p className="text-[9px] text-gray-400 pl-1">+{dayEvents.length - 4} more</p>
+                  <p className="text-[9px] text-gray-400 dark:text-gray-500 pl-1">+{dayEvents.length - 4} more</p>
                 )}
               </div>
             </div>
@@ -646,33 +646,33 @@ function CampaignCalendar({
 
 function RecentActivity({ items }: { items: ActivityItem[] }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-50">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800">
+        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
           <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
           Recent Activity
         </h2>
       </div>
       {items.length === 0 ? (
-        <div className="px-5 py-10 text-center text-xs text-gray-400">
+        <div className="px-5 py-10 text-center text-xs text-gray-400 dark:text-gray-500">
           Deal and production updates will appear here.
         </div>
       ) : (
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-gray-50 dark:divide-gray-800">
           {items.map((item) => (
             <Link
               key={item.id}
               href={`/commercial/deals/${item.campaign.id}`}
-              className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50/60 transition-colors group"
+              className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors group"
             >
-              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[var(--portal-commercial)] flex items-center justify-center shrink-0">
+              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[var(--portal-commercial)] flex items-center justify-center shrink-0">
                 {ACTIVITY_ICONS[item.type] ?? <ActivityIcon size={13} />}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-gray-700 leading-snug group-hover:text-gray-900">
+                <p className="text-xs text-gray-700 dark:text-gray-300 leading-snug group-hover:text-gray-900 dark:group-hover:text-gray-100">
                   {item.message}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
                   {item.userName ? `${item.userName} · ` : ""}
                   {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true })}
                 </p>

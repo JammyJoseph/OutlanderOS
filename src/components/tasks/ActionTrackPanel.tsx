@@ -128,7 +128,7 @@ function QuickAdd({
           if (e.key === "Enter") submit();
         }}
         placeholder={placeholder}
-        className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none transition-colors placeholder:text-gray-400"
+        className="min-w-0 flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm outline-none transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500"
         style={{ borderColor: undefined }}
         onFocus={(e) => (e.currentTarget.style.borderColor = accent)}
         onBlur={(e) => (e.currentTarget.style.borderColor = "")}
@@ -143,14 +143,14 @@ function QuickAdd({
           onKeyDown={(e) => {
             if (e.key === "Enter") submit();
           }}
-          className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-600 outline-none"
+          className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400 outline-none"
         />
       ) : (
         <button
           onClick={() => setShowDate(true)}
           aria-label="Add a deadline"
           title="Add a deadline"
-          className="shrink-0 rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-gray-50 hover:text-gray-500"
+          className="shrink-0 rounded-lg p-1.5 text-gray-300 dark:text-gray-600 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-500 dark:hover:text-gray-400"
         >
           <CalendarDays className="h-4 w-4" />
         </button>
@@ -184,7 +184,7 @@ function TaskRow({
 
   return (
     <li
-      className={`group flex items-center gap-3 px-4 py-2.5 transition-all duration-300 hover:bg-gray-50/70 ${
+      className={`group flex items-center gap-3 px-4 py-2.5 transition-all duration-300 hover:bg-gray-50/70 dark:hover:bg-gray-800/70 ${
         fading ? "opacity-0" : "opacity-100"
       }`}
     >
@@ -195,7 +195,7 @@ function TaskRow({
         className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
           done || fading
             ? "border-[#ffd700] bg-[#ffd700] text-black"
-            : "border-gray-300 bg-white hover:border-[#ffd700]"
+            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-[#ffd700]"
         }`}
       >
         {(done || fading) && <Check className="h-3 w-3" strokeWidth={3} />}
@@ -204,10 +204,10 @@ function TaskRow({
       <span
         className={`min-w-0 flex-1 truncate text-sm ${
           done
-            ? "text-gray-400 line-through"
+            ? "text-gray-400 dark:text-gray-500 line-through"
             : isAction
-              ? "font-semibold text-gray-900"
-              : "text-gray-800"
+              ? "font-semibold text-gray-900 dark:text-gray-100"
+              : "text-gray-800 dark:text-gray-200"
         }`}
       >
         {task.title}
@@ -227,7 +227,7 @@ function TaskRow({
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.blur();
               }}
-              className="ml-2 rounded border border-gray-200 px-1 py-0.5 text-xs font-normal text-gray-600 outline-none"
+              className="ml-2 rounded border border-gray-200 dark:border-gray-700 px-1 py-0.5 text-xs font-normal text-gray-600 dark:text-gray-400 outline-none"
             />
           ) : task.dueDate ? (
             <button
@@ -238,7 +238,7 @@ function TaskRow({
                   ? "text-red-500"
                   : tone === "soon"
                     ? "text-amber-500"
-                    : "text-gray-400"
+                    : "text-gray-400 dark:text-gray-500"
               }`}
             >
               by {formatDue(task.dueDate)}
@@ -248,7 +248,7 @@ function TaskRow({
               onClick={() => setEditingDate(true)}
               aria-label="Set deadline"
               title="Set deadline"
-              className="ml-2 hidden text-gray-300 hover:text-gray-500 group-hover:inline-block"
+              className="ml-2 hidden text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 group-hover:inline-block"
             >
               <CalendarDays className="inline h-3.5 w-3.5" />
             </button>
@@ -273,8 +273,8 @@ function TaskRow({
             title={isAction ? "Move to Track" : "Move to Action"}
             className={`flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
               isAction
-                ? "text-blue-600 hover:bg-blue-50"
-                : "text-amber-600 hover:bg-amber-50"
+                ? "text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                : "text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30"
             }`}
           >
             {isAction ? (
@@ -291,7 +291,7 @@ function TaskRow({
             onClick={() => onDelete(task)}
             aria-label="Delete task"
             title="Delete task"
-            className="rounded-md p-1 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
+            className="rounded-md p-1 text-gray-300 dark:text-gray-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400"
           >
             <Trash2 className="h-3 w-3" />
           </button>

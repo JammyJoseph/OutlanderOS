@@ -17,7 +17,7 @@ function Skeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {Array.from({ length: 4 }, (_, i) => (
-        <div key={i} className="h-[92px] animate-pulse rounded-xl bg-gray-100" />
+        <div key={i} className="h-[92px] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
       ))}
     </div>
   );
@@ -35,20 +35,20 @@ interface CardProps {
 function PulseCard({ label, value, sub, icon, accent, href }: CardProps) {
   const body = (
     <div
-      className={`rounded-xl border border-gray-100 bg-white p-4 shadow-sm ${
+      className={`rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 ${
         href ? "transition-shadow hover:shadow-md" : ""
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
           {label}
         </span>
         <span style={{ color: accent }} className="opacity-70">
           {icon}
         </span>
       </div>
-      <div className="mt-1.5 truncate text-xl font-bold text-gray-900">{value}</div>
-      {sub && <div className="mt-0.5 truncate text-xs text-gray-400">{sub}</div>}
+      <div className="mt-1.5 truncate text-xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
+      {sub && <div className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">{sub}</div>}
     </div>
   );
   return href ? <Link href={href}>{body}</Link> : body;
@@ -80,7 +80,7 @@ export function BusinessPulse() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-gray-100 bg-white p-4 text-sm text-gray-400 shadow-sm">
+      <div className="rounded-xl border border-gray-100 bg-white p-4 text-sm text-gray-400 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500">
         Business pulse unavailable right now.
       </div>
     );

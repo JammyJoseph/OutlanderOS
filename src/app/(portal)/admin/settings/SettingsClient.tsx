@@ -135,7 +135,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
+      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Settings</h1>
 
       <Suspense fallback={null}>
         <OAuthHandler
@@ -157,8 +157,8 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
         <div
           className={`flex items-center justify-between rounded-lg border px-4 py-3 text-sm ${
             banner.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-red-200 bg-red-50 text-red-600"
+              ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+              : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
           }`}
         >
           <span>{banner.message}</span>
@@ -172,7 +172,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       <section>
         <div className="mb-3 flex items-center gap-2">
           <Link2 className="h-4 w-4 text-[#ffd700]" />
-          <h2 className="text-sm font-semibold text-gray-800">Connected Accounts</h2>
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Connected Accounts</h2>
         </div>
         <div className="space-y-3">
           {accountCards.map((account) => {
@@ -182,19 +182,19 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                 key={account.id}
                 className={`flex items-center justify-between rounded-lg border p-4 transition-colors ${
                   connected
-                    ? "border-emerald-200 bg-emerald-50"
-                    : "border-gray-200 bg-gray-50"
+                    ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30"
+                    : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`flex h-9 w-9 items-center justify-center rounded-md text-sm font-bold ${
-                    connected ? "bg-emerald-100 text-emerald-600" : "bg-gray-100 text-gray-700"
+                    connected ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                   }`}>
                     G
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{account.label}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{account.label}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {account.email} · {account.description}
                     </p>
                   </div>
@@ -202,15 +202,15 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                 <div className="flex items-center gap-3">
                   {connected ? (
                     <>
-                      <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        <span className="text-[11px] font-medium text-emerald-600">Connected</span>
+                      <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Connected</span>
                       </div>
                       <button
                         onClick={() =>
                           setConnectedAccounts((prev) => ({ ...prev, [account.id]: false }))
                         }
-                        className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                        className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                       >
                         Disconnect
                       </button>
@@ -237,7 +237,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       <section>
         <div className="mb-3 flex items-center gap-2">
           <TableProperties className="h-4 w-4 text-[#ffd700]" />
-          <h2 className="text-sm font-semibold text-gray-800">Google Sheets</h2>
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Google Sheets</h2>
         </div>
 
         {connectedSheets.length > 0 && (
@@ -245,20 +245,20 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             {connectedSheets.map((sheet) => (
               <div
                 key={sheet.id}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3"
+                className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500 dark:text-emerald-400" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800">{sheet.name}</p>
-                    <p className="truncate text-[11px] text-gray-400">{sheet.url}</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{sheet.name}</p>
+                    <p className="truncate text-[11px] text-gray-400 dark:text-gray-500">{sheet.url}</p>
                   </div>
                 </div>
                 <button
                   onClick={() =>
                     setConnectedSheets((prev) => prev.filter((s) => s.id !== sheet.id))
                   }
-                  className="ml-4 shrink-0 text-xs text-gray-400 hover:text-red-500 transition-colors"
+                  className="ml-4 shrink-0 text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                 >
                   Remove
                 </button>
@@ -267,21 +267,21 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
           </div>
         )}
 
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
-          <p className="text-xs text-gray-500">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 space-y-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Paste a Google Sheets URL to link your billing tracker or other spreadsheets.
           </p>
           <div className="space-y-1.5">
-            <label className="text-xs text-gray-600">Sheet label</label>
+            <label className="text-xs text-gray-600 dark:text-gray-400">Sheet label</label>
             <Input
               placeholder="e.g. 2026 MASTER BILLING TRACKER"
               value={sheetLabel}
               onChange={(e) => setSheetLabel(e.target.value)}
-              className="border-gray-200 bg-white text-sm font-mono"
+              className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm font-mono"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-gray-600">Google Sheets URL</label>
+            <label className="text-xs text-gray-600 dark:text-gray-400">Google Sheets URL</label>
             <Input
               placeholder="https://docs.google.com/spreadsheets/d/..."
               value={sheetUrl}
@@ -289,7 +289,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                 setSheetUrl(e.target.value);
                 setTestStatus("idle");
               }}
-              className="border-gray-200 bg-white text-sm font-mono"
+              className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm font-mono"
             />
           </div>
 
@@ -297,10 +297,10 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             <div
               className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs ${
                 testStatus === "testing"
-                  ? "bg-gray-100 text-gray-500"
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
                   : testStatus === "ok"
-                  ? "bg-emerald-50 text-emerald-600"
-                  : "bg-red-50 text-red-600"
+                  ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                  : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
               }`}
             >
               {testStatus === "testing" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -314,7 +314,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             <Button
               size="sm"
               variant="outline"
-              className="border-gray-200 text-gray-700 hover:bg-gray-100"
+              className="border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={handleTestConnection}
               disabled={!sheetUrl || testStatus === "testing"}
             >
@@ -339,36 +339,36 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       <section>
         <div className="mb-3 flex items-center gap-2">
           <Plug className="h-4 w-4 text-[#ffd700]" />
-          <h2 className="text-sm font-semibold text-gray-800">Integrations</h2>
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Integrations</h2>
         </div>
         <div className="space-y-2">
           {/* Xero */}
           <div
             className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
-              xeroConnected ? "border-emerald-200 bg-emerald-50" : "border-gray-200 bg-gray-50"
+              xeroConnected ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30" : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
             }`}
           >
             <div className="flex items-center gap-3">
               <div className={`flex h-9 w-9 items-center justify-center rounded-md text-xs font-bold ${
-                xeroConnected ? "bg-emerald-100 text-emerald-600" : "bg-gray-100 text-gray-500"
+                xeroConnected ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
               }`}>
                 X
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-800">Xero</p>
-                <p className="text-xs text-gray-500">Accounting, P&amp;L &amp; invoices</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Xero</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Accounting, P&amp;L &amp; invoices</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               {xeroConnected ? (
                 <>
-                  <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                    <span className="text-[11px] font-medium text-emerald-600">Connected</span>
+                  <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Connected</span>
                   </div>
                   <button
                     onClick={() => setXeroConnected(false)}
-                    className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                    className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                   >
                     Disconnect
                   </button>
@@ -387,24 +387,24 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
           </div>
 
           {/* Instagram */}
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gray-100 text-xs font-bold text-gray-500">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 text-xs font-bold text-gray-500 dark:text-gray-400">
                 IG
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-800">Instagram</p>
-                <p className="text-xs text-gray-500">@outlandermagazine analytics — coming soon</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Instagram</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">@outlandermagazine analytics — coming soon</p>
               </div>
             </div>
-            <Badge className="bg-gray-100 text-[10px] text-gray-500">Coming soon</Badge>
+            <Badge className="bg-gray-100 dark:bg-gray-800 text-[10px] text-gray-500 dark:text-gray-400">Coming soon</Badge>
           </div>
 
           {/* Claude AI Agent */}
-          <div className="p-4 border border-gray-200 bg-white rounded-lg">
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">AI Agent (Claude)</h3>
-            <p className="text-xs text-gray-500 mb-2">Powers the Agent Office group chat with real reasoning</p>
-            <div className="text-xs text-amber-600">Configure ANTHROPIC_API_KEY in server environment</div>
+          <div className="p-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">AI Agent (Claude)</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Powers the Agent Office group chat with real reasoning</p>
+            <div className="text-xs text-amber-600 dark:text-amber-400">Configure ANTHROPIC_API_KEY in server environment</div>
           </div>
         </div>
       </section>

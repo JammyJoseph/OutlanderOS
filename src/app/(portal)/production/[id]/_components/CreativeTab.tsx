@@ -68,9 +68,9 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800">Creative & References</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Creative & References</h2>
           <button
             onClick={() => setShowAdd((v) => !v)}
             className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
@@ -83,7 +83,7 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
 
         {assets.length === 0 && !showAdd ? (
           <div className="px-5 py-12 text-center">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               No creative assets yet. Add briefs, moodboards, Figma links, and references here.
             </p>
             <button
@@ -117,8 +117,8 @@ function AssetCard({
   const embeddable = asset.type === "figma" && asset.url && isFigmaUrl(asset.url);
 
   return (
-    <div className="group bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
-      <div className="aspect-video bg-gradient-to-br from-amber-50 to-gray-50 flex items-center justify-center relative overflow-hidden">
+    <div className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+      <div className="aspect-video bg-gradient-to-br from-amber-50 dark:from-amber-900/30 to-gray-50 dark:to-gray-800 flex items-center justify-center relative overflow-hidden">
         {embeddable ? (
           <iframe
             src={getFigmaEmbedUrl(asset.url!)}
@@ -131,7 +131,7 @@ function AssetCard({
         )}
         <button
           onClick={onRemove}
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-white/90 backdrop-blur text-gray-400 hover:text-red-500 p-1.5 rounded-lg transition-opacity"
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-white/90 dark:bg-gray-900/90 backdrop-blur text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 p-1.5 rounded-lg transition-opacity"
         >
           <Trash2 size={13} />
         </button>
@@ -144,9 +144,9 @@ function AssetCard({
             {meta.label}
           </span>
         </div>
-        <p className="text-sm font-semibold text-gray-900 truncate">{asset.title}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{asset.title}</p>
         {asset.description && (
-          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{asset.description}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{asset.description}</p>
         )}
         {asset.url && (
           <a
@@ -186,11 +186,11 @@ function AddAssetForm({
   }
 
   return (
-    <div className="px-5 py-4 bg-amber-50/30 border-b border-gray-50 grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
+    <div className="px-5 py-4 bg-amber-50/30 dark:bg-amber-900/30 border-b border-gray-50 dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
       <select
         value={type}
         onChange={(e) => setType(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       >
         {(CREATIVE_TYPES ?? []).map((t) => (
           <option key={t.key} value={t.key}>
@@ -203,21 +203,21 @@ function AddAssetForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="url"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://…"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="text"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Notes"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
@@ -228,7 +228,7 @@ function AddAssetForm({
         </button>
         <button
           onClick={onCancel}
-          className="text-xs text-gray-400 hover:text-gray-600 px-2 py-2"
+          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-2"
         >
           Cancel
         </button>

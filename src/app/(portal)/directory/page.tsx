@@ -122,9 +122,9 @@ function isView(v: string | null): v is View {
 }
 
 const CONFIDENCE_STYLE: Record<string, string> = {
-  VERIFIED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
-  LIKELY: "border-amber-500/40 bg-amber-500/10 text-amber-600",
-  UNVERIFIED: "border-border bg-secondary text-gray-500",
+  VERIFIED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  LIKELY: "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  UNVERIFIED: "border-border bg-secondary text-gray-500 dark:text-gray-400",
 };
 const CONFIDENCE_LABEL: Record<string, string> = {
   VERIFIED: "Verified",
@@ -229,7 +229,7 @@ function Stars({
         const star = (
           <Star
             size={size}
-            className={i <= (rating ?? 0) ? "fill-[#ffd700] text-[#ffd700]" : "text-gray-300"}
+            className={i <= (rating ?? 0) ? "fill-[#ffd700] text-[#ffd700]" : "text-gray-300 dark:text-gray-600"}
           />
         );
         return onChange ? (
@@ -254,15 +254,15 @@ function Stars({
 
 function CategoryBadge({ category }: { category: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+    <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
       {category}
     </span>
   );
 }
 
 const inputCls =
-  "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
-const labelCls = "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1";
+  "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
+const labelCls = "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1";
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
@@ -271,7 +271,7 @@ export default function DirectoryPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="animate-spin text-gray-600" size={24} />
+          <Loader2 className="animate-spin text-gray-600 dark:text-gray-400" size={24} />
         </div>
       }
     >
@@ -560,7 +560,7 @@ function Directory() {
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: ACCENT }}>
               OutlanderOS · Directory
             </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
               {view === "dashboard"
                 ? "Directory"
                 : view === "radar"
@@ -573,7 +573,7 @@ function Directory() {
                 ? "Recently Added"
                 : "Contact Directory"}
             </h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {view === "dashboard"
                 ? "Your directory at a glance — contacts, scanning, network & radar."
                 : view === "radar"
@@ -614,7 +614,7 @@ function Directory() {
             const Icon = t.icon;
             const isActive = view === t.key;
             const cls = `inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-              isActive ? "text-black" : "text-gray-500 hover:text-gray-900"
+              isActive ? "text-black" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
             }`;
             // Lighthouse is its own route — render it as a link, everything else
             // switches the in-page view.
@@ -644,7 +644,7 @@ function Directory() {
         {view !== "categories" && !isToolView && (
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -686,14 +686,14 @@ function Directory() {
                   title="Show favourites only"
                   className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                     favouritesOnly
-                      ? "border-[#ffd700] text-gray-900"
-                      : "border-border text-gray-500 hover:text-gray-900"
+                      ? "border-[#ffd700] text-gray-900 dark:text-gray-100"
+                      : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                   }`}
                   style={favouritesOnly ? { backgroundColor: "rgba(255,215,0,0.12)" } : undefined}
                 >
                   <Star
                     size={14}
-                    className={favouritesOnly ? "fill-[#ffd700] text-[#ffd700]" : "text-gray-400"}
+                    className={favouritesOnly ? "fill-[#ffd700] text-[#ffd700]" : "text-gray-400 dark:text-gray-500"}
                   />
                   Favourites
                 </button>
@@ -723,7 +723,7 @@ function Directory() {
                   setFavouritesOnly(false);
                   setSortKey("name");
                 }}
-                className="px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-900"
+                className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
               >
                 Clear
               </button>
@@ -739,7 +739,7 @@ function Directory() {
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 category === ""
                   ? "border-transparent text-black"
-                  : "border-border text-gray-500 hover:text-gray-900"
+                  : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
               }`}
               style={category === "" ? { backgroundColor: ACCENT } : undefined}
             >
@@ -756,12 +756,12 @@ function Directory() {
                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                       active
                         ? "border-transparent text-black"
-                        : "border-border text-gray-500 hover:text-gray-900"
+                        : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                     }`}
                     style={active ? { backgroundColor: ACCENT } : undefined}
                   >
                     {c.category}
-                    <span className={active ? "text-black/60" : "text-gray-600"}>{c.count}</span>
+                    <span className={active ? "text-black/60" : "text-gray-600 dark:text-gray-400"}>{c.count}</span>
                   </button>
                 );
               })}
@@ -780,7 +780,7 @@ function Directory() {
           <NetworkPanel />
         ) : loading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="animate-spin text-gray-600" size={24} />
+            <Loader2 className="animate-spin text-gray-600 dark:text-gray-400" size={24} />
           </div>
         ) : view === "dashboard" ? (
           <Dashboard
@@ -821,7 +821,7 @@ function Directory() {
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-5">
           <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-2xl backdrop-blur">
-            <span className="text-sm font-semibold text-gray-900">
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {selected.size} selected
             </span>
             <div className="h-5 w-px bg-border" />
@@ -834,7 +834,7 @@ function Directory() {
             </button>
             <button
               onClick={() => setSelected(new Set())}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-gray-400 hover:text-gray-900"
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"
             >
               <X size={15} /> Clear selection
             </button>
@@ -845,7 +845,7 @@ function Directory() {
       {/* Toast */}
       {toast && (
         <div className="fixed inset-x-0 bottom-24 z-50 flex justify-center px-4">
-          <div className="rounded-xl border border-border bg-popover px-4 py-2.5 text-sm font-medium text-gray-900 shadow-xl">
+          <div className="rounded-xl border border-border bg-popover px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 shadow-xl">
             {toast}
           </div>
         </div>
@@ -988,10 +988,10 @@ function SplitPanel({
       {/* Left — contact list */}
       <div className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card lg:w-2/5">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-4 py-2.5 backdrop-blur">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
             {contacts.length} contact{contacts.length === 1 ? "" : "s"}
           </p>
-          <p className="hidden text-[10px] text-gray-400 sm:block">↑ ↓ to browse</p>
+          <p className="hidden text-[10px] text-gray-400 dark:text-gray-500 sm:block">↑ ↓ to browse</p>
         </div>
         <div ref={listRef} className="flex-1 overflow-y-auto">
           {contacts.map((c) => (
@@ -1008,18 +1008,18 @@ function SplitPanel({
         </div>
 
         {/* Key hint — subtle, muted, pinned to the bottom of the list. */}
-        <div className="border-t border-border bg-card/95 px-4 py-2 text-center text-[10px] font-medium tracking-wide text-gray-400">
-          <span className="text-gray-500">←</span> Archive
-          <span className="mx-1.5 text-gray-300">·</span>
-          <span className="text-gray-500">↑↓</span> Navigate
-          <span className="mx-1.5 text-gray-300">·</span>
-          <span className="text-gray-500">→</span> Favourite
+        <div className="border-t border-border bg-card/95 px-4 py-2 text-center text-[10px] font-medium tracking-wide text-gray-400 dark:text-gray-500">
+          <span className="text-gray-500 dark:text-gray-400">←</span> Archive
+          <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+          <span className="text-gray-500 dark:text-gray-400">↑↓</span> Navigate
+          <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+          <span className="text-gray-500 dark:text-gray-400">→</span> Favourite
         </div>
 
         {/* Archive confirmation — brief overlay, Enter to confirm / Esc to cancel. */}
         {confirmArchive && (
           <div className="absolute inset-x-3 bottom-12 z-20 rounded-xl border border-border bg-popover px-4 py-3 shadow-2xl">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Archive {confirmArchive.name}?
             </p>
             <div className="mt-2 flex items-center gap-2">
@@ -1035,13 +1035,13 @@ function SplitPanel({
               </button>
               <button
                 onClick={() => setConfirmArchive(null)}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-900"
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
               >
                 Cancel
               </button>
-              <span className="ml-auto text-[10px] text-gray-400">
-                <span className="font-semibold text-gray-500">Enter</span> confirm ·{" "}
-                <span className="font-semibold text-gray-500">Esc</span> cancel
+              <span className="ml-auto text-[10px] text-gray-400 dark:text-gray-500">
+                <span className="font-semibold text-gray-500 dark:text-gray-400">Enter</span> confirm ·{" "}
+                <span className="font-semibold text-gray-500 dark:text-gray-400">Esc</span> cancel
               </span>
             </div>
           </div>
@@ -1092,12 +1092,12 @@ function SplitRow({
     >
       <SelectBox selected={selected} onToggle={onToggleSelect} />
       <FavouriteStar favourite={Boolean(c.isFavourite)} onToggle={onToggleFavourite} />
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500 dark:text-gray-400">
         {c.name.slice(0, 2).toUpperCase()}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-bold leading-tight text-gray-900">{c.name}</p>
-        <div className="flex items-center gap-2 text-[11px] text-gray-500">
+        <p className="truncate text-[15px] font-bold leading-tight text-gray-900 dark:text-gray-100">{c.name}</p>
+        <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
           {handle ? (
             <span className="truncate font-semibold text-[#dc2743]">@{handle}</span>
           ) : (
@@ -1125,7 +1125,7 @@ function SelectBox({ selected, onToggle }: { selected: boolean; onToggle: () => 
         e.stopPropagation();
         onToggle();
       }}
-      className={selected ? "" : "text-gray-600 hover:text-gray-300"}
+      className={selected ? "" : "text-gray-600 dark:text-gray-400 hover:text-gray-300 dark:hover:text-gray-600"}
       style={selected ? { color: ACCENT } : undefined}
       title={selected ? "Deselect" : "Select"}
     >
@@ -1167,7 +1167,7 @@ function FavouriteStar({
         className={
           favourite
             ? "fill-[#ffd700] text-[#ffd700]"
-            : "text-gray-400 hover:text-[#ffd700]"
+            : "text-gray-400 dark:text-gray-500 hover:text-[#ffd700]"
         }
       />
     </button>
@@ -1240,12 +1240,12 @@ function ContactDetailPanel({
             size={18}
             pulse={favPulse}
           />
-          <p className="min-w-0 truncate text-sm font-semibold text-gray-900">{c.name}</p>
+          <p className="min-w-0 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{c.name}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
             onClick={() => onEdit(contact)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
           >
             <Pencil size={13} /> Edit
           </button>
@@ -1263,13 +1263,13 @@ function ContactDetailPanel({
         {/* Identity */}
         <div>
           <div className="flex items-start gap-3">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-gray-500">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-gray-500 dark:text-gray-400">
               {c.name.slice(0, 2).toUpperCase()}
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-xl font-semibold leading-tight text-gray-900">{c.name}</h2>
+              <h2 className="text-xl font-semibold leading-tight text-gray-900 dark:text-gray-100">{c.name}</h2>
               {(c.role || c.company) && (
-                <p className="mt-0.5 text-sm text-gray-500">
+                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
                   {[c.role, c.company].filter(Boolean).join(" · ")}
                 </p>
               )}
@@ -1282,7 +1282,7 @@ function ContactDetailPanel({
             )}
             {c.rating ? <Stars rating={c.rating} /> : null}
             {c.location && (
-              <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+              <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                 <MapPin size={12} /> {c.location}
               </span>
             )}
@@ -1302,14 +1302,14 @@ function ContactDetailPanel({
                 <Instagram size={16} /> @{handle}
               </a>
             ) : (
-              <span className="text-sm text-gray-500">Instagram</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Instagram</span>
             )}
             {followers && (
               <span className="text-right">
-                <span className="block text-base font-bold text-gray-900 tabular-nums">
+                <span className="block text-base font-bold text-gray-900 dark:text-gray-100 tabular-nums">
                   {followers}
                 </span>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                   Followers
                 </span>
               </span>
@@ -1318,20 +1318,20 @@ function ContactDetailPanel({
         )}
 
         {/* Contact details */}
-        <div className="grid grid-cols-1 gap-1.5 text-sm text-gray-600">
+        <div className="grid grid-cols-1 gap-1.5 text-sm text-gray-600 dark:text-gray-400">
           {c.email && (
-            <a href={`mailto:${c.email}`} className="inline-flex items-center gap-2 hover:text-gray-900">
-              <Mail size={14} className="text-gray-400" /> {c.email}
+            <a href={`mailto:${c.email}`} className="inline-flex items-center gap-2 hover:text-gray-900 dark:hover:text-gray-100">
+              <Mail size={14} className="text-gray-400 dark:text-gray-500" /> {c.email}
             </a>
           )}
           {c.phone && (
-            <a href={`tel:${c.phone}`} className="inline-flex items-center gap-2 hover:text-gray-900">
-              <Phone size={14} className="text-gray-400" /> {c.phone}
+            <a href={`tel:${c.phone}`} className="inline-flex items-center gap-2 hover:text-gray-900 dark:hover:text-gray-100">
+              <Phone size={14} className="text-gray-400 dark:text-gray-500" /> {c.phone}
             </a>
           )}
           {c.location && (
             <span className="inline-flex items-center gap-2">
-              <MapPin size={14} className="text-gray-400" /> {c.location}
+              <MapPin size={14} className="text-gray-400 dark:text-gray-500" /> {c.location}
             </span>
           )}
           {c.website && (
@@ -1339,9 +1339,9 @@ function ContactDetailPanel({
               href={c.website.startsWith("http") ? c.website : `https://${c.website}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 hover:text-gray-900"
+              className="inline-flex items-center gap-2 hover:text-gray-900 dark:hover:text-gray-100"
             >
-              <ExternalLink size={14} className="text-gray-400" /> {c.website}
+              <ExternalLink size={14} className="text-gray-400 dark:text-gray-500" /> {c.website}
             </a>
           )}
         </div>
@@ -1350,7 +1350,7 @@ function ContactDetailPanel({
             otherwise a tall live embed. */}
         {handle && (
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               Instagram
             </p>
             {recentPosts.length > 0 ? (
@@ -1371,7 +1371,7 @@ function ContactDetailPanel({
               href={`https://www.instagram.com/${handle}/`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900"
+              className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
             >
               <ExternalLink size={12} />{" "}
               {recentPosts.length > 0
@@ -1384,24 +1384,24 @@ function ContactDetailPanel({
         {/* Bio / notes */}
         {c.notes && (
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               Bio / Notes
             </p>
-            <p className="whitespace-pre-wrap text-sm text-gray-600">{c.notes}</p>
+            <p className="whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-400">{c.notes}</p>
           </div>
         )}
 
         {/* Tags */}
         {tags.length > 0 && (
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               Tags
             </p>
             <div className="flex flex-wrap gap-1.5">
               {tags.map((t) => (
                 <span
                   key={t}
-                  className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-gray-600"
+                  className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-400"
                 >
                   {t}
                 </span>
@@ -1413,7 +1413,7 @@ function ContactDetailPanel({
         {/* Portfolio */}
         {portfolio.length > 0 && (
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               Portfolio
             </p>
             <div className="space-y-1.5">
@@ -1423,9 +1423,9 @@ function ContactDetailPanel({
                   href={p.url.startsWith("http") ? p.url : `https://${p.url}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex w-full items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-600 hover:border-[var(--ring)] hover:text-gray-900"
+                  className="inline-flex w-full items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:border-[var(--ring)] hover:text-gray-900 dark:hover:text-gray-100"
                 >
-                  <ExternalLink size={13} className="text-gray-400" />
+                  <ExternalLink size={13} className="text-gray-400 dark:text-gray-500" />
                   <span className="truncate">{p.title || p.url}</span>
                 </a>
               ))}
@@ -1435,15 +1435,15 @@ function ContactDetailPanel({
 
         {/* Collaboration history */}
         <div>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Collaboration history
           </p>
           {loading ? (
-            <div className="flex items-center gap-2 text-xs text-gray-400">
+            <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
               <Loader2 size={14} className="animate-spin" /> Loading…
             </div>
           ) : collaborations.length === 0 ? (
-            <p className="text-xs text-gray-400">No productions linked yet.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">No productions linked yet.</p>
           ) : (
             <div className="space-y-1.5">
               {collaborations.map((col) => (
@@ -1452,8 +1452,8 @@ function ContactDetailPanel({
                   href={`/production/${col.productionId}`}
                   className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm hover:border-[var(--ring)]"
                 >
-                  <span className="truncate text-gray-700">{col.productionTitle}</span>
-                  <span className="shrink-0 text-xs text-gray-400">{col.role}</span>
+                  <span className="truncate text-gray-700 dark:text-gray-300">{col.productionTitle}</span>
+                  <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{col.role}</span>
                 </Link>
               ))}
             </div>
@@ -1516,12 +1516,12 @@ function StatCard({
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
-      <div className="flex items-center gap-2 text-gray-500">
+      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
         <Icon size={15} style={{ color: ACCENT }} />
         <span className="text-[11px] font-semibold uppercase tracking-wide">{label}</span>
       </div>
-      <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 tabular-nums">{value}</p>
-      {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
+      <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 tabular-nums">{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{hint}</p>}
     </div>
   );
 }
@@ -1568,7 +1568,7 @@ function HottestCreatives() {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-gray-500">
+        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
           <Trophy size={15} style={{ color: ACCENT }} />
           <span className="text-[11px] font-semibold uppercase tracking-wide">
             Hottest creatives
@@ -1576,7 +1576,7 @@ function HottestCreatives() {
         </div>
         <Link
           href="/directory/leaderboard"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-900"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         >
           See all <ChevronRight size={13} />
         </Link>
@@ -1584,7 +1584,7 @@ function HottestCreatives() {
 
       {!loaded ? (
         <div className="flex items-center justify-center py-6">
-          <Loader2 className="animate-spin text-gray-400" size={18} />
+          <Loader2 className="animate-spin text-gray-400 dark:text-gray-500" size={18} />
         </div>
       ) : (
         <div className="space-y-1">
@@ -1616,19 +1616,19 @@ function HottestCreatives() {
                     className="h-7 w-7 shrink-0 rounded-full object-cover"
                   />
                 ) : (
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-gray-500">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-gray-500 dark:text-gray-400">
                     {c.name.slice(0, 2).toUpperCase()}
                   </span>
                 )}
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                   {c.name}
                 </span>
                 {followers && (
-                  <span className="hidden shrink-0 items-center gap-1 text-xs text-gray-400 sm:inline-flex">
+                  <span className="hidden shrink-0 items-center gap-1 text-xs text-gray-400 dark:text-gray-500 sm:inline-flex">
                     <Users size={11} /> {followers}
                   </span>
                 )}
-                <span className="shrink-0 text-xs font-semibold tabular-nums text-gray-400">
+                <span className="shrink-0 text-xs font-semibold tabular-nums text-gray-400 dark:text-gray-500">
                   {c.score}
                 </span>
               </Link>
@@ -1712,7 +1712,7 @@ function Dashboard({
       {/* Category breakdown */}
       {topCategories.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-3 flex items-center gap-2 text-gray-500">
+          <div className="mb-3 flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <Tags size={15} style={{ color: ACCENT }} />
             <span className="text-[11px] font-semibold uppercase tracking-wide">
               Categories breakdown
@@ -1723,10 +1723,10 @@ function Dashboard({
               <button
                 key={c.category}
                 onClick={() => onNavigate("contacts")}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-[var(--ring)]"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:border-[var(--ring)]"
               >
                 {c.category}
-                <span className="rounded-full bg-secondary px-1.5 py-0.5 text-xs font-semibold tabular-nums text-gray-500">
+                <span className="rounded-full bg-secondary px-1.5 py-0.5 text-xs font-semibold tabular-nums text-gray-500 dark:text-gray-400">
                   {c.count}
                 </span>
               </button>
@@ -1751,14 +1751,14 @@ function Dashboard({
                 <Icon size={18} />
               </span>
               <div>
-                <p className="flex items-center gap-1 text-sm font-semibold text-gray-900">
+                <p className="flex items-center gap-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {q.title}
                   <ChevronRight
                     size={14}
-                    className="text-gray-400 transition-transform group-hover:translate-x-0.5"
+                    className="text-gray-400 dark:text-gray-500 transition-transform group-hover:translate-x-0.5"
                   />
                 </p>
-                <p className="mt-0.5 text-xs text-gray-500">{q.body}</p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{q.body}</p>
               </div>
             </>
           );
@@ -1779,7 +1779,7 @@ function Dashboard({
       {/* Recently scanned */}
       {recentlyScanned.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-3 flex items-center gap-2 text-gray-500">
+          <div className="mb-3 flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <TrendingUp size={15} style={{ color: ACCENT }} />
             <span className="text-[11px] font-semibold uppercase tracking-wide">
               Recently scanned
@@ -1804,18 +1804,18 @@ function Dashboard({
                       className="h-9 w-9 shrink-0 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                       {c.name.slice(0, 2).toUpperCase()}
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{c.name}</p>
                     {handle && (
                       <p className="truncate text-[11px] font-medium text-[#dc2743]">@{handle}</p>
                     )}
                   </div>
                   {followers && (
-                    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-gray-500">
+                    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                       <Users size={12} /> {followers}
                     </span>
                   )}
@@ -1856,9 +1856,9 @@ function CategoriesGrid({
           onClick={() => onPick(c.category)}
           className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3.5 text-left transition-colors hover:border-[var(--ring)]"
         >
-          <span className="text-sm font-semibold text-gray-900">{c.category}</span>
-          <span className="inline-flex items-center gap-2 text-xs text-gray-500">
-            <span className="rounded-full border border-border px-2 py-0.5 font-semibold text-gray-600">
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{c.category}</span>
+          <span className="inline-flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <span className="rounded-full border border-border px-2 py-0.5 font-semibold text-gray-600 dark:text-gray-400">
               {c.count}
             </span>
             <ChevronRight size={14} />
@@ -1872,10 +1872,10 @@ function CategoriesGrid({
 // ── Radar list ──────────────────────────────────────────────────────────────────
 
 const RADAR_STATUS_STYLE: Record<string, string> = {
-  WATCHING: "border-gray-300 text-gray-600",
-  REACHED_OUT: "border-amber-300 text-amber-700",
-  CONNECTED: "border-sky-300 text-sky-700",
-  COLLABORATING: "border-emerald-300 text-emerald-700",
+  WATCHING: "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400",
+  REACHED_OUT: "border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300",
+  CONNECTED: "border-sky-300 dark:border-sky-800 text-sky-700 dark:text-sky-300",
+  COLLABORATING: "border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300",
 };
 
 function RadarList({
@@ -1916,17 +1916,17 @@ function RadarList({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <RadarIcon size={14} style={{ color: ACCENT }} />
-                <p className="truncate text-sm font-semibold text-gray-900">{e.name}</p>
+                <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{e.name}</p>
                 <CategoryBadge category={e.category} />
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-gray-500">
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400">
                 {link && (
                   <a
                     href={link.startsWith("http") ? link : `https://${link.replace(/^@/, "instagram.com/")}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(ev) => ev.stopPropagation()}
-                    className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-900"
+                    className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                   >
                     <ExternalLink size={11} /> {e.radarLink || e.instagram || e.website}
                   </a>
@@ -1938,28 +1938,28 @@ function RadarList({
                 )}
                 {e.creator?.name && <span>Added by {e.creator.name}</span>}
               </div>
-              {e.notes && <p className="mt-1.5 text-xs text-gray-400 line-clamp-2">{e.notes}</p>}
+              {e.notes && <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500 line-clamp-2">{e.notes}</p>}
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onCycle(e)}
                 title="Click to advance status"
                 className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors hover:bg-secondary ${
-                  RADAR_STATUS_STYLE[status] ?? "border-gray-300 text-gray-600"
+                  RADAR_STATUS_STYLE[status] ?? "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400"
                 }`}
               >
                 {RADAR_STATUS_LABELS[status] ?? status}
               </button>
               <button
                 onClick={() => onConvert(e)}
-                className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-gray-600 hover:border-emerald-500 hover:text-emerald-600"
+                className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-gray-600 dark:text-gray-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400"
                 title="Promote to a full contact"
               >
                 <UserPlus size={12} /> Convert
               </button>
               <button
                 onClick={() => onEdit(e)}
-                className="rounded-lg border border-border p-1.5 text-gray-500 hover:text-gray-900"
+                className="rounded-lg border border-border p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                 title="Edit"
               >
                 <Pencil size={13} />
@@ -1989,9 +1989,9 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-20 text-center">
-      <Icon size={28} className="mb-3 text-gray-600" />
-      <p className="text-sm font-semibold text-gray-900">{title}</p>
-      <p className="mt-1 max-w-md text-xs text-gray-500">{body}</p>
+      <Icon size={28} className="mb-3 text-gray-600 dark:text-gray-400" />
+      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</p>
+      <p className="mt-1 max-w-md text-xs text-gray-500 dark:text-gray-400">{body}</p>
       {action && onAction && (
         <button
           onClick={onAction}
@@ -2022,8 +2022,8 @@ function ModalShell({
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 py-10 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-900">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+          <button onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
             <X size={18} />
           </button>
         </div>
@@ -2103,7 +2103,7 @@ function ContactModal({
           {contact ? (
             <button
               onClick={() => onDelete(contact.id)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-400"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-400"
             >
               <Trash2 size={13} /> Delete
             </button>
@@ -2111,7 +2111,7 @@ function ContactModal({
             <span />
           )}
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-gray-900">
+            <button onClick={onClose} className="rounded-lg px-3 py-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100">
               Cancel
             </button>
             <button
@@ -2246,7 +2246,7 @@ function RadarModal({
           {entry ? (
             <button
               onClick={() => onDelete(entry.id)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-400"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-400"
             >
               <Trash2 size={13} /> Remove
             </button>
@@ -2254,7 +2254,7 @@ function RadarModal({
             <span />
           )}
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-gray-900">
+            <button onClick={onClose} className="rounded-lg px-3 py-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100">
               Cancel
             </button>
             <button

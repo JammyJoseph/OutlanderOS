@@ -54,15 +54,15 @@ export function QuickLinks({ counts }: Props) {
           <Link
             key={l.href}
             href={l.href}
-            className="group flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+            className="group flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
             style={{ borderLeft: `3px solid ${colors.accent}` }}
           >
             <Icon className="h-4 w-4 shrink-0" style={{ color: colors.accent }} />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-semibold text-gray-800 group-hover:text-gray-900">
+              <div className="truncate text-xs font-semibold text-gray-800 group-hover:text-gray-900 dark:text-gray-200 dark:group-hover:text-gray-100">
                 {l.label}
               </div>
-              <div className="text-[11px] text-gray-400">
+              <div className="text-[11px] text-gray-400 dark:text-gray-500">
                 {l.count} {l.unit}
               </div>
             </div>

@@ -109,7 +109,7 @@ export default function PLHistoryTab() {
   const lastPL = lastYear.data?.profitAndLoss
   const yoy = lastPL && lastPL.revenue > 0 && thisPL ? ((thisPL.revenue - lastPL.revenue) / lastPL.revenue) * 100 : null
 
-  const selectCls = 'rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:border-[#ffd700] focus:outline-none'
+  const selectCls = 'rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:border-[#ffd700] focus:outline-none'
 
   return (
     <div className="space-y-5">
@@ -127,7 +127,7 @@ export default function PLHistoryTab() {
                 setGranularity(g)
                 setPeriod(periodOptions(g)[0].value)
               }}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${granularity === g ? 'bg-[#ffd700] text-gray-900' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${granularity === g ? 'bg-[#ffd700] text-gray-900' : 'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
             >
               {g}
             </button>
@@ -156,37 +156,37 @@ export default function PLHistoryTab() {
       </div>
 
       {/* Year-over-year comparison */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Year-over-Year</p>
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-5 shadow-sm">
+        <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Year-over-Year</p>
         <div className="flex flex-wrap items-end gap-6">
           <div>
-            <p className="text-[11px] text-gray-400">{CURRENT_YEAR - 1} revenue</p>
-            <p className="font-mono text-xl font-bold text-gray-500">{connected ? fmtGBP(lastPL?.revenue) : '—'}</p>
-            <p className="text-[10px] text-gray-400">profit {connected ? fmtGBP(lastPL?.profit) : '—'}</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">{CURRENT_YEAR - 1} revenue</p>
+            <p className="font-mono text-xl font-bold text-gray-500 dark:text-gray-400">{connected ? fmtGBP(lastPL?.revenue) : '—'}</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500">profit {connected ? fmtGBP(lastPL?.profit) : '—'}</p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-400">{CURRENT_YEAR} revenue</p>
-            <p className="font-mono text-xl font-bold text-gray-900">{connected ? fmtGBP(thisPL?.revenue) : '—'}</p>
-            <p className="text-[10px] text-gray-400">profit {connected ? fmtGBP(thisPL?.profit) : '—'}</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">{CURRENT_YEAR} revenue</p>
+            <p className="font-mono text-xl font-bold text-gray-900 dark:text-gray-100">{connected ? fmtGBP(thisPL?.revenue) : '—'}</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500">profit {connected ? fmtGBP(thisPL?.profit) : '—'}</p>
           </div>
           {connected && yoy !== null && (
-            <div className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold ${yoy >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+            <div className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold ${yoy >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
               {yoy >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
               {yoy >= 0 ? '+' : ''}{yoy.toFixed(1)}% YoY
             </div>
           )}
           {connected && yoy === null && !lastYear.loading && (
-            <p className="text-[11px] text-gray-400">No {CURRENT_YEAR - 1} revenue in Xero for comparison.</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">No {CURRENT_YEAR - 1} revenue in Xero for comparison.</p>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Revenue by client */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Revenue by Client (Xero)</p>
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-5 shadow-sm">
+          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Revenue by Client (Xero)</p>
           {!connected ? (
-            <p className="text-xs text-gray-400">Connect Xero to rank clients by invoiced revenue.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Connect Xero to rank clients by invoiced revenue.</p>
           ) : revenueByClient.length === 0 ? (
             <EmptyState message="No client invoices found." />
           ) : (
@@ -194,11 +194,11 @@ export default function PLHistoryTab() {
               {revenueByClient.map((c, i) => (
                 <li key={c.name} className="flex items-center justify-between text-xs">
                   <span className="flex min-w-0 items-center gap-2">
-                    <span className="w-4 shrink-0 text-gray-300">{i + 1}</span>
-                    <span className="truncate text-gray-700">{c.name}</span>
+                    <span className="w-4 shrink-0 text-gray-300 dark:text-gray-600">{i + 1}</span>
+                    <span className="truncate text-gray-700 dark:text-gray-300">{c.name}</span>
                   </span>
                   <span className="ml-3 shrink-0 font-mono">
-                    <span className="font-semibold text-gray-900">{fmtGBP(c.invoiced)}</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{fmtGBP(c.invoiced)}</span>
                     <span className="ml-1.5 text-[10px] text-emerald-600">{fmtGBP(c.paid)} paid</span>
                   </span>
                 </li>
@@ -208,17 +208,17 @@ export default function PLHistoryTab() {
         </div>
 
         {/* Project margin analysis */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Project Margin Analysis</p>
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-5 shadow-sm">
+          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Project Margin Analysis</p>
           {projectMargins.length === 0 ? (
-            <p className="text-xs text-gray-400">No projects with budgets yet — margins appear once budgets and costs are logged.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">No projects with budgets yet — margins appear once budgets and costs are logged.</p>
           ) : (
             <ul className="space-y-2">
               {projectMargins.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-2 text-xs">
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-gray-800">{p.name}</p>
-                    <p className="truncate text-[10px] text-gray-400">{p.client} · {fmtGBP(p.budget)} budget · {fmtGBP(p.costs)} costs</p>
+                    <p className="truncate font-medium text-gray-800 dark:text-gray-200">{p.name}</p>
+                    <p className="truncate text-[10px] text-gray-400 dark:text-gray-500">{p.client} · {fmtGBP(p.budget)} budget · {fmtGBP(p.costs)} costs</p>
                   </div>
                   <span className={`shrink-0 font-mono font-semibold ${(p.margin ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                     {fmtPct(p.margin)}

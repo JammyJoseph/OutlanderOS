@@ -120,7 +120,7 @@ export default function LeaderboardPage() {
       <div className="mx-auto max-w-5xl">
         <button
           onClick={() => router.back()}
-          className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         >
           <ArrowLeft size={15} /> Back
         </button>
@@ -134,10 +134,10 @@ export default function LeaderboardPage() {
             <Trophy size={20} />
           </span>
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
               Leaderboard
             </h1>
-            <p className="mt-0.5 text-sm text-gray-500">
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
               The hottest creatives, ranked by collaborations, credits and reach.
             </p>
           </div>
@@ -155,8 +155,8 @@ export default function LeaderboardPage() {
                   onClick={() => setPeriod(p.key)}
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                     active
-                      ? "bg-secondary text-gray-900"
-                      : "text-gray-500 hover:text-gray-900"
+                      ? "bg-secondary text-gray-900 dark:text-gray-100"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                   }`}
                   style={active ? { boxShadow: `inset 0 0 0 1px ${ACCENT}33` } : undefined}
                 >
@@ -172,8 +172,8 @@ export default function LeaderboardPage() {
               onClick={() => setCategory("all")}
               className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
                 category === "all"
-                  ? "border-[var(--ring)] text-gray-900"
-                  : "border-border text-gray-500 hover:text-gray-900"
+                  ? "border-[var(--ring)] text-gray-900 dark:text-gray-100"
+                  : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
               }`}
             >
               All
@@ -184,8 +184,8 @@ export default function LeaderboardPage() {
                 onClick={() => setCategory(c)}
                 className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
                   category === c
-                    ? "border-[var(--ring)] text-gray-900"
-                    : "border-border text-gray-500 hover:text-gray-900"
+                    ? "border-[var(--ring)] text-gray-900 dark:text-gray-100"
+                    : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                 }`}
               >
                 Top {c}s
@@ -197,7 +197,7 @@ export default function LeaderboardPage() {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="ml-auto rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium text-gray-700 outline-none focus:border-[var(--ring)]"
+            className="ml-auto rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 outline-none focus:border-[var(--ring)]"
           >
             <option value="all">All categories</option>
             {CONTACT_CATEGORIES.map((c) => (
@@ -210,13 +210,13 @@ export default function LeaderboardPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="animate-spin text-gray-600" size={24} />
+            <Loader2 className="animate-spin text-gray-600 dark:text-gray-400" size={24} />
           </div>
         ) : entries.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-20 text-center">
-            <Trophy size={28} className="mx-auto mb-3 text-gray-400" />
-            <p className="text-sm font-medium text-gray-900">No ranked creatives yet</p>
-            <p className="mt-1 text-sm text-gray-500">
+            <Trophy size={28} className="mx-auto mb-3 text-gray-400 dark:text-gray-500" />
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">No ranked creatives yet</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Scan Instagram profiles to build up collaboration and credit data.
             </p>
           </div>
@@ -267,7 +267,7 @@ function Avatar({
   }
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-gray-500"
+      className="flex shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-gray-500 dark:text-gray-400"
       style={{ width: size, height: size }}
     >
       {entry.name.slice(0, 2).toUpperCase()}
@@ -310,13 +310,13 @@ function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: number }) 
       </div>
 
       <div className="min-w-0">
-        <p className="truncate text-base font-semibold text-gray-900">{entry.name}</p>
-        <span className="mt-1 inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+        <p className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">{entry.name}</p>
+        <span className="mt-1 inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
           {entry.category}
         </span>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-gray-500">
+      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
         <span className="inline-flex items-center gap-1" title="Collaborators">
           <Handshake size={12} /> {entry.collaborationCount}
         </span>
@@ -345,14 +345,14 @@ function LeaderboardRow({ entry, rank }: { entry: LeaderboardEntry; rank: number
       href={`/directory/${entry.id}`}
       className="flex items-center gap-3 border-b border-border px-4 py-3 transition-colors last:border-b-0 hover:bg-secondary/50"
     >
-      <span className="w-7 shrink-0 text-center text-sm font-bold tabular-nums text-gray-400">
+      <span className="w-7 shrink-0 text-center text-sm font-bold tabular-nums text-gray-400 dark:text-gray-500">
         {rank}
       </span>
       <Avatar entry={entry} size={40} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-gray-900">{entry.name}</p>
+        <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{entry.name}</p>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+          <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             {entry.category}
           </span>
           {handle && (
@@ -364,7 +364,7 @@ function LeaderboardRow({ entry, rank }: { entry: LeaderboardEntry; rank: number
       </div>
 
       {/* Stats */}
-      <div className="hidden items-center gap-4 text-xs text-gray-500 sm:flex">
+      <div className="hidden items-center gap-4 text-xs text-gray-500 dark:text-gray-400 sm:flex">
         <span className="inline-flex items-center gap-1" title="Collaborators">
           <Handshake size={12} /> {entry.collaborationCount}
         </span>

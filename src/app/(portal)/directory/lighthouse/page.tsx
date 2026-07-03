@@ -37,7 +37,7 @@ export default function LighthousePage() {
       <div className="mx-auto max-w-5xl">
         <Link
           href="/directory"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         >
           <ArrowLeft size={15} /> Back to Directory
         </Link>
@@ -51,8 +51,8 @@ export default function LighthousePage() {
             <Sparkles size={20} />
           </span>
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-gray-900">Lighthouse</h1>
-            <p className="mt-0.5 text-sm text-gray-500">
+            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Lighthouse</h1>
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
               A public-facing showcase of the creatives we rate and the talent we&apos;re watching.
             </p>
           </div>
@@ -68,7 +68,7 @@ export default function LighthousePage() {
                 key={s.key}
                 onClick={() => setSection(s.key)}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  isActive ? "text-black" : "text-gray-500 hover:text-gray-900"
+                  isActive ? "text-black" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                 }`}
                 style={isActive ? { backgroundColor: ACCENT } : undefined}
               >
@@ -98,7 +98,7 @@ function ComingSoonSection({
     <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
       {/* Placeholder content — deliberately inert and greyed out. */}
       <div className="pointer-events-none select-none p-6 opacity-40 blur-[1.5px]" aria-hidden>
-        <div className="mb-5 flex items-center gap-2 text-gray-500">
+        <div className="mb-5 flex items-center gap-2 text-gray-500 dark:text-gray-400">
           <Icon size={16} style={{ color: ACCENT }} />
           <span className="text-[11px] font-semibold uppercase tracking-wide">
             {section.label}
@@ -114,7 +114,7 @@ function ComingSoonSection({
               <div className="min-w-0 flex-1 space-y-2">
                 <div className="h-3 w-3/4 rounded-full bg-secondary" />
                 <div className="h-2.5 w-1/2 rounded-full bg-secondary" />
-                <div className="flex items-center gap-2 pt-1 text-gray-400">
+                <div className="flex items-center gap-2 pt-1 text-gray-400 dark:text-gray-500">
                   {section.key === "spotlight" ? (
                     <Star size={12} className="fill-[#ffd700] text-[#ffd700]" />
                   ) : (
@@ -136,9 +136,9 @@ function ComingSoonSection({
         >
           <Lock size={11} /> Coming Soon
         </span>
-        <p className="text-lg font-semibold text-gray-900">{section.label}</p>
-        <p className="max-w-md text-sm text-gray-500">{section.tagline}</p>
-        <p className="max-w-md text-xs text-gray-400">
+        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{section.label}</p>
+        <p className="max-w-md text-sm text-gray-500 dark:text-gray-400">{section.tagline}</p>
+        <p className="max-w-md text-xs text-gray-400 dark:text-gray-500">
           This will become a public-facing feature. Nothing to configure here yet — check back soon.
         </p>
       </div>

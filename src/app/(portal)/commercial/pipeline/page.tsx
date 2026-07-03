@@ -48,7 +48,7 @@ export default function PipelinePage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-24">
-          <Loader2 size={24} className="animate-spin text-gray-400" />
+          <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
         </div>
       }
     >
@@ -203,7 +203,7 @@ function PipelineBoard() {
   }
 
   const inputCls =
-    "rounded-xl border border-gray-200 bg-white text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
+    "rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
 
   return (
     <div className="min-h-screen bg-card">
@@ -214,15 +214,15 @@ function PipelineBoard() {
             <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
               OutlanderOS · Commercial
             </p>
-            <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">Pipeline</h1>
-            <p className="text-gray-500 mt-1 text-sm">
+            <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Pipeline</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
               {filtered.length} deal{filtered.length !== 1 ? "s" : ""} · drag cards between stages
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href="/commercial"
-              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm"
             >
               <LayoutDashboard size={16} className="text-[var(--portal-commercial)]" />
               Dashboard
@@ -240,7 +240,7 @@ function PipelineBoard() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 mb-5 max-w-6xl mx-auto">
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               value={search}
@@ -264,14 +264,14 @@ function PipelineBoard() {
           </select>
           <button
             onClick={() => setShowArchived((v) => !v)}
-            className={`flex items-center gap-1.5 rounded-xl border bg-white text-sm px-3 py-2 transition-colors ${
+            className={`flex items-center gap-1.5 rounded-xl border bg-white dark:bg-gray-900 text-sm px-3 py-2 transition-colors ${
               showArchived
-                ? "border-gray-400 text-gray-700 font-medium"
-                : "border-gray-200 text-gray-500"
+                ? "border-gray-400 dark:border-gray-500 text-gray-700 dark:text-gray-300 font-medium"
+                : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
             }`}
             title={showArchived ? "Hide archived deals" : "Show archived deals"}
           >
-            <ArchiveIcon size={13} className="text-gray-400" />
+            <ArchiveIcon size={13} className="text-gray-400 dark:text-gray-500" />
             {showArchived ? "Showing archived" : "Show archived"}
           </button>
           {(search || typeFilter.length > 0 || memberFilter) && (
@@ -281,7 +281,7 @@ function PipelineBoard() {
                 setTypeFilter([]);
                 setMemberFilter("");
               }}
-              className="text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1"
+              className="text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-1"
             >
               Clear filters
             </button>
@@ -290,7 +290,7 @@ function PipelineBoard() {
 
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 size={24} className="animate-spin text-gray-400" />
+            <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
           </div>
         ) : (
           <div className="overflow-x-auto pb-4">
@@ -299,7 +299,7 @@ function PipelineBoard() {
                 <div
                   key={group.key}
                   className={`rounded-2xl p-1.5 ${
-                    group.creative ? "bg-purple-50/60 border border-purple-100" : "bg-transparent"
+                    group.creative ? "bg-purple-50/60 dark:bg-purple-900/30 border border-purple-100 dark:border-purple-800" : "bg-transparent"
                   }`}
                 >
                   {/* Group header */}
@@ -313,13 +313,13 @@ function PipelineBoard() {
                     {group.note && (
                       <span
                         className={`text-[10px] font-medium ${
-                          group.creative ? "text-purple-400" : "text-gray-400"
+                          group.creative ? "text-purple-400" : "text-gray-400 dark:text-gray-500"
                         }`}
                       >
                         {group.note}
                       </span>
                     )}
-                    <span className="flex-1 border-t border-dashed border-gray-200 ml-1" />
+                    <span className="flex-1 border-t border-dashed border-gray-200 dark:border-gray-700 ml-1" />
                   </div>
 
                   <div className="flex gap-3">
@@ -354,17 +354,17 @@ function PipelineBoard() {
                             setDraggingId(null);
                           }}
                           className={`w-[270px] shrink-0 rounded-2xl border transition-all duration-150 ${
-                            group.creative ? "bg-purple-100/40" : "bg-gray-100/70"
+                            group.creative ? "bg-purple-100/40 dark:bg-purple-900/30" : "bg-gray-100/70 dark:bg-gray-800/70"
                           } ${
                             isOver && dropBlocked
-                              ? "border-gray-300 ring-2 ring-gray-300/40 opacity-60"
+                              ? "border-gray-300 dark:border-gray-600 ring-2 ring-gray-300/40 dark:ring-gray-600/40 opacity-60"
                               : isOver
-                                ? "border-[#ffd700] ring-2 ring-[#ffd700]/30 bg-amber-50/60"
+                                ? "border-[#ffd700] ring-2 ring-[#ffd700]/30 bg-amber-50/60 dark:bg-amber-900/30"
                                 : isFocused
                                   ? "border-[#ffd700]/50 ring-1 ring-[#ffd700]/20"
                                   : group.creative
-                                    ? "border-purple-200/60"
-                                    : "border-gray-200/60"
+                                    ? "border-purple-200/60 dark:border-purple-800/60"
+                                    : "border-gray-200/60 dark:border-gray-700/60"
                           }`}
                         >
                           {/* Column header */}
@@ -373,16 +373,16 @@ function PipelineBoard() {
                               <span className={`w-2 h-2 rounded-full ${style.dot}`} />
                               <span
                                 className={`text-xs font-semibold uppercase tracking-wide ${
-                                  group.creative ? "text-purple-800" : "text-gray-700"
+                                  group.creative ? "text-purple-800 dark:text-purple-300" : "text-gray-700 dark:text-gray-300"
                                 }`}
                               >
                                 {style.label}
                               </span>
-                              <span className="text-[11px] font-semibold text-gray-400 bg-white rounded-full px-1.5 py-0.5 border border-gray-200/60">
+                              <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 rounded-full px-1.5 py-0.5 border border-gray-200/60 dark:border-gray-700/60">
                                 {stageDeals.length}
                               </span>
                             </div>
-                            <span className="text-[11px] font-semibold text-gray-500 tabular-nums">
+                            <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 tabular-nums">
                               {stageValue > 0 ? formatMoney(stageValue) : ""}
                             </span>
                           </div>
@@ -393,8 +393,8 @@ function PipelineBoard() {
                               <div
                                 className={`rounded-xl border border-dashed py-6 text-center text-[11px] ${
                                   group.creative
-                                    ? "border-purple-200/80 text-purple-300"
-                                    : "border-gray-300/70 text-gray-400"
+                                    ? "border-purple-200/80 dark:border-purple-800/80 text-purple-300 dark:text-purple-400"
+                                    : "border-gray-300/70 dark:border-gray-600/70 text-gray-400 dark:text-gray-500"
                                 }`}
                               >
                                 {isOver && dropBlocked
@@ -471,10 +471,10 @@ function TypeFilterDropdown({
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1.5 rounded-xl border bg-white text-sm px-3 py-2 transition-colors ${
+        className={`flex items-center gap-1.5 rounded-xl border bg-white dark:bg-gray-900 text-sm px-3 py-2 transition-colors ${
           selected.length
             ? "border-[#ffd700] text-[var(--portal-commercial)] font-medium"
-            : "border-gray-200 text-gray-700"
+            : "border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
         }`}
       >
         {selected.length === 0
@@ -482,22 +482,22 @@ function TypeFilterDropdown({
           : selected.length === 1
             ? TYPE_STYLES[selected[0]]?.label ?? selected[0]
             : `${selected.length} types`}
-        <ChevronDown size={13} className="text-gray-400" />
+        <ChevronDown size={13} className="text-gray-400 dark:text-gray-500" />
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute z-20 mt-1.5 w-56 rounded-xl border border-gray-100 bg-white shadow-lg p-1.5">
+          <div className="absolute z-20 mt-1.5 w-56 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg p-1.5">
             {DEAL_TYPE_OPTIONS.map((t) => (
               <label
                 key={t}
-                className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
               >
                 <input
                   type="checkbox"
                   checked={selected.includes(t)}
                   onChange={() => toggle(t)}
-                  className="h-3.5 w-3.5 rounded border-gray-300 accent-[#ffd700]"
+                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 accent-[#ffd700]"
                 />
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${TYPE_STYLES[t].bg} ${TYPE_STYLES[t].text}`}
@@ -509,7 +509,7 @@ function TypeFilterDropdown({
             {selected.length > 0 && (
               <button
                 onClick={() => onChange([])}
-                className="w-full text-left text-xs font-medium text-gray-400 hover:text-gray-600 px-2.5 py-1.5 mt-0.5 border-t border-gray-50"
+                className="w-full text-left text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 px-2.5 py-1.5 mt-0.5 border-t border-gray-50 dark:border-gray-800"
               >
                 Clear selection
               </button>
@@ -561,10 +561,10 @@ function DealCard({
         draggable={!archived}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
-        className={`relative group/card bg-white rounded-xl border shadow-sm p-3.5 transition-all duration-150 ${
+        className={`relative group/card bg-white dark:bg-gray-900 rounded-xl border shadow-sm p-3.5 transition-all duration-150 ${
           archived
-            ? "border-gray-200/60 opacity-60 grayscale"
-            : "border-gray-200/80 cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5"
+            ? "border-gray-200/60 dark:border-gray-700/60 opacity-60 grayscale"
+            : "border-gray-200/80 dark:border-gray-700/80 cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5"
         } ${dragging ? "opacity-40 rotate-1 scale-[0.98]" : ""}`}
       >
         {/* Hover action: archive replaces delete everywhere (commercial/admin only) */}
@@ -576,20 +576,20 @@ function DealCard({
               onArchive();
             }}
             title="Archive deal"
-            className="absolute top-2 right-2 p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-100 opacity-0 group-hover/card:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity"
           >
             <ArchiveIcon size={13} />
           </button>
         )}
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide truncate mb-1.5">
+        <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide truncate mb-1.5">
           {deal.client.name}
         </p>
-        <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 mb-1.5">
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-1.5">
           {deal.title}
         </p>
         <div className="flex flex-wrap items-center gap-1 mb-2">
           {archived && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
               <ArchiveIcon size={9} /> Archived
             </span>
           )}
@@ -618,7 +618,7 @@ function DealCard({
           )}
           <span
             className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-              deal.budgetLocked ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
+              deal.budgetLocked ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
             }`}
             title={deal.budgetLocked ? "Budget locked" : "Budget draft"}
           >
@@ -631,15 +631,15 @@ function DealCard({
             )}
           </span>
           {deal.production && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
               <Film size={10} /> In Production
             </span>
           )}
         </div>
-        <p className="text-base font-bold text-gray-900 tabular-nums mb-2.5">
+        <p className="text-base font-bold text-gray-900 dark:text-gray-100 tabular-nums mb-2.5">
           {formatMoney(deal.value)}
         </p>
-        <div className="flex items-center justify-between text-[11px] text-gray-400">
+        <div className="flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="flex items-center gap-1" title="Days in stage">
               <Clock size={11} />
@@ -657,7 +657,7 @@ function DealCard({
           </div>
           {deal.assignedTo && (
             <span
-              className="flex items-center gap-1 truncate max-w-[90px] text-gray-500"
+              className="flex items-center gap-1 truncate max-w-[90px] text-gray-500 dark:text-gray-400"
               title={`Assigned to ${deal.assignedTo.name}`}
             >
               <UserIcon size={11} />
@@ -672,7 +672,7 @@ function DealCard({
               e.stopPropagation();
               onUnarchive();
             }}
-            className="mt-2.5 w-full flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            className="mt-2.5 w-full flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <ArchiveRestore size={12} /> Unarchive
           </button>

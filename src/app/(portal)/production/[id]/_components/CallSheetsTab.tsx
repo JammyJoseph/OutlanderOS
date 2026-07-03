@@ -12,9 +12,9 @@ interface Props {
 }
 
 const CS_STATUS_STYLES: Record<CallSheetStatus, { bg: string; text: string; label: string }> = {
-  DRAFT: { bg: "bg-gray-100", text: "text-gray-500", label: "Draft" },
-  SAVED: { bg: "bg-blue-100", text: "text-blue-700", label: "Saved" },
-  PUBLISHED: { bg: "bg-emerald-100", text: "text-emerald-700", label: "Published" },
+  DRAFT: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-500 dark:text-gray-400", label: "Draft" },
+  SAVED: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300", label: "Saved" },
+  PUBLISHED: { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", label: "Published" },
 };
 
 function getShootTitle(cs: CallSheet, productionTitle: string): string {
@@ -26,15 +26,15 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
 
   return (
     <div className="space-y-5">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <ClipboardList size={15} className="text-[#ffd700]" />
               Call Sheets
-              <span className="text-xs text-gray-400 font-normal">({sheets.length})</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">({sheets.length})</span>
             </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               Auto-populates from team, schedule, and project location.
             </p>
           </div>
@@ -50,11 +50,11 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
 
         {sheets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14 text-center px-6">
-            <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mb-3">
-              <ClipboardList size={20} className="text-gray-300" />
+            <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center justify-center mb-3">
+              <ClipboardList size={20} className="text-gray-300 dark:text-gray-600" />
             </div>
-            <p className="text-sm text-gray-500 mb-1 font-medium">No call sheets yet</p>
-            <p className="text-xs text-gray-400 mb-5">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1 font-medium">No call sheets yet</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">
               Create a call sheet to start planning your shoot.
             </p>
             <button
@@ -67,7 +67,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-gray-800">
             {sheets
               .slice()
               .sort(
@@ -82,22 +82,22 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
                   <Link
                     key={cs.id}
                     href={`/production/${production.id}/call-sheets/${cs.id}`}
-                    className="flex items-center justify-between px-5 py-4 hover:bg-gray-50/60 transition-colors group"
+                    className="flex items-center justify-between px-5 py-4 hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors group"
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="text-center w-11 shrink-0">
                         <div className="text-[10px] font-semibold text-[#ffd700] uppercase leading-none">
                           {format(parseISO(cs.shootDate), "MMM")}
                         </div>
-                        <div className="text-xl font-bold text-gray-800 leading-tight">
+                        <div className="text-xl font-bold text-gray-800 dark:text-gray-200 leading-tight">
                           {format(parseISO(cs.shootDate), "d")}
                         </div>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800 group-hover:text-[#ffd700] transition-colors truncate">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-[#ffd700] transition-colors truncate">
                           {sheetTitle}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5 truncate">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                           {cs.callTime || "—"} {addr ? `· ${addr}` : ""}
                         </p>
                       </div>
@@ -110,7 +110,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
                       </span>
                       <ChevronRight
                         size={15}
-                        className="text-gray-300 group-hover:text-[#ffd700] transition-colors"
+                        className="text-gray-300 dark:text-gray-600 group-hover:text-[#ffd700] transition-colors"
                       />
                     </div>
                   </Link>

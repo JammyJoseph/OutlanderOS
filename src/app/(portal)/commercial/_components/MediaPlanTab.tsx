@@ -237,23 +237,23 @@ export default function MediaPlanTab({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 size={20} className="animate-spin text-gray-400" />
+        <Loader2 size={20} className="animate-spin text-gray-400 dark:text-gray-500" />
       </div>
     );
   }
 
   const inputCls =
-    "px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] disabled:opacity-60 disabled:cursor-not-allowed";
+    "px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] disabled:opacity-60 disabled:cursor-not-allowed";
   const autoCls =
-    "px-3 py-2 rounded-xl bg-gray-50 border border-gray-100 text-sm font-semibold text-gray-700 tabular-nums";
+    "px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums";
 
   return (
     <div className="space-y-5">
       {/* Version / lock banner */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <History size={13} className="text-gray-400" />
-          <span className="font-medium text-gray-700">Version {version}</span>
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <History size={13} className="text-gray-400 dark:text-gray-500" />
+          <span className="font-medium text-gray-700 dark:text-gray-300">Version {version}</span>
           {updatedAt && (
             <span>
               — Last updated {format(parseISO(updatedAt), "d MMM yyyy")}
@@ -262,7 +262,7 @@ export default function MediaPlanTab({
           )}
         </div>
         {locked && (
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
             <LockIcon size={11} /> Locked
             {lockedAt ? ` · ${format(parseISO(lockedAt), "d MMM yyyy")}` : ""}
             {lockedByName ? ` · ${lockedByName}` : ""}
@@ -271,21 +271,21 @@ export default function MediaPlanTab({
       </div>
 
       {locked && !editingLocked && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-sm font-semibold text-emerald-800 flex items-center gap-2">
+        <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
             <LockIcon size={14} /> Media plan locked — this is the deal budget.
           </p>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setEditingLocked(true)}
-              className="text-xs font-medium text-emerald-700 hover:text-emerald-900 underline underline-offset-2 inline-flex items-center gap-1"
+              className="text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-100 underline underline-offset-2 inline-flex items-center gap-1"
             >
               <PencilLine size={12} /> Edit
             </button>
             {isAdmin && (
               <button
                 onClick={() => setShowUnlockConfirm(true)}
-                className="text-xs font-medium text-emerald-700 hover:text-emerald-900 underline underline-offset-2 inline-flex items-center gap-1"
+                className="text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-100 underline underline-offset-2 inline-flex items-center gap-1"
               >
                 <Unlock size={12} /> Unlock (admin)
               </button>
@@ -295,32 +295,32 @@ export default function MediaPlanTab({
       )}
 
       {locked && editingLocked && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 text-sm font-medium text-amber-800">
+        <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-2xl px-5 py-3 text-sm font-medium text-amber-800 dark:text-amber-300">
           Unsaved changes since lock. Click <span className="font-bold">Update &amp; Re-lock</span> to apply.
         </div>
       )}
 
       {/* ── Media Plan ────────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <Banknote size={15} style={{ color: GOLD }} />
             Media Plan
           </h3>
           {savedAt && !saving && (
-            <span className="text-xs text-emerald-600 flex items-center gap-1">
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
               <CheckCircle2 size={13} /> Saved
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-400 -mt-3">
+        <p className="text-xs text-gray-400 dark:text-gray-500 -mt-3">
           Shreeya builds the plan with the client in Google Sheets — paste the link or upload the
           final PDF, then set the deal value below.
         </p>
 
         {/* Google Sheets link */}
         <div>
-          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+          <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
             <Sheet size={12} /> Google Sheets link
           </label>
           <div className="flex items-center gap-2">
@@ -337,7 +337,7 @@ export default function MediaPlanTab({
                 href={link}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)] px-2.5 py-2 rounded-lg border border-gray-200 transition-colors"
+                className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)] px-2.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors"
               >
                 <ExternalLink size={12} /> Open
               </a>
@@ -347,17 +347,17 @@ export default function MediaPlanTab({
 
         {/* PDF upload */}
         <div>
-          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+          <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
             <FileText size={12} /> PDF media plan
           </label>
           {file ? (
-            <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/60 px-4 py-3">
               <FileText size={16} className="text-red-600 shrink-0" />
               <a
                 href={file}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 truncate text-sm text-gray-700 hover:text-[var(--portal-commercial)] transition-colors"
+                className="flex-1 truncate text-sm text-gray-700 dark:text-gray-300 hover:text-[var(--portal-commercial)] transition-colors"
               >
                 {file.split("/").pop()}
               </a>
@@ -372,7 +372,7 @@ export default function MediaPlanTab({
               {editable && (
                 <button
                   onClick={() => setFile(null)}
-                  className="shrink-0 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  className="shrink-0 p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                   title="Remove PDF"
                 >
                   <Trash2 size={14} />
@@ -397,17 +397,17 @@ export default function MediaPlanTab({
               onClick={() => editable && fileInputRef.current?.click()}
               className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
                 editable ? "cursor-pointer" : "cursor-not-allowed opacity-60"
-              } ${dragOver ? "border-[#ffd700] bg-[#ffd700]/5" : "border-gray-200 hover:border-gray-300"}`}
+              } ${dragOver ? "border-[#ffd700] bg-[#ffd700]/5" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`}
             >
               {uploading ? (
-                <Loader2 size={20} className="animate-spin text-gray-400" />
+                <Loader2 size={20} className="animate-spin text-gray-400 dark:text-gray-500" />
               ) : (
-                <Upload size={20} className="text-gray-400" />
+                <Upload size={20} className="text-gray-400 dark:text-gray-500" />
               )}
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {uploading ? "Uploading…" : "Drag a PDF here, or click to upload"}
               </p>
-              <p className="text-[11px] text-gray-400">PDF only · max 10MB</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500">PDF only · max 10MB</p>
             </div>
           )}
           <input
@@ -425,11 +425,11 @@ export default function MediaPlanTab({
 
         {/* Deal value */}
         <div>
-          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">
-            Deal value <span className="text-gray-400 normal-case">— the total from the media plan</span>
+          <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5 block">
+            Deal value <span className="text-gray-400 dark:text-gray-500 normal-case">— the total from the media plan</span>
           </label>
           <div className="relative w-56">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">£</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500">£</span>
             <input
               type="number"
               min="0"
@@ -444,7 +444,7 @@ export default function MediaPlanTab({
 
         {/* Preview */}
         <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Preview</p>
+          <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">Preview</p>
           <div className="rounded-xl border border-border overflow-hidden bg-background">
             {preview ? (
               <iframe
@@ -462,9 +462,9 @@ export default function MediaPlanTab({
               />
             ) : (
               <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                <LinkIcon size={22} className="text-gray-600" />
-                <p className="text-sm text-gray-500">No media plan attached yet</p>
-                <p className="text-[11px] text-gray-600">Paste a Google Sheets link or upload a PDF above.</p>
+                <LinkIcon size={22} className="text-gray-600 dark:text-gray-400" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">No media plan attached yet</p>
+                <p className="text-[11px] text-gray-600 dark:text-gray-400">Paste a Google Sheets link or upload a PDF above.</p>
               </div>
             )}
           </div>
@@ -472,29 +472,29 @@ export default function MediaPlanTab({
       </div>
 
       {/* ── Deal Economics ────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-3xl">
-        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 max-w-3xl">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-1">
           <Film size={15} style={{ color: GOLD }} />
           Deal Economics
         </h3>
-        <p className="text-xs text-gray-400 mb-5">
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">
           Media spend is 100% margin (no hard costs). Only production carries hard costs, split
           between the company margin and the budget handed to the Production team.
         </p>
 
         {/* Deal value (read-only) */}
-        <div className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 mb-5">
-          <span className="text-sm font-medium text-gray-600">Deal Value</span>
-          <span className="text-lg font-bold text-gray-900 tabular-nums">{gbp0(dv)}</span>
+        <div className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 px-4 py-3 mb-5">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Deal Value</span>
+          <span className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums">{gbp0(dv)}</span>
         </div>
 
         {/* Media vs Production split */}
         <SectionLabel>Media vs Production Split</SectionLabel>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Media Spend</p>
+            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">Media Spend</p>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">£</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500">£</span>
               <input
                 type="number"
                 min="0"
@@ -508,7 +508,7 @@ export default function MediaPlanTab({
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">
               Production Budget <span className="normal-case text-gray-400">(auto)</span>
             </p>
             <div className={`${autoCls} flex items-center`}>{gbp0(productionBudget)}</div>
@@ -518,14 +518,14 @@ export default function MediaPlanTab({
           <div className="flex items-center gap-3 mb-5 text-[11px]">
             <button
               onClick={() => setMediaSpend(String(dv))}
-              className="text-gray-400 hover:text-[var(--portal-commercial)] transition-colors"
+              className="text-gray-400 dark:text-gray-500 hover:text-[var(--portal-commercial)] transition-colors"
             >
               No production — all media spend
             </button>
             {ms > 0 && (
               <button
                 onClick={() => setMediaSpend("0")}
-                className="text-gray-400 hover:text-[var(--portal-commercial)] transition-colors"
+                className="text-gray-400 dark:text-gray-500 hover:text-[var(--portal-commercial)] transition-colors"
               >
                 Reset media spend
               </button>
@@ -537,7 +537,7 @@ export default function MediaPlanTab({
         <SectionLabel>Production Margin</SectionLabel>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">
               Margin Split (company / hard cost)
             </p>
             <div className="flex items-center gap-2">
@@ -551,9 +551,9 @@ export default function MediaPlanTab({
                   disabled={!editable}
                   className={`${inputCls} w-full pr-6 text-center`}
                 />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500">%</span>
               </div>
-              <span className="text-gray-400 font-semibold">/</span>
+              <span className="text-gray-400 dark:text-gray-500 font-semibold">/</span>
               <div className="relative flex-1">
                 <input
                   type="number"
@@ -566,18 +566,18 @@ export default function MediaPlanTab({
                   disabled={!editable}
                   className={`${inputCls} w-full pr-6 text-center`}
                 />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500">%</span>
               </div>
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">
               Company Margin <span className="normal-case text-gray-400">({Math.round(companyPct)}%)</span>
             </p>
             <div className={`${autoCls} flex items-center`}>{gbp0(companyMargin)}</div>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">
               Hard Cost Budget <span className="normal-case text-red-600">→ Production</span>
             </p>
             <div className={`${autoCls} flex items-center !text-red-500`}>{gbp0(hardCostBudget)}</div>
@@ -586,12 +586,12 @@ export default function MediaPlanTab({
 
         {/* Summary */}
         <SectionLabel>Summary</SectionLabel>
-        <div className="rounded-xl border border-gray-100 bg-gray-50/40 divide-y divide-gray-100">
+        <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-800/40 divide-y divide-gray-100 dark:divide-gray-800">
           <SummaryRow label="Total Company Revenue" detail="media spend + production margin" value={gbp0(totalCompanyRevenue)} accent />
           <SummaryRow label="Production Hard Costs" detail="goes to the production team" value={gbp0(hardCostBudget)} />
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm font-bold text-gray-800">Total</span>
-            <span className="inline-flex items-center gap-1.5 text-sm font-bold text-gray-900 tabular-nums">
+            <span className="text-sm font-bold text-gray-800 dark:text-gray-200">Total</span>
+            <span className="inline-flex items-center gap-1.5 text-sm font-bold text-gray-900 dark:text-gray-100 tabular-nums">
               {gbp0(summaryTotal)}
               {balanced ? (
                 <CheckCircle2 size={15} className="text-emerald-500" />
@@ -603,7 +603,7 @@ export default function MediaPlanTab({
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+      {error && <p className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-lg px-3 py-2">{error}</p>}
 
       {/* ── Actions ───────────────────────────────────────────────────────────── */}
       {editable && (
@@ -612,7 +612,7 @@ export default function MediaPlanTab({
             <button
               onClick={save}
               disabled={saving || lockBusy}
-              className="flex items-center gap-2 border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
               Save Draft
@@ -624,7 +624,7 @@ export default function MediaPlanTab({
                 setEditingLocked(false);
                 load();
               }}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancel
             </button>
@@ -652,16 +652,16 @@ export default function MediaPlanTab({
           icon={<LockIcon size={16} className="text-emerald-500" />}
           body={
             <>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 The economics become read-only and the hard-cost budget of{" "}
-                <span className="font-semibold text-gray-800">{gbp0(hardCostBudget)}</span> is finalised
+                <span className="font-semibold text-gray-800 dark:text-gray-200">{gbp0(hardCostBudget)}</span> is finalised
                 for the Production team. Only an admin can unlock it afterwards.
               </p>
-              <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-sm font-medium text-gray-700 tabular-nums space-y-1">
-                <p className="flex justify-between"><span className="text-gray-400">Deal value</span> {gbp0(dv)}</p>
-                <p className="flex justify-between"><span className="text-gray-400">Media spend</span> {gbp0(ms)}</p>
-                <p className="flex justify-between"><span className="text-gray-400">Company margin</span> {gbp0(companyMargin)}</p>
-                <p className="flex justify-between"><span className="text-gray-400">Hard costs → production</span> {gbp0(hardCostBudget)}</p>
+              <div className="mt-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums space-y-1">
+                <p className="flex justify-between"><span className="text-gray-400 dark:text-gray-500">Deal value</span> {gbp0(dv)}</p>
+                <p className="flex justify-between"><span className="text-gray-400 dark:text-gray-500">Media spend</span> {gbp0(ms)}</p>
+                <p className="flex justify-between"><span className="text-gray-400 dark:text-gray-500">Company margin</span> {gbp0(companyMargin)}</p>
+                <p className="flex justify-between"><span className="text-gray-400 dark:text-gray-500">Hard costs → production</span> {gbp0(hardCostBudget)}</p>
               </div>
             </>
           }
@@ -675,7 +675,7 @@ export default function MediaPlanTab({
         <ConfirmModal
           title="Unlock media plan?"
           body={
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               The economics become editable again. If the deal has already been cleared for
               production, re-lock it after editing so downstream numbers stay correct.
             </p>
@@ -694,10 +694,10 @@ export default function MediaPlanTab({
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 mb-3">
-      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+      <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
         {children}
       </span>
-      <span className="h-px flex-1 bg-gray-100" />
+      <span className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
     </div>
   );
 }
@@ -716,10 +716,10 @@ function SummaryRow({
   return (
     <div className="flex items-center justify-between px-4 py-3">
       <div>
-        <p className={`text-sm font-medium ${accent ? "text-gray-800" : "text-gray-600"}`}>{label}</p>
-        <p className="text-[11px] text-gray-400">{detail}</p>
+        <p className={`text-sm font-medium ${accent ? "text-gray-800 dark:text-gray-200" : "text-gray-600 dark:text-gray-400"}`}>{label}</p>
+        <p className="text-[11px] text-gray-400 dark:text-gray-500">{detail}</p>
       </div>
-      <span className={`text-sm font-bold tabular-nums ${accent ? "text-[var(--portal-commercial)]" : "text-gray-700"}`}>
+      <span className={`text-sm font-bold tabular-nums ${accent ? "text-[var(--portal-commercial)]" : "text-gray-700 dark:text-gray-300"}`}>
         {value}
       </span>
     </div>
@@ -748,13 +748,13 @@ function ConfirmModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="border-b border-gray-50 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="border-b border-gray-50 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             {icon}
             {title}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -763,7 +763,7 @@ function ConfirmModal({
           <div className="flex gap-3 mt-5">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Cancel
             </button>

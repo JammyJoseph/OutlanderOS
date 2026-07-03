@@ -46,26 +46,26 @@ export function PersonalHR({ holiday }: Props) {
   const payrollDays = daysUntil(payroll);
 
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-      <h2 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">HR</h2>
+    <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <h2 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">HR</h2>
 
       {/* Holiday */}
       <Link
         href="/me/holiday"
-        className="mt-2 flex items-center gap-3 rounded-lg py-2 transition-colors hover:bg-gray-50/60"
+        className="mt-2 flex items-center gap-3 rounded-lg py-2 transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-800/60"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#ffd700]/10 text-[#ffd700]">
           <Plane className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+          <span className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
             Holiday balance
           </span>
-          <span className="block text-lg font-bold leading-tight text-gray-900">
+          <span className="block text-lg font-bold leading-tight text-gray-900 dark:text-gray-100">
             {holiday.remaining}
-            <span className="text-xs font-medium text-gray-400"> / {holiday.allowance} days</span>
+            <span className="text-xs font-medium text-gray-400 dark:text-gray-500"> / {holiday.allowance} days</span>
           </span>
-          <span className="block truncate text-[11px] text-gray-400">
+          <span className="block truncate text-[11px] text-gray-400 dark:text-gray-500">
             {holiday.nextHoliday
               ? `Next: ${formatRange(holiday.nextHoliday.startDate, holiday.nextHoliday.endDate)}`
               : "No holiday booked"}
@@ -74,18 +74,18 @@ export function PersonalHR({ holiday }: Props) {
       </Link>
 
       {/* Payroll */}
-      <div className="mt-1 flex items-center gap-3 border-t border-gray-50 pt-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-500">
+      <div className="mt-1 flex items-center gap-3 border-t border-gray-50 pt-3 dark:border-gray-800">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
           <CalendarClock className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+          <span className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
             Next payroll
           </span>
-          <span className="block text-lg font-bold leading-tight text-gray-900">
+          <span className="block text-lg font-bold leading-tight text-gray-900 dark:text-gray-100">
             {countdownLabel(payrollDays)}
           </span>
-          <span className="block text-[11px] text-gray-400">
+          <span className="block text-[11px] text-gray-400 dark:text-gray-500">
             {payroll.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}
           </span>
         </span>

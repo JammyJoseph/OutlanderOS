@@ -33,7 +33,7 @@ export function XeroStatusDot({
       ? 'Xero token needs refresh'
       : 'Xero disconnected'
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500">
+    <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
       <span className={`h-2 w-2 rounded-full ${color}`} />
       {label}
     </span>
@@ -43,8 +43,8 @@ export function XeroStatusDot({
 // Full-width fallback shown where Xero data would appear.
 export function XeroDisconnectedBanner({ message }: { message?: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-      <div className="flex items-center gap-2 text-xs text-amber-800">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3">
+      <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300">
         <AlertCircle className="h-4 w-4 shrink-0" />
         {message ?? 'Xero is disconnected — live accounting data is unavailable.'}
       </div>
@@ -61,7 +61,7 @@ export function XeroDisconnectedBanner({ message }: { message?: string }) {
 
 export function ErrorBox({ message }: { message: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+    <div className="flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-600 dark:text-red-400">
       <AlertCircle className="h-4 w-4 shrink-0" />
       {message}
     </div>
@@ -70,8 +70,8 @@ export function ErrorBox({ message }: { message: string }) {
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center">
-      <p className="text-sm text-gray-500">{message}</p>
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-12 text-center">
+      <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
     </div>
   )
 }
@@ -81,10 +81,10 @@ export function TabSkeleton() {
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-[88px] animate-pulse rounded-xl border border-gray-200 bg-white" />
+          <div key={i} className="h-[88px] animate-pulse rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" />
         ))}
       </div>
-      <div className="h-64 animate-pulse rounded-xl border border-gray-200 bg-white" />
+      <div className="h-64 animate-pulse rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" />
     </div>
   )
 }
@@ -96,13 +96,13 @@ export function BudgetBar({ spent, budget }: { spent: number; budget: number }) 
   const width = Math.min(ratio, 1) * 100
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-full max-w-[120px] overflow-hidden rounded-full bg-gray-100">
+      <div className="h-1.5 w-full max-w-[120px] overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
         <div
           className={`h-full rounded-full ${over ? 'bg-red-500' : 'bg-emerald-500'}`}
           style={{ width: `${width}%` }}
         />
       </div>
-      <span className={`text-[10px] font-mono ${over ? 'text-red-500' : 'text-gray-400'}`}>
+      <span className={`text-[10px] font-mono ${over ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
         {budget > 0 ? `${Math.round(ratio * 100)}%` : '—'}
       </span>
     </div>

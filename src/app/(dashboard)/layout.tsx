@@ -20,21 +20,21 @@ export default function DashboardLayout({
       {!hideHeader && (
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/80 px-6 backdrop-blur-md">
           <Link href="/me" className="flex items-center gap-2">
-            <span className="text-lg font-bold tracking-tight text-gray-900">
+            <span className="text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
               Outlander<span className="text-[#ffd700]">OS</span>
             </span>
           </Link>
           <div className="flex items-center gap-1">
             <Link
               href="/me"
-              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
             >
               Deadlines
             </Link>
             <Link
               href="/admin"
               aria-label="Admin & Settings"
-              className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+              className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
             >
               <Settings className="h-4 w-4" />
             </Link>

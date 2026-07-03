@@ -20,22 +20,22 @@ const JOB_TYPE_CARDS: {
   {
     key: "CREATIVE_BRIEF",
     icon: <Palette size={18} />,
-    accent: "border-purple-400 ring-2 ring-purple-400/20 bg-purple-50/50",
-    iconBg: "bg-purple-100 text-purple-600",
+    accent: "border-purple-400 ring-2 ring-purple-400/20 bg-purple-50/50 dark:bg-purple-900/30",
+    iconBg: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
     blurb: "Bespoke content that needs a creative response. The main workflow.",
   },
   {
     key: "SUPPLIED_ASSETS",
     icon: <Package size={18} />,
-    accent: "border-gray-400 ring-2 ring-gray-400/20 bg-gray-50",
-    iconBg: "bg-gray-100 text-gray-600",
+    accent: "border-gray-400 ring-2 ring-gray-400/20 bg-gray-50 dark:bg-gray-800",
+    iconBg: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400",
     blurb: "Client provides the content — no creative response needed.",
   },
   {
     key: "PRINT_AD",
     icon: <Newspaper size={18} />,
-    accent: "border-teal-400 ring-2 ring-teal-400/20 bg-teal-50/50",
-    iconBg: "bg-teal-100 text-teal-600",
+    accent: "border-teal-400 ring-2 ring-teal-400/20 bg-teal-50/50 dark:bg-teal-900/30",
+    iconBg: "bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400",
     blurb: "Print advertising — straight to the media plan.",
   },
 ];
@@ -113,32 +113,32 @@ export default function NewDealModal({
   }
 
   const inputCls =
-    "w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
-  const labelCls = "block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5";
+    "w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
+  const labelCls = "block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5";
 
   const cfg = jobType ? JOB_TYPE_CONFIG[jobType] : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-50 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-50 dark:border-gray-800 px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <div className="flex items-center gap-2">
             {jobType && (
               <button
                 onClick={() => setJobType(null)}
-                className="p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
                 title="Back to job type"
               >
                 <ArrowLeft size={16} />
               </button>
             )}
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {jobType ? "Deal details" : "New Deal"}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
           >
             <X size={18} />
           </button>
@@ -147,7 +147,7 @@ export default function NewDealModal({
         {/* Step 1 — choose the job type */}
         {!jobType && (
           <div className="px-6 py-5 space-y-3">
-            <p className="text-sm text-gray-500">What type of job is this?</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">What type of job is this?</p>
             {JOB_TYPE_CARDS.map((card) => {
               const c = JOB_TYPE_CONFIG[card.key];
               return (
@@ -155,7 +155,7 @@ export default function NewDealModal({
                   key={card.key}
                   type="button"
                   onClick={() => pickJobType(card.key)}
-                  className="w-full text-left rounded-xl border border-gray-200 hover:border-gray-300 p-4 transition-all"
+                  className="w-full text-left rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 p-4 transition-all"
                 >
                   <div className="flex items-center gap-3.5">
                     <div
@@ -164,8 +164,8 @@ export default function NewDealModal({
                       {card.icon}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{c.label}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{card.blurb}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{c.label}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{card.blurb}</p>
                     </div>
                   </div>
                 </button>
@@ -178,10 +178,10 @@ export default function NewDealModal({
         {jobType && cfg && (
           <form onSubmit={handleCreate} className="px-6 py-5 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400">Job type:</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">Job type:</span>
               <span
                 className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-                  JOB_TYPE_CARDS.find((c) => c.key === jobType)?.iconBg ?? "bg-gray-100 text-gray-600"
+                  JOB_TYPE_CARDS.find((c) => c.key === jobType)?.iconBg ?? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                 }`}
               >
                 {cfg.label}
@@ -209,7 +209,7 @@ export default function NewDealModal({
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                className={`${inputCls} bg-white`}
+                className={`${inputCls} bg-white dark:bg-gray-900`}
               >
                 <option value="">Select a client…</option>
                 {clients.map((c) => (
@@ -233,25 +233,25 @@ export default function NewDealModal({
             {cfg.extensions.length > 0 && (
               <div>
                 <label className={labelCls}>Extensions</label>
-                <p className="text-[11px] text-gray-400 mb-2">
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">
                   Add-ons for this job. Optional — tick any that apply.
                 </p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {cfg.extensions.map((ext) => {
-                    const style = TYPE_STYLES[ext] ?? { label: ext, bg: "bg-gray-50", text: "text-gray-600" };
+                    const style = TYPE_STYLES[ext] ?? { label: ext, bg: "bg-gray-50 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400" };
                     const checked = extensions.includes(ext);
                     return (
                       <label
                         key={ext}
                         className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors ${
-                          checked ? "border-[#ffd700] bg-amber-50/50" : "border-gray-200 hover:border-gray-300"
+                          checked ? "border-[#ffd700] bg-amber-50/50 dark:bg-amber-900/30" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleExtension(ext)}
-                          className="h-3.5 w-3.5 rounded border-gray-300 accent-[#ffd700]"
+                          className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 accent-[#ffd700]"
                         />
                         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
                           {style.label}
@@ -263,13 +263,13 @@ export default function NewDealModal({
               </div>
             )}
 
-            {error && <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+            {error && <p className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-lg px-3 py-2">{error}</p>}
 
             <div className="flex gap-3 pt-1">
               <button
                 type="button"
                 onClick={() => setJobType(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Back
               </button>

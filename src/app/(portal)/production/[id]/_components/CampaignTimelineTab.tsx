@@ -29,13 +29,13 @@ interface Props {
 }
 
 const STATUS_BADGE: Record<MilestoneStatus, { bg: string; text: string; label: string }> = {
-  PENDING: { bg: "bg-gray-100", text: "text-gray-500", label: "Pending" },
-  DONE: { bg: "bg-emerald-50", text: "text-emerald-700", label: "Done" },
-  OVERDUE: { bg: "bg-red-50", text: "text-red-600", label: "Overdue" },
+  PENDING: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-500 dark:text-gray-400", label: "Pending" },
+  DONE: { bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", label: "Done" },
+  OVERDUE: { bg: "bg-red-50 dark:bg-red-900/30", text: "text-red-600 dark:text-red-400", label: "Overdue" },
 };
 
 const inputCls =
-  "px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
+  "px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
 
 export default function CampaignTimelineTab({ productionId, milestones, refresh }: Props) {
   const [showAdd, setShowAdd] = useState(false);
@@ -112,14 +112,14 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
   return (
     <div className="space-y-5">
       {/* Summary + actions */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between gap-3 flex-wrap">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <CalendarClock size={15} className="text-[#ffd700]" />
               Campaign Timeline
             </h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
               Full project timeline — pre-production through delivery and go-live. The on-the-day
               shoot schedule lives on the call sheet.
             </p>
@@ -128,11 +128,11 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
             {milestones.length > 0 && (
               <div className="flex items-center gap-2 text-[11px]">
                 {overdueCount > 0 && (
-                  <span className="font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+                  <span className="font-semibold px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                     {overdueCount} overdue
                   </span>
                 )}
-                <span className="font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                <span className="font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                   {doneCount}/{milestones.length} done
                 </span>
               </div>
@@ -149,17 +149,17 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
         {showAdd && <AddMilestoneForm onAdd={add} onCancel={() => setShowAdd(false)} />}
 
         {/* Paste importer */}
-        <div className="px-5 py-3 border-b border-gray-50">
+        <div className="px-5 py-3 border-b border-gray-50 dark:border-gray-800">
           <button
             onClick={() => setImportOpen((o) => !o)}
-            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800"
+            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
           >
             {importOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
             <Wand2 size={13} /> Paste a timeline to auto-format
           </button>
           {importOpen && (
             <div className="mt-3 space-y-2">
-              <p className="text-[11px] text-gray-400 leading-snug">
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
                 One milestone per line:{" "}
                 <span className="font-mono">PHASE — DATE — TITLE — DESCRIPTION</span>. Phase and
                 description are optional; a phase line carries down to the lines beneath it.
@@ -171,7 +171,7 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
                   "PRE-PRODUCTION — WED 1 JUL — PUMA FEEDBACK ON V1 DECK — Schedule, route, locations, crew approved\nPRE-PRODUCTION — TUE 7 JUL — SHOOT DAY — Shoot\nPOST-PRODUCTION — WED 15 JUL — V1 ASSETS DELIVERED\nPOST-PRODUCTION — FRI 24 JUL — GO LIVE — Launch"
                 }
                 rows={7}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-mono bg-white resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-mono bg-white dark:bg-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
               />
               <button
                 onClick={runImport}
@@ -187,7 +187,7 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
 
         {milestones.length === 0 && !showAdd ? (
           <div className="px-5 py-12 text-center">
-            <p className="text-sm text-gray-500">No milestones yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No milestones yet.</p>
             <button
               onClick={() => setShowAdd(true)}
               className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
@@ -205,13 +205,13 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
                 <div key={key}>
                   <div className="flex items-center gap-2 mb-3">
                     <span className={`w-2.5 h-2.5 rounded-full ${style.dot}`} />
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
                       {style.label}
                     </h3>
-                    <span className="text-[10px] text-gray-400">{items.length}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{items.length}</span>
                   </div>
                   <div className="relative">
-                    <div className="absolute left-[104px] top-1 bottom-1 w-px bg-gray-100" />
+                    <div className="absolute left-[104px] top-1 bottom-1 w-px bg-gray-100 dark:bg-gray-800" />
                     <div className="space-y-2.5">
                       {items.map((m) => (
                         <MilestoneRow
@@ -276,7 +276,7 @@ function MilestoneRow({
       <div className="w-24 shrink-0 pt-2 text-right">
         <span
           className={`text-xs font-semibold tabular-nums ${
-            status === "OVERDUE" ? "text-red-500" : "text-gray-700"
+            status === "OVERDUE" ? "text-red-500 dark:text-red-400" : "text-gray-700 dark:text-gray-300"
           }`}
         >
           {dateLabel}
@@ -285,7 +285,7 @@ function MilestoneRow({
       {/* Node */}
       <div className="relative flex flex-col items-center pt-3 shrink-0">
         <span
-          className={`w-2.5 h-2.5 rounded-full ring-4 ring-white ${
+          className={`w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-gray-900 ${
             status === "OVERDUE"
               ? "bg-red-400"
               : status === "DONE"
@@ -298,10 +298,10 @@ function MilestoneRow({
       <div
         className={`flex-1 min-w-0 rounded-xl p-3 transition-colors -ml-1 border ${
           status === "OVERDUE"
-            ? "bg-red-50/40 border-red-100"
+            ? "bg-red-50/40 dark:bg-red-900/30 border-red-100 dark:border-red-800"
             : status === "DONE"
-            ? "bg-gray-50/60 border-gray-100"
-            : "bg-gray-50/50 border-gray-100 hover:bg-amber-50/20"
+            ? "bg-gray-50/60 dark:bg-gray-800/60 border-gray-100 dark:border-gray-800"
+            : "bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 hover:bg-amber-50/20 dark:hover:bg-amber-900/30"
         }`}
       >
         {editing ? (
@@ -346,7 +346,7 @@ function MilestoneRow({
               </button>
               <button
                 onClick={() => setEditing(false)}
-                className="text-xs text-gray-400 hover:text-gray-600 px-2 py-2"
+                className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-2"
               >
                 Cancel
               </button>
@@ -360,7 +360,7 @@ function MilestoneRow({
               className={`mt-0.5 shrink-0 w-4 h-4 rounded-md border flex items-center justify-center transition-colors ${
                 milestone.done
                   ? "bg-emerald-500 border-emerald-500 text-white"
-                  : "border-gray-300 hover:border-emerald-400 text-transparent"
+                  : "border-gray-300 dark:border-gray-600 hover:border-emerald-400 text-transparent"
               }`}
             >
               <Check size={11} />
@@ -370,7 +370,7 @@ function MilestoneRow({
                 <button
                   onClick={() => setEditing(true)}
                   className={`text-sm font-medium text-left ${
-                    milestone.done ? "text-gray-400 line-through" : "text-gray-900"
+                    milestone.done ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-900 dark:text-gray-100"
                   }`}
                 >
                   {milestone.title}
@@ -384,7 +384,7 @@ function MilestoneRow({
               {milestone.description && (
                 <p
                   className={`text-xs mt-1 whitespace-pre-wrap ${
-                    milestone.done ? "text-gray-400" : "text-gray-500"
+                    milestone.done ? "text-gray-400 dark:text-gray-500" : "text-gray-500 dark:text-gray-400"
                   }`}
                 >
                   {milestone.description}
@@ -396,7 +396,7 @@ function MilestoneRow({
       </div>
       <button
         onClick={onRemove}
-        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 p-1 mt-3"
+        className="opacity-0 group-hover:opacity-100 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 p-1 mt-3"
       >
         <Trash2 size={13} />
       </button>
@@ -427,7 +427,7 @@ function AddMilestoneForm({
   }
 
   return (
-    <div className="px-5 py-4 bg-amber-50/30 border-b border-gray-50 grid grid-cols-1 md:grid-cols-12 gap-2 items-start">
+    <div className="px-5 py-4 bg-amber-50/30 dark:bg-amber-900/30 border-b border-gray-50 dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-2 items-start">
       <select
         value={phase}
         onChange={(e) => setPhase(e.target.value as MilestonePhase)}
@@ -466,7 +466,7 @@ function AddMilestoneForm({
         >
           Add
         </button>
-        <button onClick={onCancel} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-2">
+        <button onClick={onCancel} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-2">
           Cancel
         </button>
       </div>
