@@ -635,7 +635,7 @@ export default function MediaPlanTab({
             title={canLock ? "Lock the media plan" : "Set the deal value first"}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               locked
-                ? "bg-[#ffd700] text-black hover:bg-[#e6c200]"
+                ? "bg-[#ffd700] text-black hover:bg-[#ffd700]"
                 : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_0_18px_rgba(16,185,129,0.35)]"
             }`}
           >

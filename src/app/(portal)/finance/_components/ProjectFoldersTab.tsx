@@ -65,7 +65,7 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
         <Link
           href={`/commercial/deals/${p.deal.id}`}
           onClick={(e) => e.stopPropagation()}
-          className="mb-2 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[#ffd700] hover:text-[#e6c200]"
+          className="mb-2 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[#ffd700] hover:text-[#ffd700]"
         >
           <Briefcase className="h-3 w-3 shrink-0" />
           <span className="truncate">Deal: {p.deal.title}</span>
@@ -186,7 +186,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
             {deal && (
               <Link
                 href={`/commercial/deals/${deal.id}`}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#ffd700] hover:text-[#e6c200]"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#ffd700] hover:text-[#ffd700]"
               >
                 <Briefcase className="h-3 w-3" /> Deal: {deal.title} in Commercial
                 <span className="text-gray-400 dark:text-gray-500">· {dealStageLabel(deal.stage)}</span>

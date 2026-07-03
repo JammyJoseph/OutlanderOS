@@ -1,7 +1,7 @@
 // Shared UI constants + types for the Commercial deal pipeline pages.
 
 export const GOLD = "#ffd700";
-export const GOLD_DARK = "#e6c200";
+export const GOLD_DARK = "#ffd700";
 
 export type DealStage =
   // ── current pipeline ──

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import NextLink from 'next/link'
 import {
   Mail,
   FileSpreadsheet,
@@ -268,7 +269,7 @@ export default function SystemPage() {
               ].map(out => {
                 const Icon = out.icon
                 return (
-                  <a
+                  <NextLink
                     key={out.label}
                     href={out.href}
                     className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-sm flex flex-col gap-1.5 hover:border-amber-300 dark:hover:border-amber-800 transition-colors"
@@ -284,7 +285,7 @@ export default function SystemPage() {
                         <li key={p} className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">— {p}</li>
                       ))}
                     </ul>
-                  </a>
+                  </NextLink>
                 )
               })}
             </div>
@@ -338,7 +339,7 @@ export default function SystemPage() {
           {quinnActions.map((action, i) => {
             const Icon = action.icon
             return (
-              <a
+              <NextLink
                 key={i}
                 href={action.href}
                 className="flex items-start gap-4 px-5 py-4 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors group"
@@ -351,7 +352,7 @@ export default function SystemPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{action.detail}</p>
                 </div>
                 <ChevronRight size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-[#ffd700] mt-1.5 shrink-0 transition-colors" />
-              </a>
+              </NextLink>
             )
           })}
         </div>

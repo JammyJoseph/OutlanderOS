@@ -109,8 +109,9 @@ export default function HubPage() {
         if (dashboard.status === 'fulfilled' && dashboard.value?.billingTracker?.bookedRevenue) {
           next.finance = dashboard.value.billingTracker.bookedRevenue
         }
-        if (contacts.status === 'fulfilled' && Array.isArray(contacts.value)) {
-          next.directory = contacts.value.length
+        if (contacts.status === 'fulfilled') {
+          const v = contacts.value
+          next.directory = typeof v?.total === 'number' ? v.total : Array.isArray(v) ? v.length : Array.isArray(v?.data) ? v.data.length : undefined
         }
         setStats(next)
       } catch {

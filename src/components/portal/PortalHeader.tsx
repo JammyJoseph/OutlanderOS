@@ -90,7 +90,7 @@ export function PortalHeader() {
       {/* Right: actions */}
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <NotificationBell tone="dark" />
+        <NotificationBell />
 
         <Link
           href="/me"

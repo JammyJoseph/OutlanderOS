@@ -1,51 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Lock, Bell, Sun, Moon, Check, AlertTriangle } from 'lucide-react'
+import Link from 'next/link'
+import { Lock, Bell, Sun, ChevronRight } from 'lucide-react'
 import { GoogleAccountSection } from './_components/GoogleAccountSection'
-import { useTheme } from '@/components/theme-context'
-
-const INPUT_CLS =
-  'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
+import { ThemeChooser } from '@/components/ui/ThemeChooser'
 
 export default function MeSettingsPage() {
-  const [form, setForm] = useState({ current: '', next: '', confirm: '' })
-  const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
-
-  async function changePassword() {
-    setMessage(null)
-    if (!form.current || !form.next) {
-      setMessage({ kind: 'err', text: 'Current and new password are required' })
-      return
-    }
-    if (form.next !== form.confirm) {
-      setMessage({ kind: 'err', text: 'New password and confirmation do not match' })
-      return
-    }
-    if (form.next.length < 8) {
-      setMessage({ kind: 'err', text: 'New password must be at least 8 characters' })
-      return
-    }
-    setSaving(true)
-    try {
-      const res = await fetch('/api/me/password', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword: form.current, newPassword: form.next }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setMessage({ kind: 'err', text: data.error || 'Failed to change password' })
-        return
-      }
-      setMessage({ kind: 'ok', text: 'Password updated successfully' })
-      setForm({ current: '', next: '', confirm: '' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <div className="mb-6">
@@ -56,36 +17,13 @@ export default function MeSettingsPage() {
       <GoogleAccountSection />
 
       <Section icon={<Lock className="h-4 w-4" />} title="Change password" subtitle="Use a strong password you don't use elsewhere">
-        <div className="grid grid-cols-1 gap-4">
-          <Field label="Current password">
-            <input type="password" className={INPUT_CLS} value={form.current}
-              onChange={(e) => setForm({ ...form, current: e.target.value })} />
-          </Field>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="New password">
-              <input type="password" className={INPUT_CLS} value={form.next}
-                onChange={(e) => setForm({ ...form, next: e.target.value })} />
-            </Field>
-            <Field label="Confirm new password">
-              <input type="password" className={INPUT_CLS} value={form.confirm}
-                onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
-            </Field>
-          </div>
-        </div>
-        {message && (
-          <div className={`mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${
-            message.kind === 'ok' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-          }`}>
-            {message.kind === 'ok' ? <Check className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
-            {message.text}
-          </div>
-        )}
-        <div className="mt-5 flex justify-end">
-          <button onClick={changePassword} disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
-            {saving ? 'Updating…' : 'Update password'}
-          </button>
-        </div>
+        <Link
+          href="/me/change-password"
+          className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-gray-800/40 px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+        >
+          <span>Update your password</span>
+          <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+        </Link>
       </Section>
 
       <Section icon={<Bell className="h-4 w-4" />} title="Notifications" subtitle="Choose what you'd like to be notified about (coming soon)">
@@ -126,51 +64,6 @@ function Section({
       </div>
       <div className="mt-5">{children}</div>
     </section>
-  )
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</label>
-      {children}
-    </div>
-  )
-}
-
-function ThemeChooser() {
-  const { theme, setTheme } = useTheme()
-  const options: { value: 'light' | 'dark'; label: string; icon: React.ReactNode; desc: string }[] = [
-    { value: 'light', label: 'Light', icon: <Sun className="h-4 w-4" />, desc: 'Bright, default theme' },
-    { value: 'dark', label: 'Dark', icon: <Moon className="h-4 w-4" />, desc: 'Low-light, high contrast' },
-  ]
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      {options.map((opt) => {
-        const active = theme === opt.value
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => setTheme(opt.value)}
-            className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
-              active
-                ? 'border-[#ffd700] bg-amber-50 dark:bg-amber-900/30 ring-2 ring-amber-200/60'
-                : 'border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-800'
-            }`}
-          >
-            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-[#ffd700] text-black' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
-              {opt.icon}
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{opt.label}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{opt.desc}</div>
-            </div>
-            {active && <Check className="h-4 w-4 text-[#ffd700]" />}
-          </button>
-        )
-      })}
-    </div>
   )
 }
 

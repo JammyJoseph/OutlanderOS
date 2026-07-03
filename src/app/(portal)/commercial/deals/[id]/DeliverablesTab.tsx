@@ -470,7 +470,7 @@ function AddDeliverableForm({
           type="submit"
           disabled={!title.trim() || busy}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${
-            additional ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-[#ffd700] text-black hover:bg-[#e6c200]"
+            additional ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-[#ffd700] text-black hover:bg-[#ffd700]"
           }`}
         >
           {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}

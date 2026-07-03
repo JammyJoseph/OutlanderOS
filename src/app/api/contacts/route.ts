@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
 import { validateRequired, sanitizeString, validateEmail } from '@/lib/validate'
+import { parsePagination, paginate } from '@/lib/pagination'
 
 export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
@@ -21,33 +22,45 @@ export const GET = withAuth(async (request: NextRequest) => {
   const radarFilter =
     radar === 'true' ? { isRadar: true } : radar === 'false' ? { isRadar: false } : {}
 
-  const contacts = await prisma.contact.findMany({
-    where: {
-      AND: [
-        search
-          ? {
-              OR: [
-                { name: { contains: search, mode: 'insensitive' } },
-                { company: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-                { role: { contains: search, mode: 'insensitive' } },
-                { instagram: { contains: search, mode: 'insensitive' } },
-                { location: { contains: search, mode: 'insensitive' } },
-                { notes: { contains: search, mode: 'insensitive' } },
-              ],
-            }
-          : {},
-        categoryFilter,
-        radarFilter,
-        // Archived contacts are hidden from the directory unless explicitly requested.
-        includeArchived ? {} : { archived: false },
-      ],
-    },
-    include: { creator: { select: { id: true, name: true } } },
-    orderBy: { updatedAt: 'desc' },
-  })
+  const where = {
+    AND: [
+      search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { company: { contains: search, mode: 'insensitive' as const } },
+              { email: { contains: search, mode: 'insensitive' as const } },
+              { role: { contains: search, mode: 'insensitive' as const } },
+              { instagram: { contains: search, mode: 'insensitive' as const } },
+              { location: { contains: search, mode: 'insensitive' as const } },
+              { notes: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {},
+      categoryFilter,
+      radarFilter,
+      // Archived contacts are hidden from the directory unless explicitly requested.
+      includeArchived ? {} : { archived: false },
+    ],
+  }
 
-  return NextResponse.json(contacts)
+  // Pagination is opt-in: callers that pass `page`/`limit` get a page, everyone
+  // else (pickers, dashboards) still gets the full list. Either way the response
+  // uses the standard { data, total, page, pages } envelope.
+  const isPaginated = searchParams.has('page') || searchParams.has('limit')
+  const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 50, maxLimit: 200 })
+
+  const [contacts, total] = await Promise.all([
+    prisma.contact.findMany({
+      where,
+      include: { creator: { select: { id: true, name: true } } },
+      orderBy: { updatedAt: 'desc' },
+      ...(isPaginated ? { skip, take: limit } : {}),
+    }),
+    prisma.contact.count({ where }),
+  ])
+
+  return NextResponse.json(paginate(contacts, total, isPaginated ? page : 1, isPaginated ? limit : total || 1))
 })
 
 function parseRating(value: unknown): number | null {

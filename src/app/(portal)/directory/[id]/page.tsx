@@ -24,30 +24,10 @@ import {
 import { DIRECTORY_ACCENT } from "@/lib/directory";
 import { isValidUrl } from "@/lib/validation";
 import { ErrorState } from "@/components/ui/error-state";
+import { igHandle } from "@/lib/directory-utils";
+import { InstagramIcon as Instagram } from "@/components/icons/InstagramIcon";
 
 const ACCENT = DIRECTORY_ACCENT;
-
-// lucide-react in this build doesn't ship an Instagram glyph — inline the classic mark.
-function Instagram({ size = 16, className }: { size?: number; className?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-    </svg>
-  );
-}
 
 interface PortfolioLink {
   title: string;
@@ -109,15 +89,6 @@ const inputCls =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
 const labelCls =
   "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2";
-
-function igHandle(raw: string | null): string | null {
-  if (!raw) return null;
-  return raw
-    .replace(/https?:\/\/(www\.)?instagram\.com\//i, "")
-    .replace(/^@/, "")
-    .replace(/\/.*$/, "")
-    .trim() || null;
-}
 
 function Stars({
   rating,

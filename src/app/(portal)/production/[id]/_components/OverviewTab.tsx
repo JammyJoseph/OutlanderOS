@@ -199,7 +199,7 @@ export default function OverviewTab({
                       {production.clientName || production.campaign?.client?.name}
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1 font-semibold text-[#e6c200] bg-amber-50 rounded-full px-2 py-0.5">
+                  <span className="inline-flex items-center gap-1 font-semibold text-[#ffd700] bg-amber-50 rounded-full px-2 py-0.5">
                     <Lock size={10} /> {gbp(production.budgetTotal ?? 0)} budget
                   </span>
                 </div>
@@ -238,7 +238,7 @@ export default function OverviewTab({
                     <span className="font-medium text-gray-900 dark:text-gray-100">
                       {gbp(production.budgetTotal ?? 0)}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#e6c200]">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#ffd700]">
                       <Lock size={10} /> Budget set in Commercial
                     </span>
                   </div>
@@ -303,7 +303,7 @@ export default function OverviewTab({
             </h2>
             <button
               onClick={addShoot}
-              className="text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+              className="text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
             >
               + Add
             </button>

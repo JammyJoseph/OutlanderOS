@@ -155,7 +155,7 @@ export default function NewMediaPlanPage() {
         <button
           onClick={handleSave}
           disabled={saving || !header.clientName.trim() || !header.campaignName.trim()}
-          className="rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200] disabled:opacity-50 transition-colors"
+          className="rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#ffd700] disabled:opacity-50 transition-colors"
         >
           {saving ? "Saving…" : "Save"}
         </button>

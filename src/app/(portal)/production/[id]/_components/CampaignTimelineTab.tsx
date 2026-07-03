@@ -149,7 +149,7 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
             )}
             <button
               onClick={() => setShowAdd((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+              className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
             >
               <Plus size={13} /> Add milestone
             </button>
@@ -189,7 +189,7 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
               <button
                 onClick={runImport}
                 disabled={busy || !raw.trim()}
-                className="inline-flex items-center gap-1.5 bg-[#ffd700] text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[#e6c200] disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 bg-[#ffd700] text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[#ffd700] disabled:opacity-40"
               >
                 {busy ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
                 Parse into milestones
@@ -203,7 +203,7 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
             <p className="text-sm text-gray-500 dark:text-gray-400">No milestones yet.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
             >
               <Plus size={12} /> Add your first milestone
             </button>
@@ -353,7 +353,7 @@ function MilestoneRow({
               />
               <button
                 onClick={saveEdits}
-                className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#e6c200]"
+                className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700]"
               >
                 Save
               </button>
@@ -475,7 +475,7 @@ function AddMilestoneForm({
       <div className="md:col-span-1 flex items-center gap-1 justify-end pt-0.5">
         <button
           onClick={submit}
-          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#e6c200] transition-colors"
+          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors"
         >
           Add
         </button>

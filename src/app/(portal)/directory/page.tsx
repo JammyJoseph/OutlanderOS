@@ -43,30 +43,10 @@ import ScannerPanel from "@/components/directory/ScannerPanel";
 import NetworkPanel from "@/components/directory/NetworkPanel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { isValidEmail, isValidUrl } from "@/lib/validation";
+import { igHandle, fmtFollowers } from "@/lib/directory-utils";
+import { InstagramIcon as Instagram } from "@/components/icons/InstagramIcon";
 
 const ACCENT = DIRECTORY_ACCENT;
-
-// lucide-react in this build doesn't ship an Instagram glyph — inline the classic mark.
-function Instagram({ size = 16, className }: { size?: number; className?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-    </svg>
-  );
-}
 
 interface ContactRecord {
   id: string;
@@ -144,25 +124,6 @@ function ConfidenceBadge({ confidence }: { confidence: string }) {
       <Sparkles size={9} /> {CONFIDENCE_LABEL[confidence] ?? confidence}
     </span>
   );
-}
-
-function igHandle(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  return (
-    raw
-      .replace(/https?:\/\/(www\.)?instagram\.com\//i, "")
-      .replace(/^@/, "")
-      .replace(/\/.*$/, "")
-      .trim() || null
-  );
-}
-
-// Compact follower count — "12.5K", "1.2M". Null when unknown.
-function fmtFollowers(n: number | null | undefined): string | null {
-  if (n == null || !Number.isFinite(n)) return null;
-  if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-  return String(n);
 }
 
 // Free-text location → a coarse country for the Country filter. Locations are
@@ -310,6 +271,12 @@ function Directory() {
   const [addingRadar, setAddingRadar] = useState<ContactRecord | null | undefined>(undefined);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
+  // Server-side pagination for the contact list (Load more).
+  const [contactsTotal, setContactsTotal] = useState(0);
+  const [contactsPage, setContactsPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const CONTACTS_LIMIT = 50;
+
   const setView = useCallback(
     (v: View) => router.push(v === "dashboard" ? "/directory" : `/directory?view=${v}`),
     [router]
@@ -326,14 +293,33 @@ function Directory() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const loadContacts = useCallback(async () => {
-    const params = new URLSearchParams({ radar: "false" });
-    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
-    if (category) params.set("category", category);
-    const res = await fetch(`/api/contacts?${params.toString()}`);
-    const data = await res.json();
-    setContacts(Array.isArray(data) ? data : []);
-  }, [debouncedSearch, category]);
+  const loadContacts = useCallback(
+    async (page = 1) => {
+      const params = new URLSearchParams({
+        radar: "false",
+        page: String(page),
+        limit: String(CONTACTS_LIMIT),
+      });
+      if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+      if (category) params.set("category", category);
+      const res = await fetch(`/api/contacts?${params.toString()}`);
+      const data = await res.json();
+      const list: ContactRecord[] = Array.isArray(data) ? data : data?.data ?? [];
+      setContacts((prev) => (page === 1 ? list : [...prev, ...list]));
+      setContactsTotal(typeof data?.total === "number" ? data.total : list.length);
+      setContactsPage(page);
+    },
+    [debouncedSearch, category]
+  );
+
+  async function loadMoreContacts() {
+    setLoadingMore(true);
+    try {
+      await loadContacts(contactsPage + 1);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const loadRadar = useCallback(async () => {
     const params = new URLSearchParams();
@@ -831,6 +817,25 @@ function Directory() {
             onAdd={() => setEditing(null)}
           />
         )}
+
+        {/* Load more — server-side pagination for the contact list */}
+        {(view === "contacts" || view === "recent") &&
+          !loading &&
+          contacts.length < contactsTotal && (
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <button
+                onClick={loadMoreContacts}
+                disabled={loadingMore}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-secondary disabled:opacity-50"
+              >
+                {loadingMore ? <Loader2 size={15} className="animate-spin" /> : null}
+                Load more
+              </button>
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                Showing {contacts.length} of {contactsTotal}
+              </span>
+            </div>
+          )}
       </div>
 
       {/* Floating share bar */}

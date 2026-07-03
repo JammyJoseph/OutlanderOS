@@ -12,30 +12,10 @@ import {
   Crown,
 } from "lucide-react";
 import { CONTACT_CATEGORIES, DIRECTORY_ACCENT } from "@/lib/directory";
+import { igHandle, fmtFollowers } from "@/lib/directory-utils";
+import { InstagramIcon as Instagram } from "@/components/icons/InstagramIcon";
 
 const ACCENT = DIRECTORY_ACCENT;
-
-// lucide-react in this build doesn't ship an Instagram glyph — inline the classic mark.
-function Instagram({ size = 16, className }: { size?: number; className?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-    </svg>
-  );
-}
 
 interface LeaderboardEntry {
   id: string;
@@ -54,24 +34,6 @@ interface LeaderboardEntry {
 }
 
 type Period = "30" | "90" | "all";
-
-function igHandle(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  return (
-    raw
-      .replace(/https?:\/\/(www\.)?instagram\.com\//i, "")
-      .replace(/^@/, "")
-      .replace(/\/.*$/, "")
-      .trim() || null
-  );
-}
-
-function fmtFollowers(n: number | null | undefined): string | null {
-  if (n == null || !Number.isFinite(n)) return null;
-  if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-  return String(n);
-}
 
 // Gold / silver / bronze accents for the podium (top 3).
 const MEDALS: Record<number, { color: string; label: string }> = {

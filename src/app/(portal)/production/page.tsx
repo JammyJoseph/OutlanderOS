@@ -355,7 +355,7 @@ export default function ProductionDashboard() {
             </button>
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors shadow-sm"
             >
               <Plus size={16} />
               New Editorial Project
@@ -434,7 +434,7 @@ export default function ProductionDashboard() {
                   </p>
                   <button
                     onClick={() => setShowCreate(true)}
-                    className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors"
+                    className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors"
                   >
                     <Plus size={16} />
                     Create your first project
@@ -530,7 +530,7 @@ function HotSeatBanner({
         </div>
         <button
           onClick={onCreate}
-          className="text-xs font-medium text-[#ffd700] hover:text-[#e6c200] flex items-center gap-1"
+          className="text-xs font-medium text-[#ffd700] hover:text-[#ffd700] flex items-center gap-1"
         >
           <Plus size={13} /> New project
         </button>
@@ -1203,7 +1203,7 @@ function CreateProjectModal({
               <button
                 type="button"
                 onClick={addDate}
-                className="flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:text-[#e6c200] transition-colors"
+                className="flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:text-[#ffd700] transition-colors"
               >
                 <Plus size={13} /> Add another date
               </button>
@@ -1278,7 +1278,7 @@ function CreateProjectModal({
             <button
               type="submit"
               disabled={!title.trim() || creating}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creating ? <Loader2 size={15} className="animate-spin" /> : null}
               Create Project

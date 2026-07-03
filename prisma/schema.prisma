@@ -771,34 +771,6 @@ model SyncLog {
   @@index([source, startedAt])
 }
 
-model CrossLink {
-  id        String   @id @default(cuid())
-  fromType  String
-  fromId    String
-  toType    String
-  toId      String
-  reason    String?
-  createdAt DateTime @default(now())
-
-  @@unique([fromType, fromId, toType, toId])
-  @@index([fromType, fromId])
-  @@index([toType, toId])
-}
-
-// ===== FINANCE DEALS (Trello budgets → Finance) =====
-model FinanceDeal {
-  id           String   @id @default(cuid())
-  trelloCardId String   @unique
-  cardName     String
-  client       String?
-  budget       Float
-  budgetLabel  String
-  stage        String?
-  cardUrl      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
 // ===== INTELLIGENCE ENGINE =====
 model IntelligenceLog {
   id         String    @id @default(cuid())
@@ -882,25 +854,6 @@ model Deadline {
   @@unique([source, sourceRef])
   @@index([dueDate])
   @@index([status])
-}
-
-// ===== AI TASK INTELLIGENCE =====
-model SmartProject {
-  id                String    @id @default(cuid())
-  name              String
-  description       String?
-  brand             String?
-  confidence        Float     @default(0.8)
-  status            String    @default("ACTIVE") // ACTIVE, COMPLETED, ARCHIVED
-  linkedTasks       String[]  @default([])
-  linkedDeadlines   String[]  @default([])
-  linkedTrelloCards String[]  @default([])
-  linkedProductions String[]  @default([])
-  externalPeople    String[]  @default([])
-  aiSummary         String?
-  lastAnalyzed      DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
 }
 
 model MediaPlanLineItem {

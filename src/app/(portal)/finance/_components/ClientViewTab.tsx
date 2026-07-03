@@ -85,7 +85,7 @@ function ClientCard({ r, onOpen }: { r: ClientRollup; onOpen: () => void }) {
         </div>
         <div>
           <dt className="text-gray-400 dark:text-gray-500">Margin</dt>
-          <dd className="font-mono text-[#e6c200]">{fmtGBP(r.margin)}</dd>
+          <dd className="font-mono text-[#ffd700]">{fmtGBP(r.margin)}</dd>
         </div>
       </dl>
       <BreakdownBar media={r.mediaSpend} production={r.productionCost} margin={r.margin} />
@@ -119,7 +119,7 @@ function ClientDetail({ r, onBack, onOpenProject }: { r: ClientRollup; onBack: (
         <StatTile label="Total Budget (exc. VAT)" value={fmtGBP(r.totalBudget)} />
         <StatTile label="Total Spent" value={fmtGBP(r.totalSpent)} cls={r.totalSpent > r.totalBudget ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'} />
         <StatTile label="Outstanding" value={fmtGBP(r.totalOutstanding)} cls={r.totalOutstanding < 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'} />
-        <StatTile label="Margin" value={fmtGBP(r.margin)} cls="text-[#e6c200]" />
+        <StatTile label="Margin" value={fmtGBP(r.margin)} cls="text-[#ffd700]" />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-5 shadow-sm">

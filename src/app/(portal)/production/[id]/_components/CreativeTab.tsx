@@ -81,7 +81,7 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Creative & References</h2>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
           >
             <Plus size={13} /> Add asset
           </button>
@@ -96,7 +96,7 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
             </p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
             >
               <Plus size={12} /> Add your first asset
             </button>
@@ -230,7 +230,7 @@ function AddAssetForm({
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#e6c200] transition-colors"
+          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors"
         >
           Add
         </button>

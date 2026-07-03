@@ -149,7 +149,7 @@ export default function LinkedDeal({ campaignId }: Props) {
         </div>
         <Link
           href={`/commercial/deals/${campaign.id}`}
-          className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200] pt-1"
+          className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700] pt-1"
         >
           View deal in Commercial <ArrowUpRight size={12} />
         </Link>

@@ -276,7 +276,7 @@ export default function NewDealModal({
               <button
                 type="submit"
                 disabled={!title.trim() || creating}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creating ? <Loader2 size={15} className="animate-spin" /> : null}
                 Create Deal

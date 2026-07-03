@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { randomInt } from "crypto";
+import { parsePagination, paginate } from "@/lib/pagination";
 
 // Valid team assignments. Mirrors the labels surfaced in the admin UI.
 export const TEAMS = ["COMMERCIAL", "PRODUCTION", "FINANCE", "OPERATIONS", "ADMIN"] as const;
@@ -28,13 +29,35 @@ const STAFF_SELECT = {
   createdAt: true,
 } as const;
 
-// GET /api/admin/users — full staff list (admin only).
-export const GET = withAdmin(async () => {
-  const users = await prisma.user.findMany({
-    orderBy: [{ isActive: "desc" }, { name: "asc" }],
-    select: STAFF_SELECT,
-  });
-  return NextResponse.json(users);
+// GET /api/admin/users — staff list (admin only). Supports `?search=&page=&limit=`
+// and returns the standard { data, total, page, pages } envelope.
+export const GET = withAdmin(async (request: NextRequest) => {
+  const { searchParams } = new URL(request.url);
+  const search = (searchParams.get("search") || "").trim();
+  const isPaginated = searchParams.has("page") || searchParams.has("limit");
+  const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 50, maxLimit: 200 });
+
+  const where = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { email: { contains: search, mode: "insensitive" as const } },
+          { department: { contains: search, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+      select: STAFF_SELECT,
+      ...(isPaginated ? { skip, take: limit } : {}),
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return NextResponse.json(paginate(users, total, isPaginated ? page : 1, isPaginated ? limit : total || 1));
 });
 
 // Generates a readable 8-char alphanumeric temporary password. Excludes

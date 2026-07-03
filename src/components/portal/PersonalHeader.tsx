@@ -1,68 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { Bell, User as UserIcon } from "lucide-react";
+import { User as UserIcon } from "lucide-react";
 import { PortalSwitcher } from "@/components/portal/PortalSwitcher";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useUser } from "@/components/user-context";
 
-interface NotificationItem {
-  id: string;
-  type: string;
-  message: string;
-  link: string | null;
-  read: boolean;
-  createdAt: string;
-}
-
 export function PersonalHeader() {
-  const pathname = usePathname();
   const router = useRouter();
-  const [notifsOpen, setNotifsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const notifsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   // User data comes from the shared UserProvider (single /api/me fetch) instead
   // of a per-header fetch.
   const { user: me } = useUser();
 
   useEffect(() => {
-    fetch("/api/notifications")
-      .then((r) => r.json())
-      .then((d) => {
-        setNotifications(Array.isArray(d.notifications) ? d.notifications : []);
-        setUnreadCount(d.unreadCount ?? 0);
-      })
-      .catch(() => {});
-  }, [pathname]);
-
-  useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (notifsRef.current && !notifsRef.current.contains(e.target as Node)) setNotifsOpen(false);
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  async function markNotificationRead(n: NotificationItem) {
-    if (n.read) return;
-    setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
-    setUnreadCount((c) => Math.max(0, c - 1));
-    await fetch(`/api/notifications/${n.id}`, { method: "PUT" });
-  }
-
-  async function markAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setUnreadCount(0);
-    await fetch("/api/notifications/mark-all-read", { method: "POST" });
-  }
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
@@ -99,57 +61,8 @@ export function PersonalHeader() {
         {/* Theme toggle */}
         <ThemeToggle />
 
-        {/* Notifications */}
-        <div className="relative" ref={notifsRef}>
-          <button
-            onClick={() => setNotifsOpen((v) => !v)}
-            className="relative flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Bell className="h-4 w-4" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ffd700] px-1 text-[10px] font-bold text-black">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-          {notifsOpen && (
-            <div className="absolute right-0 top-full mt-1 w-80 rounded-xl bg-popover border border-border shadow-lg shadow-black/40 z-50 overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-800">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Notifications</span>
-                {unreadCount > 0 && (
-                  <button onClick={markAllRead} className="text-[11px] text-[#ffd700] font-semibold hover:underline">
-                    Mark all read
-                  </button>
-                )}
-              </div>
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-gray-400">No notifications</div>
-                ) : (
-                  notifications.map((n) => (
-                    <button
-                      key={n.id}
-                      onClick={() => {
-                        markNotificationRead(n);
-                        if (n.link) router.push(n.link);
-                      }}
-                      className={`w-full text-left px-3 py-2 border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                        n.read ? "opacity-60" : "bg-[#ffd700]/5"
-                      }`}
-                    >
-                      <div className="text-xs text-gray-800 dark:text-gray-200">{n.message}</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5">
-                        {new Date(n.createdAt).toLocaleString("en-GB", {
-                          month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                        })}
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Notifications (shared unified bell) */}
+        <NotificationBell />
 
         {/* Profile */}
         <div className="relative ml-1" ref={profileRef}>

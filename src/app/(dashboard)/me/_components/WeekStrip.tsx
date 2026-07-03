@@ -65,7 +65,7 @@ export function WeekStrip({ tasks, shoots, culturalEvents }: Props) {
             </span>
             <span
               className={`mt-0.5 text-sm font-bold ${
-                d.isToday ? "text-[#e6c200]" : "text-gray-700 dark:text-gray-300"
+                d.isToday ? "text-[#ffd700]" : "text-gray-700 dark:text-gray-300"
               }`}
             >
               {d.date.getDate()}

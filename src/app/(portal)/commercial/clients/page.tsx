@@ -123,7 +123,7 @@ export default function ClientsPage() {
           </button>
           <button
             disabled
-            className="flex items-center gap-2 rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200] transition-colors disabled:opacity-60"
+            className="flex items-center gap-2 rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#ffd700] transition-colors disabled:opacity-60"
           >
             <Plus className="h-4 w-4" />
             Add Client

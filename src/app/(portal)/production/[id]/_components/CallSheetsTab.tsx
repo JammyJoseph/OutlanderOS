@@ -41,7 +41,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
           <button
             onClick={onCreateCallSheet}
             disabled={creatingSheet}
-            className="flex items-center gap-1.5 bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#e6c200] transition-colors disabled:opacity-60"
+            className="flex items-center gap-1.5 bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors disabled:opacity-60"
           >
             {creatingSheet ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
             Create call sheet
@@ -60,7 +60,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
             <button
               onClick={onCreateCallSheet}
               disabled={creatingSheet}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+              className="flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
             >
               <Plus size={13} />
               Create call sheet

@@ -325,7 +325,7 @@ export default function BudgetTab({
             {nextAction && (
               <button
                 onClick={() => setConfirmStatus(nextAction.next)}
-                className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors shadow-sm"
               >
                 <Lock size={13} />
                 {nextAction.label}
@@ -382,7 +382,7 @@ export default function BudgetTab({
                   From deal:{" "}
                   <Link
                     href={`/commercial/deals/${production.campaignId}`}
-                    className="font-medium text-[#ffd700] hover:text-[#e6c200] inline-flex items-center gap-0.5"
+                    className="font-medium text-[#ffd700] hover:text-[#ffd700] inline-flex items-center gap-0.5"
                   >
                     <Briefcase size={10} /> {deal.title} <ArrowUpRight size={10} />
                   </Link>
@@ -490,7 +490,7 @@ export default function BudgetTab({
           <button
             onClick={seedTemplate}
             disabled={seeding}
-            className="inline-flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors shadow-sm disabled:opacity-50"
+            className="inline-flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors shadow-sm disabled:opacity-50"
           >
             {seeding ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
             Set up from template
@@ -664,7 +664,7 @@ export default function BudgetTab({
                     <div className="px-5 py-1.5">
                       <button
                         onClick={() => addLine(sec.key)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#ffd700] hover:text-[#e6c200]"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#ffd700] hover:text-[#ffd700]"
                       >
                         <Plus size={12} /> Add line
                       </button>
@@ -856,7 +856,7 @@ export default function BudgetTab({
                 <button
                   onClick={() => setBudgetStatus(confirmStatus)}
                   disabled={statusBusy}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#e6c200] transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors disabled:opacity-50"
                 >
                   {statusBusy ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
                   Confirm

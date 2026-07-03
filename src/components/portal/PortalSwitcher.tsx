@@ -33,6 +33,7 @@ const PORTALS: PortalItem[] = [
   { name: "Finance", href: "/finance", key: "finance", icon: Wallet, adminOnly: true },
   { name: "Print", href: "/print", key: "print", icon: Printer },
   { name: "Directory", href: "/directory", key: "directory", icon: BookUser },
+  { name: "Admin", href: "/admin", key: "admin", icon: Shield, adminOnly: true },
 ];
 
 function currentPortal(pathname: string): PortalItem | null {
@@ -122,24 +123,6 @@ export function PortalSwitcher() {
               </button>
             );
           })}
-
-          {isAdmin && (
-            <>
-              <div className="h-px bg-gray-100 dark:bg-gray-800" />
-              <button
-                onClick={() => go("/admin")}
-                className={`flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors ${
-                  pathname.startsWith("/admin")
-                    ? "font-semibold text-gray-900 dark:text-gray-100"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                }`}
-                style={pathname.startsWith("/admin") ? { backgroundColor: `${PORTAL_ACCENTS.admin}14` } : undefined}
-              >
-                <Shield className="h-3.5 w-3.5 text-gray-400" />
-                Admin &amp; Settings
-              </button>
-            </>
-          )}
         </div>
       )}
     </div>

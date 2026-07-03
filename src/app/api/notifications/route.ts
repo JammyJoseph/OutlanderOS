@@ -2,23 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
 import { isAdminInDb } from '@/lib/auth'
+import { parsePagination, paginate } from '@/lib/pagination'
 
 export async function GET(request: NextRequest) {
   const me = getCurrentUser(request)
-  if (!me) return NextResponse.json({ notifications: [] }, { status: 401 })
+  if (!me) return NextResponse.json({ data: [], total: 0, page: 1, pages: 1, unreadCount: 0 }, { status: 401 })
 
   try {
-    const notifications = await prisma.notification.findMany({
-      where: { userId: me.userId },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    })
-    const unreadCount = await prisma.notification.count({
-      where: { userId: me.userId, read: false },
-    })
-    return NextResponse.json({ notifications, unreadCount })
+    const { searchParams } = new URL(request.url)
+    const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 20, maxLimit: 100 })
+    const where = { userId: me.userId }
+    const [notifications, total, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.notification.count({ where }),
+      prisma.notification.count({ where: { userId: me.userId, read: false } }),
+    ])
+    return NextResponse.json({ ...paginate(notifications, total, page, limit), unreadCount })
   } catch (e) {
-    return NextResponse.json({ notifications: [], unreadCount: 0, error: "An error occurred" })
+    return NextResponse.json({ data: [], total: 0, page: 1, pages: 1, unreadCount: 0, error: "An error occurred" })
   }
 }
 

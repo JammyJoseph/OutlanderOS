@@ -150,7 +150,7 @@ export default function BrandDetail({ name, onClose }: Props) {
               <button
                 onClick={generateReport}
                 disabled={reporting}
-                className="inline-flex items-center gap-1 rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-medium text-black shadow-sm hover:bg-[#e6c200] disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-medium text-black shadow-sm hover:bg-[#ffd700] disabled:opacity-60"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 Generate Report

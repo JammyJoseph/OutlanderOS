@@ -28,7 +28,7 @@ export default function DistributionPage() {
           <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Distribution</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">Magazine distribution and shipping records</p>
         </div>
-        <button className="flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-3 py-2 text-xs font-semibold text-black hover:bg-[#e6c200]">
+        <button className="flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-3 py-2 text-xs font-semibold text-black hover:bg-[#ffd700]">
           <Plus className="h-3.5 w-3.5" />
           Add Distribution
         </button>
@@ -63,7 +63,7 @@ export default function DistributionPage() {
             <p className="mt-1 max-w-xs text-xs text-gray-400 dark:text-gray-500">
               Add distribution records to track where magazines have been shipped.
             </p>
-            <button className="mt-4 flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-4 py-2 text-xs font-semibold text-black hover:bg-[#e6c200]">
+            <button className="mt-4 flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-4 py-2 text-xs font-semibold text-black hover:bg-[#ffd700]">
               <Plus className="h-3.5 w-3.5" />
               Add Distribution
             </button>

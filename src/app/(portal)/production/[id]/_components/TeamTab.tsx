@@ -153,7 +153,7 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
             </button>
             <button
               onClick={() => setShowAdd((v) => !v)}
-              className="flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+              className="flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
             >
               <Plus size={13} /> Add member
             </button>
@@ -167,7 +167,7 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
             <p className="text-sm text-gray-500 dark:text-gray-400">No team members yet.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
             >
               <Plus size={12} /> Add your first member
             </button>
@@ -236,7 +236,7 @@ function DirectoryPicker({
       fetch(`/api/contacts?${params.toString()}`)
         .then((r) => r.json())
         .then((data) => {
-          if (active) setContacts(Array.isArray(data) ? data : []);
+          if (active) setContacts(Array.isArray(data) ? data : data?.data ?? []);
         })
         .finally(() => active && setLoading(false));
     }, 200);
@@ -318,7 +318,7 @@ function DirectoryPicker({
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{c.name}</p>
                         {c.rating ? (
-                          <span className="inline-flex items-center gap-0.5 text-[11px] text-[#e6c200]">
+                          <span className="inline-flex items-center gap-0.5 text-[11px] text-[#ffd700]">
                             <Star size={11} className="fill-[#ffd700] text-[#ffd700]" /> {c.rating}
                           </span>
                         ) : null}
@@ -333,7 +333,7 @@ function DirectoryPicker({
                       className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                         isAdded
                           ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-                          : "bg-[#ffd700] text-black hover:bg-[#e6c200]"
+                          : "bg-[#ffd700] text-black hover:bg-[#ffd700]"
                       }`}
                       title={alreadyOnTeam ? "Already has a member with this name" : "Add to team"}
                     >
@@ -575,7 +575,7 @@ function AddMemberForm({
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#e6c200] transition-colors"
+          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors"
         >
           Add
         </button>

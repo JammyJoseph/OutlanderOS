@@ -211,10 +211,10 @@ export default function ThinkTankPage() {
                         href={s.sourceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group inline-flex items-start gap-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-[#e6c200]"
+                        className="group inline-flex items-start gap-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-[#ffd700]"
                       >
                         {s.title}
-                        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-gray-300 dark:text-gray-600 group-hover:text-[#e6c200]" />
+                        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-gray-300 dark:text-gray-600 group-hover:text-[#ffd700]" />
                       </a>
                     ) : (
                       <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{s.title}</span>
@@ -290,7 +290,7 @@ export default function ThinkTankPage() {
                                 href={m.sourceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:text-[#e6c200]"
+                                className="hover:text-[#ffd700]"
                               >
                                 {m.title}
                               </a>

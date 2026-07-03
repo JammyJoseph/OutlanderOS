@@ -258,7 +258,7 @@ export default function ProjectDetail() {
               This project is managed from Commercial
               <Link
                 href={`/commercial/deals/${production.campaignId}`}
-                className="inline-flex items-center gap-0.5 font-medium text-[#ffd700] hover:text-[#e6c200]"
+                className="inline-flex items-center gap-0.5 font-medium text-[#ffd700] hover:text-[#ffd700]"
               >
                 View deal <ArrowUpRight size={11} />
               </Link>

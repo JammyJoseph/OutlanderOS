@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Calendar, Plus, X, Check, AlertTriangle, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-
-const INPUT_CLS =
-  'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
+import { Field } from '@/components/ui/Field'
+import { INPUT_CLS } from '@/lib/styles'
 
 type HolidayStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 type HolidayType = 'ANNUAL' | 'SICK' | 'PERSONAL' | 'OTHER'
@@ -440,15 +439,6 @@ function Legend({ color, label }: { color: string; label: string }) {
   )
 }
 
-function Field({ label, wide, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
-  return (
-    <div className={wide ? 'sm:col-span-2' : ''}>
-      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</label>
-      {children}
-    </div>
-  )
-}
-
 function StatusBadge({ status }: { status: HolidayStatus }) {
   const map: Record<HolidayStatus, { bg: string; text: string; label: string; icon?: React.ReactNode }> = {
     PENDING: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-800 dark:text-amber-300', label: 'Pending', icon: <Clock className="h-3 w-3" /> },
@@ -470,7 +460,7 @@ function prettyType(t: HolidayType): string {
 
 // Per-person colour palette for the team calendar rows.
 const TEAM_COLORS = [
-  { bar: 'bg-[#ffd700]', text: 'text-[#e6c200]', dot: 'bg-[#ffd700]' },
+  { bar: 'bg-[#ffd700]', text: 'text-[#ffd700]', dot: 'bg-[#ffd700]' },
   { bar: 'bg-[#4d9fff]', text: 'text-[#4d9fff]', dot: 'bg-[#4d9fff]' },
   { bar: 'bg-[#00ff88]', text: 'text-[#00ff88]', dot: 'bg-[#00ff88]' },
   { bar: 'bg-[#ff4444]', text: 'text-[#ff4444]', dot: 'bg-[#ff4444]' },

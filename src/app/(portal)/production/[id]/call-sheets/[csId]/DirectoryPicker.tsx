@@ -35,7 +35,7 @@ export function DirectoryPicker({
       setLoading(true);
       fetch(`/api/contacts?search=${encodeURIComponent(search)}`)
         .then((r) => r.json())
-        .then((d) => setContacts(Array.isArray(d) ? d : []))
+        .then((d) => setContacts(Array.isArray(d) ? d : d?.data ?? []))
         .finally(() => setLoading(false));
     }, 300);
     return () => clearTimeout(t);

@@ -4,9 +4,7 @@ import { useState } from 'react'
 import { Check, AlertTriangle, Loader2, Mail } from 'lucide-react'
 import { useUser } from '@/components/user-context'
 import { useConfirm } from '@/components/ui/confirm-provider'
-
-const INPUT_CLS =
-  'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
+import { INPUT_CLS } from '@/lib/styles'
 
 // Accepts either a raw authorization code or the full callback URL the user
 // pasted from their browser, and returns just the code.

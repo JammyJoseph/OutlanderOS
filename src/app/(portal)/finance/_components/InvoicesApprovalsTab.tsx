@@ -90,7 +90,7 @@ function AddInvoiceForm({ projects, onDone }: { projects: ProjectsResponse['proj
         <button
           onClick={submit}
           disabled={saving}
-          className="rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-semibold text-gray-900 transition-colors hover:bg-[#e6c200] disabled:opacity-50"
+          className="rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-semibold text-gray-900 transition-colors hover:bg-[#ffd700] disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Add Invoice'}
         </button>
@@ -315,7 +315,7 @@ function Incoming({
                             <button
                               onClick={() => setStatus(inv.id, 'PAID')}
                               disabled={busy === inv.id}
-                              className="rounded-md bg-[#ffd700] px-2 py-0.5 text-[10px] font-semibold text-gray-900 transition-colors hover:bg-[#e6c200] disabled:opacity-50"
+                              className="rounded-md bg-[#ffd700] px-2 py-0.5 text-[10px] font-semibold text-gray-900 transition-colors hover:bg-[#ffd700] disabled:opacity-50"
                             >
                               Mark Paid
                             </button>

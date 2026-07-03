@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Mail, Plus, Pencil, Loader2, ShieldCheck, X, Check, Copy, KeyRound } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Mail, Plus, Pencil, Loader2, ShieldCheck, X, Check, Copy, KeyRound, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isValidEmail } from "@/lib/validation";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -66,21 +66,26 @@ export default function TeamPage() {
   const [newCreds, setNewCreds] = useState<NewCredentials | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<Staff | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
-  async function load() {
+  const load = useCallback(async (q: string) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/users");
+      const params = new URLSearchParams();
+      if (q.trim()) params.set("search", q.trim());
+      const res = await fetch(`/api/admin/users?${params.toString()}`);
       const data = await res.json();
-      setStaff(Array.isArray(data) ? data : []);
+      setStaff(Array.isArray(data) ? data : data?.data ?? []);
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    load();
   }, []);
+
+  // Debounce the search box so we don't refetch on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => load(search), 300);
+    return () => clearTimeout(t);
+  }, [search, load]);
 
   // Activating is low-risk and applied immediately; deactivating goes through a
   // confirmation dialog first (see the toggle button below).
@@ -117,13 +122,24 @@ export default function TeamPage() {
             {staff.length} member{staff.length !== 1 ? "s" : ""} · {activeCount} active
           </p>
         </div>
-        <button
-          onClick={() => setCreating(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-medium text-black transition-colors hover:bg-[#e6c200]"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add Staff
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search staff…"
+              className="w-52 rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-xs text-gray-900 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            />
+          </div>
+          <button
+            onClick={() => setCreating(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-medium text-black transition-colors hover:brightness-95"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Staff
+          </button>
+        </div>
       </div>
 
       {statusError && (
@@ -373,7 +389,7 @@ function CredentialsModal({
           </button>
           <button
             onClick={onClose}
-            className="rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200]"
+            className="rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#ffd700]"
           >
             Done
           </button>
@@ -571,7 +587,7 @@ function StaffModal({
           <button
             onClick={save}
             disabled={saving}
-            className="flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#e6c200] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-4 py-2 text-sm font-medium text-black hover:bg-[#ffd700] disabled:opacity-50"
           >
             {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {isNew ? "Create" : "Save changes"}

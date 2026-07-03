@@ -108,7 +108,7 @@ export default function ScheduleTab({
           </div>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
           >
             <Plus size={13} /> Add block
           </button>
@@ -127,7 +127,7 @@ export default function ScheduleTab({
             <p className="text-sm text-gray-500 dark:text-gray-400">No schedule blocks for Day {activeDay}.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
             >
               <Plus size={12} /> Add your first block
             </button>
@@ -311,7 +311,7 @@ function AddBlockForm({
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#e6c200] transition-colors"
+          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors"
         >
           Add
         </button>

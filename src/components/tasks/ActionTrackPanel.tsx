@@ -86,7 +86,7 @@ function sortTasks(tasks: PanelTask[]): PanelTask[] {
 // Project context badge — Commercial gold, Production red, Print green.
 function badgeFor(task: PanelTask): { label: string; bg: string; text: string } | null {
   if (task.production) return { label: task.production.title, bg: "#ff44441A", text: "#ff4444" };
-  if (task.project) return { label: task.project.title, bg: "#ffd7001A", text: "#e6c200" };
+  if (task.project) return { label: task.project.title, bg: "#ffd7001A", text: "#ffd700" };
   if (task.portal === "print") return { label: "Print", bg: "#22A06B1A", text: "#15803d" };
   return null;
 }
@@ -547,7 +547,7 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
       <div className="border-l-[3px] border-[#ffd700]">
         <div className="flex items-center gap-2 px-4 pb-1 pt-3">
           <h2 className="text-sm font-bold tracking-wide text-gray-900">ACTION</h2>
-          <span className="rounded-full bg-[#ffd700]/10 px-2 py-0.5 text-[11px] font-bold text-[#e6c200]">
+          <span className="rounded-full bg-[#ffd700]/10 px-2 py-0.5 text-[11px] font-bold text-[#ffd700]">
             {actions.length}
           </span>
         </div>
