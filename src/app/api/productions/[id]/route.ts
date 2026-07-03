@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, isAdminInDb } from "@/lib/auth";
 import { isProductionBudgetStatus } from "@/lib/deal-stages";
+import { recalcTemplateMilestones, earliestShoot } from "@/lib/production-seed";
 
 export const GET = withAuth(async (
   _request: NextRequest,
@@ -63,7 +64,14 @@ export const PUT = withAuth(async (
   try {
     const existing = await prisma.production.findUnique({
       where: { id },
-      select: { type: true, status: true, campaignId: true, productionBudgetStatus: true },
+      select: {
+        type: true,
+        status: true,
+        campaignId: true,
+        productionBudgetStatus: true,
+        billingType: true,
+        shootDates: true,
+      },
     });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -77,6 +85,9 @@ export const PUT = withAuth(async (
       updateData.clientName = body.client || null;
     }
     if (body.status !== undefined) updateData.status = body.status;
+    if (body.billingType !== undefined) {
+      updateData.billingType = body.billingType === "PAID" ? "PAID" : "EDITORIAL";
+    }
     if (body.budgetTotal !== undefined) {
       // COMMERCIAL productions have their total allocation locked by the
       // Commercial team — production can log costs but not change the total.
@@ -185,6 +196,22 @@ export const PUT = withAuth(async (
         },
       },
     });
+
+    // Lock-in deadlines: when the shoot date changes and the client opts in
+    // (recalcMilestones), realign every template-seeded milestone to the new
+    // earliest shoot date.
+    if (body.shootDates !== undefined && body.recalcMilestones) {
+      const nextShoot = earliestShoot(
+        Array.isArray(updateData.shootDates) ? (updateData.shootDates as Date[]) : []
+      );
+      if (nextShoot) {
+        await recalcTemplateMilestones(
+          id,
+          nextShoot,
+          production.billingType || existing.billingType || "EDITORIAL"
+        );
+      }
+    }
 
     // Stage sync: production delivered → move the linked deal from Live to
     // Completed in the Commercial pipeline.

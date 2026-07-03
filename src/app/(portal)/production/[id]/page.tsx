@@ -11,9 +11,8 @@ import TabBar, { TabKey } from "./_components/TabBar";
 import OverviewTab from "./_components/OverviewTab";
 import BudgetTab from "./_components/BudgetTab";
 import TeamTab from "./_components/TeamTab";
-import TasksTab from "./_components/TasksTab";
 import CreativeTab from "./_components/CreativeTab";
-import CampaignTimelineTab from "./_components/CampaignTimelineTab";
+import TimelineTab from "./_components/TimelineTab";
 import CallSheetsTab from "./_components/CallSheetsTab";
 import DeliverablesTab from "./_components/DeliverablesTab";
 import { useUser } from "@/components/user-context";
@@ -46,6 +45,22 @@ export default function ProjectDetail() {
     fieldsRef.current = { description, figmaUrl, budget, shootDates };
   }, [description, figmaUrl, budget, shootDates]);
 
+  // Baseline of saved shoot dates — used to detect a shoot-date change and
+  // offer to recalculate the standard-task deadlines.
+  const shootBaselineRef = useRef<string>("");
+  function shootKey(dates: string[]): string {
+    return (dates ?? []).filter(Boolean).slice().sort().join(",");
+  }
+
+  async function recalcDeadlines() {
+    await fetch(`/api/productions/${id}/milestones`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "recalculate" }),
+    });
+    await refresh();
+  }
+
   const load = useCallback(async () => {
     const r = await fetch(`/api/productions/${id}`);
     const d = await r.json();
@@ -55,7 +70,9 @@ export default function ProjectDetail() {
       setDescription(p.description || p.brief || "");
       setFigmaUrl(p.figmaUrl || "");
       setBudget(p.budgetTotal != null ? String(p.budgetTotal) : "");
-      setShootDates((p.shootDates ?? []).map((d) => d.split("T")[0]));
+      const dates = (p.shootDates ?? []).map((d) => d.split("T")[0]);
+      setShootDates(dates);
+      shootBaselineRef.current = shootKey(dates);
     }
     setLoading(false);
   }, [id]);
@@ -102,6 +119,29 @@ export default function ProjectDetail() {
         setProduction((prev) => (prev ? { ...prev, ...data.production } : data.production));
         setSavedFlash(true);
         setTimeout(() => setSavedFlash(false), 1200);
+
+        // Shoot date changed on a project that already has a standard timeline?
+        // Offer to realign every template task deadline to the new date.
+        const includesShoot =
+          patch === undefined || Object.prototype.hasOwnProperty.call(body, "shootDates");
+        if (includesShoot) {
+          const nextKey = shootKey((body.shootDates as string[]) ?? []);
+          const changed = nextKey !== shootBaselineRef.current;
+          shootBaselineRef.current = nextKey;
+          const hasTemplate = (production.milestones ?? []).some((m) => m.templateKey);
+          if (changed && nextKey && hasTemplate) {
+            if (
+              await confirm({
+                title: "Recalculate deadlines?",
+                message:
+                  "The shoot date changed. Realign all standard task deadlines to the new shoot date?",
+                confirmLabel: "Recalculate",
+              })
+            ) {
+              await recalcDeadlines();
+            }
+          }
+        }
       }
     } finally {
       setSaving(false);
@@ -359,7 +399,6 @@ export default function ProjectDetail() {
               refresh={refresh}
             />
           )}
-          {tab === "tasks" && <TasksTab productionId={production.id} />}
           {tab === "creative" && (
             <CreativeTab
               productionId={production.id}
@@ -368,9 +407,10 @@ export default function ProjectDetail() {
             />
           )}
           {tab === "timeline" && (
-            <CampaignTimelineTab
+            <TimelineTab
               productionId={production.id}
               milestones={production.milestones ?? []}
+              shootDates={(production.shootDates ?? []).map((d) => d.split("T")[0])}
               refresh={refresh}
             />
           )}

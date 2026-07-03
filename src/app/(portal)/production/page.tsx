@@ -6,11 +6,8 @@ import {
   Plus,
   Calendar as CalendarIcon,
   ClipboardList,
-  ChevronRight,
-  ChevronLeft,
   X,
   Loader2,
-  MapPin,
   Users,
   Sparkles,
   ArrowUpRight,
@@ -24,24 +21,20 @@ import { isValidUrl } from "@/lib/validation";
 import {
   format,
   parseISO,
-  isFuture,
   isToday,
   isTomorrow,
   differenceInCalendarDays,
   startOfMonth,
   endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
   isSameDay,
-  isSameMonth,
-  addMonths,
-  subMonths,
   addDays,
   isBefore,
   isAfter,
   startOfDay,
 } from "date-fns";
+import DashboardCalendar from "./_components/DashboardCalendar";
+import CateringWidget from "./_components/CateringWidget";
+import { billingTheme } from "./_components/billing";
 
 type ProductionStatus =
   | "DRAFT"
@@ -98,7 +91,7 @@ const STATUS_STYLES: Record<
     bg: "bg-orange-100 dark:bg-orange-900/30",
     text: "text-orange-700 dark:text-orange-300",
     dot: "bg-orange-400",
-    label: "Wrap",
+    label: "Post-Production",
   },
   DELIVERED: {
     bg: "bg-emerald-100 dark:bg-emerald-900/30",
@@ -142,12 +135,6 @@ function callSheetChip(p: { callSheets: CallSheetSummary[] }): {
   return { label: "No call sheet", cls: "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500" };
 }
 
-const CS_BADGE: Record<CallSheetStatus, { label: string; cls: string }> = {
-  DRAFT: { label: "Draft", cls: "bg-white/20 text-white" },
-  SAVED: { label: "Saved", cls: "bg-white/20 text-white" },
-  PUBLISHED: { label: "Published ✓", cls: "bg-emerald-400/30 text-white" },
-};
-
 interface Production {
   id: string;
   title: string;
@@ -156,6 +143,8 @@ interface Production {
   figmaUrl?: string | null;
   clientName?: string | null;
   status: ProductionStatus;
+  type?: string | null;
+  billingType?: string | null;
   budgetTotal?: number | null;
   archived?: boolean;
   archivedAt?: string | null;
@@ -163,6 +152,14 @@ interface Production {
   campaign: { title: string; client: { name: string } } | null;
   crew: { id: string; role?: string }[];
   callSheets: CallSheetSummary[];
+  milestones?: {
+    id: string;
+    phase: string;
+    date: string;
+    title: string;
+    done: boolean;
+    isMilestone: boolean;
+  }[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -252,18 +249,38 @@ export default function ProductionDashboard() {
 
   const today = startOfDay(new Date());
 
-  // Hot seat — next upcoming shoot across all productions
-  const hotSeat = useMemo(() => {
-    type Hot = { production: Production; date: Date; callSheet?: CallSheetSummary };
-    const all: Hot[] = [];
-    for (const p of productions ?? []) {
-      const next = getNextShoot(p);
-      if (next) all.push({ production: p, date: next.date, callSheet: next.callSheet });
+  // Quick-complete a milestone/task from the calendar. Optimistic local update,
+  // then persist. On failure the next dashboard load re-syncs.
+  async function toggleMilestoneDone(
+    productionId: string,
+    milestoneId: string,
+    done: boolean
+  ) {
+    setAllProductions((prev) =>
+      prev.map((p) =>
+        p.id === productionId
+          ? {
+              ...p,
+              milestones: (p.milestones ?? []).map((m) =>
+                m.id === milestoneId ? { ...m, done } : m
+              ),
+            }
+          : p
+      )
+    );
+    try {
+      await fetch(
+        `/api/productions/${productionId}/milestones?milestoneId=${milestoneId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ done }),
+        }
+      );
+    } catch {
+      // ignore — optimistic; refetch on next mount corrects any drift
     }
-    if (!all.length) return null;
-    all.sort((a, b) => a.date.getTime() - b.date.getTime());
-    return all[0];
-  }, [productions]);
+  }
 
   // Dashboard stats
   const stats = useMemo(() => {
@@ -295,30 +312,6 @@ export default function ProductionDashboard() {
     }).length;
     return { active, upcoming, drafts, completed };
   }, [productions, today]);
-
-  // Calendar shoot data — list of {date, productions}
-  const calendarShoots = useMemo(() => {
-    const map = new Map<string, { date: Date; entries: { production: Production; cs?: CallSheetSummary }[] }>();
-    for (const p of productions ?? []) {
-      for (const cs of p.callSheets ?? []) {
-        const d = parseISO(cs.shootDate);
-        const key = format(d, "yyyy-MM-dd");
-        if (!map.has(key)) map.set(key, { date: d, entries: [] });
-        map.get(key)!.entries.push({ production: p, cs });
-      }
-      for (const sd of p.shootDates ?? []) {
-        const d = parseISO(sd);
-        const key = format(d, "yyyy-MM-dd");
-        if (!map.has(key)) map.set(key, { date: d, entries: [] });
-        // avoid double-add if already represented by call sheet on same day
-        const exists = map.get(key)!.entries.some(
-          (e) => e.production.id === p.id
-        );
-        if (!exists) map.get(key)!.entries.push({ production: p });
-      }
-    }
-    return map;
-  }, [productions]);
 
   const list = productions ?? [];
   const active = list.filter((p) => !["DELIVERED", "ARCHIVED"].includes(p.status));
@@ -358,7 +351,7 @@ export default function ProductionDashboard() {
               className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors shadow-sm"
             >
               <Plus size={16} />
-              New Editorial Project
+              New Project
             </button>
           </div>
         </div>
@@ -372,11 +365,6 @@ export default function ProductionDashboard() {
 
         {!loading && (
           <>
-            {/* Hot seat */}
-            <section className="mb-6">
-              <HotSeatBanner hot={hotSeat} onCreate={() => setShowCreate(true)} />
-            </section>
-
             {/* Stats */}
             <section className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <StatCard
@@ -408,14 +396,18 @@ export default function ProductionDashboard() {
               />
             </section>
 
-            {/* Calendar + projects */}
-            <div id="calendar" className="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-8">
-              <div className="lg:col-span-3">
-                <OverviewCalendar shootMap={calendarShoots} />
-              </div>
-              <div className="lg:col-span-2">
-                <UpcomingList productions={list} />
-              </div>
+            {/* Hero calendar — the main dashboard view */}
+            <div id="calendar" className="mb-5">
+              <DashboardCalendar
+                productions={list}
+                onToggleDone={toggleMilestoneDone}
+              />
+            </div>
+
+            {/* Catering readiness + upcoming shoots */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+              <CateringWidget />
+              <UpcomingList productions={list} />
             </div>
 
             {/* Creative in progress — incoming work still in the creative loop */}
@@ -505,113 +497,6 @@ export default function ProductionDashboard() {
   );
 }
 
-// ─── Hot seat banner ──────────────────────────────────────────────────────────
-
-function HotSeatBanner({
-  hot,
-  onCreate,
-}: {
-  hot: { production: Production; date: Date; callSheet?: CallSheetSummary } | null;
-  onCreate: () => void;
-}) {
-  if (!hot) {
-    return (
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center justify-center">
-            <Sparkles size={20} className="text-gray-300 dark:text-gray-600" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">No upcoming shoots</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              When you schedule a shoot it will appear here.
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={onCreate}
-          className="text-xs font-medium text-[#ffd700] hover:text-[#ffd700] flex items-center gap-1"
-        >
-          <Plus size={13} /> New project
-        </button>
-      </div>
-    );
-  }
-
-  const client = getClientName(hot.production);
-  const callTime = hot.callSheet?.callTime;
-  const locationAddr = (hot.callSheet?.location as { address?: string } | undefined)?.address;
-  const crewCount = hot.production.crew?.length ?? 0;
-
-  return (
-    <Link
-      href={`/production/${hot.production.id}${hot.callSheet ? `/call-sheets/${hot.callSheet.id}` : ""}`}
-      className="block group"
-    >
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#ff4444] via-[#ff4444] to-[#ff4444] text-white rounded-2xl shadow-lg p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
-        {/* Decorative gradient */}
-        <div className="absolute right-0 top-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative flex items-start justify-between gap-6">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
-                Hot Seat — Next Shoot
-              </span>
-              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-sm">
-                {countdownLabel(hot.date)}
-              </span>
-              {hot.callSheet?.status && (
-                <span
-                  className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm ${CS_BADGE[hot.callSheet.status].cls}`}
-                >
-                  Call sheet: {CS_BADGE[hot.callSheet.status].label}
-                </span>
-              )}
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight truncate">
-              {hot.production.title}
-            </h2>
-            {client && (
-              <p className="text-sm text-white/70 mt-0.5 truncate">{client}</p>
-            )}
-
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-sm">
-              <span className="flex items-center gap-1.5 text-white/90">
-                <CalendarIcon size={14} className="text-white/70" />
-                {format(hot.date, "EEE d MMM yyyy")}
-              </span>
-              {callTime && (
-                <span className="flex items-center gap-1.5 text-white/90">
-                  <Clock size={14} className="text-white/70" />
-                  {callTime} call
-                </span>
-              )}
-              {locationAddr && (
-                <span className="flex items-center gap-1.5 text-white/90 max-w-xs truncate">
-                  <MapPin size={14} className="text-white/70" />
-                  <span className="truncate">{locationAddr}</span>
-                </span>
-              )}
-              {crewCount > 0 && (
-                <span className="flex items-center gap-1.5 text-white/90">
-                  <Users size={14} className="text-white/70" />
-                  {crewCount} crew
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-end shrink-0">
-            <div className="flex items-center gap-1 text-xs text-white/80 group-hover:text-white transition-colors">
-              Open project
-              <ArrowUpRight size={14} />
-            </div>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 // ─── Stat card ────────────────────────────────────────────────────────────────
 
 function StatCard({
@@ -650,179 +535,6 @@ function StatCard({
   );
 }
 
-// ─── Overview Calendar ────────────────────────────────────────────────────────
-
-function OverviewCalendar({
-  shootMap,
-}: {
-  shootMap: Map<
-    string,
-    { date: Date; entries: { production: Production; cs?: CallSheetSummary }[] }
-  >;
-}) {
-  const [month, setMonth] = useState(new Date());
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-
-  const monthStart = startOfMonth(month);
-  const monthEnd = endOfMonth(month);
-  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start: calStart, end: calEnd });
-  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const today = new Date();
-
-  const selected = selectedKey ? shootMap.get(selectedKey) : null;
-
-  return (
-    <div id="overview" className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CalendarIcon size={15} className="text-[#ffd700]" />
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            {format(month, "MMMM yyyy")}
-          </h2>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setMonth(new Date())}
-            className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-2 py-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            Today
-          </button>
-          <button
-            onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
-            aria-label="Previous month"
-          >
-            <ChevronLeft size={15} />
-          </button>
-          <button
-            onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
-            aria-label="Next month"
-          >
-            <ChevronRight size={15} />
-          </button>
-        </div>
-      </div>
-
-      <div className="px-5 pt-3 pb-2">
-        <div className="grid grid-cols-7 mb-1">
-          {dayLabels.map((d) => (
-            <div
-              key={d}
-              className="text-center text-[10px] font-semibold text-gray-400 dark:text-gray-500 py-1 uppercase tracking-wide"
-            >
-              {d}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-y-1">
-          {days.map((day) => {
-            const key = format(day, "yyyy-MM-dd");
-            const has = shootMap.get(key);
-            const inMonth = isSameMonth(day, month);
-            const isCurrentDay = isSameDay(day, today);
-            const isSelected = selectedKey === key;
-            return (
-              <button
-                key={key}
-                onClick={() => has && setSelectedKey(isSelected ? null : key)}
-                className={`group flex flex-col items-center justify-start min-h-[58px] rounded-lg py-1.5 transition-all duration-150 ${
-                  has ? "cursor-pointer" : "cursor-default"
-                } ${
-                  isSelected
-                    ? "bg-amber-50/80 dark:bg-amber-900/30 ring-1 ring-[#ffd700]/30"
-                    : has
-                    ? "hover:bg-gray-50 dark:hover:bg-gray-800"
-                    : ""
-                }`}
-              >
-                <span
-                  className={`text-xs font-semibold leading-none ${
-                    !inMonth
-                      ? "text-gray-300 dark:text-gray-600"
-                      : isCurrentDay
-                      ? "text-[#ffd700]"
-                      : "text-gray-700 dark:text-gray-300"
-                  }`}
-                >
-                  {format(day, "d")}
-                </span>
-                {has && inMonth && (
-                  <div className="mt-1.5 flex flex-col items-center gap-0.5 w-full px-1">
-                    {has.entries.slice(0, 2).map((e, i) => (
-                      <span
-                        key={i}
-                        className="block w-full text-[9px] font-medium text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 rounded px-1 py-0.5 truncate text-center"
-                        title={e.production.title}
-                      >
-                        {e.production.title}
-                      </span>
-                    ))}
-                    {has.entries.length > 2 && (
-                      <span className="text-[9px] font-medium text-gray-500 dark:text-gray-400">
-                        +{has.entries.length - 2}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {has && inMonth && has.entries.length === 0 && (
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#ffd700]" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {selected && (
-        <div className="px-5 py-4 border-t border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-            {format(selected.date, "EEEE d MMMM")}
-          </p>
-          <div className="space-y-1.5">
-            {selected.entries.map((e, i) => (
-              <Link
-                key={i}
-                href={
-                  e.cs
-                    ? `/production/${e.production.id}/call-sheets/${e.cs.id}`
-                    : `/production/${e.production.id}`
-                }
-                className="flex items-center justify-between text-sm bg-white dark:bg-gray-900 rounded-lg px-3 py-2 hover:bg-amber-50/50 dark:hover:bg-amber-900/30 transition-colors group"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Film size={13} className="text-[#ffd700] shrink-0" />
-                  <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
-                    {e.production.title}
-                  </span>
-                  {getClientName(e.production) && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                      · {getClientName(e.production)}
-                    </span>
-                  )}
-                </div>
-                <ChevronRight
-                  size={13}
-                  className="text-gray-300 dark:text-gray-600 group-hover:text-[#ffd700] transition-colors shrink-0"
-                />
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!selected && shootMap.size === 0 && (
-        <div className="px-5 py-6 border-t border-gray-50 dark:border-gray-800 text-center text-xs text-gray-400 dark:text-gray-500">
-          No shoots scheduled yet — add shoot dates to a project to see them here.
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Upcoming list ─────────────────────────────────────────────────────────────
 
 function UpcomingList({ productions }: { productions: Production[] }) {
   type Up = { production: Production; date: Date; cs?: CallSheetSummary };
@@ -962,6 +674,7 @@ function CreativeInProgress({ deals }: { deals: CreativeDeal[] }) {
 function ProjectCard({ production: p }: { production: Production }) {
   const next = getNextShoot(p);
   const style = STATUS_STYLES[p.status] || STATUS_STYLES.DRAFT;
+  const bill = billingTheme(p);
   const client = getClientName(p);
   const crewCount = (p.crew ?? []).length;
   // Fresh arrivals (e.g. just cleared from Commercial) get a NEW badge for 24h.
@@ -983,17 +696,27 @@ function ProjectCard({ production: p }: { production: Production }) {
 
   return (
     <Link href={`/production/${p.id}`}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-5 group cursor-pointer h-full flex flex-col">
+      <div
+        className="bg-white dark:bg-gray-900 rounded-2xl border border-border border-l-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-5 group cursor-pointer h-full flex flex-col"
+        style={{ borderLeftColor: bill.hex }}
+      >
         <div className="flex items-start justify-between mb-3">
           <div className="w-10 h-10 bg-[#ff4444]/10 rounded-xl flex items-center justify-center flex-shrink-0">
             <Film size={18} className="text-[#ff4444]" />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
             {isNew && (
               <span className="inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-full bg-[#ff4444] text-white tracking-wide">
                 NEW
               </span>
             )}
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full ${bill.chip}`}
+              title="Project type"
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: bill.hex }} />
+              {bill.label}
+            </span>
             <span
               className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
             >
@@ -1068,6 +791,7 @@ function CreateProjectModal({
   const [description, setDescription] = useState("");
   const [shootDates, setShootDates] = useState<string[]>([""]);
   const [status, setStatus] = useState<ProductionStatus>("DRAFT");
+  const [billing, setBilling] = useState<"EDITORIAL" | "PAID">("EDITORIAL");
   const [figmaUrl, setFigmaUrl] = useState("");
   const [budget, setBudget] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -1099,6 +823,7 @@ function CreateProjectModal({
           figmaUrl: figmaUrl.trim() || null,
           budgetTotal: budget ? Number(budget) : null,
           type: "EDITORIAL",
+          billingType: billing,
         }),
       });
       const data = await res.json();
@@ -1207,6 +932,33 @@ function CreateProjectModal({
               >
                 <Plus size={13} /> Add another date
               </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
+              Project Type
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { key: "EDITORIAL", label: "Editorial", hex: "#00c853" },
+                  { key: "PAID", label: "Paid / Commercial", hex: "#ffd700" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setBilling(opt.key)}
+                  className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
+                    billing === opt.key
+                      ? "border-[#ffd700] bg-amber-50/60 dark:bg-amber-900/20 text-gray-900 dark:text-gray-100"
+                      : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: opt.hex }} />
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

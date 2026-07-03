@@ -137,6 +137,12 @@ export interface ProductionMilestone {
   description: string | null;
   done: boolean;
   sortOrder: number;
+  // Renders as a diamond/flag (key event) rather than a task circle.
+  isMilestone?: boolean;
+  // Set on rows seeded from a standard production template.
+  templateKey?: string | null;
+  // Parent milestone id when this row is a sub-task.
+  parentId?: string | null;
 }
 
 export const MILESTONE_PHASES: { key: MilestonePhase; label: string }[] = [
@@ -345,7 +351,7 @@ export const PRODUCTION_STATUS_STYLES: Record<
     bg: "bg-orange-100",
     text: "text-orange-700",
     dot: "bg-orange-400",
-    label: "Wrap",
+    label: "Post-Production",
   },
   DELIVERED: {
     bg: "bg-emerald-100",

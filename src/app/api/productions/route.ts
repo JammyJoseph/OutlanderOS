@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { validateRequired, sanitizeString } from "@/lib/validate";
+import { seedTemplateMilestones, earliestShoot } from "@/lib/production-seed";
 
 export const GET = withAuth(async (request: NextRequest) => {
   try {
@@ -23,6 +24,12 @@ export const GET = withAuth(async (request: NextRequest) => {
         crew: { include: { contact: true } },
         callSheets: {
           select: { id: true, shootDate: true, status: true, callTime: true, location: true, shootTitle: true, notes: true },
+        },
+        // Milestones feed the dashboard hero calendar (deadlines + key events)
+        // and support inline quick-complete.
+        milestones: {
+          select: { id: true, phase: true, date: true, title: true, done: true, isMilestone: true },
+          orderBy: [{ date: "asc" }, { sortOrder: "asc" }],
         },
       },
       orderBy: { updatedAt: "desc" },
@@ -51,6 +58,10 @@ export const POST = withAuth(async (request: NextRequest) => {
       // Productions created from the Production dashboard are EDITORIAL.
       // COMMERCIAL productions are only created via /api/commercial/projects.
       type: body.type === "COMMERCIAL" ? "COMMERCIAL" : "EDITORIAL",
+      // Colour-coding / billing classification (green vs gold). Independent of
+      // `type`'s budget-lock semantics. COMMERCIAL implies PAID.
+      billingType:
+        body.type === "COMMERCIAL" || body.billingType === "PAID" ? "PAID" : "EDITORIAL",
     };
     if (Array.isArray(body.shootDates) && body.shootDates.length > 0) {
       data.shootDates = body.shootDates
@@ -68,6 +79,26 @@ export const POST = withAuth(async (request: NextRequest) => {
         callSheets: { select: { id: true, shootDate: true, status: true, callTime: true, location: true, shootTitle: true, notes: true } },
       },
     });
+
+    // Auto-populate the standard timeline when the project is created with a
+    // shoot date. Best-effort — a seeding hiccup must not fail project creation.
+    if (body.seedTemplate !== false) {
+      try {
+        const shoot = earliestShoot(
+          Array.isArray(data.shootDates) ? (data.shootDates as Date[]) : []
+        );
+        if (shoot) {
+          await seedTemplateMilestones(
+            production.id,
+            shoot,
+            production.billingType || "EDITORIAL"
+          );
+        }
+      } catch {
+        // ignore — the timeline can be generated later from the Timeline tab
+      }
+    }
+
     return NextResponse.json({ production });
   } catch (e) {
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });

@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Wallet,
   Users,
-  ListChecks,
   Palette,
   CalendarRange,
   ClipboardList,
@@ -15,7 +14,6 @@ export type TabKey =
   | "overview"
   | "budget"
   | "team"
-  | "tasks"
   | "creative"
   | "timeline"
   | "callsheets"
@@ -31,9 +29,8 @@ const TABS: { key: TabKey; label: string; Icon: React.ComponentType<{ size?: num
   { key: "overview", label: "Overview", Icon: LayoutDashboard },
   { key: "budget", label: "Budget", Icon: Wallet },
   { key: "team", label: "Team", Icon: Users },
-  { key: "tasks", label: "Tasks", Icon: ListChecks },
   { key: "creative", label: "Creative", Icon: Palette },
-  { key: "timeline", label: "Campaign Timeline", Icon: CalendarRange },
+  { key: "timeline", label: "Timeline", Icon: CalendarRange },
   { key: "callsheets", label: "Call Sheets", Icon: ClipboardList },
   { key: "deliverables", label: "Deliverables", Icon: Package },
 ];

@@ -379,6 +379,11 @@ model Production {
   campaign         Campaign?        @relation(fields: [campaignId], references: [id])
   trelloCardId     String? // linked Trello deal card (Commercial pipeline)
   type             String           @default("EDITORIAL") // EDITORIAL | COMMERCIAL — COMMERCIAL projects are created from Commercial portal with a locked budget
+  // Colour-coding / billing classification, independent of `type`'s budget-lock
+  // semantics: EDITORIAL (green) vs PAID (gold). COMMERCIAL productions are
+  // always treated as PAID for colour purposes. Set at creation, editable in
+  // the Overview tab.
+  billingType      String           @default("EDITORIAL") // EDITORIAL | PAID
   campaignBudgetId String? // links back to the CampaignBudget that spawned this production
   title            String
   clientName       String?
@@ -539,6 +544,17 @@ model ProductionMilestone {
   title        String
   description  String?
   done         Boolean    @default(false)
+  // Rendered as a diamond/flag on the timeline (a key event — SHOOT DAY, go
+  // live) rather than a task circle.
+  isMilestone  Boolean    @default(false)
+  // Set on rows seeded from a standard production template (see
+  // src/lib/production-templates.ts). Used to recalculate their dates when the
+  // shoot date changes and to avoid re-seeding duplicates.
+  templateKey  String?
+  // Sub-task nesting: a milestone can own child sub-tasks.
+  parentId     String?
+  parent       ProductionMilestone?  @relation("milestoneSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks     ProductionMilestone[] @relation("milestoneSubtasks")
   sortOrder    Int        @default(0)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
