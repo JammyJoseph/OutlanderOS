@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ReceiptText } from "lucide-react";
 import { formatGBP } from "./types";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface OverviewSlice {
   xeroConnected: boolean;
@@ -18,22 +19,21 @@ export function OutstandingItems() {
   const [data, setData] = useState<OverviewSlice | null>(null);
   const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/finance/overview")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((json: OverviewSlice) => {
-        if (!cancelled) setData(json);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    setFailed(false);
+    setData(null);
+    try {
+      const r = await fetch("/api/finance/overview");
+      if (!r.ok) throw new Error(String(r.status));
+      setData((await r.json()) as OverviewSlice);
+    } catch {
+      setFailed(true);
+    }
   }, []);
 
-  if (failed) return null;
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return (
     <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -44,7 +44,11 @@ export function OutstandingItems() {
         <ReceiptText className="h-4 w-4 text-[#4d9fff] opacity-70" />
       </div>
 
-      {!data ? (
+      {failed ? (
+        <div className="mt-2">
+          <ErrorState compact title="Couldn't load finance items" onRetry={load} />
+        </div>
+      ) : !data ? (
         <div className="mt-3 space-y-2">
           <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
           <div className="h-4 w-1/2 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />

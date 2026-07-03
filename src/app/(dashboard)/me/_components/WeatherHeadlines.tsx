@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Cloud,
   CloudDrizzle,
@@ -12,6 +12,7 @@ import {
   Droplets,
   Newspaper,
   ExternalLink,
+  RotateCw,
 } from "lucide-react";
 
 interface DayForecast {
@@ -67,20 +68,21 @@ export function WeatherHeadlines() {
   const [brief, setBrief] = useState<Brief | null>(null);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/dashboard/brief")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((json: Brief) => {
-        if (!cancelled) setBrief(json);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      });
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    setError(false);
+    setBrief(null);
+    try {
+      const r = await fetch("/api/dashboard/brief");
+      if (!r.ok) throw new Error(String(r.status));
+      setBrief((await r.json()) as Brief);
+    } catch {
+      setError(true);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return (
     <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -150,7 +152,17 @@ export function WeatherHeadlines() {
         <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
           <Newspaper className="h-3 w-3" /> Headlines
         </div>
-        {!brief ? (
+        {error ? (
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-xs text-red-600 dark:text-red-400">Couldn&apos;t load headlines.</p>
+            <button
+              onClick={load}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/30"
+            >
+              <RotateCw className="h-3 w-3" /> Retry
+            </button>
+          </div>
+        ) : !brief ? (
           <div className="mt-2 space-y-2">
             {Array.from({ length: 3 }, (_, i) => (
               <div key={i} className="h-4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />

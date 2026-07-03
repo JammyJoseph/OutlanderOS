@@ -20,6 +20,7 @@ import {
   Archive,
 } from "lucide-react";
 import Link from "next/link";
+import { isValidUrl } from "@/lib/validation";
 import {
   format,
   parseISO,
@@ -1069,10 +1070,20 @@ function CreateProjectModal({
   const [status, setStatus] = useState<ProductionStatus>("DRAFT");
   const [figmaUrl, setFigmaUrl] = useState("");
   const [budget, setBudget] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     if (!title.trim()) return;
+    if (budget && (Number.isNaN(Number(budget)) || Number(budget) < 0)) {
+      setError("Budget must be a number of 0 or more.");
+      return;
+    }
+    if (figmaUrl.trim() && !isValidUrl(figmaUrl)) {
+      setError("Please enter a valid Figma URL, or leave it blank.");
+      return;
+    }
     setCreating(true);
     try {
       const dates = shootDates.filter(Boolean);
@@ -1225,7 +1236,11 @@ function CreateProjectModal({
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="0"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
+                  budget && Number(budget) < 0
+                    ? "border-red-400 focus:ring-red-200 dark:border-red-500"
+                    : "border-gray-200 dark:border-gray-700 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                }`}
               />
             </div>
           </div>
@@ -1238,9 +1253,20 @@ function CreateProjectModal({
               value={figmaUrl}
               onChange={(e) => setFigmaUrl(e.target.value)}
               placeholder="https://figma.com/file/…"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
+                figmaUrl.trim() && !isValidUrl(figmaUrl)
+                  ? "border-red-400 focus:ring-red-200 dark:border-red-500"
+                  : "border-gray-200 dark:border-gray-700 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              }`}
             />
           </div>
+
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+              {error}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-1">
             <button
               type="button"

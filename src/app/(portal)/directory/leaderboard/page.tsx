@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Trophy,
@@ -91,7 +90,6 @@ const PERIODS: { key: Period; label: string }[] = [
 const QUICK_CATEGORIES = ["Photographer", "Stylist", "MUA"];
 
 export default function LeaderboardPage() {
-  const router = useRouter();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>("all");
@@ -118,12 +116,12 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-full px-6 py-8">
       <div className="mx-auto max-w-5xl">
-        <button
-          onClick={() => router.back()}
+        <Link
+          href="/directory"
           className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         >
-          <ArrowLeft size={15} /> Back
-        </button>
+          <ArrowLeft size={15} /> Back to directory
+        </Link>
 
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">

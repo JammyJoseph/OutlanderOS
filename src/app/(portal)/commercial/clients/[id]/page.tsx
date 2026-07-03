@@ -18,6 +18,7 @@ import {
   RotateCcw,
   Clapperboard,
 } from "lucide-react";
+import { useConfirm } from "@/components/ui/confirm-provider";
 
 type CampaignStatus =
   | "BRIEF_RECEIVED"
@@ -168,6 +169,7 @@ function InviteButton() {
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const confirm = useConfirm();
   const [client, setClient] = useState<ClientDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -192,12 +194,13 @@ export default function ClientDetailPage() {
       activeDeals > 0
         ? ` This client has ${activeDeals} active deal${activeDeals !== 1 ? "s" : ""}, which stay in the pipeline.`
         : "";
-    if (
-      !confirm(
-        `Archive ${client.name}? They will be hidden from the main list but can be restored.${dealNote}`
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: `Archive ${client.name}?`,
+      message: `They will be hidden from the main list but can be restored.${dealNote}`,
+      confirmLabel: "Archive",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     setArchiving(true);
     try {
       const res = await fetch(`/api/clients/${client.id}/archive`, { method: "PATCH" });

@@ -33,6 +33,8 @@ import {
 } from "./types";
 import { getAPARate, getAPARatesForSection, getReferenceRate } from "@/lib/apa-rates";
 import ApaRateCard from "./ApaRateCard";
+import { useUser } from "@/components/user-context";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface Props {
   production: ProductionFull;
@@ -68,9 +70,12 @@ export default function BudgetTab({
   const [apiError, setApiError] = useState<string | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<ProductionBudgetStatus | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user } = useUser();
+  const isAdmin = user?.role === "ADMIN";
   const [seeding, setSeeding] = useState(false);
   const [showRateCard, setShowRateCard] = useState(false);
+  const [reopenTarget, setReopenTarget] = useState<ProductionBudgetStatus | null>(null);
+  const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
 
   // The line-item table flips between budget entry (with VAT columns) and a
   // separate actuals-tracking view (budgeted vs actual vs variance).
@@ -97,13 +102,6 @@ export default function BudgetTab({
       return next;
     });
   }
-
-  useEffect(() => {
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then((d) => setIsAdmin(d.user?.role === "ADMIN"))
-      .catch(() => {});
-  }, []);
 
   // Budget lifecycle only applies to productions cleared from Commercial.
   const budgetStatus: ProductionBudgetStatus | null = locked
@@ -212,14 +210,11 @@ export default function BudgetTab({
     await handleResponse(res);
   }
 
+  // Opens the reopen-confirmation dialog; the actual status change happens on
+  // confirm (see the ConfirmDialog near the end of the render).
   function reopenBudget(current: ProductionBudgetStatus) {
     const target: ProductionBudgetStatus = current === "FINAL" ? "IN_PROGRESS" : "BUDGETING";
-    const message =
-      current === "FINAL"
-        ? "Reopen this finalised budget? Actual costs become editable again and the result is no longer reported as final to Finance."
-        : "Reopen this locked budget? Budgeted amounts become editable again.";
-    if (!confirm(message)) return;
-    setBudgetStatus(target);
+    setReopenTarget(target);
   }
 
   async function setBudgetStatus(next: ProductionBudgetStatus) {
@@ -659,7 +654,7 @@ export default function BudgetTab({
                       canEditBudgeted={canEditBudgeted}
                       canEditActual={canEditActual}
                       onUpdate={(patch) => updateLine(line.id, patch)}
-                      onDelete={() => deleteLine(line.id)}
+                      onDelete={() => setDeleteLineId(line.id)}
                       onEnterAtEnd={() => addLine(sec.key, { focus: true })}
                       autoFocusFirst={focusSection === sec.key && idx === lines.length - 1}
                       onAutoFocused={() => setFocusSection(null)}
@@ -800,6 +795,39 @@ export default function BudgetTab({
 
       {/* APA rate card reference */}
       {showRateCard && <ApaRateCard onClose={() => setShowRateCard(false)} />}
+
+      {/* Reopen budget confirmation */}
+      <ConfirmDialog
+        open={!!reopenTarget}
+        title="Reopen budget?"
+        message={
+          reopenTarget === "IN_PROGRESS"
+            ? "Reopen this finalised budget? Actual costs become editable again and the result is no longer reported as final to Finance."
+            : "Reopen this locked budget? Budgeted amounts become editable again."
+        }
+        confirmLabel="Reopen"
+        confirmVariant="danger"
+        busy={statusBusy}
+        onConfirm={async () => {
+          if (reopenTarget) await setBudgetStatus(reopenTarget);
+          setReopenTarget(null);
+        }}
+        onCancel={() => setReopenTarget(null)}
+      />
+
+      {/* Line-item delete confirmation */}
+      <ConfirmDialog
+        open={!!deleteLineId}
+        title="Delete line item?"
+        message="This removes the line from the budget. This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={async () => {
+          if (deleteLineId) await deleteLine(deleteLineId);
+          setDeleteLineId(null);
+        }}
+        onCancel={() => setDeleteLineId(null)}
+      />
 
       {/* Status-change confirmation */}
       {confirmStatus && nextAction && (
@@ -964,6 +992,9 @@ function BudgetRow({
   const [rate, setRate] = useState(line.rate != null ? String(line.rate) : "");
   const [vat, setVat] = useState(line.vatPercent != null ? String(line.vatPercent) : "");
   const [actual, setActual] = useState(String(line.actual ?? 0));
+  // Inline validation — rate / quantity / VAT / actual can never be negative.
+  const [rowError, setRowError] = useState<string | null>(null);
+  const isNeg = (v: string) => v.trim() !== "" && Number(v) < 0;
 
   const rowRef = useRef<HTMLDivElement>(null);
 
@@ -1026,6 +1057,7 @@ function BudgetRow({
 
   if (view === "actuals") {
     return (
+      <div>
       <div
         ref={rowRef}
         className="grid grid-cols-12 gap-1.5 px-5 py-1 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[28px]"
@@ -1060,14 +1092,19 @@ function BudgetRow({
         </div>
         <input
           type="number"
+          min="0"
           value={actual}
           onChange={(e) => setActual(e.target.value)}
-          onBlur={() => onUpdate({ actual: actual === "" ? 0 : Number(actual) })}
+          onBlur={() => {
+            if (isNeg(actual)) { setRowError("Actual cost can't be negative."); return; }
+            setRowError(null);
+            onUpdate({ actual: actual === "" ? 0 : Number(actual) });
+          }}
           onKeyDown={handleKey}
           disabled={!canEditActual}
           placeholder="0"
           title={canEditActual ? undefined : "The budget is final — actuals are read-only"}
-          className={`col-span-2 text-right tabular-nums ${EDIT_CELL}`}
+          className={`col-span-2 text-right tabular-nums ${EDIT_CELL} ${isNeg(actual) ? "border-red-400 focus:border-red-400 focus:ring-red-300/40" : ""}`}
         />
         <div className="col-span-2 flex items-center justify-end gap-1 pr-1">
           <span
@@ -1090,11 +1127,14 @@ function BudgetRow({
           )}
         </div>
       </div>
+      {rowError && <p className="px-5 pb-1 text-[11px] font-medium text-red-600 dark:text-red-400">{rowError}</p>}
+      </div>
     );
   }
 
   // Budget entry view — Qty / Unit Cost / VAT% editable, VAT £ + Total auto.
   return (
+    <div>
     <div
       ref={rowRef}
       className="grid grid-cols-12 gap-1.5 px-5 py-1.5 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[30px]"
@@ -1126,24 +1166,30 @@ function BudgetRow({
       />
       <input
         type="number"
+        min="0"
         value={quantity}
         onChange={(e) => setQuantity(e.target.value)}
         onBlur={() => {
+          if (isNeg(quantity)) { setRowError("Quantity can't be negative."); return; }
+          setRowError(null);
           const v = quantity === "" ? null : Number(quantity);
           if (v !== line.quantity) onUpdate({ quantity: v });
         }}
         onKeyDown={handleKey}
         disabled={!canEditBudgeted}
         placeholder="1"
-        className={`col-span-1 text-right tabular-nums ${EDIT_CELL}`}
+        className={`col-span-1 text-right tabular-nums ${EDIT_CELL} ${isNeg(quantity) ? "border-red-400 focus:border-red-400 focus:ring-red-300/40" : ""}`}
       />
       <div className="col-span-2 flex flex-col">
         <div className="relative">
           <input
             type="number"
+            min="0"
             value={rate}
             onChange={(e) => setRate(e.target.value)}
             onBlur={() => {
+              if (isNeg(rate)) { setRowError("Unit cost can't be negative."); return; }
+              setRowError(null);
               const v = rate === "" ? null : Number(rate);
               if (v !== line.rate) onUpdate({ rate: v });
             }}
@@ -1151,7 +1197,7 @@ function BudgetRow({
             disabled={!canEditBudgeted}
             placeholder="0"
             className={`w-full text-right tabular-nums ${EDIT_CELL} ${
-              isOverridden ? "pl-5 text-amber-700" : ""
+              isNeg(rate) ? "border-red-400 focus:border-red-400 focus:ring-red-300/40" : isOverridden ? "pl-5 text-amber-700" : ""
             }`}
           />
           {isOverridden && apa && (
@@ -1175,16 +1221,19 @@ function BudgetRow({
       </div>
       <input
         type="number"
+        min="0"
         value={vat}
         onChange={(e) => setVat(e.target.value)}
         onBlur={() => {
+          if (isNeg(vat)) { setRowError("VAT % can't be negative."); return; }
+          setRowError(null);
           const v = vat === "" ? null : Number(vat);
           if (v !== line.vatPercent) onUpdate({ vatPercent: v });
         }}
         onKeyDown={handleKey}
         disabled={!canEditBudgeted}
         placeholder={String(lineVatPercent(line))}
-        className={`col-span-1 text-right tabular-nums ${EDIT_CELL}`}
+        className={`col-span-1 text-right tabular-nums ${EDIT_CELL} ${isNeg(vat) ? "border-red-400 focus:border-red-400 focus:ring-red-300/40" : ""}`}
       />
       <div className={`col-span-1 text-right ${AUTO_CELL}`} title="(Qty × Unit Cost) × VAT%">
         {gbp(vatAmt)}
@@ -1207,6 +1256,8 @@ function BudgetRow({
           <span className="w-[22px]" />
         )}
       </div>
+    </div>
+    {rowError && <p className="px-5 pb-1 text-[11px] font-medium text-red-600 dark:text-red-400">{rowError}</p>}
     </div>
   );
 }

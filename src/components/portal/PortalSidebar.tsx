@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { portalAccent } from "@/lib/design";
 import {
@@ -104,9 +104,16 @@ function getPortalKey(pathname: string): string {
 
 export function PortalSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const key = getPortalKey(pathname);
   const config = SIDEBAR_CONFIG[key];
   const accent = portalAccent(pathname);
+
+  // Some portals (Finance especially) navigate by query string — /finance?tab=pl,
+  // /production?view=calendar. usePathname() strips the query, so comparing on
+  // path alone made every tab highlight the same item (usually "Dashboard").
+  // We key the active state off the tab/view param when an item carries one.
+  const currentTab = searchParams.get("tab") ?? searchParams.get("view");
 
   if (!config) return null;
 
@@ -127,11 +134,26 @@ export function PortalSidebar() {
             const Icon = item.icon;
             const cleanHref = item.href.split("?")[0].split("#")[0];
             const hasHash = item.href.includes("#");
-            const isActive = hasHash
-              ? false
-              : cleanHref === `/${key}`
-                ? pathname === `/${key}` || pathname === `/${key}/`
-                : pathname.startsWith(cleanHref) && cleanHref !== `/${key}`;
+            const queryString = item.href.includes("?") ? item.href.split("?")[1] : "";
+            const itemParams = new URLSearchParams(queryString);
+            const itemTab = itemParams.get("tab") ?? itemParams.get("view");
+
+            let isActive: boolean;
+            if (hasHash) {
+              isActive = false;
+            } else if (itemTab !== null) {
+              // Query-driven item: match both the base path and the tab/view value.
+              // "dashboard" is the default tab, so a bare path (no param) counts too.
+              const matchesTab =
+                currentTab === itemTab || (currentTab === null && itemTab === "dashboard");
+              isActive = pathname === cleanHref && matchesTab;
+            } else if (cleanHref === `/${key}`) {
+              // Portal root/overview item (no query) — active only when there's no
+              // tab/view selected, so it doesn't stay lit on sub-views.
+              isActive = (pathname === `/${key}` || pathname === `/${key}/`) && currentTab === null;
+            } else {
+              isActive = pathname.startsWith(cleanHref) && cleanHref !== `/${key}`;
+            }
 
             return (
               <li key={item.href}>

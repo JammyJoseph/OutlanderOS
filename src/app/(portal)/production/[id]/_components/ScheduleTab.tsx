@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Plus, Trash2, MapPin, Clock } from "lucide-react";
 import { ScheduleBlock } from "./types";
+import { useConfirm } from "@/components/ui/confirm-provider";
 
 interface Props {
   productionId: string;
@@ -17,6 +18,7 @@ export default function ScheduleTab({
   numShootDays,
   refresh,
 }: Props) {
+  const confirm = useConfirm();
   const days = useMemo(() => {
     const set = new Set<number>();
     for (const b of blocks) set.add(b.shootDay);
@@ -58,7 +60,13 @@ export default function ScheduleTab({
   }
 
   async function remove(blockId: string) {
-    if (!confirm("Delete this schedule block?")) return;
+    const ok = await confirm({
+      title: "Delete schedule block?",
+      message: "This removes the block from the schedule. This cannot be undone.",
+      confirmLabel: "Delete",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     await fetch(`/api/productions/${productionId}/schedule?blockId=${blockId}`, {
       method: "DELETE",
     });

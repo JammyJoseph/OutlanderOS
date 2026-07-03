@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Check, AlertTriangle, Loader2, Mail } from 'lucide-react'
+import { useUser } from '@/components/user-context'
+import { useConfirm } from '@/components/ui/confirm-provider'
 
 const INPUT_CLS =
   'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
@@ -15,33 +17,20 @@ function extractCode(input: string): string {
   return trimmed
 }
 
-interface GoogleStatus {
-  connected: boolean
-  email: string | null
-}
-
 export function GoogleAccountSection() {
-  const [status, setStatus] = useState<GoogleStatus | null>(null)
+  // Connection state comes from the shared UserProvider (single /api/me fetch).
+  const { user, loading: userLoading, refetch } = useUser()
+  const confirm = useConfirm()
+  const status = userLoading
+    ? null
+    : { connected: !!user?.googleConnected, email: user?.googleEmail ?? null }
   const [codeInput, setCodeInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   async function loadStatus() {
-    try {
-      const res = await fetch('/api/me')
-      const json = await res.json()
-      setStatus({
-        connected: !!json.user?.googleConnected,
-        email: json.user?.googleEmail ?? null,
-      })
-    } catch {
-      setStatus({ connected: false, email: null })
-    }
+    await refetch()
   }
-
-  useEffect(() => {
-    loadStatus()
-  }, [])
 
   async function startConnect() {
     setMessage(null)
@@ -88,6 +77,14 @@ export function GoogleAccountSection() {
 
   async function disconnect() {
     setMessage(null)
+    const ok = await confirm({
+      title: 'Disconnect Google account?',
+      message:
+        'Email scanning, calendar sync, and smart deadline detection will stop working until you reconnect.',
+      confirmLabel: 'Disconnect',
+      confirmVariant: 'danger',
+    })
+    if (!ok) return
     setBusy(true)
     try {
       const res = await fetch('/api/auth/google/disconnect', { method: 'POST' })

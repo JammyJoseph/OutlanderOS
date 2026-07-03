@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Clapperboard, FileText, PackageCheck, Briefcase } from "lucide-react";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface Deadline {
   id: string;
@@ -52,20 +53,22 @@ export function DeadlinesPanel() {
   const [items, setItems] = useState<Deadline[] | null>(null);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/dashboard/deadlines")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((json: Deadline[]) => {
-        if (!cancelled) setItems(Array.isArray(json) ? json : []);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      });
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    setError(false);
+    setItems(null);
+    try {
+      const r = await fetch("/api/dashboard/deadlines");
+      if (!r.ok) throw new Error(String(r.status));
+      const json = (await r.json()) as Deadline[];
+      setItems(Array.isArray(json) ? json : []);
+    } catch {
+      setError(true);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return (
     <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -79,7 +82,9 @@ export function DeadlinesPanel() {
       </div>
 
       {error ? (
-        <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Couldn&apos;t load deadlines right now.</p>
+        <div className="mt-3">
+          <ErrorState compact title="Couldn't load deadlines" onRetry={load} />
+        </div>
       ) : !items ? (
         <div className="mt-3 space-y-2">
           {Array.from({ length: 4 }, (_, i) => (

@@ -41,6 +41,8 @@ import {
 } from "@/lib/directory";
 import ScannerPanel from "@/components/directory/ScannerPanel";
 import NetworkPanel from "@/components/directory/NetworkPanel";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { isValidEmail, isValidUrl } from "@/lib/validation";
 
 const ACCENT = DIRECTORY_ACCENT;
 
@@ -291,6 +293,9 @@ function Directory() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
+  // Debounced copy of `search` — the fetches key off this so we don't re-query
+  // the API on every keystroke (300ms after the user stops typing).
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState<string>("");
   const [country, setCountry] = useState<string>("");
   const [favouritesOnly, setFavouritesOnly] = useState(false);
@@ -303,6 +308,7 @@ function Directory() {
 
   const [editing, setEditing] = useState<ContactRecord | null | undefined>(undefined);
   const [addingRadar, setAddingRadar] = useState<ContactRecord | null | undefined>(undefined);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const setView = useCallback(
     (v: View) => router.push(v === "dashboard" ? "/directory" : `/directory?view=${v}`),
@@ -314,23 +320,29 @@ function Directory() {
     setTimeout(() => setToast(null), 2200);
   }
 
+  // Debounce the search term so typing doesn't fire a fetch per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const loadContacts = useCallback(async () => {
     const params = new URLSearchParams({ radar: "false" });
-    if (search.trim()) params.set("search", search.trim());
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
     if (category) params.set("category", category);
     const res = await fetch(`/api/contacts?${params.toString()}`);
     const data = await res.json();
     setContacts(Array.isArray(data) ? data : []);
-  }, [search, category]);
+  }, [debouncedSearch, category]);
 
   const loadRadar = useCallback(async () => {
     const params = new URLSearchParams();
-    if (search.trim()) params.set("search", search.trim());
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
     if (radarStatusFilter) params.set("status", radarStatusFilter);
     const res = await fetch(`/api/directory/radar?${params.toString()}`);
     const data = await res.json();
     setRadar(Array.isArray(data) ? data : []);
-  }, [search, radarStatusFilter]);
+  }, [debouncedSearch, radarStatusFilter]);
 
   const loadCategories = useCallback(async () => {
     const res = await fetch("/api/directory/categories");
@@ -368,8 +380,12 @@ function Directory() {
     return res.ok;
   }
 
-  async function deleteContact(id: string) {
-    if (!confirm("Delete this contact permanently?")) return;
+  // Opens the styled confirmation dialog; the actual delete runs on confirm.
+  function deleteContact(id: string) {
+    setPendingDelete(id);
+  }
+
+  async function performDelete(id: string) {
     const res = await fetch(`/api/contacts/${id}`, { method: "DELETE" });
     if (res.ok) {
       setEditing(undefined);
@@ -867,6 +883,19 @@ function Directory() {
           onDelete={deleteContact}
         />
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete contact?"
+        message="This permanently removes the contact from the directory. This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={async () => {
+          if (pendingDelete) await performDelete(pendingDelete);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
@@ -2064,13 +2093,24 @@ function ContactModal({
     tags: (contact?.tags ?? []).join(", "),
   });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
   async function submit() {
+    setError(null);
     if (!form.name.trim()) return;
+    // Validate the optional email + website before hitting the API.
+    if (form.email.trim() && !isValidEmail(form.email)) {
+      setError("Please enter a valid email address, or leave it blank.");
+      return;
+    }
+    if (form.website.trim() && !isValidUrl(form.website)) {
+      setError("Please enter a valid website URL, or leave it blank.");
+      return;
+    }
     setSaving(true);
     const payload: Partial<ContactRecord> = {
       name: form.name.trim(),
@@ -2091,7 +2131,7 @@ function ContactModal({
     };
     const ok = await onSave(payload, contact?.id);
     setSaving(false);
-    if (!ok) alert("Could not save contact — check the email address.");
+    if (!ok) setError("Could not save contact — check the email address.");
   }
 
   return (
@@ -2127,6 +2167,11 @@ function ContactModal({
         </>
       }
     >
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+          {error}
+        </div>
+      )}
       <div>
         <label className={labelCls}>Name *</label>
         <input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} />
@@ -2215,12 +2260,14 @@ function RadarModal({
     notes: entry?.notes ?? "",
   });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
   async function submit() {
+    setError(null);
     if (!form.name.trim()) return;
     setSaving(true);
     const payload: Partial<ContactRecord> = {
@@ -2234,7 +2281,7 @@ function RadarModal({
     };
     const ok = await onSave(payload, entry?.id);
     setSaving(false);
-    if (!ok) alert("Could not save radar entry.");
+    if (!ok) setError("Could not save radar entry. Please try again.");
   }
 
   return (
@@ -2270,6 +2317,11 @@ function RadarModal({
         </>
       }
     >
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+          {error}
+        </div>
+      )}
       <div>
         <label className={labelCls}>Name *</label>
         <input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} />

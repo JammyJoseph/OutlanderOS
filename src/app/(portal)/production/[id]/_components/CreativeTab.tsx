@@ -13,6 +13,7 @@ import {
   File,
 } from "lucide-react";
 import { CreativeAsset, CREATIVE_TYPES } from "./types";
+import { useConfirm } from "@/components/ui/confirm-provider";
 
 interface Props {
   productionId: string;
@@ -46,6 +47,7 @@ function getFigmaEmbedUrl(url: string): string {
 }
 
 export default function CreativeTab({ productionId, assets, refresh }: Props) {
+  const confirm = useConfirm();
   const [showAdd, setShowAdd] = useState(false);
 
   async function add(form: Partial<CreativeAsset>) {
@@ -59,7 +61,13 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
   }
 
   async function remove(assetId: string) {
-    if (!confirm("Delete this creative asset?")) return;
+    const ok = await confirm({
+      title: "Delete creative asset?",
+      message: "This permanently removes the asset. This cannot be undone.",
+      confirmLabel: "Delete",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     await fetch(`/api/productions/${productionId}/creative?assetId=${assetId}`, {
       method: "DELETE",
     });

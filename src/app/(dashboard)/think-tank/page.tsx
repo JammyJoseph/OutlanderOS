@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, Loader2, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
+import { ErrorState } from "@/components/ui/error-state";
 
 interface Signal {
   id: string;
@@ -70,14 +71,23 @@ export default function ThinkTankPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [category, setCategory] = useState<string>("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
-    const [signalsRes, brandsRes] = await Promise.all([
-      fetch("/api/think-tank/signals?limit=100").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/think-tank/brands").then((r) => (r.ok ? r.json() : [])),
-    ]);
-    setSignals(signalsRes);
-    setBrands(brandsRes);
+    setError(false);
+    try {
+      const [signalsRes, brandsRes] = await Promise.all([
+        fetch("/api/think-tank/signals?limit=100").then((r) => {
+          if (!r.ok) throw new Error(String(r.status));
+          return r.json();
+        }),
+        fetch("/api/think-tank/brands").then((r) => (r.ok ? r.json() : [])),
+      ]);
+      setSignals(signalsRes);
+      setBrands(brandsRes);
+    } catch {
+      setError(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -165,7 +175,15 @@ export default function ThinkTankPage() {
         </div>
 
         {/* Signal feed */}
-        {signals === null ? (
+        {error ? (
+          <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+            <ErrorState
+              title="Couldn't load Think Tank"
+              message="The signal feed didn't load. Check your connection and try again."
+              onRetry={load}
+            />
+          </div>
+        ) : signals === null ? (
           <div className="space-y-3">
             {Array.from({ length: 6 }, (_, i) => (
               <div key={i} className="h-20 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, FileText, ChevronRight, Trash2 } from "lucide-react";
+import { useConfirm } from "@/components/ui/confirm-provider";
 
 interface MediaPlan {
   id: string;
@@ -35,6 +36,7 @@ function fmtMoney(n: number, currency: string) {
 export default function MediaPlansListPage() {
   const [plans, setPlans] = useState<MediaPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const confirm = useConfirm();
 
   async function load() {
     try {
@@ -48,7 +50,13 @@ export default function MediaPlansListPage() {
   useEffect(() => { load(); }, []);
 
   async function deletePlan(id: string) {
-    if (!confirm("Delete this media plan?")) return;
+    const ok = await confirm({
+      title: "Delete media plan?",
+      message: "This permanently deletes the media plan. This cannot be undone.",
+      confirmLabel: "Delete",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     await fetch(`/api/media-plans/${id}`, { method: "DELETE" });
     setPlans((prev) => prev.filter((p) => p.id !== id));
   }

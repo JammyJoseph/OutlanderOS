@@ -2,7 +2,6 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Star,
@@ -23,6 +22,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { DIRECTORY_ACCENT } from "@/lib/directory";
+import { isValidUrl } from "@/lib/validation";
+import { ErrorState } from "@/components/ui/error-state";
 
 const ACCENT = DIRECTORY_ACCENT;
 
@@ -157,27 +158,39 @@ export default function ContactDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const router = useRouter();
   const [contact, setContact] = useState<ContactDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/contacts/${id}`);
-    if (!res.ok) {
-      setNotFound(true);
+    setLoading(true);
+    setLoadError(false);
+    setNotFound(false);
+    try {
+      const res = await fetch(`/api/contacts/${id}`);
+      if (res.status === 404) {
+        setNotFound(true);
+        return;
+      }
+      if (!res.ok) {
+        setLoadError(true);
+        return;
+      }
+      const data = await res.json();
+      setContact({
+        ...data,
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        portfolioLinks: Array.isArray(data.portfolioLinks) ? data.portfolioLinks : [],
+        collaborations: Array.isArray(data.collaborations) ? data.collaborations : [],
+        network: Array.isArray(data.network) ? data.network : [],
+      });
+    } catch {
+      // Network / parse failure — show a retry instead of spinning forever.
+      setLoadError(true);
+    } finally {
       setLoading(false);
-      return;
     }
-    const data = await res.json();
-    setContact({
-      ...data,
-      tags: Array.isArray(data.tags) ? data.tags : [],
-      portfolioLinks: Array.isArray(data.portfolioLinks) ? data.portfolioLinks : [],
-      collaborations: Array.isArray(data.collaborations) ? data.collaborations : [],
-      network: Array.isArray(data.network) ? data.network : [],
-    });
-    setLoading(false);
   }, [id]);
 
   useEffect(() => {
@@ -204,6 +217,22 @@ export default function ContactDetailPage({
       </div>
     );
   }
+  if (loadError) {
+    return (
+      <div className="px-6 py-20">
+        <ErrorState
+          title="Couldn't load this contact"
+          message="Something went wrong fetching this contact. Check your connection and try again."
+          onRetry={load}
+        />
+        <div className="mt-4 text-center">
+          <Link href="/directory" className="text-sm" style={{ color: ACCENT }}>
+            ← Back to directory
+          </Link>
+        </div>
+      </div>
+    );
+  }
   if (notFound || !contact) {
     return (
       <div className="px-6 py-20 text-center">
@@ -220,12 +249,12 @@ export default function ContactDetailPage({
   return (
     <div className="min-h-full px-6 py-8">
       <div className="mx-auto max-w-5xl">
-        <button
-          onClick={() => router.back()}
+        <Link
+          href="/directory"
           className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         >
-          <ArrowLeft size={15} /> Back
-        </button>
+          <ArrowLeft size={15} /> Back to directory
+        </Link>
 
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -627,8 +656,14 @@ function PortfolioEditor({
 }) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
   function add() {
+    setError(null);
     if (!url.trim()) return;
+    if (!isValidUrl(url)) {
+      setError("Please enter a valid URL (e.g. https://example.com).");
+      return;
+    }
     onChange([...links, { title: title.trim() || url.trim(), url: url.trim() }]);
     setTitle("");
     setUrl("");
@@ -673,7 +708,10 @@ function PortfolioEditor({
         />
         <input
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            if (error) setError(null);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -681,7 +719,7 @@ function PortfolioEditor({
             }
           }}
           placeholder="https://…"
-          className={inputCls}
+          className={`${inputCls} ${url.trim() && !isValidUrl(url) ? "border-red-400 focus:ring-red-300/30" : ""}`}
         />
         <button
           onClick={add}
@@ -692,6 +730,7 @@ function PortfolioEditor({
           <Plus size={15} /> Add
         </button>
       </div>
+      {error && <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }

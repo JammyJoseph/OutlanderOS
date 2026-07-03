@@ -54,6 +54,7 @@ export default function PrintIssuePage() {
   const [addPageOpen, setAddPageOpen] = useState(false);
   const [newPage, setNewPage] = useState({ pageNumber: "", type: "editorial", assignedTo: "" });
   const [savingPage, setSavingPage] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -66,6 +67,20 @@ export default function PrintIssuePage() {
   async function handleAddPage(e: React.FormEvent) {
     e.preventDefault();
     if (!issue) return;
+    setPageError(null);
+
+    // Page number must be a positive integer.
+    const num = Number(newPage.pageNumber);
+    if (!newPage.pageNumber.trim() || !Number.isInteger(num) || num < 1) {
+      setPageError("Page number must be a whole number of 1 or more.");
+      return;
+    }
+    // No duplicate page numbers in the same issue.
+    if (issue.pages.some((p) => p.pageNumber === num)) {
+      setPageError(`Page ${num} already exists in this issue.`);
+      return;
+    }
+
     setSavingPage(true);
     try {
       const res = await fetch(`/api/print-issues/${id}/pages`, {
@@ -176,7 +191,11 @@ export default function PrintIssuePage() {
               </p>
             </div>
             <button
-              onClick={() => setAddPageOpen(true)}
+              onClick={() => {
+                setPageError(null);
+                setNewPage({ pageNumber: "", type: "editorial", assignedTo: "" });
+                setAddPageOpen(true);
+              }}
               className="flex items-center gap-1.5 rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-semibold text-black hover:bg-[#e6c200]"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -301,10 +320,21 @@ export default function PrintIssuePage() {
                   required
                   type="number"
                   min="1"
+                  step="1"
                   value={newPage.pageNumber}
-                  onChange={(e) => setNewPage((p) => ({ ...p, pageNumber: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:border-[#ffd700] focus:outline-none"
+                  onChange={(e) => {
+                    setNewPage((p) => ({ ...p, pageNumber: e.target.value }));
+                    if (pageError) setPageError(null);
+                  }}
+                  className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+                    pageError
+                      ? "border-red-400 focus:border-red-400"
+                      : "border-gray-200 dark:border-gray-700 focus:border-[#ffd700]"
+                  }`}
                 />
+                {pageError && (
+                  <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{pageError}</p>
+                )}
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Type</label>

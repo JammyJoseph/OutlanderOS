@@ -16,10 +16,13 @@ import CreativeTab from "./_components/CreativeTab";
 import CampaignTimelineTab from "./_components/CampaignTimelineTab";
 import CallSheetsTab from "./_components/CallSheetsTab";
 import DeliverablesTab from "./_components/DeliverablesTab";
+import { useUser } from "@/components/user-context";
+import { useConfirm } from "@/components/ui/confirm-provider";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const confirm = useConfirm();
 
   const [production, setProduction] = useState<ProductionFull | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,15 +30,10 @@ export default function ProjectDetail() {
   const [tab, setTab] = useState<TabKey>("overview");
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user } = useUser();
+  const isAdmin = user?.role === "ADMIN";
   const [archiveBusy, setArchiveBusy] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then((d) => setIsAdmin(d.user?.role === "ADMIN"))
-      .catch(() => {});
-  }, []);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   // Editable form fields for overview header
   const [description, setDescription] = useState("");
@@ -181,9 +179,16 @@ export default function ProjectDetail() {
     if (!production) return;
     if (
       archived &&
-      !confirm("Archive this project? It disappears from the Production dashboard but nothing is deleted — an admin can unarchive it later.")
+      !(await confirm({
+        title: "Archive this project?",
+        message:
+          "It disappears from the Production dashboard but nothing is deleted — an admin can unarchive it later.",
+        confirmLabel: "Archive",
+        confirmVariant: "danger",
+      }))
     )
       return;
+    setArchiveError(null);
     setArchiveBusy(true);
     try {
       const res = await fetch(`/api/productions/${id}/archive`, {
@@ -196,7 +201,7 @@ export default function ProjectDetail() {
         else await refresh();
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || "Failed to update archive state");
+        setArchiveError(data.error || "Failed to update archive state");
       }
     } finally {
       setArchiveBusy(false);
@@ -269,6 +274,12 @@ export default function ProjectDetail() {
             </button>
           ) : null}
         </div>
+
+        {archiveError && (
+          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+            {archiveError}
+          </div>
+        )}
 
         {production.archived && (
           <div className="mb-5 rounded-2xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">

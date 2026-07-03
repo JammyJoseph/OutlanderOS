@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Calendar, Mail, Building2, ShieldCheck, User as UserIcon, Pencil, X, Check, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/components/theme-context'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type Me = {
   id: string
@@ -134,8 +135,22 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-10">
-        <div className="rounded-2xl bg-white dark:bg-gray-900 p-10 text-center text-sm text-gray-400 dark:text-gray-500 shadow-sm">Loading profile…</div>
+      <div className="mx-auto max-w-5xl px-6 py-8">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="mt-3 h-5 w-40" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }

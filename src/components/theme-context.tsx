@@ -7,6 +7,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { useUser } from "@/components/user-context";
 
 export type Theme = "light" | "dark";
 
@@ -40,6 +41,8 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const { user, patchUser } = useUser();
+
   // Start from whatever the no-flash script already put on <html>; fall back to
   // light. This keeps the very first client render in sync with the DOM.
   const [theme, setThemeState] = useState<Theme>(() => {
@@ -54,33 +57,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next);
     applyTheme(next);
+    patchUser({ theme: next });
     fetch("/api/me", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ theme: next }),
     }).catch(() => {});
-  }, []);
+  }, [patchUser]);
 
   const toggleTheme = useCallback(() => {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  // On load, reconcile with the DB preference (source of truth across devices).
+  // Reconcile with the DB preference (source of truth across devices) once the
+  // shared UserProvider has loaded it. No extra /api/me fetch of our own.
   useEffect(() => {
-    let cancelled = false;
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then((d) => {
-        const dbTheme: Theme | undefined = d?.user?.theme;
-        if (cancelled || (dbTheme !== "light" && dbTheme !== "dark")) return;
-        setThemeState(dbTheme);
-        applyTheme(dbTheme);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    const dbTheme = user?.theme;
+    if (dbTheme !== "light" && dbTheme !== "dark") return;
+    setThemeState(dbTheme);
+    applyTheme(dbTheme);
+  }, [user?.theme]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>

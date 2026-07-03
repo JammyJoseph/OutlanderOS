@@ -10,6 +10,7 @@ import {
   CampaignDeliverable,
 } from "./types";
 import { LinkedShotsPicker, ShotOption } from "./LinkedShotsPicker";
+import { useConfirm } from "@/components/ui/confirm-provider";
 
 interface Props {
   productionId: string;
@@ -57,6 +58,7 @@ export default function DeliverablesTab({
   campaignDeliverables = [],
   refresh,
 }: Props) {
+  const confirm = useConfirm();
   const [showAdd, setShowAdd] = useState(false);
   const [shots, setShots] = useState<ShotOption[]>([]);
 
@@ -99,7 +101,13 @@ export default function DeliverablesTab({
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this deliverable?")) return;
+    const ok = await confirm({
+      title: "Delete deliverable?",
+      message: "This removes the deliverable from the production. This cannot be undone.",
+      confirmLabel: "Delete",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     await fetch(`/api/productions/${productionId}/deliverables?deliverableId=${id}`, {
       method: "DELETE",
     });

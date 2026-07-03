@@ -37,6 +37,7 @@ import {
   type WorkflowType,
 } from "../_components/deal-ui";
 import NewDealModal from "../_components/NewDealModal";
+import { useConfirm } from "@/components/ui/confirm-provider";
 
 interface TeamMember {
   id: string;
@@ -58,6 +59,7 @@ export default function PipelinePage() {
 }
 
 function PipelineBoard() {
+  const confirm = useConfirm();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [users, setUsers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,9 +146,15 @@ function PipelineBoard() {
   async function archiveDeal(deal: Deal) {
     const cascades = Boolean(deal.production);
     const message = cascades
-      ? `Archive "${deal.title}"? This will also archive the linked production project. Continue?`
-      : `Archive "${deal.title}"? It disappears from the pipeline but can be restored via "Show archived".`;
-    if (!confirm(message)) return;
+      ? `This will also archive the linked production project. It disappears from the pipeline but can be restored via "Show archived".`
+      : `It disappears from the pipeline but can be restored via "Show archived".`;
+    const ok = await confirm({
+      title: `Archive "${deal.title}"?`,
+      message,
+      confirmLabel: "Archive",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     const previous = deals;
     setDeals((prev) =>
       showArchived

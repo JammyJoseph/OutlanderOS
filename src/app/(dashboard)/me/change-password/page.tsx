@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Lock, ShieldCheck } from "lucide-react";
+import { Loader2, Lock, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { passwordStrength } from "@/lib/validation";
 
 export default function ChangePasswordPage() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -9,6 +10,11 @@ export default function ChangePasswordPage() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const strength = passwordStrength(newPassword);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,35 +88,48 @@ export default function ChangePasswordPage() {
           )}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Current password</label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-              placeholder="The temporary password you were given"
-              className={inputCls}
-            />
+            <div className="relative">
+              <input
+                type={showCurrent ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                placeholder="The temporary password you were given"
+                className={`${inputCls} pr-10`}
+              />
+              <PasswordToggle shown={showCurrent} onToggle={() => setShowCurrent((v) => !v)} />
+            </div>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">New password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              placeholder="At least 8 characters"
-              className={inputCls}
-            />
+            <div className="relative">
+              <input
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                placeholder="At least 8 characters"
+                className={`${inputCls} pr-10`}
+              />
+              <PasswordToggle shown={showNew} onToggle={() => setShowNew((v) => !v)} />
+            </div>
+            {newPassword && <StrengthMeter strength={strength} />}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm new password</label>
-            <input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-              className={inputCls}
-            />
+            <div className="relative">
+              <input
+                type={showConfirm ? "text" : "password"}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                className={`${inputCls} pr-10`}
+              />
+              <PasswordToggle shown={showConfirm} onToggle={() => setShowConfirm((v) => !v)} />
+            </div>
+            {confirm && confirm !== newPassword && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">Passwords don&apos;t match.</p>
+            )}
           </div>
           <button
             type="submit"
@@ -126,6 +145,46 @@ export default function ChangePasswordPage() {
           Internal operating system · Outlander Magazine
         </p>
       </div>
+    </div>
+  );
+}
+
+function PasswordToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={shown ? "Hide password" : "Show password"}
+      className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+    >
+      {shown ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  );
+}
+
+function StrengthMeter({ strength }: { strength: ReturnType<typeof passwordStrength> }) {
+  const { score, label } = strength;
+  const barColor =
+    label === "weak" ? "bg-red-500" : label === "medium" ? "bg-amber-500" : "bg-emerald-500";
+  const textColor =
+    label === "weak"
+      ? "text-red-600 dark:text-red-400"
+      : label === "medium"
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-emerald-600 dark:text-emerald-400";
+  return (
+    <div className="mt-2">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className={`h-1.5 flex-1 rounded-full transition-colors ${
+              i <= score ? barColor : "bg-gray-200 dark:bg-gray-700"
+            }`}
+          />
+        ))}
+      </div>
+      <p className={`mt-1 text-xs font-medium capitalize ${textColor}`}>{label} password</p>
     </div>
   );
 }

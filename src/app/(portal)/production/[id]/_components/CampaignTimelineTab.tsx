@@ -21,6 +21,7 @@ import {
   milestoneStatus,
   parseMilestones,
 } from "./types";
+import { useConfirm } from "@/components/ui/confirm-provider";
 
 interface Props {
   productionId: string;
@@ -38,8 +39,10 @@ const inputCls =
   "px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
 
 export default function CampaignTimelineTab({ productionId, milestones, refresh }: Props) {
+  const confirm = useConfirm();
   const [showAdd, setShowAdd] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
   const [raw, setRaw] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -63,7 +66,13 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this milestone?")) return;
+    const ok = await confirm({
+      title: "Delete milestone?",
+      message: "This removes the milestone from the timeline. This cannot be undone.",
+      confirmLabel: "Delete",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     await fetch(`/api/productions/${productionId}/milestones?milestoneId=${id}`, {
       method: "DELETE",
     });
@@ -71,9 +80,10 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
   }
 
   async function runImport() {
+    setImportError(null);
     const parsed = parseMilestones(raw);
     if (!parsed.length) {
-      alert("No milestones found. Check each line has a recognisable date (e.g. WED 1 JUL).");
+      setImportError("No milestones found. Check each line has a recognisable date (e.g. WED 1 JUL).");
       return;
     }
     setBusy(true);
@@ -173,6 +183,9 @@ export default function CampaignTimelineTab({ productionId, milestones, refresh 
                 rows={7}
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-mono bg-white dark:bg-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
               />
+              {importError && (
+                <p className="text-xs font-medium text-red-600 dark:text-red-400">{importError}</p>
+              )}
               <button
                 onClick={runImport}
                 disabled={busy || !raw.trim()}

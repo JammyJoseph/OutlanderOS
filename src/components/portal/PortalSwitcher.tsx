@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PORTAL_ACCENTS, type PortalKey } from "@/lib/design";
+import { useUser } from "@/components/user-context";
 
 type PortalItem = {
   name: string;
@@ -42,17 +43,13 @@ export function PortalSwitcher() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [role, setRole] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Role comes from the database (via /api/me), not the JWT, so a freshly
-  // promoted admin sees the right portals without re-logging in.
-  useEffect(() => {
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then((d) => setRole(d.user?.role ?? null))
-      .catch(() => {});
-  }, []);
+  // Role comes from the database (via the shared UserProvider /api/me fetch),
+  // not the JWT, so a freshly promoted admin sees the right portals without
+  // re-logging in.
+  const { user } = useUser();
+  const role = user?.role ?? null;
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -78,7 +75,7 @@ export function PortalSwitcher() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       >
         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: triggerAccent }} />
         {triggerLabel}
@@ -92,13 +89,13 @@ export function PortalSwitcher() {
           {/* Back to personal dashboard */}
           <button
             onClick={() => go("/me")}
-            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <LayoutGrid className="h-3.5 w-3.5 text-gray-400" />
             My Dashboard
           </button>
 
-          <div className="h-px bg-gray-100" />
+          <div className="h-px bg-gray-100 dark:bg-gray-800" />
 
           <div className="px-3 py-1.5">
             <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">
@@ -115,7 +112,7 @@ export function PortalSwitcher() {
                 key={p.href}
                 onClick={() => go(p.href)}
                 className={`flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors ${
-                  isCurrent ? "font-semibold text-gray-900" : "text-gray-700 hover:bg-gray-50"
+                  isCurrent ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 }`}
                 style={isCurrent ? { backgroundColor: `${accent}14` } : undefined}
               >
@@ -128,13 +125,13 @@ export function PortalSwitcher() {
 
           {isAdmin && (
             <>
-              <div className="h-px bg-gray-100" />
+              <div className="h-px bg-gray-100 dark:bg-gray-800" />
               <button
                 onClick={() => go("/admin")}
                 className={`flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors ${
                   pathname.startsWith("/admin")
-                    ? "font-semibold text-gray-900"
-                    : "text-gray-500 hover:bg-gray-50"
+                    ? "font-semibold text-gray-900 dark:text-gray-100"
+                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                 }`}
                 style={pathname.startsWith("/admin") ? { backgroundColor: `${PORTAL_ACCENTS.admin}14` } : undefined}
               >

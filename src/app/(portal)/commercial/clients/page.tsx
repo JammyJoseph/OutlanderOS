@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Building2, Plus, TrendingUp, Archive as ArchiveIcon, RotateCcw } from "lucide-react";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import Link from "next/link";
 
 interface ClientSummary {
@@ -33,6 +34,7 @@ function initials(name: string): string {
 }
 
 export default function ClientsPage() {
+  const confirm = useConfirm();
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
@@ -53,12 +55,13 @@ export default function ClientsPage() {
       client.campaignCount > 0
         ? ` This client has ${client.campaignCount} active deal${client.campaignCount !== 1 ? "s" : ""}, which stay in the pipeline.`
         : "";
-    if (
-      !confirm(
-        `Archive ${client.name}? They will be hidden from the main list but can be restored.${dealNote}`
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: `Archive ${client.name}?`,
+      message: `They will be hidden from the main list but can be restored.${dealNote}`,
+      confirmLabel: "Archive",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     const previous = clients;
     setClients((prev) =>
       showArchived

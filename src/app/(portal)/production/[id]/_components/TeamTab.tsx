@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Mail, Phone, Users, Contact, Search, X, Star } from "lucide-react";
 import { TeamMember, TeamStatus, gbp } from "./types";
+import { isValidEmail } from "@/lib/validation";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface DirectoryContact {
   id: string;
@@ -63,6 +65,7 @@ const STATUS_STYLES: Record<TeamStatus, { bg: string; text: string; border: stri
 export default function TeamTab({ productionId, members, refresh }: Props) {
   const [showAdd, setShowAdd] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [removeId, setRemoveId] = useState<string | null>(null);
 
   const totalCost = useMemo(() => {
     return (members ?? []).reduce((sum, m) => sum + (m.rate || 0), 0);
@@ -112,7 +115,6 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
   }
 
   async function remove(memberId: string) {
-    if (!confirm("Remove this team member?")) return;
     await fetch(`/api/productions/${productionId}/team?memberId=${memberId}`, {
       method: "DELETE",
     });
@@ -158,7 +160,7 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
           </div>
         </div>
 
-        {showAdd && <AddMemberForm onAdd={add} onCancel={() => setShowAdd(false)} />}
+        {showAdd && <AddMemberForm members={members} onAdd={add} onCancel={() => setShowAdd(false)} />}
 
         {members.length === 0 && !showAdd ? (
           <div className="px-5 py-12 text-center">
@@ -178,7 +180,7 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
                 member={m}
                 onUpdate={(patch) => update(m.id, patch)}
                 onCycleStatus={() => cycleStatus(m)}
-                onRemove={() => remove(m.id)}
+                onRemove={() => setRemoveId(m.id)}
               />
             ))}
           </div>
@@ -192,6 +194,19 @@ export default function TeamTab({ productionId, members, refresh }: Props) {
           onClose={() => setShowPicker(false)}
         />
       )}
+
+      <ConfirmDialog
+        open={!!removeId}
+        title="Remove team member?"
+        message="They'll be removed from this production's team. This cannot be undone."
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        onConfirm={async () => {
+          if (removeId) await remove(removeId);
+          setRemoveId(null);
+        }}
+        onCancel={() => setRemoveId(null)}
+      />
     </div>
   );
 }
@@ -449,9 +464,11 @@ function MemberRow({
 }
 
 function AddMemberForm({
+  members,
   onAdd,
   onCancel,
 }: {
+  members: TeamMember[];
   onAdd: (m: Partial<TeamMember>) => void;
   onCancel: () => void;
 }) {
@@ -461,9 +478,30 @@ function AddMemberForm({
   const [phone, setPhone] = useState("");
   const [rate, setRate] = useState("");
   const [ratePer, setRatePer] = useState("day");
+  const [error, setError] = useState<string | null>(null);
+
+  const rateNeg = rate.trim() !== "" && Number(rate) < 0;
+  const emailInvalid = email.trim() !== "" && !isValidEmail(email);
 
   function submit() {
-    if (!name.trim()) return;
+    setError(null);
+    if (!name.trim()) {
+      setError("Name is required.");
+      return;
+    }
+    // Duplicate guard — same name already on the team.
+    if (members.some((m) => m.name.trim().toLowerCase() === name.trim().toLowerCase())) {
+      setError("A team member with this name is already on the crew.");
+      return;
+    }
+    if (emailInvalid) {
+      setError("Please enter a valid email address, or leave it blank.");
+      return;
+    }
+    if (rateNeg) {
+      setError("Rate can't be negative.");
+      return;
+    }
     onAdd({
       name: name.trim(),
       role: role.trim() || "Crew",
@@ -476,7 +514,8 @@ function AddMemberForm({
   }
 
   return (
-    <div className="px-5 py-4 bg-amber-50/30 border-b border-gray-50 grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
+    <div className="px-5 py-4 bg-amber-50/30 dark:bg-amber-900/20 border-b border-gray-50 dark:border-gray-800">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
       <input
         type="text"
         value={name}
@@ -496,7 +535,11 @@ function AddMemberForm({
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className={`md:col-span-2 px-3 py-2 rounded-xl border text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 ${
+          emailInvalid
+            ? "border-red-400 focus:ring-red-200 focus:border-red-400"
+            : "border-gray-200 dark:border-gray-700 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        }`}
       />
       <input
         type="tel"
@@ -509,10 +552,15 @@ function AddMemberForm({
         <span className="text-xs text-gray-400 dark:text-gray-500">£</span>
         <input
           type="number"
+          min="0"
           value={rate}
           onChange={(e) => setRate(e.target.value)}
           placeholder="Rate"
-          className="flex-1 px-2 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+          className={`flex-1 px-2 py-2 rounded-xl border text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 ${
+            rateNeg
+              ? "border-red-400 focus:ring-red-200 focus:border-red-400"
+              : "border-gray-200 dark:border-gray-700 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+          }`}
         />
         <select
           value={ratePer}
@@ -538,6 +586,8 @@ function AddMemberForm({
           Cancel
         </button>
       </div>
+    </div>
+    {error && <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }

@@ -39,6 +39,7 @@ export default function ArchivePage() {
   const [canUnarchive, setCanUnarchive] = useState(false);
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -57,6 +58,7 @@ export default function ArchivePage() {
   }, []);
 
   async function unarchive(deal: ArchivedDeal) {
+    setError(null);
     setBusyId(deal.id);
     const previous = deals;
     setDeals((prev) => prev.filter((d) => d.id !== deal.id));
@@ -65,7 +67,7 @@ export default function ArchivePage() {
       if (!res.ok) {
         setDeals(previous);
         const body = await res.json().catch(() => ({}));
-        alert(body.error || "Couldn't unarchive this deal.");
+        setError(body.error || "Couldn't unarchive this deal.");
       }
     } catch {
       setDeals(previous);
@@ -107,6 +109,12 @@ export default function ArchivePage() {
             Back to Pipeline
           </Link>
         </div>
+
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+            {error}
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative mb-4 max-w-sm">

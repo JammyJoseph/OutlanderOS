@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   Banknote,
   Clapperboard,
@@ -63,25 +64,30 @@ export function BusinessPulse() {
   const [pulse, setPulse] = useState<PulseData | null>(null);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/dashboard/pulse")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((json: PulseData) => {
-        if (!cancelled) setPulse(json);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      });
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    setError(false);
+    setPulse(null);
+    try {
+      const r = await fetch("/api/dashboard/pulse");
+      if (!r.ok) throw new Error(String(r.status));
+      setPulse((await r.json()) as PulseData);
+    } catch {
+      setError(true);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   if (error) {
     return (
-      <div className="rounded-xl border border-gray-100 bg-white p-4 text-sm text-gray-400 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500">
-        Business pulse unavailable right now.
+      <div className="rounded-xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <ErrorState
+          title="Business pulse unavailable"
+          message="Couldn't load your KPIs right now."
+          onRetry={load}
+        />
       </div>
     );
   }

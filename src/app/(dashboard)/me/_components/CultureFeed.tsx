@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, RefreshCw } from "lucide-react";
 import { timeAgo, type TrendSignal } from "./types";
+import { ErrorState } from "@/components/ui/error-state";
 
 const CATEGORY_COLORS: Record<string, string> = {
   fashion: "bg-pink-50 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
@@ -23,15 +24,17 @@ function categoryLabel(category: string): string {
 // Passive culture/trend news feed from Think Tank RSS ingestion.
 export function CultureFeed() {
   const [signals, setSignals] = useState<TrendSignal[] | null>(null);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    setError(false);
     try {
       const res = await fetch("/api/think-tank/signals?limit=5");
       if (!res.ok) throw new Error(String(res.status));
       setSignals(await res.json());
     } catch {
-      setSignals([]);
+      setError(true);
     }
   }, []);
 
@@ -67,7 +70,13 @@ export function CultureFeed() {
         </button>
       </div>
 
-      {signals === null ? (
+      {error ? (
+        <ErrorState
+          title="Couldn't load the culture feed"
+          message="The trend feed didn't load. Try again."
+          onRetry={load}
+        />
+      ) : signals === null ? (
         <div className="space-y-2 p-4">
           {Array.from({ length: 3 }, (_, i) => (
             <div key={i} className="h-9 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />

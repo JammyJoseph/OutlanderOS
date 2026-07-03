@@ -20,6 +20,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useMagazinePlan } from "@/components/print/usePlan";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import BudgetView from "@/components/print/BudgetView";
 import {
   SECTIONS,
@@ -63,6 +64,8 @@ function FlatPlanInner() {
   const issueNumber = issueParam ? parseInt(issueParam, 10) : null;
 
   const { plan, loading, saving, error, savePages } = useMagazinePlan(issueNumber);
+  const confirm = useConfirm();
+  const [notice, setNotice] = useState<string | null>(null);
   const [view, setView] = useState<View>("tracker");
   const [editing, setEditing] = useState<number | null>(null); // index into pages
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -110,15 +113,16 @@ function FlatPlanInner() {
 
   // Remove a single page with confirmation, then renumber the rest. Used by the
   // flat plan's per-card × button for fine-tuning (bulk add/remove still uses blocks).
-  function removePage(index: number) {
+  async function removePage(index: number) {
     const p = pages[index];
     if (!p) return;
-    if (
-      !confirm(
-        `Remove page ${p.pageNumber}? This will remove the page and renumber remaining pages.`
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: `Remove page ${p.pageNumber}?`,
+      message: "This removes the page and renumbers the remaining pages.",
+      confirmLabel: "Remove",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     mutateStructural(pages.filter((_, i) => i !== index));
   }
 
@@ -164,25 +168,26 @@ function FlatPlanInner() {
     mutate(flattenSignatures(next));
   }
 
-  function removeSignature(sigIndex: number) {
+  async function removeSignature(sigIndex: number) {
     if (signatures.length <= 1) {
-      alert("A magazine must keep at least one signature.");
+      setNotice("A magazine must keep at least one signature.");
       return;
     }
     const sig = signatures[sigIndex];
     if (!sig) return;
-    if (
-      !confirm(
-        `Remove Signature ${sigIndex + 1} (${sig.pageCount} pages)? This removes those pages and renumbers the rest. Can't be undone once saved.`
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: `Remove Signature ${sigIndex + 1}?`,
+      message: `This removes those ${sig.pageCount} pages and renumbers the rest. Can't be undone once saved.`,
+      confirmLabel: "Remove",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
     const next = signatures.filter((s) => s.signatureIndex !== sigIndex);
     mutate(flattenSignatures(next));
   }
 
   function removeLastSignature() {
-    removeSignature(signatures.length - 1);
+    void removeSignature(signatures.length - 1);
   }
 
   // Move a single page card from one slot to another (within or across signatures).
@@ -222,6 +227,19 @@ function FlatPlanInner() {
 
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
+      {notice && (
+        <div className="fixed inset-x-0 top-4 z-[60] flex justify-center px-4">
+          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 shadow-lg dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+            {notice}
+            <button
+              onClick={() => setNotice(null)}
+              className="text-amber-600 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-100"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background/90 px-6 py-3 backdrop-blur">
         <div className="flex items-center gap-3">

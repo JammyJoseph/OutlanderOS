@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Calendar, Plus, X, Check, AlertTriangle, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 const INPUT_CLS =
   'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#ffd700] focus:ring-2 focus:ring-amber-200/60'
@@ -76,6 +78,8 @@ export default function HolidayPage() {
     notes: '',
   })
   const [error, setError] = useState<string | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ id: string; status: HolidayStatus; who?: string } | null>(null)
+  const [actionBusy, setActionBusy] = useState(false)
 
   useEffect(() => {
     void load()
@@ -109,6 +113,14 @@ export default function HolidayPage() {
 
   async function submitRequest() {
     setError(null)
+    if (!form.startDate || !form.endDate) {
+      setError('Please choose both a start and end date.')
+      return
+    }
+    if (new Date(form.endDate) < new Date(form.startDate)) {
+      setError('End date must be on or after the start date.')
+      return
+    }
     setSubmitting(true)
     try {
       const res = await fetch('/api/holiday', {
@@ -142,8 +154,25 @@ export default function HolidayPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-10">
-        <div className="rounded-2xl bg-white dark:bg-gray-900 p-10 text-center text-sm text-gray-400 dark:text-gray-500 shadow-sm">Loading holiday…</div>
+      <div className="mx-auto max-w-5xl px-6 py-8">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="mt-2 h-4 w-64" />
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+            <Skeleton className="h-6 w-40" />
+            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-xl" />
+              ))}
+            </div>
+            <Skeleton className="mt-5 h-2.5 w-full rounded-full" />
+          </div>
+          <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="mt-4 h-48 w-full rounded-xl" />
+          </div>
+        </div>
+        <Skeleton className="mt-10 h-40 w-full rounded-2xl" />
       </div>
     )
   }
@@ -284,7 +313,7 @@ export default function HolidayPage() {
                     <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate">{r.notes || '—'}</td>
                     <td className="px-5 py-3 text-right">
                       {r.status === 'PENDING' && (
-                        <button onClick={() => updateStatus(r.id, 'CANCELLED')}
+                        <button onClick={() => setPendingAction({ id: r.id, status: 'CANCELLED' })}
                           className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-300">Cancel</button>
                       )}
                     </td>
@@ -330,9 +359,9 @@ export default function HolidayPage() {
                       <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate">{r.notes || '—'}</td>
                       <td className="px-5 py-3 text-right">
                         <div className="inline-flex gap-1.5">
-                          <button onClick={() => updateStatus(r.id, 'APPROVED')}
+                          <button onClick={() => setPendingAction({ id: r.id, status: 'APPROVED', who: r.user?.name })}
                             className="rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30">Approve</button>
-                          <button onClick={() => updateStatus(r.id, 'REJECTED')}
+                          <button onClick={() => setPendingAction({ id: r.id, status: 'REJECTED', who: r.user?.name })}
                             className="rounded-lg bg-red-50 dark:bg-red-900/30 px-2.5 py-1.5 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30">Reject</button>
                         </div>
                       </td>
@@ -344,6 +373,44 @@ export default function HolidayPage() {
           </div>
         </section>
       )}
+
+      <ConfirmDialog
+        open={!!pendingAction}
+        title={
+          pendingAction?.status === 'APPROVED'
+            ? 'Approve request?'
+            : pendingAction?.status === 'REJECTED'
+              ? 'Reject request?'
+              : 'Cancel request?'
+        }
+        message={
+          pendingAction?.status === 'APPROVED'
+            ? `Approve ${pendingAction?.who ?? 'this'} time-off request? The days will be deducted from their balance.`
+            : pendingAction?.status === 'REJECTED'
+              ? `Reject ${pendingAction?.who ?? 'this'} time-off request?`
+              : 'Cancel this time-off request? This cannot be undone.'
+        }
+        confirmLabel={
+          pendingAction?.status === 'APPROVED'
+            ? 'Approve'
+            : pendingAction?.status === 'REJECTED'
+              ? 'Reject'
+              : 'Cancel request'
+        }
+        confirmVariant={pendingAction?.status === 'APPROVED' ? 'primary' : 'danger'}
+        busy={actionBusy}
+        onConfirm={async () => {
+          if (!pendingAction) return
+          setActionBusy(true)
+          try {
+            await updateStatus(pendingAction.id, pendingAction.status)
+          } finally {
+            setActionBusy(false)
+            setPendingAction(null)
+          }
+        }}
+        onCancel={() => setPendingAction(null)}
+      />
     </div>
   )
 }

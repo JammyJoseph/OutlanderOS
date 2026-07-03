@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Mail, Plus, Pencil, Loader2, ShieldCheck, X, Check, Copy, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isValidEmail } from "@/lib/validation";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface Staff {
   id: string;
@@ -62,6 +64,8 @@ export default function TeamPage() {
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [newCreds, setNewCreds] = useState<NewCredentials | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<Staff | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -78,7 +82,10 @@ export default function TeamPage() {
     load();
   }, []);
 
+  // Activating is low-risk and applied immediately; deactivating goes through a
+  // confirmation dialog first (see the toggle button below).
   async function toggleActive(s: Staff) {
+    setStatusError(null);
     setBusyId(s.id);
     try {
       const res = await fetch(`/api/admin/users/${s.id}`, {
@@ -91,7 +98,7 @@ export default function TeamPage() {
         setStaff((prev) => prev.map((u) => (u.id === s.id ? updated : u)));
       } else {
         const body = await res.json().catch(() => ({}));
-        alert(body.error || "Couldn't update status.");
+        setStatusError(body.error || "Couldn't update status.");
       }
     } finally {
       setBusyId(null);
@@ -118,6 +125,12 @@ export default function TeamPage() {
           Add Staff
         </button>
       </div>
+
+      {statusError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+          {statusError}
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
@@ -219,7 +232,7 @@ export default function TeamPage() {
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
-                        onClick={() => toggleActive(s)}
+                        onClick={() => (s.isActive ? setConfirmDeactivate(s) : toggleActive(s))}
                         disabled={busyId === s.id}
                         className={cn(
                           "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
@@ -264,6 +277,24 @@ export default function TeamPage() {
       )}
 
       {newCreds && <CredentialsModal creds={newCreds} onClose={() => setNewCreds(null)} />}
+
+      <ConfirmDialog
+        open={!!confirmDeactivate}
+        title="Deactivate staff member?"
+        message={
+          confirmDeactivate
+            ? `${confirmDeactivate.name} will lose access to OutlanderOS immediately. You can reactivate them at any time.`
+            : ""
+        }
+        confirmLabel="Deactivate"
+        confirmVariant="danger"
+        busy={!!confirmDeactivate && busyId === confirmDeactivate.id}
+        onConfirm={async () => {
+          if (confirmDeactivate) await toggleActive(confirmDeactivate);
+          setConfirmDeactivate(null);
+        }}
+        onCancel={() => setConfirmDeactivate(null)}
+      />
     </div>
   );
 }
@@ -381,6 +412,16 @@ function StaffModal({
     setError(null);
     if (!name.trim() || !email.trim()) {
       setError("Name and email are required.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    // Password is optional on edit, required (auto-generated) on create. When an
+    // admin does set one, enforce a minimum length.
+    if (!isNew && password && password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
     setSaving(true);

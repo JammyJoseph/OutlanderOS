@@ -7,6 +7,44 @@ import { portalAccent } from "@/lib/design";
 import { PortalSwitcher } from "@/components/portal/PortalSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+// Maps the parent path segment of a detail route to a human singular label,
+// used when the final segment is a raw database id (CUID/UUID) rather than a
+// readable slug.
+const ENTITY_LABELS: Record<string, string> = {
+  deals: "Deal",
+  clients: "Client",
+  production: "Project",
+  projects: "Project",
+  directory: "Contact",
+  contacts: "Contact",
+  "media-plans": "Media Plan",
+  "call-sheets": "Call Sheet",
+  print: "Issue",
+  "think-tank": "Signal",
+};
+
+// A path segment that looks like a generated id: a CUID (c… 20+ alphanumerics),
+// a UUID, or any long alphanumeric token containing digits. These should never
+// be shown raw in a breadcrumb.
+function looksLikeId(segment: string): boolean {
+  if (/^c[a-z0-9]{20,}$/i.test(segment)) return true;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment))
+    return true;
+  return segment.length >= 16 && /\d/.test(segment) && !segment.includes("-");
+}
+
+function breadcrumbLabel(segments: string[]): string {
+  const last = segments[segments.length - 1];
+  if (looksLikeId(last)) {
+    const parent = segments[segments.length - 2];
+    return ENTITY_LABELS[parent] ?? "Details";
+  }
+  return last
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export function PortalHeader() {
   const pathname = usePathname();
 
@@ -43,10 +81,7 @@ export function PortalHeader() {
           <>
             <span className="text-gray-300">/</span>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              {breadcrumb[breadcrumb.length - 1]
-                .split("-")
-                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(" ")}
+              {breadcrumbLabel(breadcrumb)}
             </span>
           </>
         )}
@@ -64,7 +99,7 @@ export function PortalHeader() {
           My Dashboard
         </Link>
         <Link
-          href="/"
+          href="/me/calendar"
           className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
           Calendar
