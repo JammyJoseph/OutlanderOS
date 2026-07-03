@@ -396,6 +396,33 @@ export default function ProductionDashboard() {
               />
             </section>
 
+            {/* Brief → production conversion (Phase 4F win-rate metric).
+                Converted = commercial productions cleared from a brief;
+                in-flight = creative-brief deals not yet cleared. */}
+            {(() => {
+              const converted = list.filter((p) => (p.type ?? "") === "COMMERCIAL").length;
+              const inFlight = creativeDeals.length;
+              const total = converted + inFlight;
+              if (total === 0) return null;
+              const rate = Math.round((converted / total) * 100);
+              return (
+                <div className="mb-6 flex items-center gap-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Brief conversion
+                  </span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                    <div className="h-full rounded-full bg-[#ff4444]" style={{ width: `${rate}%` }} />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
+                    {rate}%
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {converted} cleared · {inFlight} brief{inFlight === 1 ? "" : "s"} in flight
+                  </span>
+                </div>
+              );
+            })()}
+
             {/* Hero calendar — the main dashboard view */}
             <div id="calendar" className="mb-5">
               <DashboardCalendar

@@ -400,6 +400,16 @@ model Production {
   budgetMarkupPercent    Float? // agency/production-company markup applied to the budget subtotal
   budgetVatPercent       Float? // VAT rate applied on top of (subtotal + markup); defaults to 20% in the UI
   shootDates       DateTime[]
+  // Editorial discount: % knocked off APA reference rates in the budget for
+  // editorial productions (billingType EDITORIAL). Null = no discount applied.
+  editorialRateDiscount Float?
+  // Catering quote tracking (Phase 3D): caterers contacted from the Directory
+  // with their response status. [{ contactId, name, email, phone, status, notes, contactedAt }]
+  cateringQuotes   Json             @default("[]")
+  // Structured production brief auto-generated when a Commercial deal is cleared
+  // for production (Phase 4F): { clientName, budget, deliverables, timeline,
+  // creativeDirection, targetAudience, generatedAt, dealId }
+  briefData        Json?
   archived         Boolean          @default(false)
   archivedAt       DateTime?
   leadId           String?
@@ -450,6 +460,12 @@ model BudgetLineItem {
   budgeted     Float      @default(0) // = quantity × rate when both set, else manual
   actual       Float      @default(0)
   notes        String?
+  // Invoice tracking (Phase 4D). invoiceStatus:
+  // NOT_INVOICED | INVOICE_RECEIVED | UNDER_REVIEW | APPROVED | PAID
+  invoiceStatus  String?
+  invoiceUrl     String? // uploaded/linked invoice PDF
+  poNumber       String? // purchase order number
+  invoicedAmount Float? // amount actually invoiced (may differ from budgeted/actual)
   sortOrder    Int        @default(0)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -483,6 +499,11 @@ model ProductionTeamMember {
   ratePer      String?
   status       String     @default("SUGGESTED")
   notes        String?
+  // Dietary requirement collected before the call sheet is sent (Phase 3C).
+  // Free text e.g. "No restrictions", "Vegetarian", "Halal", "Gluten-free".
+  dietaryRequirements String?
+  // Whether this team member was also saved into the Directory as a Contact.
+  contactId    String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -524,6 +545,11 @@ model ProductionDeliverable {
   dueDate      DateTime?
   url          String?
   notes        String?
+  // Delivery format spec (Phase 4B). Pre-filled by deliverable type.
+  resolution   String? // 4K | 1080p | 720p | Full-res | custom
+  aspectRatio  String? // 16:9 | 4:5 | 1:1 | 9:16 | custom
+  fileFormat   String? // MOV | MP4 | JPEG | TIFF | PSD | PNG | ProRes | custom
+  colourSpace  String? // sRGB | AdobeRGB | P3 | Rec709
   // Shot numbers (from call-sheet shot lists) this deliverable is produced from.
   // e.g. ["1","2","3"] — a hero-image deliverable fed by shots 1-3.
   linkedShots  Json       @default("[]")

@@ -49,6 +49,13 @@ export interface CrewMember {
   contact: { id: string; name: string; email?: string | null; phone?: string | null };
 }
 
+export type InvoiceStatus =
+  | "NOT_INVOICED"
+  | "INVOICE_RECEIVED"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "PAID";
+
 export interface BudgetLineItem {
   id: string;
   productionId: string;
@@ -62,7 +69,23 @@ export interface BudgetLineItem {
   budgeted: number;
   actual: number;
   notes: string | null;
+  invoiceStatus?: InvoiceStatus | null;
+  invoiceUrl?: string | null;
+  poNumber?: string | null;
+  invoicedAmount?: number | null;
   sortOrder: number;
+}
+
+export const INVOICE_STATUSES: { key: InvoiceStatus; label: string; bg: string; text: string }[] = [
+  { key: "NOT_INVOICED", label: "Not invoiced", bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-500 dark:text-gray-400" },
+  { key: "INVOICE_RECEIVED", label: "Received", bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300" },
+  { key: "UNDER_REVIEW", label: "Under review", bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300" },
+  { key: "APPROVED", label: "Approved", bg: "bg-purple-50 dark:bg-purple-900/30", text: "text-purple-700 dark:text-purple-300" },
+  { key: "PAID", label: "Paid", bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300" },
+];
+
+export function invoiceStatusMeta(s: InvoiceStatus | null | undefined) {
+  return INVOICE_STATUSES.find((x) => x.key === s) ?? INVOICE_STATUSES[0];
 }
 
 export interface ProductionTask {
@@ -88,6 +111,8 @@ export interface TeamMember {
   ratePer: string | null;
   status: TeamStatus;
   notes: string | null;
+  dietaryRequirements?: string | null;
+  contactId?: string | null;
 }
 
 export interface CreativeAsset {
@@ -120,8 +145,44 @@ export interface ProductionDeliverable {
   dueDate: string | null;
   url: string | null;
   notes: string | null;
+  // Delivery format spec (Phase 4B).
+  resolution?: string | null;
+  aspectRatio?: string | null;
+  fileFormat?: string | null;
+  colourSpace?: string | null;
   // Shot numbers (from call-sheet shot lists) this deliverable is produced from.
   linkedShots?: string[];
+}
+
+// Delivery-format option lists (Phase 4B).
+export const RESOLUTION_OPTIONS = ["4K", "1080p", "720p", "Full-res", "custom"];
+export const ASPECT_RATIO_OPTIONS = ["16:9", "4:5", "1:1", "9:16", "custom"];
+export const FILE_FORMAT_OPTIONS = ["MOV", "MP4", "JPEG", "TIFF", "PSD", "PNG", "ProRes", "custom"];
+export const COLOUR_SPACE_OPTIONS = ["sRGB", "AdobeRGB", "P3", "Rec709"];
+
+export interface DeliveryFormat {
+  resolution: string;
+  aspectRatio: string;
+  fileFormat: string;
+  colourSpace: string;
+}
+
+// Sensible format defaults per deliverable type/title keyword (Phase 4B).
+export function defaultFormatFor(type: string, title = ""): DeliveryFormat {
+  const t = `${type} ${title}`.toLowerCase();
+  if (/hero|still.*hero|hero.*still/.test(t) || (/(photo|still)/.test(t) && /hero/.test(t))) {
+    return { resolution: "Full-res", aspectRatio: "16:9", fileFormat: "TIFF", colourSpace: "AdobeRGB" };
+  }
+  if (/reel|social.*video|9:16|story|stories|tiktok/.test(t)) {
+    return { resolution: "1080p", aspectRatio: "9:16", fileFormat: "MP4", colourSpace: "sRGB" };
+  }
+  if (/video|film|edit|motion|bts/.test(t)) {
+    return { resolution: "1080p", aspectRatio: "4:5", fileFormat: "MP4", colourSpace: "sRGB" };
+  }
+  if (/web|jpeg|jpg|social|image|photo|still/.test(t)) {
+    return { resolution: "1080p", aspectRatio: "4:5", fileFormat: "JPEG", colourSpace: "sRGB" };
+  }
+  return { resolution: "", aspectRatio: "", fileFormat: "", colourSpace: "" };
 }
 
 // ── Campaign Timeline ──
@@ -288,10 +349,33 @@ export interface CampaignDeliverable {
 
 export type ProductionBudgetStatus = "BUDGETING" | "LOCKED" | "IN_PROGRESS" | "FINAL";
 
+export interface CateringQuote {
+  contactId: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  status: "contacted" | "quoted" | "confirmed" | "declined";
+  notes: string | null;
+  quoteAmount?: number | null;
+  contactedAt: string | null;
+}
+
+export interface ProductionBriefData {
+  clientName?: string | null;
+  budget?: number | null;
+  deliverables?: { title: string; type: string; quantity?: number }[];
+  timeline?: string | null;
+  creativeDirection?: string | null;
+  targetAudience?: string | null;
+  generatedAt?: string | null;
+  dealId?: string | null;
+}
+
 export interface ProductionFull {
   id: string;
   title: string;
   type: string; // "EDITORIAL" | "COMMERCIAL"
+  billingType?: string; // "EDITORIAL" | "PAID"
   campaignBudgetId: string | null;
   status: ProductionStatus;
   brief: string | null;
@@ -304,6 +388,9 @@ export interface ProductionFull {
   budgetActual: number | null;
   budgetMarkupPercent: number | null;
   budgetVatPercent: number | null;
+  editorialRateDiscount?: number | null;
+  cateringQuotes?: CateringQuote[];
+  briefData?: ProductionBriefData | null;
   productionBudgetStatus: ProductionBudgetStatus | null;
   productionLockedAt: string | null;
   archived?: boolean;

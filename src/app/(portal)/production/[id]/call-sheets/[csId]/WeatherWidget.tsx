@@ -13,9 +13,105 @@ import {
   RefreshCw,
   Wind,
   Droplets,
+  Sunrise,
+  Sunset,
+  Camera,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
-import type { DailyForecast, HourlyForecast, WeatherData } from "./types";
+import type { DailyForecast, HourlyForecast, SunInfo, WeatherData, WeatherWarning } from "./types";
+
+// Sunrise / sunset / golden-hour / UV strip for the shoot day (Phase 4C).
+export function SunStrip({ sun }: { sun: SunInfo }) {
+  const items: { icon: React.ReactNode; label: string; value: string }[] = [];
+  if (sun.sunrise) items.push({ icon: <Sunrise size={14} />, label: "Sunrise", value: sun.sunrise });
+  if (sun.sunset) items.push({ icon: <Sunset size={14} />, label: "Sunset", value: sun.sunset });
+  if (sun.goldenHourAM)
+    items.push({ icon: <Camera size={14} />, label: "Golden (AM)", value: sun.goldenHourAM });
+  if (sun.goldenHourPM)
+    items.push({ icon: <Camera size={14} />, label: "Golden (PM)", value: sun.goldenHourPM });
+  items.push({ icon: <Sun size={14} />, label: "UV (max)", value: `${sun.uvIndex}` });
+  if (items.length === 0) return null;
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      {items.map((it) => (
+        <div
+          key={it.label}
+          className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 px-3 py-2 text-center"
+        >
+          <p className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+            <span className="text-[#ff4444]">{it.icon}</span> {it.label}
+          </p>
+          <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
+            {it.value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function WeatherWarnings({ warnings }: { warnings: WeatherWarning[] }) {
+  if (!warnings || warnings.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {warnings.map((w, i) => (
+        <span
+          key={i}
+          className="inline-flex items-center gap-1.5 rounded-full bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-3 py-1 text-xs font-medium text-red-700 dark:text-red-300"
+        >
+          <AlertTriangle size={12} /> {w.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Compact temperature + rain-probability timeline bar for the shoot day.
+export function TimelineBar({ hourly }: { hourly: HourlyForecast[] }) {
+  if (!hourly || hourly.length === 0) return null;
+  const temps = hourly.map((h) => h.temp);
+  const min = Math.min(...temps);
+  const max = Math.max(...temps);
+  const span = Math.max(1, max - min);
+  return (
+    <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-800/30 p-3">
+      <div className="flex items-end gap-1 h-20">
+        {hourly.map((h) => {
+          const tempPct = ((h.temp - min) / span) * 100;
+          return (
+            <div key={h.time} className="flex-1 flex flex-col items-center justify-end h-full">
+              {/* rain probability (blue) behind temp marker */}
+              <div className="relative w-full flex-1 flex items-end">
+                <div
+                  className="w-full rounded-t bg-blue-200/70 dark:bg-blue-500/30"
+                  style={{ height: `${h.pop}%` }}
+                  title={`${h.pop}% rain`}
+                />
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ff4444]"
+                  style={{ bottom: `${tempPct}%` }}
+                  title={`${h.temp}°`}
+                />
+              </div>
+              <span className="mt-1 text-[8px] text-gray-400 tabular-nums">
+                {h.time.slice(0, 2)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-1.5 flex items-center gap-3 text-[10px] text-gray-400">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-[#ff4444]" /> Temp {min}°–{max}°
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-sm bg-blue-300 dark:bg-blue-500/50" /> Rain %
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function windDir(deg: number): string {
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -139,17 +235,25 @@ export function WeatherDisplay({
     );
   }
   const hourly = weatherData.hourly ?? [];
+  const sun = weatherData.sun ?? null;
+  const warnings = weatherData.warnings ?? [];
   return (
     <div className="space-y-3">
+      {warnings.length > 0 && <WeatherWarnings warnings={warnings} />}
       <div className="flex gap-2.5">
         {weatherData.forecast.map((day) => (
           <DayCard key={day.date} day={day} highlight={day.date === shootDate} />
         ))}
       </div>
+      {sun && <SunStrip sun={sun} />}
       {hourly.length > 0 && (
-        <div>
+        <div className="space-y-2">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
-            Hourly — shoot day
+            Shoot day — temperature &amp; rain
+          </p>
+          <TimelineBar hourly={hourly} />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5 pt-1">
+            Hourly breakdown
           </p>
           <HourlyTimeline hourly={hourly} callTime={callTime} wrapTime={wrapTime} />
         </div>
@@ -203,6 +307,8 @@ export function WeatherEditor({
         forecast: data.forecast,
         hourly: data.hourly ?? [],
         hourlyDate: data.hourlyDate ?? shootDate,
+        sun: data.sun ?? null,
+        warnings: data.warnings ?? [],
         fetchedAt: data.fetchedAt ?? new Date().toISOString(),
         lat: lat!,
         lng: lng!,

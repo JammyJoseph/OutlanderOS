@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Clock, MapPin, Cloud, Camera, Users, Coffee, Paperclip, FileText,
   GripVertical, UserPlus, Contact as ContactIcon, Building2, Briefcase,
   Phone, Shield, Lock, Route, Aperture, RefreshCw, Check, Plus, Package,
+  ChevronDown, X, Wand2,
 } from "lucide-react";
 import type {
   AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallSheetLocation,
@@ -14,7 +15,7 @@ import type {
 } from "./types";
 import {
   AGENCY_TEAM_ROLES, CLIENT_TEAM_ROLES, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE,
-  CREW_ROLE_PRESETS, defaultCallTimes,
+  CREW_ROLE_PRESETS, defaultCallTimes, EQUIPMENT_CATEGORIES, KIT_TEMPLATES,
 } from "./types";
 import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls } from "./shared";
 import { PeopleTable } from "./shared";
@@ -669,72 +670,9 @@ export function CallSheetEditor(p: EditorProps) {
         <CateringEditor catering={p.catering} setCatering={p.setCatering} rosterCount={rosterCount} />
       </Section>
 
-      {/* 17. Equipment */}
+      {/* 17. Equipment (Phase 4E — standard departments, directory suppliers, kit templates) */}
       <Section title="Equipment" icon={<Aperture size={15} className={iconCls} />}>
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Camera</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <input
-                type="text"
-                value={p.equipment.cameraSupplier}
-                onChange={(e) => p.setEquipment({ ...p.equipment, cameraSupplier: e.target.value })}
-                placeholder="Supplier"
-                className={inputCls}
-              />
-              <input
-                type="text"
-                value={p.equipment.cameraContact}
-                onChange={(e) => p.setEquipment({ ...p.equipment, cameraContact: e.target.value })}
-                placeholder="Contact name"
-                className={inputCls}
-              />
-              <input
-                type="email"
-                value={p.equipment.cameraEmail}
-                onChange={(e) => p.setEquipment({ ...p.equipment, cameraEmail: e.target.value })}
-                placeholder="Email"
-                className={inputCls}
-              />
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Lighting</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <input
-                type="text"
-                value={p.equipment.lightingSupplier}
-                onChange={(e) => p.setEquipment({ ...p.equipment, lightingSupplier: e.target.value })}
-                placeholder="Supplier"
-                className={inputCls}
-              />
-              <input
-                type="text"
-                value={p.equipment.lightingContact}
-                onChange={(e) => p.setEquipment({ ...p.equipment, lightingContact: e.target.value })}
-                placeholder="Contact name"
-                className={inputCls}
-              />
-              <input
-                type="email"
-                value={p.equipment.lightingEmail}
-                onChange={(e) => p.setEquipment({ ...p.equipment, lightingEmail: e.target.value })}
-                placeholder="Email"
-                className={inputCls}
-              />
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>Other Equipment Notes</label>
-            <textarea
-              value={p.equipment.otherNotes}
-              onChange={(e) => p.setEquipment({ ...p.equipment, otherNotes: e.target.value })}
-              placeholder="Grip, sound, special equipment…"
-              rows={2}
-              className={`${inputCls} resize-none`}
-            />
-          </div>
-        </div>
+        <EquipmentEditor equipment={p.equipment} setEquipment={p.setEquipment} />
       </Section>
 
       {/* 18. Documents */}
@@ -860,6 +798,217 @@ function AgencyTeamTable({
         label="Add Team Member"
         onClick={() => setRows([...rows, { role: "", name: "", phone: "", email: "" }])}
       />
+    </div>
+  );
+}
+
+// ── Equipment editor (Phase 4E) ──────────────────────────────────────────────
+interface SupplierContact {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  category: string;
+}
+
+function EquipmentEditor({
+  equipment,
+  setEquipment,
+}: {
+  equipment: EquipmentInfo;
+  setEquipment: (v: EquipmentInfo) => void;
+}) {
+  const [suppliers, setSuppliers] = useState<SupplierContact[]>([]);
+
+  // Equipment/Rental suppliers from the directory for one-click supplier fill.
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      fetch("/api/contacts?category=Equipment&radar=false").then((r) => r.json()).catch(() => []),
+      fetch("/api/contacts?category=Rental&radar=false").then((r) => r.json()).catch(() => []),
+    ])
+      .then(([a, b]) => {
+        const list = [
+          ...(Array.isArray(a) ? a : a?.data ?? []),
+          ...(Array.isArray(b) ? b : b?.data ?? []),
+        ];
+        // De-dup by id.
+        const seen = new Set<string>();
+        const unique = list.filter((c: SupplierContact) => {
+          if (seen.has(c.id)) return false;
+          seen.add(c.id);
+          return true;
+        });
+        if (active) setSuppliers(unique);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function setField(key: string, value: string) {
+    setEquipment({ ...equipment, [key]: value } as EquipmentInfo);
+  }
+
+  function pickSupplier(catKey: string, c: SupplierContact) {
+    setEquipment({
+      ...equipment,
+      [`${catKey}Supplier`]: c.company || c.name,
+      [`${catKey}Contact`]: c.name,
+      [`${catKey}Email`]: c.email || "",
+    } as EquipmentInfo);
+  }
+
+  function applyKitTemplate(items: string[]) {
+    const existing = equipment.kitList ?? [];
+    const merged = [...existing];
+    for (const it of items) if (!merged.includes(it)) merged.push(it);
+    setEquipment({ ...equipment, kitList: merged });
+  }
+
+  const kitList = equipment.kitList ?? [];
+
+  return (
+    <div className="space-y-4">
+      {EQUIPMENT_CATEGORIES.map((cat) => {
+        const eq = equipment as unknown as Record<string, unknown>;
+        const supplier = eq[`${cat.key}Supplier`] as string | undefined;
+        const contact = eq[`${cat.key}Contact`] as string | undefined;
+        const email = eq[`${cat.key}Email`] as string | undefined;
+        return (
+          <div key={cat.key}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {cat.label}
+              </p>
+              <SupplierPicker suppliers={suppliers} onPick={(c) => pickSupplier(cat.key, c)} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input
+                type="text"
+                value={supplier ?? ""}
+                onChange={(e) => setField(`${cat.key}Supplier`, e.target.value)}
+                placeholder="Supplier"
+                className={inputCls}
+              />
+              <input
+                type="text"
+                value={contact ?? ""}
+                onChange={(e) => setField(`${cat.key}Contact`, e.target.value)}
+                placeholder="Contact name"
+                className={inputCls}
+              />
+              <input
+                type="email"
+                value={email ?? ""}
+                onChange={(e) => setField(`${cat.key}Email`, e.target.value)}
+                placeholder="Email"
+                className={inputCls}
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Kit list + templates */}
+      <div>
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <label className={labelCls}>Kit List</label>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {KIT_TEMPLATES.map((t) => (
+              <button
+                key={t.name}
+                onClick={() => applyKitTemplate(t.items)}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#ff4444] border border-[#ff4444]/30 rounded-full px-2.5 py-1 hover:bg-[#ff4444]/5"
+                title={`Add: ${t.items.join(", ")}`}
+              >
+                <Wand2 size={11} /> {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        {kitList.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {kitList.map((item, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full pl-2.5 pr-1 py-1"
+              >
+                {item}
+                <button
+                  onClick={() => setEquipment({ ...equipment, kitList: kitList.filter((_, j) => j !== i) })}
+                  className="text-gray-400 hover:text-red-500"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <textarea
+          value={equipment.otherNotes}
+          onChange={(e) => setEquipment({ ...equipment, otherNotes: e.target.value })}
+          placeholder="Other equipment notes — special kit, consumables…"
+          rows={2}
+          className={`${inputCls} resize-none`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SupplierPicker({
+  suppliers,
+  onPick,
+}: {
+  suppliers: SupplierContact[];
+  onPick: (c: SupplierContact) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  if (suppliers.length === 0) return null;
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+      >
+        <ContactIcon size={12} /> From Directory <ChevronDown size={11} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-30 mt-1 max-h-56 w-64 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-1 shadow-xl">
+          {suppliers.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => {
+                onPick(c);
+                setOpen(false);
+              }}
+              className="flex w-full flex-col px-3 py-1.5 text-left hover:bg-amber-50 dark:hover:bg-amber-900/30"
+            >
+              <span className="text-[12px] font-medium text-gray-800 dark:text-gray-200">
+                {c.company || c.name}
+              </span>
+              <span className="text-[11px] text-gray-400">
+                {[c.name, c.email].filter(Boolean).join(" · ")}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

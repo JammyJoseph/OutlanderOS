@@ -32,6 +32,9 @@ export const POST = withAuth(async (
       include: {
         client: { select: { id: true, name: true } },
         production: { select: { id: true } },
+        deliverables: {
+          orderBy: [{ isAdditional: "asc" }, { dueDate: { sort: "asc", nulls: "last" } }],
+        },
       },
     });
     if (!deal) return NextResponse.json({ error: "Deal not found" }, { status: 404 });
@@ -85,6 +88,33 @@ export const POST = withAuth(async (
     const briefText =
       clientBrief?.content?.trim() || deal.briefContent?.trim() || deal.description || null;
 
+    // Structured production brief (Phase 4F) — the seed the production team
+    // starts from. Assembled from the deal so nothing has to be re-keyed.
+    const briefData = {
+      clientName: deal.client.name,
+      budget: productionBudgetTotal,
+      deliverables: (deal.deliverables ?? []).map((d) => ({
+        title: d.title || d.type,
+        type: d.type,
+        quantity: d.quantity ?? 1,
+      })),
+      timeline:
+        deal.timelineStart || deal.timelineEnd
+          ? [deal.timelineStart, deal.timelineEnd]
+              .filter(Boolean)
+              .map((d) => new Date(d as Date).toISOString().split("T")[0])
+              .join(" → ")
+          : deal.dueDate
+            ? `Due ${new Date(deal.dueDate).toISOString().split("T")[0]}`
+            : null,
+      creativeDirection:
+        clientBrief?.content?.trim() || deal.briefContent?.trim() || deal.description || null,
+      // No dedicated audience field on the deal — left for the producer to fill.
+      targetAudience: null,
+      generatedAt: new Date().toISOString(),
+      dealId: deal.id,
+    };
+
     const production = await prisma.production.create({
       data: {
         campaignId: deal.id,
@@ -92,6 +122,7 @@ export const POST = withAuth(async (
         clientName: deal.client.name,
         brief: briefText,
         description: briefText,
+        briefData,
         type: "COMMERCIAL",
         status: "DRAFT", // shown as "Planning" in the Production portal
         budgetTotal: productionBudgetTotal,

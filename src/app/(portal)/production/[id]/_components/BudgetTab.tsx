@@ -18,6 +18,9 @@ import {
   CheckCircle2,
   Pencil,
   BookOpen,
+  Percent,
+  ExternalLink,
+  Link2,
 } from "lucide-react";
 import {
   BudgetLineItem,
@@ -30,6 +33,9 @@ import {
   ProductionFull,
   ProductionBudgetStatus,
   sectionOf,
+  InvoiceStatus,
+  INVOICE_STATUSES,
+  invoiceStatusMeta,
 } from "./types";
 import { getAPARate, getAPARatesForSection, getReferenceRate } from "@/lib/apa-rates";
 import ApaRateCard from "./ApaRateCard";
@@ -76,6 +82,44 @@ export default function BudgetTab({
   const [showRateCard, setShowRateCard] = useState(false);
   const [reopenTarget, setReopenTarget] = useState<ProductionBudgetStatus | null>(null);
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
+
+  // ── Phase 3E: editorial discount rates ──
+  // Only meaningful for editorial productions. `editorialRateDiscount` (null =
+  // off) knocks a % off the APA reference rates shown in the budget.
+  const isEditorial = (production.billingType ?? "EDITORIAL") === "EDITORIAL";
+  const editorialDiscount = production.editorialRateDiscount ?? null;
+  const [discountInput, setDiscountInput] = useState(
+    editorialDiscount != null ? String(editorialDiscount) : "25"
+  );
+  const [savingDiscount, setSavingDiscount] = useState(false);
+
+  async function patchProduction(patch: Record<string, unknown>) {
+    setSavingDiscount(true);
+    try {
+      const res = await fetch(`/api/productions/${production.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setApiError(data.error || "Failed to update the production.");
+        setTimeout(() => setApiError(null), 5000);
+      }
+      refresh();
+    } finally {
+      setSavingDiscount(false);
+    }
+  }
+
+  function toggleEditorialRates() {
+    if (editorialDiscount != null) {
+      patchProduction({ editorialRateDiscount: null });
+    } else {
+      const pct = discountInput === "" ? 25 : Number(discountInput);
+      patchProduction({ editorialRateDiscount: pct });
+    }
+  }
 
   // The line-item table flips between budget entry (with VAT columns) and a
   // separate actuals-tracking view (budgeted vs actual vs variance).
@@ -530,6 +574,43 @@ export default function BudgetTab({
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {/* Phase 3E — editorial discount toggle (editorial productions only) */}
+            {isEditorial && (
+              <div
+                className="inline-flex items-center gap-1.5"
+                title="Discount APA reference rates for editorial shoots"
+              >
+                <button
+                  onClick={toggleEditorialRates}
+                  disabled={savingDiscount}
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full transition-colors disabled:opacity-50 ${
+                    editorialDiscount != null
+                      ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <Percent size={11} />
+                  Editorial rates {editorialDiscount != null ? "on" : "off"}
+                </button>
+                {editorialDiscount != null && (
+                  <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={discountInput}
+                      onChange={(e) => setDiscountInput(e.target.value)}
+                      onBlur={() => {
+                        const pct = discountInput === "" ? 0 : Number(discountInput);
+                        if (pct !== editorialDiscount) patchProduction({ editorialRateDiscount: pct });
+                      }}
+                      className="w-11 text-right bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1 py-0.5 text-[11px] tabular-nums outline-none focus:border-[#ffd700]"
+                    />
+                    % off
+                  </span>
+                )}
+              </div>
+            )}
             <button
               onClick={() => setShowRateCard(true)}
               className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -653,6 +734,7 @@ export default function BudgetTab({
                       view={view}
                       canEditBudgeted={canEditBudgeted}
                       canEditActual={canEditActual}
+                      editorialDiscount={editorialDiscount}
                       onUpdate={(patch) => updateLine(line.id, patch)}
                       onDelete={() => setDeleteLineId(line.id)}
                       onEnterAtEnd={() => addLine(sec.key, { focus: true })}
@@ -969,6 +1051,7 @@ function BudgetRow({
   view,
   canEditBudgeted,
   canEditActual,
+  editorialDiscount,
   onUpdate,
   onDelete,
   onEnterAtEnd,
@@ -980,6 +1063,7 @@ function BudgetRow({
   view: "budget" | "actuals";
   canEditBudgeted: boolean;
   canEditActual: boolean;
+  editorialDiscount: number | null;
   onUpdate: (patch: Partial<BudgetLineItem>) => void;
   onDelete: () => void;
   onEnterAtEnd: () => void;
@@ -992,6 +1076,12 @@ function BudgetRow({
   const [rate, setRate] = useState(line.rate != null ? String(line.rate) : "");
   const [vat, setVat] = useState(line.vatPercent != null ? String(line.vatPercent) : "");
   const [actual, setActual] = useState(String(line.actual ?? 0));
+  // Invoice tracking (Phase 4D).
+  const [poNumber, setPoNumber] = useState(line.poNumber ?? "");
+  const [invoicedAmount, setInvoicedAmount] = useState(
+    line.invoicedAmount != null ? String(line.invoicedAmount) : ""
+  );
+  const [invoiceUrl, setInvoiceUrl] = useState(line.invoiceUrl ?? "");
   // Inline validation — rate / quantity / VAT / actual can never be negative.
   const [rowError, setRowError] = useState<string | null>(null);
   const isNeg = (v: string) => v.trim() !== "" && Number(v) < 0;
@@ -1014,16 +1104,21 @@ function BudgetRow({
   // resolve too. Reference only — never auto-filled, never in any calculation.
   const refRate = getReferenceRate(line.role);
 
+  // Editorial discount factor (Phase 3E). 1 when off; e.g. 0.75 at 25% off.
+  const discountActive = editorialDiscount != null && editorialDiscount > 0;
+  const discountFactor = discountActive ? 1 - editorialDiscount / 100 : 1;
+  const discountedRef = refRate != null ? Math.round(refRate * discountFactor) : null;
+
   // Pick a role from the APA dropdown: set the role and auto-fill its default
-  // rate (qty defaults to 1). The description is left untouched — the APA rate
-  // is already shown as a greyed-out reference under the Unit Cost, so there's
-  // no need to repeat it in the description.
+  // rate (qty defaults to 1). When editorial rates are on, the discounted rate
+  // is filled instead of the full APA day rate.
   function pickRole(apaRole: string, apaRate: number) {
+    const filled = discountActive ? Math.round(apaRate * discountFactor) : apaRate;
     setRole(apaRole);
-    setRate(String(apaRate));
+    setRate(String(filled));
     onUpdate({
       role: apaRole,
-      rate: apaRate,
+      rate: filled,
     });
   }
 
@@ -1127,6 +1222,18 @@ function BudgetRow({
           )}
         </div>
       </div>
+      {/* Phase 4D — invoice tracking sub-row */}
+      <InvoiceSubRow
+        line={line}
+        canEdit={canEditActual}
+        poNumber={poNumber}
+        setPoNumber={setPoNumber}
+        invoicedAmount={invoicedAmount}
+        setInvoicedAmount={setInvoicedAmount}
+        invoiceUrl={invoiceUrl}
+        setInvoiceUrl={setInvoiceUrl}
+        onUpdate={onUpdate}
+      />
       {rowError && <p className="px-5 pb-1 text-[11px] font-medium text-red-600 dark:text-red-400">{rowError}</p>}
       </div>
     );
@@ -1209,13 +1316,22 @@ function BudgetRow({
             </span>
           )}
         </div>
-        {/* APA standard rate — reference only, greyed out, never counted. */}
+        {/* APA standard rate — reference only, greyed out, never counted. When
+            editorial rates are on, the full rate is struck through and the
+            discounted rate shown alongside (Phase 3E). */}
         {refRate != null && (
           <span
             className="mt-0.5 pr-1 text-right text-[10px] leading-none text-gray-400 dark:text-gray-500 select-none"
-            title={`APA standard day rate — reference only, not included in the budget`}
+            title="APA standard day rate — reference only, not included in the budget"
           >
-            APA {gbp(refRate)}
+            {discountActive && discountedRef != null ? (
+              <>
+                APA <span className="line-through">{gbp(refRate)}</span>{" "}
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">{gbp(discountedRef)}</span>
+              </>
+            ) : (
+              <>APA {gbp(refRate)}</>
+            )}
           </span>
         )}
       </div>
@@ -1258,6 +1374,129 @@ function BudgetRow({
       </div>
     </div>
     {rowError && <p className="px-5 pb-1 text-[11px] font-medium text-red-600 dark:text-red-400">{rowError}</p>}
+    </div>
+  );
+}
+
+// Invoice tracking sub-row for the Cost Tracking view (Phase 4D): PO number,
+// invoice status, invoiced amount (with a budget-variance flag), and an invoice
+// PDF link. Editable while actuals are editable.
+function InvoiceSubRow({
+  line,
+  canEdit,
+  poNumber,
+  setPoNumber,
+  invoicedAmount,
+  setInvoicedAmount,
+  invoiceUrl,
+  setInvoiceUrl,
+  onUpdate,
+}: {
+  line: BudgetLineItem;
+  canEdit: boolean;
+  poNumber: string;
+  setPoNumber: (v: string) => void;
+  invoicedAmount: string;
+  setInvoicedAmount: (v: string) => void;
+  invoiceUrl: string;
+  setInvoiceUrl: (v: string) => void;
+  onUpdate: (patch: Partial<BudgetLineItem>) => void;
+}) {
+  const status: InvoiceStatus = line.invoiceStatus ?? "NOT_INVOICED";
+  const meta = invoiceStatusMeta(status);
+  const budgeted = lineTotal(line);
+  const invNum = line.invoicedAmount ?? null;
+  const overage = invNum != null ? invNum - budgeted : null;
+  const cellCls =
+    "text-[11px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1.5 py-0.5 outline-none focus:border-[#ffd700] disabled:bg-transparent disabled:border-transparent disabled:text-gray-400";
+
+  return (
+    <div className="grid grid-cols-12 gap-1.5 px-5 pb-1.5 items-center">
+      <div className="col-span-3 flex items-center gap-1 pl-1">
+        <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">PO</span>
+        <input
+          type="text"
+          value={poNumber}
+          onChange={(e) => setPoNumber(e.target.value)}
+          onBlur={() => {
+            if (poNumber !== (line.poNumber ?? "")) onUpdate({ poNumber: poNumber || null });
+          }}
+          disabled={!canEdit}
+          placeholder="PO number"
+          className={`flex-1 ${cellCls}`}
+        />
+      </div>
+      <div className="col-span-3">
+        <select
+          value={status}
+          onChange={(e) => onUpdate({ invoiceStatus: e.target.value as InvoiceStatus })}
+          disabled={!canEdit}
+          className={`w-full text-[11px] font-semibold rounded-full px-2 py-1 cursor-pointer focus:outline-none disabled:cursor-default ${meta.bg} ${meta.text}`}
+        >
+          {INVOICE_STATUSES.map((s) => (
+            <option key={s.key} value={s.key}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="col-span-2 flex items-center gap-1">
+        <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">Inv £</span>
+        <input
+          type="number"
+          value={invoicedAmount}
+          onChange={(e) => setInvoicedAmount(e.target.value)}
+          onBlur={() => {
+            const next = invoicedAmount === "" ? null : Number(invoicedAmount);
+            if (next !== (line.invoicedAmount ?? null)) onUpdate({ invoicedAmount: next });
+          }}
+          disabled={!canEdit}
+          placeholder="0"
+          className={`flex-1 text-right tabular-nums ${cellCls}`}
+        />
+      </div>
+      <div className="col-span-2 text-right">
+        {overage != null && overage > 0.5 ? (
+          <span className="text-[10px] font-semibold text-red-600 dark:text-red-400" title="Invoiced over budget">
+            +{gbp(overage)} over
+          </span>
+        ) : overage != null && overage < -0.5 ? (
+          <span className="text-[10px] text-emerald-600 dark:text-emerald-400" title="Invoiced under budget">
+            {gbp(Math.abs(overage))} under
+          </span>
+        ) : null}
+      </div>
+      <div className="col-span-2 flex items-center justify-end gap-2 pr-1">
+        <input
+          type="url"
+          value={invoiceUrl}
+          onChange={(e) => setInvoiceUrl(e.target.value)}
+          onBlur={() => {
+            if (invoiceUrl !== (line.invoiceUrl ?? "")) onUpdate({ invoiceUrl: invoiceUrl || null });
+          }}
+          disabled={!canEdit}
+          placeholder="Invoice PDF URL"
+          className={`min-w-0 flex-1 ${cellCls}`}
+        />
+        {line.invoiceUrl && (
+          <a
+            href={line.invoiceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-[#ffd700] shrink-0"
+            title="Open invoice"
+          >
+            <ExternalLink size={12} />
+          </a>
+        )}
+        <Link
+          href="/finance"
+          className="text-gray-400 hover:text-[#ffd700] shrink-0"
+          title="Open Finance for Quinn's approval"
+        >
+          <Link2 size={12} />
+        </Link>
+      </div>
     </div>
   );
 }

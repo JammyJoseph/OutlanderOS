@@ -16,7 +16,7 @@ import {
   Clock,
 } from "lucide-react";
 import { format, parseISO, isAfter, startOfDay } from "date-fns";
-import { ProductionFull, gbp } from "./types";
+import { ProductionFull, ProductionBriefData, gbp } from "./types";
 import LinkedDeal from "./LinkedDeal";
 
 interface Props {
@@ -218,6 +218,11 @@ export default function OverviewTab({
             </div>
           )}
 
+          {/* Phase 4F — structured production brief auto-generated from the deal */}
+          {production.briefData && (
+            <ProductionBriefPanel briefData={production.briefData} />
+          )}
+
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <Label>Description</Label>
             <textarea
@@ -350,6 +355,67 @@ export default function OverviewTab({
         </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Phase 4F — structured brief seeded from the Commercial deal.
+function ProductionBriefPanel({ briefData }: { briefData: ProductionBriefData }) {
+  const deliverables = briefData.deliverables ?? [];
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-blue-100 dark:border-blue-900 shadow-sm p-5">
+      <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
+        <FileText size={15} className="text-blue-600 dark:text-blue-400" />
+        Production Brief
+        <span className="text-[10px] font-normal text-gray-400">auto-generated from the deal</span>
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {briefData.budget != null && (
+          <BriefField label="Budget">{gbp(briefData.budget)}</BriefField>
+        )}
+        {briefData.timeline && <BriefField label="Timeline">{briefData.timeline}</BriefField>}
+        {briefData.clientName && <BriefField label="Client">{briefData.clientName}</BriefField>}
+        {briefData.targetAudience && (
+          <BriefField label="Target Audience">{briefData.targetAudience}</BriefField>
+        )}
+      </div>
+      {briefData.creativeDirection && (
+        <div className="mt-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+            Creative Direction
+          </p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+            {briefData.creativeDirection}
+          </p>
+        </div>
+      )}
+      {deliverables.length > 0 && (
+        <div className="mt-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+            Deliverables ({deliverables.length})
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {deliverables.map((d, i) => (
+              <span
+                key={i}
+                className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full px-2.5 py-1"
+              >
+                {d.quantity && d.quantity > 1 ? `${d.quantity}× ` : ""}
+                {d.title}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BriefField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">{label}</p>
+      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{children}</p>
     </div>
   );
 }

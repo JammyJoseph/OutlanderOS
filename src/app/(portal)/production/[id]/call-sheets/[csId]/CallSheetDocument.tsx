@@ -95,8 +95,15 @@ export function CallSheetDocument({
   const hasMovement =
     !!(movementOrder.siteEntrance || movementOrder.techParking ||
       movementOrder.crewParking || movementOrder.routeNotes);
-  const hasEquipment =
-    !!(equipment.cameraSupplier || equipment.lightingSupplier || equipment.otherNotes);
+  const hasEquipment = !!(
+    equipment.cameraSupplier ||
+    equipment.lightingSupplier ||
+    equipment.soundSupplier ||
+    equipment.gripSupplier ||
+    equipment.dataSupplier ||
+    equipment.otherNotes ||
+    (equipment.kitList && equipment.kitList.length > 0)
+  );
 
   // Ordered location stops. Prefer the multi-location array; fall back to the
   // legacy single location so pre-upgrade sheets still render.
@@ -397,23 +404,41 @@ export function CallSheetDocument({
         {show("equipment") && hasEquipment && (
           <DocSection title="Equipment" icon={<Aperture size={14} />}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {equipment.cameraSupplier && (
-                <DocField
-                  label="Camera"
-                  value={[equipment.cameraSupplier, equipment.cameraContact, redacted ? "" : equipment.cameraEmail]
-                    .filter(Boolean)
-                    .join(" · ")}
-                />
-              )}
-              {equipment.lightingSupplier && (
-                <DocField
-                  label="Lighting"
-                  value={[equipment.lightingSupplier, equipment.lightingContact, redacted ? "" : equipment.lightingEmail]
-                    .filter(Boolean)
-                    .join(" · ")}
-                />
-              )}
+              {(
+                [
+                  ["Camera", "cameraSupplier", "cameraContact", "cameraEmail"],
+                  ["Lighting", "lightingSupplier", "lightingContact", "lightingEmail"],
+                  ["Sound", "soundSupplier", "soundContact", "soundEmail"],
+                  ["Grip", "gripSupplier", "gripContact", "gripEmail"],
+                  ["Data", "dataSupplier", "dataContact", "dataEmail"],
+                ] as const
+              ).map(([label, sKey, cKey, eKey]) => {
+                const eq = equipment as unknown as Record<string, string | undefined>;
+                if (!eq[sKey]) return null;
+                return (
+                  <DocField
+                    key={label}
+                    label={label}
+                    value={[eq[sKey], eq[cKey], redacted ? "" : eq[eKey]].filter(Boolean).join(" · ")}
+                  />
+                );
+              })}
             </div>
+            {equipment.kitList && equipment.kitList.length > 0 && (
+              <div className="mt-2">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1">Kit List</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {equipment.kitList.map((item, i) => (
+                    <span
+                      key={i}
+                      className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full px-2.5 py-0.5"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             {equipment.otherNotes && (
               <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap mt-2">{equipment.otherNotes}</p>
             )}

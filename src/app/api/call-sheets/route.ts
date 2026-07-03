@@ -41,6 +41,30 @@ export const POST = withAuth(async (request: NextRequest) => {
     }
     const autoNotes = production.campaign?.briefContent || production.brief || null;
 
+    // Optional richer fields — used by the call-sheet wizard and clone (Phase
+    // 4G) to create a fully-populated sheet in a single call. All are JSON
+    // columns with sensible defaults, so unset values just fall back.
+    const opt: Record<string, unknown> = {};
+    if (body.wrapTime !== undefined) opt.wrapTime = body.wrapTime;
+    if (body.locationLat !== undefined) opt.locationLat = body.locationLat;
+    if (body.locationLng !== undefined) opt.locationLng = body.locationLng;
+    if (body.locations !== undefined) opt.locations = body.locations;
+    if (body.shotStyle !== undefined) opt.shotStyle = body.shotStyle;
+    if (body.shotlist !== undefined) opt.shotlist = body.shotlist;
+    if (body.cateringDetails !== undefined) opt.cateringDetails = body.cateringDetails;
+    if (body.documents !== undefined) opt.documents = body.documents;
+    if (body.weatherData !== undefined) opt.weatherData = body.weatherData;
+    if (body.header !== undefined) opt.header = body.header;
+    if (body.clientTeam !== undefined) opt.clientTeam = body.clientTeam;
+    if (body.agencyTeam !== undefined) opt.agencyTeam = body.agencyTeam;
+    if (body.productionCompany !== undefined) opt.productionCompany = body.productionCompany;
+    if (body.callTimes !== undefined) opt.callTimes = body.callTimes;
+    if (body.productionMobiles !== undefined) opt.productionMobiles = body.productionMobiles;
+    if (body.movementOrder !== undefined) opt.movementOrder = body.movementOrder;
+    if (body.equipment !== undefined) opt.equipment = body.equipment;
+    if (body.safetyNotes !== undefined) opt.safetyNotes = body.safetyNotes;
+    if (body.parkingNotes !== undefined) opt.parkingNotes = body.parkingNotes;
+
     const sheet = await prisma.callSheet.create({
       data: {
         productionId: body.productionId,
@@ -54,6 +78,7 @@ export const POST = withAuth(async (request: NextRequest) => {
         productionNotes: body.productionNotes ?? autoNotes,
         notes: body.notes || "",
         status: body.status || "DRAFT",
+        ...opt,
       },
     });
     return NextResponse.json({ sheet });

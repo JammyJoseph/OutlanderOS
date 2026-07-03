@@ -91,8 +91,66 @@ export interface EquipmentInfo {
   lightingSupplier: string;
   lightingContact: string;
   lightingEmail: string;
+  // Additional standard departments (Phase 4E). Optional for back-compat.
+  soundSupplier?: string;
+  soundContact?: string;
+  soundEmail?: string;
+  gripSupplier?: string;
+  gripContact?: string;
+  gripEmail?: string;
+  dataSupplier?: string;
+  dataContact?: string;
+  dataEmail?: string;
+  // One-click kit-list items from a template (Phase 4E).
+  kitList?: string[];
   otherNotes: string;
 }
+
+// Standard equipment departments (Phase 4E).
+export const EQUIPMENT_CATEGORIES: { key: "camera" | "lighting" | "sound" | "grip" | "data"; label: string }[] = [
+  { key: "camera", label: "Camera" },
+  { key: "lighting", label: "Lighting" },
+  { key: "sound", label: "Sound" },
+  { key: "grip", label: "Grip" },
+  { key: "data", label: "Data" },
+];
+
+// One-click kit-list templates (Phase 4E).
+export const KIT_TEMPLATES: { name: string; items: string[] }[] = [
+  {
+    name: "Standard interview setup",
+    items: [
+      "2× camera bodies",
+      "Interview lens kit",
+      "3-point LED lighting",
+      "Lav + boom mic",
+      "Reflector",
+      "C-stands",
+    ],
+  },
+  {
+    name: "Studio shoot",
+    items: [
+      "Camera + prime set",
+      "Studio strobe kit",
+      "Softboxes + modifiers",
+      "Backdrop + support",
+      "Tethering station",
+      "Colour meter",
+    ],
+  },
+  {
+    name: "Location run-and-gun",
+    items: [
+      "Mirrorless body + gimbal",
+      "Zoom lens",
+      "On-camera LED",
+      "Wireless lav kit",
+      "ND filters",
+      "V-mount batteries",
+    ],
+  },
+];
 
 export type ShotStatus = "planned" | "in_progress" | "completed";
 
@@ -174,10 +232,25 @@ export interface HourlyForecast {
   humidity: number;
 }
 
+export interface SunInfo {
+  sunrise: string | null;
+  sunset: string | null;
+  goldenHourAM: string | null;
+  goldenHourPM: string | null;
+  uvIndex: number;
+}
+
+export interface WeatherWarning {
+  kind: "rain" | "wind" | "cold" | "heat";
+  label: string;
+}
+
 export interface WeatherData {
   forecast: DailyForecast[];
   hourly?: HourlyForecast[];
   hourlyDate?: string;
+  sun?: SunInfo | null;
+  warnings?: WeatherWarning[];
   fetchedAt: string;
   lat: number;
   lng: number;
@@ -310,6 +383,16 @@ export function emptyEquipment(): EquipmentInfo {
     lightingSupplier: "",
     lightingContact: "",
     lightingEmail: "",
+    soundSupplier: "",
+    soundContact: "",
+    soundEmail: "",
+    gripSupplier: "",
+    gripContact: "",
+    gripEmail: "",
+    dataSupplier: "",
+    dataContact: "",
+    dataEmail: "",
+    kitList: [],
     otherNotes: "",
   };
 }

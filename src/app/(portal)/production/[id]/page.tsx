@@ -394,6 +394,7 @@ export default function ProjectDetail() {
           )}
           {tab === "team" && (
             <TeamTab
+              production={production}
               productionId={production.id}
               members={production.teamMembers ?? []}
               refresh={refresh}

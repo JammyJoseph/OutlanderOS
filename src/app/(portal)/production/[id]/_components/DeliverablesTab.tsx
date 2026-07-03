@@ -8,6 +8,11 @@ import {
   DeliverableStatus,
   DELIVERABLE_TYPES,
   CampaignDeliverable,
+  RESOLUTION_OPTIONS,
+  ASPECT_RATIO_OPTIONS,
+  FILE_FORMAT_OPTIONS,
+  COLOUR_SPACE_OPTIONS,
+  defaultFormatFor,
 } from "./types";
 import { LinkedShotsPicker, ShotOption } from "./LinkedShotsPicker";
 import { useConfirm } from "@/components/ui/confirm-provider";
@@ -351,7 +356,8 @@ function DeliverableRow({
         </button>
       </div>
     </div>
-      <div className="mt-2 pl-[calc(8.333%+0.75rem)]">
+      <div className="mt-2 pl-[calc(8.333%+0.75rem)] space-y-2">
+        <FormatRow deliverable={deliverable} onUpdate={onUpdate} />
         <LinkedShotsPicker
           shots={shots}
           selected={deliverable.linkedShots ?? []}
@@ -359,6 +365,69 @@ function DeliverableRow({
           accent="#ffd700"
         />
       </div>
+    </div>
+  );
+}
+
+// Delivery-format spec row (Phase 4B): resolution / aspect ratio / file format /
+// colour space. A one-click "defaults" fills sensible values for the type.
+function FormatRow({
+  deliverable,
+  onUpdate,
+}: {
+  deliverable: ProductionDeliverable;
+  onUpdate: (patch: Partial<ProductionDeliverable>) => void;
+}) {
+  const selCls =
+    "text-[11px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-1.5 py-1 text-gray-600 dark:text-gray-300 focus:outline-none focus:border-[#ffd700]";
+  function applyDefaults() {
+    const d = defaultFormatFor(deliverable.type, deliverable.title);
+    onUpdate({
+      resolution: d.resolution || null,
+      aspectRatio: d.aspectRatio || null,
+      fileFormat: d.fileFormat || null,
+      colourSpace: d.colourSpace || null,
+    });
+  }
+  const specs: {
+    key: "resolution" | "aspectRatio" | "fileFormat" | "colourSpace";
+    label: string;
+    options: string[];
+  }[] = [
+    { key: "resolution", label: "Res", options: RESOLUTION_OPTIONS },
+    { key: "aspectRatio", label: "Ratio", options: ASPECT_RATIO_OPTIONS },
+    { key: "fileFormat", label: "Format", options: FILE_FORMAT_OPTIONS },
+    { key: "colourSpace", label: "Colour", options: COLOUR_SPACE_OPTIONS },
+  ];
+  const empty = specs.every((s) => !deliverable[s.key]);
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {specs.map((s) => (
+        <label key={s.key} className="inline-flex items-center gap-1">
+          <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">{s.label}</span>
+          <select
+            value={(deliverable[s.key] as string) || ""}
+            onChange={(e) => onUpdate({ [s.key]: e.target.value || null } as Partial<ProductionDeliverable>)}
+            className={selCls}
+          >
+            <option value="">—</option>
+            {s.options.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        </label>
+      ))}
+      {empty && (
+        <button
+          onClick={applyDefaults}
+          className="text-[10px] font-medium text-[#ffd700] hover:underline"
+          title="Fill sensible format defaults for this deliverable type"
+        >
+          Use defaults
+        </button>
+      )}
     </div>
   );
 }
@@ -377,12 +446,18 @@ function AddDeliverableForm({
 
   function submit() {
     if (!title.trim()) return;
+    // Pre-fill delivery-format defaults based on type/title (Phase 4B).
+    const fmt = defaultFormatFor(type, title);
     onAdd({
       type,
       title: title.trim(),
       dueDate: dueDate || null,
       url: url.trim() || null,
       status: "AWAITING",
+      resolution: fmt.resolution || null,
+      aspectRatio: fmt.aspectRatio || null,
+      fileFormat: fmt.fileFormat || null,
+      colourSpace: fmt.colourSpace || null,
     });
   }
 

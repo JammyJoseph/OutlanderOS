@@ -302,6 +302,13 @@ export const POST = withAuth(async (
         budgeted: computedBudgeted,
         actual: body.actual == null || body.actual === "" ? 0 : Number(body.actual),
         notes: body.notes || null,
+        invoiceStatus: body.invoiceStatus || null,
+        invoiceUrl: body.invoiceUrl || null,
+        poNumber: body.poNumber || null,
+        invoicedAmount:
+          body.invoicedAmount == null || body.invoicedAmount === ""
+            ? null
+            : Number(body.invoicedAmount),
         sortOrder: body.sortOrder == null ? 0 : Number(body.sortOrder),
       },
     });
@@ -379,6 +386,14 @@ export const PUT = withAuth(async (
     if (body.actual !== undefined)
       data.actual = body.actual === "" || body.actual == null ? 0 : Number(body.actual);
     if (body.notes !== undefined) data.notes = body.notes || null;
+    if (body.invoiceStatus !== undefined) data.invoiceStatus = body.invoiceStatus || null;
+    if (body.invoiceUrl !== undefined) data.invoiceUrl = body.invoiceUrl || null;
+    if (body.poNumber !== undefined) data.poNumber = body.poNumber || null;
+    if (body.invoicedAmount !== undefined)
+      data.invoicedAmount =
+        body.invoicedAmount === "" || body.invoicedAmount == null
+          ? null
+          : Number(body.invoicedAmount);
     if (body.sortOrder !== undefined) data.sortOrder = Number(body.sortOrder);
 
     const item = await prisma.budgetLineItem.update({ where: { id: itemId }, data });

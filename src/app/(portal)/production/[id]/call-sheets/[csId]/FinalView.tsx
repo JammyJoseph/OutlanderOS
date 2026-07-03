@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, Edit2, Loader2, Check, FileDown, Send, Users, Info, Share2,
+  ArrowLeft, Edit2, Loader2, Check, FileDown, Send, Users, Info, Share2, BellRing,
 } from "lucide-react";
 import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
 import type { CallSheet, DistributionEntry, SectionKey } from "./types";
@@ -127,6 +127,22 @@ function looksLikeEmail(v: string | null | undefined): boolean {
   return !!v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 
+// Explicit delivery status for a recipient (Phase 4A).
+type DeliveryStatus = "NOT_SENT" | "SENT" | "CONFIRMED";
+function deliveryStatus(e: DistributionEntry): DeliveryStatus {
+  if (e.confirmedAt) return "CONFIRMED";
+  if (e.sentAt) return "SENT";
+  return "NOT_SENT";
+}
+
+// Client-safe base64url encoder for the per-recipient confirm token. Mirrors
+// encodeConfirmToken in @/lib/callsheet-confirm (which uses Node Buffer).
+function encodeConfirm(callSheetId: string, recipient: string): string {
+  const raw = `${callSheetId}|${(recipient || "").trim().toLowerCase()}`;
+  const b64 = typeof window !== "undefined" ? window.btoa(unescape(encodeURIComponent(raw))) : "";
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 // Short "12 Jun" style stamp for a sent/confirmed timestamp.
 function fmtStamp(iso: string | undefined): string {
   if (!iso) return "";
@@ -169,21 +185,37 @@ function DistributionPanel({
 
   const confirmed = entries.filter((e) => e.confirmedAt).length;
   const sent = entries.filter((e) => e.sentAt).length;
+  const awaitingConfirm = entries.filter((e) => deliveryStatus(e) === "SENT").length;
 
   // The INTERNAL (full-details) call sheet link — what crew receive.
   const internalUrl = sheet.shareToken
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/call-sheet/${sheet.shareToken}`
     : null;
 
-  // Opens the user's mail client with the internal link pre-filled.
-  function openMail(opts: { to?: string; bcc?: string[]; greeting?: string }) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  // Per-recipient one-click receipt-confirmation link (Phase 4A).
+  function confirmUrl(recipient: string): string | null {
+    if (!sheet.id || !recipient) return null;
+    return `${origin}/call-sheet/confirm/${encodeConfirm(sheet.id, recipient)}`;
+  }
+
+  // Opens the user's mail client with the internal link pre-filled. When a
+  // single recipient is targeted, appends their one-click confirm link.
+  function openMail(opts: { to?: string; bcc?: string[]; greeting?: string; confirmFor?: string; nudge?: boolean }) {
     if (!internalUrl) return;
     const label = viewData.shootTitle || "the shoot";
     const date = viewData.shootDate ? ` on ${viewData.shootDate}` : "";
-    const subject = `Call Sheet — ${viewData.shootTitle || "Shoot"}${
+    const subject = `${opts.nudge ? "Reminder: please confirm — " : ""}Call Sheet — ${viewData.shootTitle || "Shoot"}${
       viewData.shootDate ? ` (${viewData.shootDate})` : ""
     }`;
-    const body = `${opts.greeting ? opts.greeting + "\n\n" : ""}Here's the call sheet (full details) for ${label}${date}:\n\n${internalUrl}\n\nPlease reply to confirm you've received it.\n\nThanks`;
+    const cUrl = opts.confirmFor ? confirmUrl(opts.confirmFor) : null;
+    const confirmLine = cUrl
+      ? `Please confirm you've received it (one click):\n${cUrl}`
+      : "Please reply to confirm you've received it.";
+    const intro = opts.nudge
+      ? `Just a quick reminder — we haven't had confirmation that you've received the call sheet for ${label}${date}.`
+      : `Here's the call sheet (full details) for ${label}${date}:`;
+    const body = `${opts.greeting ? opts.greeting + "\n\n" : ""}${intro}\n\n${internalUrl}\n\n${confirmLine}\n\nThanks`;
     const to = opts.to ? encodeURIComponent(opts.to) : "";
     const q =
       `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` +
@@ -193,23 +225,37 @@ function DistributionPanel({
 
   // Send the internal link to one crew member — email if they have one, then
   // record the sent timestamp either way.
-  async function sendOne(target: DistributionEntry) {
+  async function sendOne(target: DistributionEntry, nudge = false) {
     setBusy(true);
     try {
       if (looksLikeEmail(target.email)) {
-        openMail({ to: target.email, greeting: `Hi ${target.name.split(" ")[0]},` });
+        openMail({
+          to: target.email,
+          greeting: `Hi ${target.name.split(" ")[0]},`,
+          confirmFor: target.email,
+          nudge,
+        });
       }
       const now = new Date().toISOString();
       await onSave(
         entries.map((e) =>
           distKey(e.name, e.email) === distKey(target.name, target.email)
-            ? { ...e, sentAt: now }
+            ? { ...e, sentAt: e.sentAt || now }
             : e
         )
       );
     } finally {
       setBusy(false);
     }
+  }
+
+  // Nudge everyone who was sent the sheet but hasn't confirmed (Phase 4A). BCCs
+  // them a reminder in one draft; the confirm link lives in each person's
+  // original email, so the reminder just asks them to click it or reply.
+  function nudgeUnconfirmed() {
+    const targets = entries.filter((e) => deliveryStatus(e) === "SENT" && looksLikeEmail(e.email));
+    if (!targets.length) return;
+    openMail({ bcc: targets.map((e) => e.email), nudge: true });
   }
 
   // Send the internal link to all crew. BCCs everyone with an email in one
@@ -262,15 +308,27 @@ function DistributionPanel({
             </>
           )}
         </div>
-        <button
-          onClick={sendToAll}
-          disabled={busy || entries.length === 0 || !canSend}
-          title={canSend ? "Email the internal call sheet link to all crew" : "Publish the call sheet first"}
-          className="flex items-center gap-1.5 bg-gray-900 text-white px-3.5 py-2 rounded-xl text-xs font-medium hover:bg-gray-700 transition-colors disabled:opacity-40"
-        >
-          {busy ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-          {sent === entries.length && entries.length > 0 ? "Resend to All" : "Send to All"}
-        </button>
+        <div className="flex items-center gap-2">
+          {awaitingConfirm > 0 && (
+            <button
+              onClick={nudgeUnconfirmed}
+              disabled={busy || !canSend}
+              title="Email a reminder to everyone who hasn't confirmed receipt"
+              className="flex items-center gap-1.5 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 px-3.5 py-2 rounded-xl text-xs font-medium hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors disabled:opacity-40"
+            >
+              <BellRing size={12} /> Nudge unconfirmed ({awaitingConfirm})
+            </button>
+          )}
+          <button
+            onClick={sendToAll}
+            disabled={busy || entries.length === 0 || !canSend}
+            title={canSend ? "Email the internal call sheet link to all crew" : "Publish the call sheet first"}
+            className="flex items-center gap-1.5 bg-gray-900 text-white px-3.5 py-2 rounded-xl text-xs font-medium hover:bg-gray-700 transition-colors disabled:opacity-40"
+          >
+            {busy ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            {sent === entries.length && entries.length > 0 ? "Resend to All" : "Send to All"}
+          </button>
+        </div>
       </div>
 
       <div className="px-5 py-2.5 bg-amber-50/60 border-b border-amber-100/60 flex items-start gap-2">

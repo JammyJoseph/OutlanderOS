@@ -34,6 +34,10 @@ export const POST = withAuth(async (
         dueDate: body.dueDate ? new Date(body.dueDate) : null,
         url: body.url || null,
         notes: body.notes || null,
+        resolution: body.resolution || null,
+        aspectRatio: body.aspectRatio || null,
+        fileFormat: body.fileFormat || null,
+        colourSpace: body.colourSpace || null,
         linkedShots: Array.isArray(body.linkedShots)
           ? body.linkedShots.map(String)
           : [],
@@ -60,6 +64,10 @@ export const PUT = withAuth(async (request: NextRequest) => {
       data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     if (body.url !== undefined) data.url = body.url || null;
     if (body.notes !== undefined) data.notes = body.notes || null;
+    if (body.resolution !== undefined) data.resolution = body.resolution || null;
+    if (body.aspectRatio !== undefined) data.aspectRatio = body.aspectRatio || null;
+    if (body.fileFormat !== undefined) data.fileFormat = body.fileFormat || null;
+    if (body.colourSpace !== undefined) data.colourSpace = body.colourSpace || null;
     if (body.linkedShots !== undefined)
       data.linkedShots = Array.isArray(body.linkedShots)
         ? body.linkedShots.map(String)

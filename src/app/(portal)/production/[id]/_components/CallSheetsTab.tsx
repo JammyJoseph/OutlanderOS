@@ -1,15 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Plus, Loader2, ClipboardList, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Loader2, ClipboardList, ChevronRight, Wand2, Copy } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { CallSheet, CallSheetStatus, ProductionFull, callSheetTitle } from "./types";
+import CallSheetWizard from "./CallSheetWizard";
 
 interface Props {
   production: ProductionFull;
   creatingSheet: boolean;
   onCreateCallSheet: () => void;
 }
+
+// Fields copied when cloning a previous call sheet (Phase 4G).
+const CLONE_FIELDS = [
+  "callTime", "wrapTime", "location", "locationLat", "locationLng", "locations",
+  "shotStyle", "schedule", "shotlist", "crew", "talent", "cateringDetails",
+  "documents", "header", "clientTeam", "agencyTeam", "productionCompany",
+  "callTimes", "productionMobiles", "movementOrder", "equipment",
+  "productionNotes", "safetyNotes", "parkingNotes",
+] as const;
 
 const CS_STATUS_STYLES: Record<CallSheetStatus, { bg: string; text: string; label: string }> = {
   DRAFT: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-500 dark:text-gray-400", label: "Draft" },
@@ -22,10 +34,47 @@ function getShootTitle(cs: CallSheet, productionTitle: string): string {
 }
 
 export default function CallSheetsTab({ production, creatingSheet, onCreateCallSheet }: Props) {
+  const router = useRouter();
   const sheets = production.callSheets ?? [];
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [cloning, setCloning] = useState(false);
+
+  // Clone the most recent call sheet into a fresh DRAFT (Phase 4G).
+  async function clonePrevious() {
+    const latest = sheets
+      .slice()
+      .sort((a, b) => new Date(b.shootDate).getTime() - new Date(a.shootDate).getTime())[0];
+    if (!latest) return;
+    setCloning(true);
+    try {
+      const r = await fetch(`/api/call-sheets/${latest.id}`);
+      const d = await r.json();
+      const s = d.sheet;
+      if (!s) return;
+      const payload: Record<string, unknown> = {
+        productionId: production.id,
+        shootTitle: `${s.shootTitle || production.title} (copy)`,
+        shootDate: s.shootDate,
+        status: "DRAFT",
+      };
+      for (const key of CLONE_FIELDS) {
+        if (s[key] !== undefined && s[key] !== null) payload[key] = s[key];
+      }
+      const res = await fetch("/api/call-sheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const nd = await res.json();
+      if (nd.sheet) router.push(`/production/${production.id}/call-sheets/${nd.sheet.id}`);
+    } finally {
+      setCloning(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
+      {wizardOpen && <CallSheetWizard production={production} onClose={() => setWizardOpen(false)} />}
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
           <div>
@@ -38,14 +87,35 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
               Auto-populates from team, schedule, and project location.
             </p>
           </div>
-          <button
-            onClick={onCreateCallSheet}
-            disabled={creatingSheet}
-            className="flex items-center gap-1.5 bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors disabled:opacity-60"
-          >
-            {creatingSheet ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
-            Create call sheet
-          </button>
+          <div className="flex items-center gap-2">
+            {sheets.length > 0 && (
+              <button
+                onClick={clonePrevious}
+                disabled={cloning}
+                className="flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-60"
+                title="Clone the most recent call sheet"
+              >
+                {cloning ? <Loader2 size={13} className="animate-spin" /> : <Copy size={13} />}
+                Clone previous
+              </button>
+            )}
+            <button
+              onClick={onCreateCallSheet}
+              disabled={creatingSheet}
+              className="flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-60"
+              title="Create a blank call sheet"
+            >
+              {creatingSheet ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+              Blank
+            </button>
+            <button
+              onClick={() => setWizardOpen(true)}
+              className="flex items-center gap-1.5 bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
+              title="Build a call sheet in 5 quick steps"
+            >
+              <Wand2 size={13} /> New call sheet
+            </button>
+          </div>
         </div>
 
         {sheets.length === 0 ? (
@@ -58,11 +128,10 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
               Create a call sheet to start planning your shoot.
             </p>
             <button
-              onClick={onCreateCallSheet}
-              disabled={creatingSheet}
+              onClick={() => setWizardOpen(true)}
               className="flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
             >
-              <Plus size={13} />
+              <Wand2 size={13} />
               Create call sheet
             </button>
           </div>

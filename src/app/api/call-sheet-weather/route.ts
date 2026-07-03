@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { computeSun, buildWarnings } from "@/lib/sun-calc";
 
 // Public, token-gated live weather for shared call sheets. The token (internal
 // or client share token) scopes the request to a single published sheet's
@@ -99,7 +100,22 @@ export async function GET(request: NextRequest) {
           .sort((a, b) => a.time.localeCompare(b.time))
       : [];
 
-    return NextResponse.json({ forecast, hourly, hourlyDate: targetDay, fetchedAt: new Date().toISOString() });
+    const dayForSun = targetDay ?? forecast[0]?.date ?? null;
+    const cond = (forecast.find((d) => d.date === dayForSun)?.condition ?? "").toLowerCase();
+    const cloudFactor = cond.includes("clear")
+      ? 1
+      : cond.includes("cloud")
+        ? 0.65
+        : cond.includes("rain") || cond.includes("snow") || cond.includes("thunder")
+          ? 0.4
+          : 0.8;
+    const sun =
+      dayForSun && sheet.locationLat != null && sheet.locationLng != null
+        ? computeSun(sheet.locationLat, sheet.locationLng, dayForSun, cloudFactor)
+        : null;
+    const warnings = buildWarnings(hourly.map((h) => ({ pop: h.pop, wind: h.wind, temp: h.temp })));
+
+    return NextResponse.json({ forecast, hourly, hourlyDate: targetDay, sun, warnings, fetchedAt: new Date().toISOString() });
   } catch (e) {
     return NextResponse.json({ error: "An error occurred", forecast: [], hourly: [], unavailable: true }, { status: 200 });
   }

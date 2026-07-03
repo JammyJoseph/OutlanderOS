@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       avatarUrl: true,
       avatar: true,
       department: true,
+      isActive: true,
       startDate: true,
       holidayAllowance: true,
       salary: isAdmin,

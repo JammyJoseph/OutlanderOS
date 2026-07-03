@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
+import { computeSun, buildWarnings } from "@/lib/sun-calc";
 
 // Daily forecast shape returned to the client
 interface DailyForecast {
@@ -150,10 +151,35 @@ export const GET = withAuth(async (request: NextRequest) => {
           .sort((a, b) => a.time.localeCompare(b.time))
       : [];
 
+    // ── Phase 4C: sunrise/sunset, golden hour, approximate UV, warnings ──
+    // Derived locally (no paid OneCall endpoint). Cloud attenuation for the UV
+    // estimate comes from the shoot day's midday condition.
+    const dayForSun = targetDay ?? forecast[0]?.date ?? null;
+    const middayCondition = (
+      forecast.find((d) => d.date === dayForSun)?.condition ?? ""
+    ).toLowerCase();
+    const cloudFactor = middayCondition.includes("clear")
+      ? 1
+      : middayCondition.includes("cloud")
+        ? 0.65
+        : middayCondition.includes("rain") ||
+            middayCondition.includes("snow") ||
+            middayCondition.includes("thunder")
+          ? 0.4
+          : 0.8;
+    const sun = dayForSun
+      ? computeSun(Number(lat), Number(lng), dayForSun, cloudFactor)
+      : null;
+    const warnings = buildWarnings(
+      hourly.map((h) => ({ pop: h.pop, wind: h.wind, temp: h.temp }))
+    );
+
     return NextResponse.json({
       forecast,
       hourly,
       hourlyDate: targetDay,
+      sun,
+      warnings,
       fetchedAt: new Date().toISOString(),
     });
   } catch (e) {

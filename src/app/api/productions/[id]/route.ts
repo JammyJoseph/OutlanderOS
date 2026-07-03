@@ -168,6 +168,18 @@ export const PUT = withAuth(async (
         .filter((d: string) => d)
         .map((d: string) => new Date(d));
     }
+    // Editorial discount (Phase 3E) — % off APA reference rates; editorial only.
+    if (body.editorialRateDiscount !== undefined) {
+      updateData.editorialRateDiscount =
+        body.editorialRateDiscount === null || body.editorialRateDiscount === ""
+          ? null
+          : Number(body.editorialRateDiscount);
+    }
+    // Catering quote tracking (Phase 3D) and structured brief (Phase 4F).
+    if (body.cateringQuotes !== undefined) {
+      updateData.cateringQuotes = Array.isArray(body.cateringQuotes) ? body.cateringQuotes : [];
+    }
+    if (body.briefData !== undefined) updateData.briefData = body.briefData ?? null;
     if (body.campaignId !== undefined) updateData.campaignId = body.campaignId || null;
     if (body.leadId !== undefined) updateData.leadId = body.leadId || null;
     if (body.trelloCardId !== undefined) {

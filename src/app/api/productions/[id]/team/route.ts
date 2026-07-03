@@ -36,6 +36,8 @@ export const POST = withAuth(async (
         ratePer: body.ratePer || "day",
         status: body.status || "SUGGESTED",
         notes: body.notes || null,
+        dietaryRequirements: body.dietaryRequirements || null,
+        contactId: body.contactId || null,
       },
     });
     return NextResponse.json({ member });
@@ -60,6 +62,9 @@ export const PUT = withAuth(async (request: NextRequest) => {
     if (body.ratePer !== undefined) data.ratePer = body.ratePer || "day";
     if (body.status !== undefined) data.status = body.status;
     if (body.notes !== undefined) data.notes = body.notes || null;
+    if (body.dietaryRequirements !== undefined)
+      data.dietaryRequirements = body.dietaryRequirements || null;
+    if (body.contactId !== undefined) data.contactId = body.contactId || null;
 
     const member = await prisma.productionTeamMember.update({ where: { id: memberId }, data });
     return NextResponse.json({ member });
