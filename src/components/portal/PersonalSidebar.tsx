@@ -42,8 +42,8 @@ export function PersonalSidebar() {
                   className={cn(
                     "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all duration-150",
                     isActive
-                      ? "bg-[#ffd700]/10 font-semibold text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                      ? "bg-[#ffd700]/10 font-semibold text-gray-900 dark:text-gray-100 shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200"
                   )}
                 >
                   <Icon

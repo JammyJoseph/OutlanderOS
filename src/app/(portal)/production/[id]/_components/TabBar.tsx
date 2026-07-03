@@ -40,7 +40,7 @@ const TABS: { key: TabKey; label: string; Icon: React.ComponentType<{ size?: num
 
 export default function TabBar({ active, onSelect, counts }: Props) {
   return (
-    <div className="sticky top-0 z-30 bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/70 -mx-6 px-6 border-b border-gray-100">
+    <div className="sticky top-0 z-30 bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/70 -mx-6 px-6 border-b border-gray-100 dark:border-gray-800">
       <div className="flex gap-1 overflow-x-auto scrollbar-none py-2">
         {(TABS ?? []).map(({ key, label, Icon }) => {
           const isActive = active === key;
@@ -51,8 +51,8 @@ export default function TabBar({ active, onSelect, counts }: Props) {
               onClick={() => onSelect(key)}
               className={`relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-colors shrink-0 ${
                 isActive
-                  ? "bg-white text-gray-900 shadow-sm border border-gray-100"
-                  : "text-gray-500 hover:text-gray-800 hover:bg-white/60"
+                  ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-100 dark:border-gray-800"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-white/60 dark:hover:bg-gray-900/60"
               }`}
             >
               <Icon size={15} className={isActive ? "text-[#ffd700]" : "text-gray-400"} />
@@ -60,7 +60,7 @@ export default function TabBar({ active, onSelect, counts }: Props) {
               {count != null && count > 0 && (
                 <span
                   className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                    isActive ? "bg-amber-50 text-[#ffd700]" : "bg-gray-100 text-gray-500"
+                    isActive ? "bg-amber-50 text-[#ffd700]" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
                   }`}
                 >
                   {count}

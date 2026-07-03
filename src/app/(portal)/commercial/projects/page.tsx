@@ -68,10 +68,10 @@ export default function CommercialProjectsPage() {
           <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
             OutlanderOS · Commercial
           </p>
-          <h1 className="mt-1 text-3xl font-semibold text-gray-900 tracking-tight">
+          <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
             Projects
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
             {projects.length} campaign{projects.length !== 1 ? "s" : ""} booked from the
             pipeline
           </p>
@@ -82,10 +82,10 @@ export default function CommercialProjectsPage() {
             <Loader2 size={24} className="animate-spin text-gray-400" />
           </div>
         ) : projects.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center">
+          <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-16 text-center">
             <FolderKanban className="mx-auto h-8 w-8 text-gray-300" />
-            <p className="mt-3 text-sm font-medium text-gray-700">No projects yet</p>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-300">No projects yet</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Projects will be booked from the new native deal pipeline once it
               launches.
             </p>
@@ -98,14 +98,14 @@ export default function CommercialProjectsPage() {
               return (
                 <div
                   key={p.id}
-                  className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+                  className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <h2 className="text-base font-semibold text-gray-900 truncate">
+                      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
                         {p.campaignName}
                       </h2>
-                      <p className="text-xs text-gray-500">{p.clientName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{p.clientName}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span
@@ -115,14 +115,14 @@ export default function CommercialProjectsPage() {
                       >
                         {p.status}
                       </span>
-                      <span className="text-base font-semibold text-gray-900">
+                      <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
                         {gbp(p.totalBudget)}
                       </span>
                     </div>
                   </div>
 
                   {/* Allocation bar */}
-                  <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                     {SPLITS.map((s) => {
                       const v = (p[s.key] as number) || 0;
                       const pct = splitTotal > 0 ? (v / splitTotal) * 100 : 0;
@@ -139,7 +139,7 @@ export default function CommercialProjectsPage() {
                     {SPLITS.map((s) => (
                       <span
                         key={s.key}
-                        className="flex items-center gap-1.5 text-[11px] text-gray-500"
+                        className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400"
                       >
                         <span
                           className="h-2 w-2 rounded-full"
@@ -156,7 +156,7 @@ export default function CommercialProjectsPage() {
                       href={`/production/${p.production.id}`}
                       className="mt-4 flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50/40 px-4 py-2.5 transition-colors hover:bg-amber-50"
                     >
-                      <span className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                      <span className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300">
                         <Film size={14} className="text-[var(--portal-commercial)]" />
                         Production · {p.production.status} ·{" "}
                         {gbp(p.production.budgetTotal)} allocated

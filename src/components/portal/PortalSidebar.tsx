@@ -140,8 +140,8 @@ export function PortalSidebar() {
                   className={cn(
                     "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all duration-200",
                     isActive
-                      ? "font-semibold text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                      ? "font-semibold text-gray-900 dark:text-gray-100 shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200"
                   )}
                   style={isActive ? { backgroundColor: `${accent}14` } : undefined}
                 >

@@ -42,11 +42,11 @@ export default function PostCard({
   return (
     <div
       onClick={onSelect}
-      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-white transition-shadow hover:shadow-md ${
-        isUnclassified ? "border-rose-300/60 ring-1 ring-rose-100" : "border-gray-200"
+      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-white dark:bg-gray-900 transition-shadow hover:shadow-md ${
+        isUnclassified ? "border-rose-300/60 ring-1 ring-rose-100" : "border-gray-200 dark:border-gray-700"
       } ${selected ? "ring-2 ring-amber-400" : ""}`}
     >
-      <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
+      <div className="relative aspect-square w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
         {thumb ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -77,9 +77,9 @@ export default function PostCard({
         </button>
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <p className="text-sm leading-snug text-gray-900 line-clamp-2">{captionSnippet}</p>
-        <p className="text-xs text-gray-500">{formatDate(post.timestamp)}</p>
-        <div className="flex items-center gap-3 text-xs text-gray-600">
+        <p className="text-sm leading-snug text-gray-900 dark:text-gray-100 line-clamp-2">{captionSnippet}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(post.timestamp)}</p>
+        <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
           <span className="inline-flex items-center gap-1">
             <Heart className="h-3.5 w-3.5" /> {compactNumber(post.likeCount)}
           </span>

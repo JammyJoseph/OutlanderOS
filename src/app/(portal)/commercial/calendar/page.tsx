@@ -105,28 +105,28 @@ export default function CampaignCalendarPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-3">
         <div>
-          <h1 className="text-base font-semibold text-gray-900">Campaign Calendar</h1>
-          <p className="text-xs text-gray-500">
+          <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Campaign Calendar</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             {activeCampaigns.length} active this month
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={prevMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-            <ChevronLeft className="h-4 w-4 text-gray-600" />
+            <ChevronLeft className="h-4 w-4 text-gray-600 dark:text-gray-400" />
           </button>
-          <span className="min-w-[140px] text-center text-sm font-semibold text-gray-900">
+          <span className="min-w-[140px] text-center text-sm font-semibold text-gray-900 dark:text-gray-100">
             {MONTHS[month]} {year}
           </span>
           <button
             onClick={nextMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-            <ChevronRight className="h-4 w-4 text-gray-600" />
+            <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
       </div>
@@ -143,19 +143,19 @@ export default function CampaignCalendarPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-xl overflow-hidden border border-gray-200">
+        <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
           {cells.map((day, idx) => {
             const dayCampaigns = day ? campaignsForDay(day) : [];
             return (
               <div
                 key={idx}
-                className={`min-h-[100px] p-2 ${day ? "bg-white" : "bg-gray-50"}`}
+                className={`min-h-[100px] p-2 ${day ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800"}`}
               >
                 {day && (
                   <>
                     <span
                       className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                        isToday(day) ? "bg-[#ffd700] text-black" : "text-gray-700"
+                        isToday(day) ? "bg-[#ffd700] text-black" : "text-gray-700 dark:text-gray-300"
                       }`}
                     >
                       {day}
@@ -187,7 +187,7 @@ export default function CampaignCalendarPage() {
           {Object.entries(TYPE_LABELS).map(([type, label]) => (
             <div key={type} className="flex items-center gap-1.5">
               <div className={`h-2.5 w-2.5 rounded-full ${TYPE_COLORS[type as CampaignType]}`} />
-              <span className="text-xs text-gray-500">{label}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
             </div>
           ))}
         </div>

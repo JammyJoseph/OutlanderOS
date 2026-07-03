@@ -112,7 +112,7 @@ export default function OverviewTab({
           href={`/commercial/deals/${production.campaign.id}`}
           className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-[#ffd700] transition-colors"
         >
-          From: <span className="text-gray-600 font-semibold">{production.campaign.title}</span> in
+          From: <span className="text-gray-600 dark:text-gray-400 font-semibold">{production.campaign.title}</span> in
           Commercial <ArrowUpRight size={12} />
         </Link>
       )}
@@ -163,17 +163,17 @@ export default function OverviewTab({
 
       {/* Shotlist progress — only when call sheets have shots planned */}
       {shots.total > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <ListChecks size={15} className="text-[#ff4444]" />
               Shotlist Progress
             </h2>
-            <span className="text-xs font-semibold text-gray-600">
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
               {shots.done}/{shots.total} shots completed
             </span>
           </div>
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
             <div
               className="h-full bg-[#ff4444] rounded-full transition-all"
               style={{ width: `${Math.round((shots.done / shots.total) * 100)}%` }}
@@ -187,15 +187,15 @@ export default function OverviewTab({
         <div className="lg:col-span-2 space-y-5">
           {/* Brief handed over from the Commercial deal */}
           {production.type === "COMMERCIAL" && production.brief && (
-            <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-emerald-100 shadow-sm p-5">
               <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-                <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                   <FileText size={15} className="text-emerald-600" />
                   Brief from Commercial
                 </h2>
                 <div className="flex items-center gap-2 text-xs">
                   {(production.clientName || production.campaign?.client?.name) && (
-                    <span className="text-gray-500">
+                    <span className="text-gray-500 dark:text-gray-400">
                       {production.clientName || production.campaign?.client?.name}
                     </span>
                   )}
@@ -204,7 +204,7 @@ export default function OverviewTab({
                   </span>
                 </div>
               </div>
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                 {production.brief}
               </p>
               {production.campaignId && (
@@ -218,7 +218,7 @@ export default function OverviewTab({
             </div>
           )}
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <Label>Description</Label>
             <textarea
               value={description}
@@ -228,14 +228,14 @@ export default function OverviewTab({
               }}
               rows={4}
               placeholder="What is this project about?"
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-100 text-sm resize-none bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800 text-sm resize-none bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div>
                 <Label>Total Campaign Budget (£)</Label>
                 {lockedBudget ? (
                   <div className="w-full px-3 py-2 rounded-xl border border-amber-100 bg-amber-50/40 text-sm flex items-center justify-between gap-2">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
                       {gbp(production.budgetTotal ?? 0)}
                     </span>
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#e6c200]">
@@ -252,7 +252,7 @@ export default function OverviewTab({
                       scheduleSave();
                     }}
                     placeholder="0"
-                    className="w-full px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-800 text-sm bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
                   />
                 )}
               </div>
@@ -266,7 +266,7 @@ export default function OverviewTab({
                     scheduleSave();
                   }}
                   placeholder="https://figma.com/file/…"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-800 text-sm bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
                 />
               </div>
             </div>
@@ -274,13 +274,13 @@ export default function OverviewTab({
 
           {/* Upcoming task */}
           {upcomingTask && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
               <Label>Next up</Label>
               <div className="flex items-start gap-3 mt-1">
                 <Clock size={16} className="text-[#ffd700] mt-1 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">{upcomingTask.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{upcomingTask.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {upcomingTask.owner ? `${upcomingTask.owner} · ` : ""}
                     {upcomingTask.dueDate
                       ? `Due ${format(parseISO(upcomingTask.dueDate), "d MMM")}`
@@ -295,9 +295,9 @@ export default function OverviewTab({
         {/* Sidebar — linked deal + shoot dates */}
         <div className="space-y-5">
         <LinkedDeal campaignId={production.campaignId} />
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <CalendarDays size={15} className="text-[#ffd700]" />
               Shoot Dates
             </h2>
@@ -318,7 +318,7 @@ export default function OverviewTab({
                     type="date"
                     value={d}
                     onChange={(e) => updateShoot(i, e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-xl border border-gray-100 text-sm bg-gray-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
+                    className="flex-1 px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-800 text-sm bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] transition-colors"
                   />
                   <button
                     onClick={() => removeShoot(i)}
@@ -330,7 +330,7 @@ export default function OverviewTab({
               ))}
             </div>
           )}
-          <div className="mt-4 pt-4 border-t border-gray-50 text-xs text-gray-500 space-y-1">
+          <div className="mt-4 pt-4 border-t border-gray-50 text-xs text-gray-500 dark:text-gray-400 space-y-1">
             <p className="flex items-center gap-2">
               <CheckCircle2 size={12} className="text-emerald-500" />
               {(production.callSheets ?? []).length} call sheet
@@ -378,16 +378,16 @@ function StatCard({
   progress?: number;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
       <div className="flex items-center gap-2 text-gray-400">
         <span className="text-[#ffd700]">{icon}</span>
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
-      <p className="text-xl font-semibold text-gray-900 mt-2 truncate">{primary}</p>
-      {secondary && <p className="text-xs text-gray-500 mt-0.5 truncate">{secondary}</p>}
+      <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-2 truncate">{primary}</p>
+      {secondary && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{secondary}</p>}
       {accent && <p className="text-xs mt-1.5 font-medium">{accent}</p>}
       {progress != null && (
-        <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="mt-2 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-[#ffd700] rounded-full transition-all"
             style={{ width: `${progress}%` }}

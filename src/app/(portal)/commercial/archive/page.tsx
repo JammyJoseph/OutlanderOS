@@ -92,17 +92,17 @@ export default function ArchivePage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
               OutlanderOS · Commercial
             </p>
-            <h1 className="mt-1 flex items-center gap-2 text-3xl font-semibold tracking-tight text-gray-900">
+            <h1 className="mt-1 flex items-center gap-2 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
               <ArchiveIcon className="h-6 w-6 text-gray-400" /> Archive
             </h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {deals.length} archived deal{deals.length !== 1 ? "s" : ""}
               {!canUnarchive && " · view only"}
             </p>
           </div>
           <Link
             href="/commercial/pipeline"
-            className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             Back to Pipeline
           </Link>
@@ -116,7 +116,7 @@ export default function ArchivePage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search archived deals…"
-            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
+            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-8 pr-3 text-sm focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
           />
         </div>
 
@@ -125,22 +125,22 @@ export default function ArchivePage() {
             <Loader2 size={24} className="animate-spin text-gray-400" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white/40 py-16 text-center">
+          <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-white/40 py-16 text-center">
             <ArchiveIcon className="mx-auto h-8 w-8 text-gray-300" />
-            <p className="mt-3 text-sm text-gray-500">
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
               {deals.length === 0 ? "No archived deals yet." : "No deals match your search."}
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50/60 text-left">
-                  <th className="px-4 py-3 font-medium text-gray-500">Deal</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Client</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Stage at archive</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Archived</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">By</th>
+                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/60 text-left">
+                  <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Deal</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Client</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Stage at archive</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Archived</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">By</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -153,7 +153,7 @@ export default function ArchivePage() {
                       <td className="px-4 py-3">
                         <Link
                           href={`/commercial/deals/${deal.id}`}
-                          className="font-medium text-gray-800 hover:text-gray-900 hover:underline"
+                          className="font-medium text-gray-800 dark:text-gray-200 hover:text-gray-900 hover:underline"
                         >
                           {deal.title}
                         </Link>
@@ -163,7 +163,7 @@ export default function ArchivePage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{deal.client?.name ?? "—"}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{deal.client?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${stage?.bg ?? "bg-gray-100"} ${stage?.text ?? "text-gray-500"}`}
@@ -172,13 +172,13 @@ export default function ArchivePage() {
                           {stage?.label ?? stageKey}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         <span className="inline-flex items-center gap-1">
                           <CalendarDays size={12} className="text-gray-400" />
                           {dateLabel(deal.archivedAt)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         <span className="inline-flex items-center gap-1">
                           <UserIcon size={12} className="text-gray-400" />
                           {deal.archivedByName ?? "—"}
@@ -189,7 +189,7 @@ export default function ArchivePage() {
                           <button
                             onClick={() => unarchive(deal)}
                             disabled={busyId === deal.id}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
                           >
                             {busyId === deal.id ? (
                               <Loader2 size={12} className="animate-spin" />

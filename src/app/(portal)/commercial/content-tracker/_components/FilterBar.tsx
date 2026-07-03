@@ -47,17 +47,17 @@ export default function FilterBar({ filters, brands, onChange }: Props) {
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => onChange({ ...filters, [k]: v });
 
   const baseSelect =
-    "rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400";
+    "rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm outline-none focus:border-amber-400";
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-3">
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
       <div className="relative flex-1 min-w-[220px]">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <input
           value={filters.search}
           onChange={(e) => set("search", e.target.value)}
           placeholder="Search captions…"
-          className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-amber-400"
+          className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-9 pr-3 text-sm outline-none focus:border-amber-400"
         />
       </div>
       <select

@@ -37,16 +37,16 @@ export default function BulkActionBar({ selectedIds, campaigns, onClear, onCompl
   }
 
   return (
-    <div className="sticky bottom-4 z-30 mx-auto flex max-w-4xl flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg">
-      <span className="text-sm font-medium text-gray-900">{selectedIds.length} selected</span>
+    <div className="sticky bottom-4 z-30 mx-auto flex max-w-4xl flex-wrap items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 shadow-lg">
+      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{selectedIds.length} selected</span>
 
-      <div className="mx-1 h-5 w-px bg-gray-200" />
+      <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-700" />
 
       <input
         value={brand}
         onChange={(e) => setBrand(e.target.value)}
         placeholder="Tag brand…"
-        className="w-32 rounded-lg border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-amber-400"
+        className="w-32 rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm outline-none focus:border-amber-400"
       />
       <button
         onClick={() => brand.trim() && apply({ brand: brand.trim() })}
@@ -56,12 +56,12 @@ export default function BulkActionBar({ selectedIds, campaigns, onClear, onCompl
         Tag
       </button>
 
-      <div className="mx-1 h-5 w-px bg-gray-200" />
+      <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-700" />
 
       <select
         value={postType}
         onChange={(e) => setPostType(e.target.value)}
-        className="rounded-lg border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-amber-400"
+        className="rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm outline-none focus:border-amber-400"
       >
         <option value="">Set type…</option>
         {POST_TYPES.map((t) => (
@@ -78,12 +78,12 @@ export default function BulkActionBar({ selectedIds, campaigns, onClear, onCompl
         Set
       </button>
 
-      <div className="mx-1 h-5 w-px bg-gray-200" />
+      <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-700" />
 
       <select
         value={campaignId}
         onChange={(e) => setCampaignId(e.target.value)}
-        className="max-w-[200px] rounded-lg border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-amber-400"
+        className="max-w-[200px] rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm outline-none focus:border-amber-400"
       >
         <option value="">Assign campaign…</option>
         {campaigns.map((c) => (
@@ -108,7 +108,7 @@ export default function BulkActionBar({ selectedIds, campaigns, onClear, onCompl
         {error && <span className="text-xs text-rose-600">{error}</span>}
         <button
           onClick={onClear}
-          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-500 hover:bg-gray-100"
+          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <X className="h-3.5 w-3.5" /> Clear
         </button>

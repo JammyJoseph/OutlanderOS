@@ -353,7 +353,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="flex min-h-full items-center justify-center px-6 py-24">
         <div className="text-center">
-          <p className="text-lg font-semibold text-gray-800">Deal not found</p>
+          <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">Deal not found</p>
           <Link
             href="/commercial/pipeline"
             className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)]"
@@ -438,8 +438,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Archived banner */}
         {deal.archived && (
-          <div className="mb-5 rounded-2xl border border-gray-300 bg-gray-100 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
-            <p className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+          <div className="mb-5 rounded-2xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2">
               <ArchiveIcon size={15} />
               This deal is archived
               {deal.archivedAt && (
@@ -456,7 +456,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
             <button
               onClick={unarchiveDeal}
               disabled={archiveBusy}
-              className="flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
               {archiveBusy ? (
                 <Loader2 size={13} className="animate-spin" />
@@ -469,7 +469,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         )}
 
         {/* Header */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 mb-5">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -526,7 +526,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 )}
               </div>
               <EditableTitle title={deal.title} onSave={(t) => patchDeal({ title: t })} />
-              <p className="text-sm text-gray-500 mt-0.5">{deal.client.name}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{deal.client.name}</p>
               <div className="mt-3">
                 <TypePills
                   types={types}
@@ -549,7 +549,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm ${
                     checklist.ready
                       ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700"
                   }`}
                 >
                   <CheckCircle2 size={15} />
@@ -574,7 +574,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               <select
                 value={deal.stage}
                 onChange={(e) => patchDeal({ stage: e.target.value })}
-                className="w-full text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer"
+                className="w-full text-sm font-medium text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none cursor-pointer"
               >
                 {(stageOptions.includes(deal.stage)
                   ? stageOptions
@@ -590,7 +590,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               <select
                 value={deal.client.id}
                 onChange={(e) => patchDeal({ clientId: e.target.value })}
-                className="w-full text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer"
+                className="w-full text-sm font-medium text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none cursor-pointer"
               >
                 {!clients.some((c) => c.id === deal.client.id) && (
                   <option value={deal.client.id}>{deal.client.name}</option>
@@ -606,7 +606,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               <select
                 value={deal.assignedTo?.id ?? ""}
                 onChange={(e) => patchDeal({ assignedToId: e.target.value || null })}
-                className="w-full text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer"
+                className="w-full text-sm font-medium text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none cursor-pointer"
               >
                 <option value="">Unassigned</option>
                 {users.map((u) => (
@@ -621,7 +621,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 type="date"
                 value={deal.dueDate ? deal.dueDate.slice(0, 10) : ""}
                 onChange={(e) => patchDeal({ dueDate: e.target.value || null })}
-                className="w-full text-sm font-medium text-gray-800 bg-transparent focus:outline-none cursor-pointer"
+                className="w-full text-sm font-medium text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none cursor-pointer"
               />
             </HeaderField>
           </div>
@@ -665,7 +665,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         )}
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 mb-5 bg-white rounded-xl border border-gray-100 shadow-sm p-1 w-fit">
+        <div className="flex items-center gap-1 mb-5 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-1 w-fit">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -673,7 +673,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 tab === t.key
                   ? "bg-[#ffd700]/10 text-[var(--portal-commercial)]"
-                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
               {t.label}
@@ -687,11 +687,11 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         )}
         {/* Brief tab requested but the deal isn't signed yet — show why it's locked. */}
         {tab === "brief" && !creativeUnlocked && (
-          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-8 text-center max-w-2xl">
+          <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-8 text-center max-w-2xl">
             <LockIcon className="mx-auto mb-3 text-gray-300" size={28} />
-            <p className="text-sm font-semibold text-gray-700">Creative is locked until the deal is signed</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Creative is locked until the deal is signed</p>
             <p className="text-xs text-gray-400 mt-1">
-              Move the deal to <span className="font-medium text-gray-600">Deal Signed</span> to unlock the brief &amp; creative workflow.
+              Move the deal to <span className="font-medium text-gray-600 dark:text-gray-400">Deal Signed</span> to unlock the brief &amp; creative workflow.
             </p>
           </div>
         )}
@@ -733,7 +733,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Archive — quiet, at the bottom. Replaces delete platform-wide. */}
         {!deal.archived && (
-          <div className="mt-10 pt-5 border-t border-gray-100 flex justify-end">
+          <div className="mt-10 pt-5 border-t border-gray-100 dark:border-gray-800 flex justify-end">
             <button
               onClick={() => setShowArchiveConfirm(true)}
               className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-red-500 transition-colors px-2 py-1"
@@ -762,20 +762,20 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       {/* Archive confirmation */}
       {showArchiveConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div className="border-b border-gray-50 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <ArchiveIcon size={16} className="text-red-400" /> Archive deal?
               </h2>
               <button
                 onClick={() => setShowArchiveConfirm(false)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
             <div className="px-6 py-5">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 &ldquo;{deal.title}&rdquo; disappears from the pipeline. Nothing is deleted — the
                 deal, its budget, and its history stay on record and you can unarchive it any time
                 via &ldquo;Show archived&rdquo;.
@@ -789,7 +789,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               <div className="flex gap-3 mt-5">
                 <button
                   onClick={() => setShowArchiveConfirm(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   Cancel
                 </button>
@@ -816,7 +816,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
 
 function HeaderField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2">
+    <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 px-3 py-2">
       <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
         {label}
       </p>
@@ -854,7 +854,7 @@ function EditableTitle({ title, onSave }: { title: string; onSave: (t: string) =
             setEditing(false);
           }
         }}
-        className="w-full text-2xl font-semibold text-gray-900 tracking-tight bg-transparent border-b-2 border-[#ffd700] focus:outline-none"
+        className="w-full text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight bg-transparent border-b-2 border-[#ffd700] focus:outline-none"
       />
     );
   }
@@ -862,7 +862,7 @@ function EditableTitle({ title, onSave }: { title: string; onSave: (t: string) =
     <h1
       onClick={() => setEditing(true)}
       title="Click to edit title"
-      className="text-2xl font-semibold text-gray-900 tracking-tight cursor-text rounded-lg -mx-1 px-1 hover:bg-amber-50/60 transition-colors"
+      className="text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight cursor-text rounded-lg -mx-1 px-1 hover:bg-amber-50/60 transition-colors"
     >
       {title}
     </h1>
@@ -906,7 +906,7 @@ function EditableValue({
               setEditing(false);
             }
           }}
-          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 tabular-nums rounded-xl border-2 border-[#ffd700] focus:outline-none"
+          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums rounded-xl border-2 border-[#ffd700] focus:outline-none"
         />
       </div>
     );
@@ -915,7 +915,7 @@ function EditableValue({
     <p
       onClick={() => setEditing(true)}
       title="Click to edit value"
-      className="text-3xl font-bold text-gray-900 tabular-nums cursor-text rounded-lg px-1 hover:bg-amber-50/60 transition-colors"
+      className="text-3xl font-bold text-gray-900 dark:text-gray-100 tabular-nums cursor-text rounded-lg px-1 hover:bg-amber-50/60 transition-colors"
     >
       {formatMoney(value)}
     </p>
@@ -966,14 +966,14 @@ function TypePills({
           <button
             onClick={() => setAdding((a) => !a)}
             title="Add type"
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-[#ffd700] hover:text-[var(--portal-commercial)] transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-[#ffd700] hover:text-[var(--portal-commercial)] transition-colors"
           >
             <Plus size={11} /> Add
           </button>
           {adding && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setAdding(false)} />
-              <div className="absolute z-20 mt-1.5 w-52 rounded-xl border border-gray-100 bg-white shadow-lg p-1.5">
+              <div className="absolute z-20 mt-1.5 w-52 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg p-1.5">
                 {remaining.map((t) => {
                   const style = TYPE_STYLES[t];
                   return (
@@ -983,7 +983,7 @@ function TypePills({
                         onChange([...types, t]);
                         setAdding(false);
                       }}
-                      className="flex w-full items-center rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+                      className="flex w-full items-center rounded-lg px-2.5 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <span
                         className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}
@@ -1035,9 +1035,9 @@ function OverviewTab({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div className="lg:col-span-2 space-y-5">
         {/* Description */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-800">Description</h3>
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Description</h3>
             {saving && <Loader2 size={13} className="animate-spin text-gray-400" />}
           </div>
           <textarea
@@ -1046,14 +1046,14 @@ function OverviewTab({
             onBlur={saveDescription}
             rows={4}
             placeholder="What's the deal? Scope, deliverables, context — saved automatically when you click away…"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
           />
         </div>
 
         {/* Notes */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-800">Notes</h3>
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Notes</h3>
             {saving && <Loader2 size={13} className="animate-spin text-gray-400" />}
           </div>
           <textarea
@@ -1062,7 +1062,7 @@ function OverviewTab({
             onBlur={saveNotes}
             rows={6}
             placeholder="Internal notes — saved automatically when you click away…"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
           />
         </div>
       </div>
@@ -1080,14 +1080,14 @@ function OverviewTab({
             .filter((d) => differenceInCalendarDays(d, new Date()) >= 0)
             .sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
           return (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
                 <Film size={15} className="text-red-600" />
                 Production Status
               </h3>
               <Link
                 href={`/production/${prod.id}`}
-                className="text-sm font-semibold text-gray-900 hover:text-red-600 transition-colors"
+                className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-red-600 transition-colors"
               >
                 {prod.title}
               </Link>
@@ -1095,7 +1095,7 @@ function OverviewTab({
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-[11px] font-medium text-red-600">
                   {PRODUCTION_STATUS_LABELS[prod.status] ?? prod.status}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   {prod._count?.teamMembers ?? 0} crew
                 </span>
               </div>
@@ -1104,20 +1104,20 @@ function OverviewTab({
                   <dt className="text-gray-400 flex items-center gap-1.5">
                     <CalendarDays size={12} /> Next shoot
                   </dt>
-                  <dd className="font-medium text-gray-700">
+                  <dd className="font-medium text-gray-700 dark:text-gray-300">
                     {nextShoot ? format(nextShoot, "EEE d MMM") : "—"}
                   </dd>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <dt className="text-gray-400">Budget used</dt>
-                    <dd className="font-medium text-gray-700 tabular-nums">
+                    <dd className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
                       {formatMoney(prod.budgetActual ?? 0)} / {formatMoney(prod.budgetTotal ?? 0)}
                       {utilisation !== null ? ` · ${utilisation}%` : ""}
                     </dd>
                   </div>
                   {utilisation !== null && (
-                    <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
                       <div
                         className={`h-full rounded-full ${utilisation > 100 ? "bg-red-500" : "bg-emerald-400"}`}
                         style={{ width: `${Math.min(100, utilisation)}%` }}
@@ -1127,7 +1127,7 @@ function OverviewTab({
                 </div>
                 <div className="flex items-center justify-between">
                   <dt className="text-gray-400">Last update</dt>
-                  <dd className="font-medium text-gray-700">
+                  <dd className="font-medium text-gray-700 dark:text-gray-300">
                     {formatDistanceToNow(parseISO(prod.updatedAt), { addSuffix: true })}
                   </dd>
                 </div>
@@ -1143,14 +1143,14 @@ function OverviewTab({
         })()}
 
         {/* Dates */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">Dates</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Dates</h3>
           <dl className="space-y-2.5 text-sm">
             <div className="flex items-center justify-between">
               <dt className="text-gray-400 flex items-center gap-1.5">
                 <CalendarDays size={13} /> Created
               </dt>
-              <dd className="font-medium text-gray-700">
+              <dd className="font-medium text-gray-700 dark:text-gray-300">
                 {format(parseISO(deal.createdAt), "d MMM yyyy")}
               </dd>
             </div>
@@ -1158,7 +1158,7 @@ function OverviewTab({
               <dt className="text-gray-400 flex items-center gap-1.5">
                 <CalendarDays size={13} /> Due
               </dt>
-              <dd className="font-medium text-gray-700">
+              <dd className="font-medium text-gray-700 dark:text-gray-300">
                 {deal.dueDate ? format(parseISO(deal.dueDate), "d MMM yyyy") : "—"}
               </dd>
             </div>
@@ -1166,7 +1166,7 @@ function OverviewTab({
               <dt className="text-gray-400 flex items-center gap-1.5">
                 <ArrowRightLeft size={13} /> In stage since
               </dt>
-              <dd className="font-medium text-gray-700">
+              <dd className="font-medium text-gray-700 dark:text-gray-300">
                 {format(parseISO(deal.stageUpdatedAt ?? deal.createdAt), "d MMM yyyy")}
               </dd>
             </div>
@@ -1180,7 +1180,7 @@ function OverviewTab({
               <div className="space-y-1.5">
                 {stageHistory.map((a) => (
                   <div key={a.id} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-gray-400">
                       {a.meta?.from && a.meta?.to ? (
                         <>
                           {STAGE_STYLES[a.meta.from as DealStage]?.label ?? a.meta.from}
@@ -1204,11 +1204,11 @@ function OverviewTab({
         </div>
 
         {/* Client */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">Client</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Client</h3>
           <Link
             href={`/commercial/clients/${deal.client.id}`}
-            className="text-sm font-semibold text-gray-900 hover:text-[var(--portal-commercial)] transition-colors"
+            className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-[var(--portal-commercial)] transition-colors"
           >
             {deal.client.name}
           </Link>
@@ -1217,15 +1217,15 @@ function OverviewTab({
           )}
           {deal.billingContact ? (
             <div className="mt-3 pt-3 border-t border-gray-50 text-sm space-y-1">
-              <p className="font-medium text-gray-700 flex items-center gap-1.5">
+              <p className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                 <UserIcon size={13} className="text-gray-400" />
                 {deal.billingContact.name}
               </p>
               {deal.billingContact.email && (
-                <p className="text-xs text-gray-500">{deal.billingContact.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{deal.billingContact.email}</p>
               )}
               {deal.billingContact.phone && (
-                <p className="text-xs text-gray-500">{deal.billingContact.phone}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{deal.billingContact.phone}</p>
               )}
             </div>
           ) : (
@@ -1254,11 +1254,11 @@ function LaunchChecklist({
   return (
     <div
       className={`mb-5 rounded-2xl border shadow-sm px-6 py-5 ${
-        ready ? "border-emerald-200 bg-emerald-50/60" : "border-gray-200 bg-white"
+        ready ? "border-emerald-200 bg-emerald-50/60" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
       }`}
     >
       <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
-        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
           <Rocket size={15} className={ready ? "text-emerald-600" : "text-[var(--portal-commercial)]"} />
           Production launch checklist
         </h3>
@@ -1280,7 +1280,7 @@ function LaunchChecklist({
           <div
             key={item.key}
             className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 ${
-              item.ok ? "border-emerald-100 bg-emerald-50/50" : "border-gray-100 bg-gray-50/60"
+              item.ok ? "border-emerald-100 bg-emerald-50/50" : "border-gray-100 dark:border-gray-800 bg-gray-50/60"
             }`}
           >
             {item.ok ? (
@@ -1290,7 +1290,7 @@ function LaunchChecklist({
             )}
             <div className="min-w-0">
               <p
-                className={`text-[13px] font-medium ${item.ok ? "text-emerald-800" : "text-gray-600"}`}
+                className={`text-[13px] font-medium ${item.ok ? "text-emerald-800" : "text-gray-600 dark:text-gray-400"}`}
               >
                 {item.label}
               </p>
@@ -1442,12 +1442,12 @@ function BriefCreativeTab({
 
   const responseSent = Boolean(response.sentDate);
   const inputCls =
-    "px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400";
+    "px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400";
 
   return (
     <div className="space-y-5 max-w-3xl">
       {/* Status strip */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-4 flex items-center justify-between gap-3 flex-wrap">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm px-6 py-4 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
             Creative status
@@ -1469,8 +1469,8 @@ function BriefCreativeTab({
       </div>
 
       {/* Client Brief */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-1">
           <FileText size={15} className="text-purple-500" />
           Client Brief
         </h3>
@@ -1488,7 +1488,7 @@ function BriefCreativeTab({
           placeholder={
             "Paste or write the client's brief here.\n\n• What do they want?\n• Objectives & audience\n• Mandatories, deadlines, budget signals"
           }
-          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
         />
 
         <LinkListEditor
@@ -1498,7 +1498,7 @@ function BriefCreativeTab({
           placeholder="https:// — client decks, references, examples"
         />
 
-        <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
               Brief received
@@ -1523,7 +1523,7 @@ function BriefCreativeTab({
           </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
           {brief.sentToCreativeAt ? (
             <p className="text-[11px] text-emerald-600 font-medium inline-flex items-center gap-1.5">
               <CheckCircle2 size={13} /> Sent to creative team{" "}
@@ -1547,9 +1547,9 @@ function BriefCreativeTab({
       </div>
 
       {/* Creative Response */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <Sparkles size={15} className="text-purple-500" />
             Creative Response
           </h3>
@@ -1573,7 +1573,7 @@ function BriefCreativeTab({
           placeholder={
             "Write the treatment / concept here.\n\n• The idea\n• Visual direction & tone\n• Formats and deliverables proposed"
           }
-          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
         />
 
         {/* Figma deck link + embedded preview */}
@@ -1590,7 +1590,7 @@ function BriefCreativeTab({
                 if (figmaUrl.trim() !== (response.figmaUrl ?? "")) saveResponse({ figmaUrl: figmaUrl.trim() || null });
               }}
               placeholder="https://www.figma.com/… — the creative deck"
-              className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+              className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
             />
             {figmaUrl.trim() && (
               <a
@@ -1632,7 +1632,7 @@ function BriefCreativeTab({
               if (submittedBy.trim() !== (response.submittedBy ?? "")) saveResponse({ submittedBy: submittedBy.trim() || null });
             }}
             placeholder="Who from the creative team is sending this?"
-            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+            className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
           />
         </div>
 
@@ -1643,7 +1643,7 @@ function BriefCreativeTab({
           placeholder="https:// — Figma, Pinterest, drive folders"
         />
 
-        <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-end">
+        <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end">
           <button
             onClick={sendResponse}
             disabled={!treatment.trim() || saving}
@@ -1692,12 +1692,12 @@ function VersionHistory({ current }: { current: CreativeResponseData }) {
   const total = versions.length;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between gap-2 text-left"
       >
-        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
           <History size={15} className="text-purple-500" />
           Version History
           <span className="text-[11px] font-normal text-gray-400">({total})</span>
@@ -1708,7 +1708,7 @@ function VersionHistory({ current }: { current: CreativeResponseData }) {
       {open && (
         <div className="relative mt-4 pl-5">
           {/* connecting line */}
-          <div className="absolute left-[6px] top-1.5 bottom-1.5 w-px bg-gray-200" />
+          <div className="absolute left-[6px] top-1.5 bottom-1.5 w-px bg-gray-200 dark:bg-gray-700" />
           <div className="space-y-4">
             {versions.map((rev, i) => {
               const versionNo = total - i;
@@ -1721,7 +1721,7 @@ function VersionHistory({ current }: { current: CreativeResponseData }) {
                     }`}
                   />
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="text-xs font-semibold text-gray-700">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                       Version {versionNo}
                       {isCurrent && (
                         <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-purple-600">
@@ -1741,7 +1741,7 @@ function VersionHistory({ current }: { current: CreativeResponseData }) {
                     </div>
                   </div>
                   {rev.treatment && (
-                    <p className="text-[13px] text-gray-600 whitespace-pre-wrap line-clamp-3 mt-1">
+                    <p className="text-[13px] text-gray-600 dark:text-gray-400 whitespace-pre-wrap line-clamp-3 mt-1">
                       {rev.treatment}
                     </p>
                   )}
@@ -1804,7 +1804,7 @@ function LinkListEditor({
           {links.map((url, i) => (
             <div
               key={`${url}-${i}`}
-              className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50/60 px-3 py-1.5 group"
+              className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 px-3 py-1.5 group"
             >
               <LinkIcon size={12} className="text-gray-400 shrink-0" />
               <a
@@ -1838,7 +1838,7 @@ function LinkListEditor({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
         />
         <button
           onClick={add}
@@ -1905,8 +1905,8 @@ function FeedbackLog({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-      <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-1">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-1">
         <MessageSquare size={15} className="text-purple-500" />
         Client Feedback
       </h3>
@@ -1915,7 +1915,7 @@ function FeedbackLog({
       </p>
 
       {feedback.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-200 py-6 text-center text-sm text-gray-400 mb-4">
+        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 py-6 text-center text-sm text-gray-400 mb-4">
           No feedback logged yet.
         </div>
       ) : (
@@ -1925,14 +1925,14 @@ function FeedbackLog({
             return (
               <div key={i} className="flex gap-4">
                 <div className="w-20 shrink-0 text-right">
-                  <p className="text-[11px] font-semibold text-gray-500">
+                  <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                     {format(parseISO(f.date), "d MMM")}
                   </p>
                   <p className="text-[10px] text-gray-400">{format(parseISO(f.date), "HH:mm")}</p>
                 </div>
-                <div className="flex-1 rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3">
+                <div className="flex-1 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 px-4 py-3">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    {f.from && <p className="text-xs font-semibold text-gray-700">{f.from}</p>}
+                    {f.from && <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{f.from}</p>}
                     <span
                       className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}
                     >
@@ -1953,7 +1953,7 @@ function FeedbackLog({
                       </button>
                     )}
                   </div>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{f.text}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{f.text}</p>
                 </div>
               </div>
             );
@@ -1961,7 +1961,7 @@ function FeedbackLog({
         </div>
       )}
 
-      <form onSubmit={submit} className="rounded-xl border border-gray-100 bg-gray-50/40 p-3.5 space-y-2.5">
+      <form onSubmit={submit} className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/40 p-3.5 space-y-2.5">
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
           Add feedback
         </p>
@@ -1971,12 +1971,12 @@ function FeedbackLog({
             value={from}
             onChange={(e) => setFrom(e.target.value)}
             placeholder="Who said it (client contact)"
-            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
           />
           <select
             value={type}
             onChange={(e) => setType(e.target.value as FeedbackEntryData["type"])}
-            className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none cursor-pointer"
+            className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none cursor-pointer"
           >
             <option value="note">Note</option>
             <option value="revision">Revision requested</option>
@@ -1988,7 +1988,7 @@ function FeedbackLog({
           onChange={(e) => setText(e.target.value)}
           rows={2}
           placeholder="What did they say?"
-          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
+          className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-400"
         />
         <div className="flex justify-end">
           <button
@@ -2010,9 +2010,9 @@ function FeedbackLog({
 
 function ActivityTab({ activities }: { activities: ActivityEntry[] }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden max-w-2xl">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden max-w-2xl">
       <div className="px-6 py-4 border-b border-gray-50">
-        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
           <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
           Activity
         </h3>
@@ -2027,7 +2027,7 @@ function ActivityTab({ activities }: { activities: ActivityEntry[] }) {
                 {ACTIVITY_ICONS[a.type] ?? <ActivityIcon size={13} />}
               </div>
               <div className="min-w-0">
-                <p className="text-sm text-gray-700 leading-snug">{a.message}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug">{a.message}</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
                   {a.userName ? `${a.userName} · ` : ""}
                   {formatDistanceToNow(parseISO(a.createdAt), { addSuffix: true })}
@@ -2086,15 +2086,15 @@ function ClearForProductionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div className="border-b border-gray-50 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <CheckCircle2 size={17} className="text-emerald-600" />
             Clear for Production
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
           >
             <X size={18} />
           </button>
@@ -2105,8 +2105,8 @@ function ClearForProductionModal({
             <div className="mx-auto w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
               <CheckCircle2 size={24} className="text-emerald-500" />
             </div>
-            <p className="text-base font-semibold text-gray-900">Cleared for production</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-base font-semibold text-gray-900 dark:text-gray-100">Cleared for production</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               &ldquo;{deal.title}&rdquo; is now with the production team — the brief and a{" "}
               {formatMoney(productionBudget)} hard-cost budget went across (of{" "}
               {formatMoney(dealTotal)} total deal).
@@ -2114,7 +2114,7 @@ function ClearForProductionModal({
             <div className="flex gap-3 mt-6 justify-center">
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Stay on deal
               </button>
@@ -2128,30 +2128,30 @@ function ClearForProductionModal({
           </div>
         ) : (
           <div className="px-6 py-5">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
               This will create a production project and send the brief to the production team.
               Continue?
             </p>
-            <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-sm space-y-1.5">
+            <div className="mt-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 px-4 py-3 text-sm space-y-1.5">
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Project</span>
-                <span className="font-medium text-gray-800 truncate ml-3">{deal.title}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200 truncate ml-3">{deal.title}</span>
               </p>
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Client</span>
-                <span className="font-medium text-gray-800">{deal.client.name}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{deal.client.name}</span>
               </p>
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Deal value</span>
-                <span className="font-medium text-gray-800 tabular-nums">{formatMoney(dealTotal)}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200 tabular-nums">{formatMoney(dealTotal)}</span>
               </p>
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Production budget (hard costs)</span>
-                <span className="font-medium text-gray-800 tabular-nums">{formatMoney(productionBudget)}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200 tabular-nums">{formatMoney(productionBudget)}</span>
               </p>
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Brief</span>
-                <span className="font-medium text-gray-800">
+                <span className="font-medium text-gray-800 dark:text-gray-200">
                   {deal.clientBrief?.content?.trim() || deal.briefContent?.trim()
                     ? "Included"
                     : "Not written yet"}
@@ -2170,7 +2170,7 @@ function ClearForProductionModal({
             <div className="flex gap-3 mt-5">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Cancel
               </button>
@@ -2249,15 +2249,15 @@ function MarkAsLiveModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div className="border-b border-gray-50 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Rocket size={17} className="text-emerald-600" />
             Mark as Live
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
           >
             <X size={18} />
           </button>
@@ -2268,8 +2268,8 @@ function MarkAsLiveModal({
             <div className="mx-auto w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
               <CheckCircle2 size={24} className="text-emerald-500" />
             </div>
-            <p className="text-base font-semibold text-gray-900">Deal is live</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-base font-semibold text-gray-900 dark:text-gray-100">Deal is live</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               &ldquo;{deal.title}&rdquo; is now live
               {needsFinance ? " and a budget was created in Finance for tracking." : "."}
             </p>
@@ -2282,25 +2282,25 @@ function MarkAsLiveModal({
           </div>
         ) : (
           <div className="px-6 py-5">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
               Supplied-assets job — no creative or production needed. This moves the deal to{" "}
               <span className="font-semibold">Live</span>
               {needsFinance
                 ? ` and creates a ${formatMoney(deal.value ?? 0)} budget in Finance for tracking.`
                 : "."}
             </p>
-            <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-sm space-y-1.5">
+            <div className="mt-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 px-4 py-3 text-sm space-y-1.5">
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Deal</span>
-                <span className="font-medium text-gray-800 truncate ml-3">{deal.title}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200 truncate ml-3">{deal.title}</span>
               </p>
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Client</span>
-                <span className="font-medium text-gray-800">{deal.client.name}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{deal.client.name}</span>
               </p>
               <p className="flex items-center justify-between">
                 <span className="text-gray-400">Budget</span>
-                <span className="font-medium text-gray-800 tabular-nums">
+                <span className="font-medium text-gray-800 dark:text-gray-200 tabular-nums">
                   {formatMoney(deal.value)} · locked
                 </span>
               </p>
@@ -2313,7 +2313,7 @@ function MarkAsLiveModal({
             <div className="flex gap-3 mt-5">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Cancel
               </button>

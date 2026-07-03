@@ -22,14 +22,14 @@ export function PortalHeader() {
       <div className="flex items-center gap-3">
         <Link
           href="/me"
-          className="text-sm font-bold text-gray-900 hover:text-[#ffd700] transition-colors"
+          className="text-sm font-bold text-gray-900 dark:text-gray-100 hover:text-[#ffd700] transition-colors"
         >
           Outlander<span className="text-[#ffd700]">OS</span>
         </Link>
         <span className="text-gray-300">/</span>
         <Link
           href="/me"
-          className="text-xs text-gray-500 hover:text-gray-800 transition-colors"
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
         >
           My Dashboard
         </Link>
@@ -42,7 +42,7 @@ export function PortalHeader() {
         {breadcrumb.length > 1 && (
           <>
             <span className="text-gray-300">/</span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               {breadcrumb[breadcrumb.length - 1]
                 .split("-")
                 .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -59,13 +59,13 @@ export function PortalHeader() {
 
         <Link
           href="/me"
-          className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
           My Dashboard
         </Link>
         <Link
           href="/"
-          className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
           Calendar
         </Link>

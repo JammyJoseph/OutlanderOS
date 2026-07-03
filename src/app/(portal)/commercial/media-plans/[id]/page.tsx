@@ -216,7 +216,7 @@ export default function MediaPlanEditPage() {
   if (notFound) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
-        <p className="text-sm text-gray-500">Media plan not found.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Media plan not found.</p>
         <Link
           href="/commercial/media-plans"
           className="text-sm text-[var(--portal-commercial)] hover:underline"
@@ -238,31 +238,31 @@ export default function MediaPlanEditPage() {
   const monthGroups = groupByMonth(lineItems);
 
   const inputCls =
-    "w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:border-[#ffd700] focus:outline-none";
+    "w-full rounded border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm focus:border-[#ffd700] focus:outline-none";
 
   return (
     <div className="flex h-full flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-3">
         <div className="flex items-center gap-3">
           <Link
             href="/commercial/media-plans"
-            className="text-gray-400 hover:text-gray-700 transition-colors"
+            className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
           >
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-base font-semibold text-gray-900">
+            <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">
               {header.clientName || "Media Plan"}
             </h1>
-            <p className="text-xs text-gray-500">{header.campaignName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{header.campaignName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             disabled
             title="Export PDF — coming soon"
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-400 cursor-not-allowed"
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs font-medium text-gray-400 cursor-not-allowed"
           >
             <Download className="h-3.5 w-3.5" />
             Export PDF
@@ -270,7 +270,7 @@ export default function MediaPlanEditPage() {
           <button
             disabled
             title="Share with Client — coming soon"
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-400 cursor-not-allowed"
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs font-medium text-gray-400 cursor-not-allowed"
           >
             <Share2 className="h-3.5 w-3.5" />
             Share
@@ -287,11 +287,11 @@ export default function MediaPlanEditPage() {
 
       <div className="flex-1 overflow-auto p-6">
         {/* Header form */}
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">Plan Details</h2>
+        <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
+          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Plan Details</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Client *</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Client *</label>
               <input
                 type="text"
                 value={header.clientName}
@@ -300,7 +300,7 @@ export default function MediaPlanEditPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Campaign Name *
               </label>
               <input
@@ -311,7 +311,7 @@ export default function MediaPlanEditPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Status</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Status</label>
               <select
                 value={header.status}
                 onChange={(e) => updateHeader("status", e.target.value)}
@@ -325,7 +325,7 @@ export default function MediaPlanEditPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Flight Start
               </label>
               <input
@@ -336,7 +336,7 @@ export default function MediaPlanEditPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Flight End
               </label>
               <input
@@ -347,7 +347,7 @@ export default function MediaPlanEditPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Currency</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Currency</label>
               <select
                 value={header.currency}
                 onChange={(e) => updateHeader("currency", e.target.value)}
@@ -359,7 +359,7 @@ export default function MediaPlanEditPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Contact Name
               </label>
               <input
@@ -370,7 +370,7 @@ export default function MediaPlanEditPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Contact Email
               </label>
               <input
@@ -384,14 +384,14 @@ export default function MediaPlanEditPage() {
         </div>
 
         {/* Line items grouped by month */}
-        <div className="rounded-xl border border-gray-200 bg-white">
-          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
-            <h2 className="text-sm font-semibold text-gray-700">Line Items</h2>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-3">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Line Items</h2>
             <button
               onClick={() =>
                 setLineItems((prev) => [...prev, newLine(prev.length)])
               }
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Line Item
@@ -401,7 +401,7 @@ export default function MediaPlanEditPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
+                <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
                   {[
                     "Site / Platform",
                     "Start",
@@ -419,7 +419,7 @@ export default function MediaPlanEditPage() {
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                      className="px-3 py-2 text-left font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
                     >
                       {h}
                     </th>
@@ -446,7 +446,7 @@ export default function MediaPlanEditPage() {
                     {group.items.map((li) => (
                       <tr
                         key={li._key}
-                        className="border-b border-gray-100 last:border-0 hover:bg-gray-50"
+                        className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
                         <td className="px-3 py-2 min-w-[160px]">
                           <input
@@ -554,10 +554,10 @@ export default function MediaPlanEditPage() {
                             min={1}
                           />
                         </td>
-                        <td className="px-3 py-2 min-w-[80px] text-right font-mono text-gray-600">
+                        <td className="px-3 py-2 min-w-[80px] text-right font-mono text-gray-600 dark:text-gray-400">
                           {fmt(li.grossCost)}
                         </td>
-                        <td className="px-3 py-2 min-w-[80px] text-right font-mono font-semibold text-gray-900">
+                        <td className="px-3 py-2 min-w-[80px] text-right font-mono font-semibold text-gray-900 dark:text-gray-100">
                           {fmt(li.netCost)}
                         </td>
                         <td className="px-3 py-2 min-w-[130px]">
@@ -619,17 +619,17 @@ export default function MediaPlanEditPage() {
 
                 {/* Grand total */}
                 {lineItems.length > 0 && (
-                  <tr className="border-t-2 border-gray-200 bg-gray-50">
+                  <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                     <td
                       colSpan={8}
-                      className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                      className="px-3 py-2 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
                     >
                       Grand Total
                     </td>
-                    <td className="px-3 py-2 text-right text-xs font-mono font-semibold text-gray-600">
+                    <td className="px-3 py-2 text-right text-xs font-mono font-semibold text-gray-600 dark:text-gray-400">
                       {fmt(grandTotalGross)}
                     </td>
-                    <td className="px-3 py-2 text-right text-xs font-mono font-bold text-gray-900">
+                    <td className="px-3 py-2 text-right text-xs font-mono font-bold text-gray-900 dark:text-gray-100">
                       {fmt(grandTotalNet)}
                     </td>
                     <td colSpan={3} />

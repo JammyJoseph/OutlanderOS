@@ -62,7 +62,7 @@ export function LinkedShotsPicker({
         ))}
         <button
           onClick={() => setOpen((o) => !o)}
-          className="inline-flex items-center gap-0.5 text-[11px] font-medium text-gray-500 hover:text-gray-800"
+          className="inline-flex items-center gap-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
         >
           {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           Edit
@@ -70,7 +70,7 @@ export function LinkedShotsPicker({
       </div>
 
       {open && (
-        <div className="rounded-lg border border-gray-100 bg-white p-2">
+        <div className="rounded-lg border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-2">
           {shots.length === 0 ? (
             <p className="text-[11px] text-gray-400 italic px-1 py-0.5">
               No shots yet — add a shot list on a call sheet.
@@ -87,7 +87,7 @@ export function LinkedShotsPicker({
                     className={`text-[11px] font-medium px-2 py-1 rounded-lg border transition-colors ${
                       on
                         ? "text-white border-transparent"
-                        : "text-gray-600 border-gray-200 bg-gray-50 hover:bg-gray-100"
+                        : "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800"
                     }`}
                     style={on ? { backgroundColor: accent } : undefined}
                   >

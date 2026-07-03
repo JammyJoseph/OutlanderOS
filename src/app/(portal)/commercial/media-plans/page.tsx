@@ -55,10 +55,10 @@ export default function MediaPlansListPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-3">
         <div>
-          <h1 className="text-base font-semibold text-gray-900">Media Plans</h1>
-          <p className="text-xs text-gray-500">{plans.length} plans</p>
+          <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Media Plans</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{plans.length} plans</p>
         </div>
         <Link
           href="/commercial/media-plans/new"
@@ -73,13 +73,13 @@ export default function MediaPlansListPage() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 animate-pulse rounded-lg bg-gray-100" />
+              <div key={i} className="h-16 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
             ))}
           </div>
         ) : plans.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <FileText className="mb-4 h-12 w-12 text-gray-300" />
-            <p className="text-sm font-medium text-gray-600">No media plans yet</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No media plans yet</p>
             <p className="mt-1 text-xs text-gray-400">
               Create your first media plan to get started
             </p>
@@ -91,23 +91,23 @@ export default function MediaPlansListPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Client / Campaign
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Flight Dates
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Lines
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Total Net
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Status
                   </th>
                   <th className="w-10" />
@@ -119,22 +119,22 @@ export default function MediaPlansListPage() {
                   return (
                     <tr
                       key={plan.id}
-                      className="group border-b border-gray-100 last:border-0 hover:bg-gray-50"
+                      className="group border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                       <td className="px-4 py-3">
                         <Link href={`/commercial/media-plans/${plan.id}`} className="block">
-                          <p className="font-medium text-gray-900">{plan.clientName}</p>
-                          <p className="text-xs text-gray-500">{plan.campaignName}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{plan.clientName}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{plan.campaignName}</p>
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-600">
+                      <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">
                         {fmtDate(plan.flightStart)}
                         {plan.flightEnd ? ` → ${fmtDate(plan.flightEnd)}` : ""}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-600">
+                      <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">
                         {plan.lineItems.length}
                       </td>
-                      <td className="px-4 py-3 text-xs font-mono font-semibold text-gray-900">
+                      <td className="px-4 py-3 text-xs font-mono font-semibold text-gray-900 dark:text-gray-100">
                         {fmtMoney(totalNet, plan.currency)}
                       </td>
                       <td className="px-4 py-3">

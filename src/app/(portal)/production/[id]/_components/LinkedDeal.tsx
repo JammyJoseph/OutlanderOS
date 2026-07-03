@@ -120,20 +120,20 @@ export default function LinkedDeal({ campaignId }: Props) {
   const budget = formatBudget(campaign.value, campaign.currency);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-      <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+      <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
         <Link2 size={15} className="text-[#ffd700]" />
         Linked Deal
       </h2>
       <div className="space-y-2">
         <Link
           href={`/commercial/deals/${campaign.id}`}
-          className="text-sm font-medium text-gray-900 hover:text-[#ffd700] transition-colors"
+          className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-[#ffd700] transition-colors"
         >
           {campaign.title}
         </Link>
         {campaign.client?.name && (
-          <p className="text-xs text-gray-500">{campaign.client.name}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{campaign.client.name}</p>
         )}
         <div className="flex items-center gap-2 pt-1">
           <span
@@ -144,7 +144,7 @@ export default function LinkedDeal({ campaignId }: Props) {
             {STAGE_LABELS[campaign.stage] ?? campaign.stage}
           </span>
           {budget && (
-            <span className="text-xs font-medium text-gray-700">{budget}</span>
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{budget}</span>
           )}
         </div>
         <Link
@@ -175,7 +175,7 @@ export default function LinkedDeal({ campaignId }: Props) {
                   </a>
                 )}
                 {(campaign.clientBrief?.content || campaign.briefContent) && (
-                  <p className="text-[11px] text-gray-500 flex items-start gap-1.5">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-start gap-1.5">
                     <FileText size={12} className="mt-0.5 shrink-0 text-gray-400" />
                     <span className="line-clamp-3">{campaign.clientBrief?.content || campaign.briefContent}</span>
                   </p>

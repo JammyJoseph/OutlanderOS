@@ -215,7 +215,7 @@ export default function ProjectDetail() {
     return (
       <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500 mb-4">Project not found.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">Project not found.</p>
           <Link
             href="/production"
             className="text-[#ffd700] text-sm font-medium hover:underline"
@@ -242,7 +242,7 @@ export default function ProjectDetail() {
         <div className="flex items-center justify-between mb-5">
           <Link
             href="/production"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             <ArrowLeft size={15} />
             Productions
@@ -262,7 +262,7 @@ export default function ProjectDetail() {
             <button
               onClick={() => setArchived(true)}
               disabled={archiveBusy}
-              className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 transition-colors px-2 py-1 disabled:opacity-50"
             >
               <Archive size={12} />
               Archive project
@@ -271,8 +271,8 @@ export default function ProjectDetail() {
         </div>
 
         {production.archived && (
-          <div className="mb-5 rounded-2xl border border-gray-300 bg-gray-100 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
-            <p className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+          <div className="mb-5 rounded-2xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2">
               <Archive size={15} />
               This project is archived
               {production.campaignId && (
@@ -284,7 +284,7 @@ export default function ProjectDetail() {
             {production.campaignId ? (
               <Link
                 href={`/commercial/deals/${production.campaignId}`}
-                className="flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <Briefcase size={13} /> Open deal <ArrowUpRight size={12} />
               </Link>
@@ -292,7 +292,7 @@ export default function ProjectDetail() {
               <button
                 onClick={() => setArchived(false)}
                 disabled={archiveBusy}
-                className="flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
                 {archiveBusy ? (
                   <Loader2 size={13} className="animate-spin" />

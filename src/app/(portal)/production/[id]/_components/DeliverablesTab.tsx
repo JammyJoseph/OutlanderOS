@@ -120,9 +120,9 @@ export default function DeliverablesTab({
       {/* Commercial deliverables — what was sold to the client (read-only here,
           status is editable). Contracted + additional/scope-creep. */}
       {campaignDeliverables.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-50">
-            <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <Package size={15} className="text-[#ffd700]" />
               Sold Deliverables
               <span className="text-[11px] font-normal text-gray-400">from the deal</span>
@@ -140,7 +140,7 @@ export default function DeliverablesTab({
                   className={`flex items-center gap-3 px-5 py-3 ${d.isAdditional ? "border-l-4 border-l-amber-400 bg-amber-50/30" : ""}`}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {d.title || d.type}
                       {d.quantity > 1 && <span className="text-gray-400 font-normal"> ×{d.quantity}</span>}
                       {d.isAdditional && (
@@ -150,7 +150,7 @@ export default function DeliverablesTab({
                       )}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                         {d.type}
                       </span>
                       {d.dueDate && (
@@ -185,7 +185,7 @@ export default function DeliverablesTab({
           return (
             <div
               key={s}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
+              className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4"
             >
               <div className="flex items-center gap-2">
                 <span
@@ -194,15 +194,15 @@ export default function DeliverablesTab({
                   {style.label}
                 </span>
               </div>
-              <p className="text-2xl font-semibold text-gray-900 mt-2">{count}</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">{count}</p>
             </div>
           );
         })}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <Package size={15} className="text-[#ffd700]" />
             Deliverables
           </h2>
@@ -218,7 +218,7 @@ export default function DeliverablesTab({
 
         {deliverables.length === 0 && !showAdd ? (
           <div className="px-5 py-12 text-center">
-            <p className="text-sm text-gray-500">No deliverables tracked yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No deliverables tracked yet.</p>
             <button
               onClick={() => setShowAdd(true)}
               className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#e6c200]"
@@ -284,7 +284,7 @@ function DeliverableRow({
           onBlur={() => {
             if (title !== deliverable.title) onUpdate({ title });
           }}
-          className="text-sm font-medium text-gray-900 bg-transparent border-none outline-none w-full px-1 py-0.5 rounded-md focus:bg-white"
+          className="text-sm font-medium text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none w-full px-1 py-0.5 rounded-md focus:bg-white dark:focus:bg-gray-900"
         />
       </div>
       <div className="col-span-2">
@@ -297,7 +297,7 @@ function DeliverableRow({
             const cur = deliverable.dueDate ? deliverable.dueDate.split("T")[0] : null;
             if (next !== cur) onUpdate({ dueDate: next });
           }}
-          className="text-xs text-gray-600 bg-transparent border-none outline-none w-full px-1 py-0.5 rounded-md focus:bg-white"
+          className="text-xs text-gray-600 dark:text-gray-400 bg-transparent border-none outline-none w-full px-1 py-0.5 rounded-md focus:bg-white dark:focus:bg-gray-900"
         />
         {!dueDate && deliverable.dueDate && (
           <p className="text-[10px] text-gray-400 px-1">
@@ -315,7 +315,7 @@ function DeliverableRow({
             if (next !== (deliverable.url ?? null)) onUpdate({ url: next });
           }}
           placeholder="https://…"
-          className="text-xs text-gray-600 bg-transparent border-none outline-none w-full px-1 py-0.5 rounded-md focus:bg-white"
+          className="text-xs text-gray-600 dark:text-gray-400 bg-transparent border-none outline-none w-full px-1 py-0.5 rounded-md focus:bg-white dark:focus:bg-gray-900"
         />
       </div>
       <div className="col-span-2 flex items-center justify-end gap-2">
@@ -383,7 +383,7 @@ function AddDeliverableForm({
       <select
         value={type}
         onChange={(e) => setType(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       >
         {(DELIVERABLE_TYPES ?? []).map((t) => (
           <option key={t.key} value={t.key}>
@@ -396,20 +396,20 @@ function AddDeliverableForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="date"
         value={dueDate}
         onChange={(e) => setDueDate(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <input
         type="url"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="URL"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
@@ -420,7 +420,7 @@ function AddDeliverableForm({
         </button>
         <button
           onClick={onCancel}
-          className="text-xs text-gray-400 hover:text-gray-600 px-2 py-2"
+          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-2"
         >
           Cancel
         </button>

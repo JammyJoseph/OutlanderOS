@@ -72,8 +72,8 @@ export function NotificationBell({ tone = "light" }: { tone?: "light" | "dark" }
 
   const buttonBase =
     tone === "dark"
-      ? "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-      : "text-gray-500 hover:bg-gray-100 hover:text-gray-900";
+      ? "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100";
 
   const upcoming = deadlines
     .filter((d) => d.status !== "COMPLETED")
@@ -103,9 +103,9 @@ export function NotificationBell({ tone = "light" }: { tone?: "light" | "dark" }
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-9 z-50 w-80 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-            <div className="border-b border-gray-100 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+          <div className="absolute right-0 top-9 z-50 w-80 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg overflow-hidden">
+            <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
                 Deadline Alerts
               </p>
               <div className="mt-2 flex items-center gap-3 text-xs">
@@ -142,7 +142,7 @@ export function NotificationBell({ tone = "light" }: { tone?: "light" | "dark" }
                       ? "text-red-600 font-bold"
                       : dayDiff === 0
                       ? "text-amber-600 font-semibold"
-                      : "text-gray-500";
+                      : "text-gray-500 dark:text-gray-400";
                   const label =
                     dayDiff < 0
                       ? `${Math.abs(dayDiff)}d overdue`
@@ -154,10 +154,10 @@ export function NotificationBell({ tone = "light" }: { tone?: "light" | "dark" }
                       <Link
                         href="/me"
                         onClick={() => setOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50"
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
                         <AlarmClock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                        <span className="flex-1 truncate text-xs text-gray-800">
+                        <span className="flex-1 truncate text-xs text-gray-800 dark:text-gray-200">
                           {d.title}
                         </span>
                         <span className={`text-[10px] uppercase tracking-wide ${tone}`}>
@@ -170,11 +170,11 @@ export function NotificationBell({ tone = "light" }: { tone?: "light" | "dark" }
               )}
             </ul>
 
-            <div className="border-t border-gray-100 px-4 py-2">
+            <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-2">
               <Link
                 href="/me"
                 onClick={() => setOpen(false)}
-                className="text-xs font-medium text-gray-700 hover:text-gray-900"
+                className="text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
               >
                 View all deadlines →
               </Link>

@@ -137,12 +137,12 @@ export default function NewMediaPlanPage() {
     currencySymbol + n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const inputCls =
-    "w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:border-[#ffd700] focus:outline-none";
+    "w-full rounded border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm focus:border-[#ffd700] focus:outline-none";
 
   return (
     <div className="flex h-full flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-3">
         <div className="flex items-center gap-3">
           <Link
             href="/commercial/media-plans"
@@ -150,7 +150,7 @@ export default function NewMediaPlanPage() {
           >
             <ChevronLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-base font-semibold text-gray-900">New Media Plan</h1>
+          <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">New Media Plan</h1>
         </div>
         <button
           onClick={handleSave}
@@ -163,11 +163,11 @@ export default function NewMediaPlanPage() {
 
       <div className="flex-1 overflow-auto p-6">
         {/* Header form */}
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">Plan Details</h2>
+        <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
+          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Plan Details</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Client *
               </label>
               {clients.length > 0 ? (
@@ -204,7 +204,7 @@ export default function NewMediaPlanPage() {
               )}
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Campaign Name *
               </label>
               <input
@@ -216,7 +216,7 @@ export default function NewMediaPlanPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Currency
               </label>
               <select
@@ -230,7 +230,7 @@ export default function NewMediaPlanPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Flight Start
               </label>
               <input
@@ -241,7 +241,7 @@ export default function NewMediaPlanPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Flight End
               </label>
               <input
@@ -253,7 +253,7 @@ export default function NewMediaPlanPage() {
             </div>
             <div />
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Contact Name
               </label>
               <input
@@ -265,7 +265,7 @@ export default function NewMediaPlanPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                 Contact Email
               </label>
               <input
@@ -280,12 +280,12 @@ export default function NewMediaPlanPage() {
         </div>
 
         {/* Line items */}
-        <div className="rounded-xl border border-gray-200 bg-white">
-          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
-            <h2 className="text-sm font-semibold text-gray-700">Line Items</h2>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-3">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Line Items</h2>
             <button
               onClick={() => setLineItems((prev) => [...prev, newLine()])}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Line Item
@@ -295,7 +295,7 @@ export default function NewMediaPlanPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
+                <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
                   {[
                     "Site / Platform",
                     "Start",
@@ -313,7 +313,7 @@ export default function NewMediaPlanPage() {
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-3 py-2 text-left font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                      className="px-3 py-2 text-left font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap"
                     >
                       {h}
                     </th>
@@ -324,7 +324,7 @@ export default function NewMediaPlanPage() {
                 {lineItems.map((li) => (
                   <tr
                     key={li._key}
-                    className="border-b border-gray-100 last:border-0 hover:bg-gray-50"
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
                     <td className="px-3 py-2 min-w-[160px]">
                       <input
@@ -406,10 +406,10 @@ export default function NewMediaPlanPage() {
                         min={1}
                       />
                     </td>
-                    <td className="px-3 py-2 min-w-[80px] text-right font-mono text-gray-600">
+                    <td className="px-3 py-2 min-w-[80px] text-right font-mono text-gray-600 dark:text-gray-400">
                       {fmt(li.grossCost)}
                     </td>
-                    <td className="px-3 py-2 min-w-[80px] text-right font-mono font-semibold text-gray-900">
+                    <td className="px-3 py-2 min-w-[80px] text-right font-mono font-semibold text-gray-900 dark:text-gray-100">
                       {fmt(li.netCost)}
                     </td>
                     <td className="px-3 py-2 min-w-[130px]">
@@ -453,17 +453,17 @@ export default function NewMediaPlanPage() {
                 ))}
 
                 {/* Totals row */}
-                <tr className="border-t-2 border-gray-200 bg-gray-50">
+                <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                   <td
                     colSpan={8}
-                    className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-3 py-2 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
                   >
                     Grand Total
                   </td>
-                  <td className="px-3 py-2 text-right text-xs font-mono font-semibold text-gray-600">
+                  <td className="px-3 py-2 text-right text-xs font-mono font-semibold text-gray-600 dark:text-gray-400">
                     {fmt(grandTotalGross)}
                   </td>
-                  <td className="px-3 py-2 text-right text-xs font-mono font-bold text-gray-900">
+                  <td className="px-3 py-2 text-right text-xs font-mono font-bold text-gray-900 dark:text-gray-100">
                     {fmt(grandTotalNet)}
                   </td>
                   <td colSpan={3} />
