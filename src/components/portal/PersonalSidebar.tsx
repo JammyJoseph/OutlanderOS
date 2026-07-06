@@ -24,7 +24,7 @@ export function PersonalSidebar() {
   return (
     <aside className="flex w-[200px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur-md">
       <div className="flex h-10 items-center gap-2 border-b border-sidebar-border px-4">
-        <span className="h-2 w-2 rounded-full bg-[#ffd700]" />
+        <span className="h-2 w-2 rounded-full bg-[#9C7C2E]" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
           My Dashboard
         </span>
@@ -42,14 +42,14 @@ export function PersonalSidebar() {
                   className={cn(
                     "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all duration-150",
                     isActive
-                      ? "bg-[#ffd700]/10 font-semibold text-gray-900 dark:text-gray-100 shadow-sm"
+                      ? "bg-[#9C7C2E]/10 font-semibold text-gray-900 dark:text-gray-100 shadow-sm"
                       : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200"
                   )}
                 >
                   <Icon
                     className={cn(
                       "h-4 w-4 shrink-0 transition-colors",
-                      isActive ? "text-[#ffd700]" : "text-gray-400"
+                      isActive ? "text-[#9C7C2E]" : "text-gray-400"
                     )}
                   />
                   <span className="truncate font-medium">{item.label}</span>

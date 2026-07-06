@@ -52,12 +52,12 @@ export default function TabBar({ active, onSelect, counts }: Props) {
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-white/60 dark:hover:bg-gray-900/60"
               }`}
             >
-              <Icon size={15} className={isActive ? "text-[#ffd700]" : "text-gray-400"} />
+              <Icon size={15} className={isActive ? "text-[#9C7C2E]" : "text-gray-400"} />
               {label}
               {count != null && count > 0 && (
                 <span
                   className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                    isActive ? "bg-amber-50 text-[#ffd700]" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                    isActive ? "bg-amber-50 text-[#9C7C2E]" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
                   }`}
                 >
                   {count}

@@ -155,7 +155,7 @@ export default function CampaignCalendarPage() {
                   <>
                     <span
                       className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                        isToday(day) ? "bg-[#ffd700] text-black" : "text-gray-700 dark:text-gray-300"
+                        isToday(day) ? "bg-[#9C7C2E] text-black" : "text-gray-700 dark:text-gray-300"
                       }`}
                     >
                       {day}

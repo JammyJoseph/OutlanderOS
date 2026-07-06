@@ -84,7 +84,7 @@ const STATUS_STYLES: Record<
   SHOOTING: {
     bg: "bg-amber-100 dark:bg-amber-900/30",
     text: "text-amber-700 dark:text-amber-300",
-    dot: "bg-[#ffd700]",
+    dot: "bg-[#9C7C2E]",
     label: "Shooting",
   },
   POST_PRODUCTION: {
@@ -209,7 +209,7 @@ function countdownLabel(date: Date): string {
 }
 
 function countdownTone(date: Date): { bg: string; text: string } {
-  if (isToday(date)) return { bg: "bg-[#ffd700]", text: "text-black" };
+  if (isToday(date)) return { bg: "bg-[#9C7C2E]", text: "text-black" };
   if (isTomorrow(date)) return { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-800 dark:text-amber-300" };
   const days = differenceInCalendarDays(date, new Date());
   if (days <= 7) return { bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300" };
@@ -323,7 +323,7 @@ export default function ProductionDashboard() {
         {/* Page header */}
         <div className="flex items-end justify-between mb-7">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#ff4444]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#A93B2E]">
               OutlanderOS · Production
             </p>
             <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
@@ -348,7 +348,7 @@ export default function ProductionDashboard() {
             </button>
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors shadow-sm"
             >
               <Plus size={16} />
               New Project
@@ -411,7 +411,7 @@ export default function ProductionDashboard() {
                     Brief conversion
                   </span>
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                    <div className="h-full rounded-full bg-[#ff4444]" style={{ width: `${rate}%` }} />
+                    <div className="h-full rounded-full bg-[#A93B2E]" style={{ width: `${rate}%` }} />
                   </div>
                   <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
                     {rate}%
@@ -445,7 +445,7 @@ export default function ProductionDashboard() {
               {list.length === 0 ? (
                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12 flex flex-col items-center justify-center text-center">
                   <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-4">
-                    <Film size={28} className="text-[#ffd700]" />
+                    <Film size={28} className="text-[#9C7C2E]" />
                   </div>
                   <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">No projects yet</h2>
                   <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-sm">
@@ -453,7 +453,7 @@ export default function ProductionDashboard() {
                   </p>
                   <button
                     onClick={() => setShowCreate(true)}
-                    className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors"
+                    className="flex items-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors"
                   >
                     <Plus size={16} />
                     Create your first project
@@ -540,7 +540,7 @@ function StatCard({
   subtitle?: string;
 }) {
   const TONE: Record<typeof tone, { bg: string; fg: string }> = {
-    amber: { bg: "bg-amber-50 dark:bg-amber-900/30", fg: "text-[#ffd700]" },
+    amber: { bg: "bg-amber-50 dark:bg-amber-900/30", fg: "text-[#9C7C2E]" },
     emerald: { bg: "bg-emerald-50 dark:bg-emerald-900/30", fg: "text-emerald-600 dark:text-emerald-400" },
     blue: { bg: "bg-blue-50 dark:bg-blue-900/30", fg: "text-blue-600 dark:text-blue-400" },
     orange: { bg: "bg-orange-50 dark:bg-orange-900/30", fg: "text-orange-600 dark:text-orange-400" },
@@ -589,7 +589,7 @@ function UpcomingList({ productions }: { productions: Production[] }) {
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm h-full overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800">
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <Clock size={15} className="text-[#ffd700]" />
+          <Clock size={15} className="text-[#9C7C2E]" />
           Upcoming
         </h2>
       </div>
@@ -613,7 +613,7 @@ function UpcomingList({ productions }: { productions: Production[] }) {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="text-center w-10 shrink-0">
-                    <div className="text-[9px] font-bold text-[#ffd700] uppercase leading-none">
+                    <div className="text-[9px] font-bold text-[#9C7C2E] uppercase leading-none">
                       {format(it.date, "MMM")}
                     </div>
                     <div className="text-base font-bold text-gray-800 dark:text-gray-200 leading-tight mt-0.5">
@@ -621,7 +621,7 @@ function UpcomingList({ productions }: { productions: Production[] }) {
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-[#ffd700] transition-colors">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-[#9C7C2E] transition-colors">
                       {it.production.title}
                     </p>
                     <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
@@ -728,12 +728,12 @@ function ProjectCard({ production: p }: { production: Production }) {
         style={{ borderLeftColor: bill.hex }}
       >
         <div className="flex items-start justify-between mb-3">
-          <div className="w-10 h-10 bg-[#ff4444]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Film size={18} className="text-[#ff4444]" />
+          <div className="w-10 h-10 bg-[#A93B2E]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Film size={18} className="text-[#A93B2E]" />
           </div>
           <div className="flex items-center gap-1.5 flex-wrap justify-end">
             {isNew && (
-              <span className="inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-full bg-[#ff4444] text-white tracking-wide">
+              <span className="inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-full bg-[#A93B2E] text-white tracking-wide">
                 NEW
               </span>
             )}
@@ -754,7 +754,7 @@ function ProjectCard({ production: p }: { production: Production }) {
         </div>
 
         <div className="flex-1 mb-3">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-base leading-snug group-hover:text-[#ffd700] transition-colors line-clamp-2">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-base leading-snug group-hover:text-[#9C7C2E] transition-colors line-clamp-2">
             {p.title}
           </h3>
           {client && (
@@ -766,7 +766,7 @@ function ProjectCard({ production: p }: { production: Production }) {
         <div className="mb-3">
           <div className="h-1 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
             <div
-              className="h-full bg-[#ffd700] rounded-full transition-all"
+              className="h-full bg-[#9C7C2E] rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -788,7 +788,7 @@ function ProjectCard({ production: p }: { production: Production }) {
           </div>
           {next ? (
             <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
-              <CalendarIcon size={12} className="text-[#ffd700]" />
+              <CalendarIcon size={12} className="text-[#9C7C2E]" />
               {format(next.date, "d MMM")}
             </span>
           ) : (
@@ -900,7 +900,7 @@ function CreateProjectModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Summer Campaign 2026"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
               autoFocus
             />
           </div>
@@ -913,7 +913,7 @@ function CreateProjectModal({
               value={client}
               onChange={(e) => setClient(e.target.value)}
               placeholder="e.g. Aston Martin"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
             />
           </div>
           <div>
@@ -925,7 +925,7 @@ function CreateProjectModal({
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="Concept, deliverables, anything worth remembering…"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
             />
           </div>
           <div>
@@ -939,7 +939,7 @@ function CreateProjectModal({
                     type="date"
                     value={d}
                     onChange={(e) => updateDate(i, e.target.value)}
-                    className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                    className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
                   />
                   {shootDates.length > 1 && (
                     <button
@@ -955,7 +955,7 @@ function CreateProjectModal({
               <button
                 type="button"
                 onClick={addDate}
-                className="flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:text-[#ffd700] transition-colors"
+                className="flex items-center gap-1.5 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E] transition-colors"
               >
                 <Plus size={13} /> Add another date
               </button>
@@ -969,7 +969,7 @@ function CreateProjectModal({
               {(
                 [
                   { key: "EDITORIAL", label: "Editorial", hex: "#00c853" },
-                  { key: "PAID", label: "Paid / Commercial", hex: "#ffd700" },
+                  { key: "PAID", label: "Paid / Commercial", hex: "#9C7C2E" },
                 ] as const
               ).map((opt) => (
                 <button
@@ -978,7 +978,7 @@ function CreateProjectModal({
                   onClick={() => setBilling(opt.key)}
                   className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
                     billing === opt.key
-                      ? "border-[#ffd700] bg-amber-50/60 dark:bg-amber-900/20 text-gray-900 dark:text-gray-100"
+                      ? "border-[#9C7C2E] bg-amber-50/60 dark:bg-amber-900/20 text-gray-900 dark:text-gray-100"
                       : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                   }`}
                 >
@@ -996,7 +996,7 @@ function CreateProjectModal({
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as ProductionStatus)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] bg-white dark:bg-gray-900"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] bg-white dark:bg-gray-900"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
@@ -1018,7 +1018,7 @@ function CreateProjectModal({
                 className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
                   budget && Number(budget) < 0
                     ? "border-red-400 focus:ring-red-200 dark:border-red-500"
-                    : "border-gray-200 dark:border-gray-700 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                    : "border-gray-200 dark:border-gray-700 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
                 }`}
               />
             </div>
@@ -1035,7 +1035,7 @@ function CreateProjectModal({
               className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
                 figmaUrl.trim() && !isValidUrl(figmaUrl)
                   ? "border-red-400 focus:ring-red-200 dark:border-red-500"
-                  : "border-gray-200 dark:border-gray-700 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                  : "border-gray-200 dark:border-gray-700 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
               }`}
             />
           </div>
@@ -1057,7 +1057,7 @@ function CreateProjectModal({
             <button
               type="submit"
               disabled={!title.trim() || creating}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creating ? <Loader2 size={15} className="animate-spin" /> : null}
               Create Project

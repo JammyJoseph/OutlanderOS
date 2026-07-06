@@ -44,7 +44,7 @@ function FinanceInner() {
     <div className="flex flex-col py-6 px-4 sm:px-6">
       <div className="mx-auto w-full max-w-6xl space-y-5">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#4d9fff]">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#2F4B8F]">
             OutlanderOS · Finance
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Finance</h1>
@@ -58,7 +58,7 @@ function FinanceInner() {
               onClick={() => switchTab(tab.id)}
               className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                 active === tab.id
-                  ? 'border-[#4d9fff] font-semibold text-[#4d9fff]'
+                  ? 'border-[#2F4B8F] font-semibold text-[#2F4B8F]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >

@@ -10,25 +10,23 @@ interface KPICardProps {
 
 const ACCENT: Record<NonNullable<KPICardProps['accent']>, string> = {
   default: 'text-gray-900 dark:text-gray-100',
-  positive: 'text-emerald-600 dark:text-emerald-400',
-  negative: 'text-red-500 dark:text-red-400',
-  amber: 'text-[#ffd700]',
+  positive: 'text-[#2E5E44] dark:text-[#4E8F6C]',
+  negative: 'text-[#c33b2a] dark:text-red-400',
+  amber: 'text-[#9C7C2E] dark:text-[#C9A44A]',
 }
 
-const ACCENT_BAR: Record<NonNullable<KPICardProps['accent']>, string> = {
-  default: '#4d9fff',
-  positive: '#10b981',
-  negative: '#ef4444',
-  amber: '#ffd700',
+const ACCENT_MARK: Record<NonNullable<KPICardProps['accent']>, string> = {
+  default: '#2F4B8F',
+  positive: '#2E5E44',
+  negative: '#c33b2a',
+  amber: '#9C7C2E',
 }
 
 export default function KPICard({ label, value, accent = 'default', sub, loading }: KPICardProps) {
   return (
-    <div
-      className="rounded-xl border border-border bg-card px-5 py-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-      style={{ borderLeft: `3px solid ${ACCENT_BAR[accent]}` }}
-    >
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 truncate">
+    <div className="rounded-lg border border-border bg-card px-5 py-4 transition-colors duration-200 hover:border-[#c9c9c6] dark:hover:border-[#3a3a3a]">
+      <p className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500 truncate">
+        <span className="h-2 w-2 shrink-0" style={{ backgroundColor: ACCENT_MARK[accent] }} />
         {label}
       </p>
       {loading ? (

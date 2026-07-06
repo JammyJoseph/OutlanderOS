@@ -369,7 +369,7 @@ export default function BudgetTab({
             {nextAction && (
               <button
                 onClick={() => setConfirmStatus(nextAction.next)}
-                className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-[#9C7C2E] text-black px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors shadow-sm"
               >
                 <Lock size={13} />
                 {nextAction.label}
@@ -414,7 +414,7 @@ export default function BudgetTab({
         >
           <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
             {locked ? "Allocated Budget" : "Total Campaign Budget"}
-            {locked && <Lock size={11} className="text-[#ffd700]" />}
+            {locked && <Lock size={11} className="text-[#9C7C2E]" />}
           </p>
           {locked ? (
             <>
@@ -426,7 +426,7 @@ export default function BudgetTab({
                   From deal:{" "}
                   <Link
                     href={`/commercial/deals/${production.campaignId}`}
-                    className="font-medium text-[#ffd700] hover:text-[#ffd700] inline-flex items-center gap-0.5"
+                    className="font-medium text-[#9C7C2E] hover:text-[#9C7C2E] inline-flex items-center gap-0.5"
                   >
                     <Briefcase size={10} /> {deal.title} <ArrowUpRight size={10} />
                   </Link>
@@ -454,7 +454,7 @@ export default function BudgetTab({
                   <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                     <div
                       className={`h-full rounded-full transition-all ${
-                        overSpent ? "bg-red-500" : "bg-[#ffd700]"
+                        overSpent ? "bg-red-500" : "bg-[#9C7C2E]"
                       }`}
                       style={{ width: `${spentPct}%` }}
                     />
@@ -534,7 +534,7 @@ export default function BudgetTab({
           <button
             onClick={seedTemplate}
             disabled={seeding}
-            className="inline-flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors shadow-sm disabled:opacity-50"
+            className="inline-flex items-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors shadow-sm disabled:opacity-50"
           >
             {seeding ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
             Set up from template
@@ -559,7 +559,7 @@ export default function BudgetTab({
                   onClick={() => setView(v)}
                   className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                     view === v
-                      ? "bg-[#ffd700] text-black"
+                      ? "bg-[#9C7C2E] text-black"
                       : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                   }`}
                   title={
@@ -604,7 +604,7 @@ export default function BudgetTab({
                         const pct = discountInput === "" ? 0 : Number(discountInput);
                         if (pct !== editorialDiscount) patchProduction({ editorialRateDiscount: pct });
                       }}
-                      className="w-11 text-right bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1 py-0.5 text-[11px] tabular-nums outline-none focus:border-[#ffd700]"
+                      className="w-11 text-right bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1 py-0.5 text-[11px] tabular-nums outline-none focus:border-[#9C7C2E]"
                     />
                     % off
                   </span>
@@ -746,7 +746,7 @@ export default function BudgetTab({
                     <div className="px-5 py-1.5">
                       <button
                         onClick={() => addLine(sec.key)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#ffd700] hover:text-[#ffd700]"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
                       >
                         <Plus size={12} /> Add line
                       </button>
@@ -917,7 +917,7 @@ export default function BudgetTab({
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div className="border-b border-gray-50 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <Lock size={16} className="text-[#ffd700]" /> {nextAction.label}
+                <Lock size={16} className="text-[#9C7C2E]" /> {nextAction.label}
               </h2>
               <button
                 onClick={() => setConfirmStatus(null)}
@@ -938,7 +938,7 @@ export default function BudgetTab({
                 <button
                   onClick={() => setBudgetStatus(confirmStatus)}
                   disabled={statusBusy}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors disabled:opacity-50"
                 >
                   {statusBusy ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
                   Confirm
@@ -955,7 +955,7 @@ export default function BudgetTab({
 // Shared cell classes. Editable inputs sit a shade lighter than the (grey) row
 // with a subtle inset border; auto-calculated cells are visually locked.
 const EDIT_CELL =
-  "text-[12px] bg-white border border-gray-200 rounded-md px-2 py-1 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/30 disabled:bg-transparent disabled:border-transparent disabled:shadow-none disabled:text-gray-500";
+  "text-[12px] bg-white border border-gray-200 rounded-md px-2 py-1 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus:border-[#9C7C2E] focus:ring-1 focus:ring-[#9C7C2E]/30 disabled:bg-transparent disabled:border-transparent disabled:shadow-none disabled:text-gray-500";
 const AUTO_CELL = "text-[12px] tabular-nums text-gray-400 cursor-default select-none px-1";
 
 // Role cell: a free-text input with an attached dropdown of the section's APA
@@ -1408,7 +1408,7 @@ function InvoiceSubRow({
   const invNum = line.invoicedAmount ?? null;
   const overage = invNum != null ? invNum - budgeted : null;
   const cellCls =
-    "text-[11px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1.5 py-0.5 outline-none focus:border-[#ffd700] disabled:bg-transparent disabled:border-transparent disabled:text-gray-400";
+    "text-[11px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1.5 py-0.5 outline-none focus:border-[#9C7C2E] disabled:bg-transparent disabled:border-transparent disabled:text-gray-400";
 
   return (
     <div className="grid grid-cols-12 gap-1.5 px-5 pb-1.5 items-center">
@@ -1483,7 +1483,7 @@ function InvoiceSubRow({
             href={line.invoiceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-[#ffd700] shrink-0"
+            className="text-gray-400 hover:text-[#9C7C2E] shrink-0"
             title="Open invoice"
           >
             <ExternalLink size={12} />
@@ -1491,7 +1491,7 @@ function InvoiceSubRow({
         )}
         <Link
           href="/finance"
-          className="text-gray-400 hover:text-[#ffd700] shrink-0"
+          className="text-gray-400 hover:text-[#9C7C2E] shrink-0"
           title="Open Finance for Quinn's approval"
         >
           <Link2 size={12} />
@@ -1556,7 +1556,7 @@ function SummaryRow({
               onChange={(e) => onPercentChange?.(e.target.value)}
               onBlur={onPercentBlur}
               disabled={!editable}
-              className="w-14 text-right bg-gray-50 border border-gray-200 rounded-md px-1.5 py-0.5 text-xs tabular-nums outline-none focus:border-[#ffd700] disabled:opacity-60"
+              className="w-14 text-right bg-gray-50 border border-gray-200 rounded-md px-1.5 py-0.5 text-xs tabular-nums outline-none focus:border-[#9C7C2E] disabled:opacity-60"
             />
             %
           </span>

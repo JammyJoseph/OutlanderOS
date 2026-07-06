@@ -45,9 +45,9 @@ export function PersonalHeader() {
       <div className="flex items-center gap-3">
         <Link
           href="/me"
-          className="text-sm font-bold text-gray-900 dark:text-gray-100 hover:text-[#ffd700] transition-colors"
+          className="text-sm font-bold text-gray-900 dark:text-gray-100 hover:text-[#9C7C2E] transition-colors"
         >
-          Outlander<span className="text-[#ffd700]">OS</span>
+          Outlander<span className="text-[#9C7C2E]">OS</span>
         </Link>
         <span className="text-gray-300">/</span>
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">My Dashboard</span>
@@ -70,7 +70,7 @@ export function PersonalHeader() {
             onClick={() => setProfileOpen((v) => !v)}
             className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ffd700]/15 text-[10px] font-bold text-[#ffd700]">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#9C7C2E]/15 text-[10px] font-bold text-[#9C7C2E]">
               {initials || <UserIcon className="h-3.5 w-3.5" />}
             </div>
             <span className="text-xs font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">

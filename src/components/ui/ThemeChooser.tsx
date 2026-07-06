@@ -21,18 +21,18 @@ export function ThemeChooser() {
             onClick={() => setTheme(opt.value)}
             className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
               active
-                ? 'border-[#ffd700] bg-amber-50 dark:bg-amber-900/30 ring-2 ring-amber-200/60'
+                ? 'border-[#9C7C2E] bg-amber-50 dark:bg-amber-900/30 ring-2 ring-amber-200/60'
                 : 'border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
           >
-            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-[#ffd700] text-black' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-[#9C7C2E] text-black' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
               {opt.icon}
             </div>
             <div className="flex-1">
               <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{opt.label}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400">{opt.desc}</div>
             </div>
-            {active && <Check className="h-4 w-4 text-[#ffd700]" />}
+            {active && <Check className="h-4 w-4 text-[#9C7C2E]" />}
           </button>
         )
       })}

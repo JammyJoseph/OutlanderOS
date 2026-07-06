@@ -134,7 +134,7 @@ export function NotificationBell() {
     overdueCount > 0
       ? "bg-red-500 text-white"
       : unreadCount > 0 || todayCount > 0
-      ? "bg-[#ffd700] text-black"
+      ? "bg-[#9C7C2E] text-black"
       : "bg-gray-400 text-white";
 
   // Merge both sources into one feed, newest-first.
@@ -198,7 +198,7 @@ export function NotificationBell() {
                   </span>
                 )}
                 {unreadCount > 0 && (
-                  <span className="flex items-center gap-1 font-semibold text-[#ffd700]">
+                  <span className="flex items-center gap-1 font-semibold text-[#9C7C2E]">
                     {unreadCount} unread
                   </span>
                 )}
@@ -208,7 +208,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
-                className="shrink-0 text-[11px] font-semibold text-[#ffd700] hover:underline"
+                className="shrink-0 text-[11px] font-semibold text-[#9C7C2E] hover:underline"
               >
                 Mark all read
               </button>
@@ -225,7 +225,7 @@ export function NotificationBell() {
                     <button
                       onClick={() => markRead(item.notification)}
                       className={`w-full text-left flex items-start gap-2.5 px-4 py-2.5 border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                        item.notification.read ? "opacity-60" : "bg-[#ffd700]/5"
+                        item.notification.read ? "opacity-60" : "bg-[#9C7C2E]/5"
                       }`}
                     >
                       <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400" />

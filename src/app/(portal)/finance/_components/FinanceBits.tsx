@@ -50,7 +50,7 @@ export function XeroDisconnectedBanner({ message }: { message?: string }) {
       </div>
       <a
         href="/api/xero/connect"
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#ffd700] px-3 py-1.5 text-[11px] font-semibold text-gray-900 transition-colors hover:bg-[#ffd700]"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#9C7C2E] px-3 py-1.5 text-[11px] font-semibold text-gray-900 transition-colors hover:bg-[#9C7C2E]"
       >
         <Link2 className="h-3.5 w-3.5" />
         Connect Xero

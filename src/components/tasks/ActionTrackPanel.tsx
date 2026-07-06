@@ -85,9 +85,9 @@ function sortTasks(tasks: PanelTask[]): PanelTask[] {
 
 // Project context badge — Commercial gold, Production red, Print green.
 function badgeFor(task: PanelTask): { label: string; bg: string; text: string } | null {
-  if (task.production) return { label: task.production.title, bg: "#ff44441A", text: "#ff4444" };
-  if (task.project) return { label: task.project.title, bg: "#ffd7001A", text: "#ffd700" };
-  if (task.portal === "print") return { label: "Print", bg: "#22A06B1A", text: "#15803d" };
+  if (task.production) return { label: task.production.title, bg: "#A93B2E1A", text: "#A93B2E" };
+  if (task.project) return { label: task.project.title, bg: "#9C7C2E1A", text: "#9C7C2E" };
+  if (task.portal === "print") return { label: "Print", bg: "#2E5E441A", text: "#15803d" };
   return null;
 }
 
@@ -194,8 +194,8 @@ function TaskRow({
         aria-label={done ? "Mark as to do" : "Mark as done"}
         className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
           done || fading
-            ? "border-[#ffd700] bg-[#ffd700] text-black"
-            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-[#ffd700]"
+            ? "border-[#9C7C2E] bg-[#9C7C2E] text-black"
+            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-[#9C7C2E]"
         }`}
       >
         {(done || fading) && <Check className="h-3 w-3" strokeWidth={3} />}
@@ -324,7 +324,7 @@ function DoneRow({
         onClick={() => onReopen(task)}
         aria-label="Reopen task"
         title="Reopen"
-        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 border-[#22A06B] bg-[#22A06B] text-white transition-colors hover:border-[#15803d] hover:bg-[#15803d]"
+        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 border-[#2E5E44] bg-[#2E5E44] text-white transition-colors hover:border-[#15803d] hover:bg-[#15803d]"
       >
         <Check className="h-3 w-3" strokeWidth={3} />
       </button>
@@ -336,7 +336,7 @@ function DoneRow({
       {/* Where it came from — ACTION or TRACK */}
       <span
         className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-          cameFromTrack ? "bg-blue-50 text-blue-600" : "bg-[#ffd700]/10 text-[#b08900]"
+          cameFromTrack ? "bg-blue-50 text-blue-600" : "bg-[#9C7C2E]/10 text-[#b08900]"
         }`}
       >
         {cameFromTrack ? "was Track" : "was Action"}
@@ -544,16 +544,16 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
   return (
     <section className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
       {/* ACTION — amber/gold left border */}
-      <div className="border-l-[3px] border-[#ffd700]">
+      <div className="border-l-[3px] border-[#9C7C2E]">
         <div className="flex items-center gap-2 px-4 pb-1 pt-3">
           <h2 className="text-sm font-bold tracking-wide text-gray-900">ACTION</h2>
-          <span className="rounded-full bg-[#ffd700]/10 px-2 py-0.5 text-[11px] font-bold text-[#ffd700]">
+          <span className="rounded-full bg-[#9C7C2E]/10 px-2 py-0.5 text-[11px] font-bold text-[#9C7C2E]">
             {actions.length}
           </span>
         </div>
         <QuickAdd
           placeholder="Add an action… (Enter to save)"
-          accent="#ffd700"
+          accent="#9C7C2E"
           onAdd={(title, due) => addTask("ACTION", title, due)}
         />
         {actions.length === 0 ? (
@@ -568,7 +568,7 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
       <div className="h-px bg-gray-100" />
 
       {/* TRACK — blue left border */}
-      <div className="border-l-[3px] border-[#4d9fff]">
+      <div className="border-l-[3px] border-[#2F4B8F]">
         <div className="flex items-center gap-2 px-4 pb-1 pt-3">
           <h2 className="text-sm font-bold tracking-wide text-gray-900">TRACK</h2>
           <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">
@@ -577,7 +577,7 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
         </div>
         <QuickAdd
           placeholder="Track something you're waiting on…"
-          accent="#4d9fff"
+          accent="#2F4B8F"
           onAdd={(title, due) => addTask("TRACK", title, due)}
         />
         {tracks.length === 0 ? (
@@ -591,7 +591,7 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
 
       {/* DONE — green left border, visible by default, collapsible */}
       {done.length > 0 && (
-        <div className="border-t border-gray-100 border-l-[3px] border-l-[#22A06B] bg-gray-50/40">
+        <div className="border-t border-gray-100 border-l-[3px] border-l-[#2E5E44] bg-gray-50/40">
           <div className="flex items-center justify-between pr-3">
             <button
               onClick={() => setShowDone((v) => !v)}
@@ -603,7 +603,7 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
                 <ChevronRight className="h-3.5 w-3.5" />
               )}
               DONE
-              <span className="rounded-full bg-[#22A06B]/10 px-2 py-0.5 text-[11px] font-bold text-[#15803d]">
+              <span className="rounded-full bg-[#2E5E44]/10 px-2 py-0.5 text-[11px] font-bold text-[#15803d]">
                 {done.length}
               </span>
             </button>

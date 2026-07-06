@@ -278,7 +278,7 @@ export function CallSheetEditor(p: EditorProps) {
               onClick={() =>
                 p.setClientTeam(CLIENT_TEAM_ROLES.map((role) => ({ role, name: "" })))
               }
-              className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444]"
+              className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E]"
             >
               <Plus size={13} /> Add standard roles
             </button>
@@ -301,7 +301,7 @@ export function CallSheetEditor(p: EditorProps) {
           <button
             onClick={importAgencyStaff}
             disabled={loadingStaff}
-            className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] disabled:opacity-40"
+            className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E] disabled:opacity-40"
           >
             {loadingStaff ? <RefreshCw size={13} className="animate-spin" /> : <UserPlus size={13} />}
             Auto-fill from staff
@@ -365,7 +365,7 @@ export function CallSheetEditor(p: EditorProps) {
           p.callTimes.length === 0 ? (
             <button
               onClick={() => p.setCallTimes(defaultCallTimes())}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444]"
+              className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E]"
             >
               <Plus size={13} /> Use template
             </button>
@@ -509,7 +509,7 @@ export function CallSheetEditor(p: EditorProps) {
                   : "grid-cols-[20px_100px_1fr_1fr_32px]"
               } gap-2 items-center rounded-lg transition-colors ${
                 dragOverIndex === i && dragIndex !== null && dragIndex !== i
-                  ? "bg-red-50/70 dark:bg-red-900/30 ring-1 ring-[#ff4444]/30"
+                  ? "bg-red-50/70 dark:bg-red-900/30 ring-1 ring-[#A93B2E]/30"
                   : dragIndex === i
                   ? "opacity-50"
                   : ""
@@ -636,7 +636,7 @@ export function CallSheetEditor(p: EditorProps) {
             <button
               onClick={syncDirectory}
               disabled={syncing || p.crew.length === 0}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] disabled:opacity-40"
+              className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E] disabled:opacity-40"
               title="Save crew to the Directory with this production as a credit"
             >
               {syncing ? (
@@ -937,7 +937,7 @@ function EquipmentEditor({
               <button
                 key={t.name}
                 onClick={() => applyKitTemplate(t.items)}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#ff4444] border border-[#ff4444]/30 rounded-full px-2.5 py-1 hover:bg-[#ff4444]/5"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#A93B2E] border border-[#A93B2E]/30 rounded-full px-2.5 py-1 hover:bg-[#A93B2E]/5"
                 title={`Add: ${t.items.join(", ")}`}
               >
                 <Wand2 size={11} /> {t.name}

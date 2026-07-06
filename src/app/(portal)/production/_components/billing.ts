@@ -12,7 +12,7 @@ export interface BillingTheme {
 }
 
 export const EDITORIAL_HEX = "#00c853";
-export const PAID_HEX = "#ffd700";
+export const PAID_HEX = "#9C7C2E";
 
 const EDITORIAL: BillingTheme = {
   key: "EDITORIAL",

@@ -100,7 +100,7 @@ export function GoogleAccountSection() {
   return (
     <section className="mb-6 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#ffd700]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#9C7C2E]">
           <Mail className="h-4 w-4" />
         </div>
         <div>
@@ -149,7 +149,7 @@ export function GoogleAccountSection() {
             <button
               onClick={startConnect}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Connect Google Account

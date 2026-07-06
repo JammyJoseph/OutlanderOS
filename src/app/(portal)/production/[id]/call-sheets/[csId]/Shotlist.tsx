@@ -149,7 +149,7 @@ function ShotlistImporter({
             <button
               onClick={run}
               disabled={!raw.trim() || busy}
-              className="flex items-center gap-1.5 bg-[#ff4444] text-white px-3.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
+              className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-3.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
             >
               {busy ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
               {busy ? "Parsing…" : "Parse into shots"}
@@ -233,7 +233,7 @@ function ShotCard({
         {linkedDeliverables.length > 0 && (
           <span
             title={`Feeds: ${linkedDeliverables.map((d) => d.title).join(", ")}`}
-            className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-900/30 text-[#ff4444]"
+            className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-900/30 text-[#A93B2E]"
           >
             <Package size={10} /> {linkedDeliverables.length}
           </span>
@@ -241,7 +241,7 @@ function ShotCard({
         <button
           onClick={onDuplicate}
           title="Duplicate shot"
-          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-300 dark:text-gray-600 hover:text-[#ff4444] transition-colors"
+          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-300 dark:text-gray-600 hover:text-[#A93B2E] transition-colors"
         >
           <Copy size={13} />
         </button>
@@ -330,7 +330,7 @@ function ShotCard({
                       title={on ? "Unlink from this deliverable" : "Link to this deliverable"}
                       className={`text-[11px] font-medium px-2 py-1 rounded-lg border transition-colors ${
                         on
-                          ? "bg-[#ff4444] text-white border-transparent"
+                          ? "bg-[#A93B2E] text-white border-transparent"
                           : "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
                       }`}
                     >
@@ -478,7 +478,7 @@ export function ShotlistDoc({
         ? shotlist.map((shot, i) => (
             <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
               <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2">
-                <span className="flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg bg-[#ff4444] text-white text-xs font-bold">
+                <span className="flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg bg-[#A93B2E] text-white text-xs font-bold">
                   {shot.shotNumber || i + 1}
                 </span>
                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
@@ -518,7 +518,7 @@ export function ShotlistDoc({
                     i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/50"
                   }`}
                 >
-                  <span className="font-bold text-[#ff4444]">{i + 1}</span>
+                  <span className="font-bold text-[#A93B2E]">{i + 1}</span>
                   <span className="text-gray-800 dark:text-gray-200 font-medium pr-2">{shot.description || "—"}</span>
                   <span className="text-gray-600 dark:text-gray-400 text-xs pr-2">{shot.setup}</span>
                   <span className="text-gray-600 dark:text-gray-400 text-xs pr-2">{shot.talent}</span>

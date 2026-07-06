@@ -56,7 +56,7 @@ function Section({
   return (
     <section className="mb-6 rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-sm border border-gray-100 dark:border-gray-800">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#ffd700]">{icon}</div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#9C7C2E]">{icon}</div>
         <div>
           <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
           {subtitle && <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}
@@ -75,7 +75,7 @@ function Toggle({ label, defaultChecked }: { label: string; defaultChecked?: boo
       <button
         type="button"
         onClick={() => setOn((v) => !v)}
-        className={`relative h-5 w-9 rounded-full transition-colors ${on ? 'bg-[#ffd700]' : 'bg-gray-300 dark:bg-gray-600'}`}
+        className={`relative h-5 w-9 rounded-full transition-colors ${on ? 'bg-[#9C7C2E]' : 'bg-gray-300 dark:bg-gray-600'}`}
       >
         <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white dark:bg-gray-900 shadow transition-all ${on ? 'left-[calc(100%-1.125rem)]' : 'left-0.5'}`} />
       </button>

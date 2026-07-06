@@ -65,7 +65,7 @@ export function DirectoryPicker({
       >
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
           <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-            <ContactIcon size={15} className="text-[#ff4444]" /> Import from Directory
+            <ContactIcon size={15} className="text-[#A93B2E]" /> Import from Directory
           </h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500">
             <X size={16} />
@@ -80,7 +80,7 @@ export function DirectoryPicker({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search the directory…"
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4444]/25 focus:border-[#ff4444]"
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#A93B2E]/25 focus:border-[#A93B2E]"
             />
           </div>
         </div>
@@ -115,7 +115,7 @@ export function DirectoryPicker({
                   </div>
                   <span
                     className={`shrink-0 w-5 h-5 rounded-md border flex items-center justify-center ${
-                      isSel ? "bg-[#ff4444] border-[#ff4444]" : "border-gray-300 dark:border-gray-600"
+                      isSel ? "bg-[#A93B2E] border-[#A93B2E]" : "border-gray-300 dark:border-gray-600"
                     }`}
                   >
                     {isSel && <Check size={13} className="text-white" />}
@@ -131,7 +131,7 @@ export function DirectoryPicker({
           <button
             onClick={confirm}
             disabled={count === 0}
-            className="bg-[#ff4444] text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40"
+            className="bg-[#A93B2E] text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40"
           >
             Add {count > 0 ? count : ""} to Unit List
           </button>

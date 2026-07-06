@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* ============================================================
+   OutlanderOS — "Paper Standard" theme (light, editorial)
+   Drop-in replacement for src/app/globals.css.
+   Reskin only: no selectors were removed, no behaviour changed.
+   Light theme retuned to white/hairline/black + muted portal
+   accents; dark theme + print + safety nets kept intact.
+   ============================================================ */
+
 /* dark: utilities apply on screen only — print always renders the light
    palette (printed call sheets must read as paper). */
 @custom-variant dark {
@@ -12,12 +20,83 @@
   }
 }
 
+/* ── Brand fonts ─────────────────────────────────────────────
+   Drop the /fonts folder from this package into /public/fonts. */
+@font-face {
+  font-family: "AtGambit";
+  src: url("/fonts/AtGambit-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "AtGambit";
+  src: url("/fonts/AtGambit-RegularItalic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "AtGambit";
+  src: url("/fonts/AtGambit-Semibold.woff2") format("woff2"),
+       url("/fonts/AtGambit-Semibold.otf") format("opentype");
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro";
+  src: url("/fonts/AcuminPro-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro";
+  src: url("/fonts/AcuminPro-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro";
+  src: url("/fonts/AcuminPro-Semibold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro";
+  src: url("/fonts/AcuminPro-Bold.otf") format("opentype");
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro ExtraCond";
+  src: url("/fonts/AcuminProExtraCond-Semibold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro ExtraCond";
+  src: url("/fonts/AcuminProExtraCond-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  /* Acumin Pro is the UI face; Manrope stays as the loaded fallback */
+  --font-sans: "Acumin Pro", var(--font-manrope), system-ui, sans-serif;
   --font-mono: var(--font-mono), 'Courier New', monospace;
-  --font-heading: var(--font-sans);
+  /* Editorial serif for headings (was: var(--font-sans)) */
+  --font-heading: "AtGambit", "Times New Roman", Georgia, serif;
+  /* Condensed cut for big stat numerals — use via font-[family-name:var(--font-stat)] */
+  --font-stat: "Acumin Pro ExtraCond", "Acumin Pro", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -54,57 +133,61 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  --color-amber: #D4A853;
+  /* Brand accent (was gold #D4A853) — Commercial brass */
+  --color-amber: #9C7C2E;
 }
 
-/* ===== LIGHT THEME — DEFAULT (no class on <html>) ===== */
+/* ===== LIGHT THEME — DEFAULT (no class on <html>) =====
+   White ground, hairline borders, black primary. */
 :root {
-  --background: #ffffff;
-  --foreground: #1a1a1a;
-  --card: #f8f9fa;
-  --card-foreground: #1a1a1a;
+  --background: #fbfbfa;          /* page wash */
+  --foreground: #111111;
+  --card: #ffffff;                /* cards sit brighter than the page */
+  --card-foreground: #111111;
   --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #ffd700;
-  --primary-foreground: #000000;
-  --secondary: #f1f3f5;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f1f3f5;
-  --muted-foreground: #6b7280;
-  --accent: #ffd700;
-  --accent-foreground: #000000;
-  --destructive: #dc2626;
+  --popover-foreground: #111111;
+  --primary: #111111;             /* black primary (was gold) */
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f2;
+  --secondary-foreground: #111111;
+  --muted: #f4f4f2;
+  --muted-foreground: #6b6b68;
+  --accent: #f4f4f2;              /* neutral highlight (was gold) */
+  --accent-foreground: #111111;
+  --destructive: #c33b2a;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #4d9fff;
+  --border: #e8e8e6;
+  --input: #e0e0dd;
+  --ring: #111111;                /* black focus ring (was blue) */
 
-  /* Portal accents — tuned for light backgrounds */
-  --portal-commercial: #ca8a04;
-  --portal-production: #ef4444;
-  --portal-print: #059669;
-  --portal-editorial: #9333ea;
-  --portal-finance: #2563eb;
-  --portal-think-tank: #d97706;
-  --portal-contacts: #2563eb;
-  --portal-admin: #6b7280;
-  --chart-1: #ca8a04;
-  --chart-2: #2563eb;
-  --chart-3: #059669;
-  --chart-4: #9333ea;
-  --chart-5: #ef4444;
-  --radius: 0.5rem;
-  --sidebar: #f8f9fa;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #ca8a04;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #f1f3f5;
-  --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #4d9fff;
+  /* Portal accents — muted editorial set */
+  --portal-commercial: #9C7C2E;   /* brass */
+  --portal-production: #A93B2E;   /* oxblood */
+  --portal-print: #2E5E44;        /* forest */
+  --portal-editorial: #6B4E8E;    /* aubergine */
+  --portal-finance: #2F4B8F;      /* royal */
+  --portal-think-tank: #B45A1F;   /* sienna */
+  --portal-contacts: #2F4B8F;     /* royal */
+  --portal-admin: #4A4843;        /* graphite */
+  --chart-1: #9C7C2E;
+  --chart-2: #2F4B8F;
+  --chart-3: #2E5E44;
+  --chart-4: #6B4E8E;
+  --chart-5: #A93B2E;
+  --radius: 0.375rem;             /* near-square (was 0.5rem) */
+  --sidebar: #fbfbfa;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #9C7C2E;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f4f2;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #e8e8e6;
+  --sidebar-ring: #111111;
 }
 
-/* ===== DARK THEME — applied when <html class="dark"> ===== */
+/* ===== DARK THEME — applied when <html class="dark"> =====
+   Kept functional; gold accent replaced with paper-white primary and
+   the portal accents lifted for dark grounds. */
 .dark {
   --background: #0a0a0a;
   --foreground: #ffffff;
@@ -112,70 +195,66 @@
   --card-foreground: #ffffff;
   --popover: #1e1e1e;
   --popover-foreground: #ffffff;
-  --primary: #ffd700;
+  --primary: #ffffff;
   --primary-foreground: #000000;
   --secondary: #1a1a1a;
   --secondary-foreground: #ffffff;
   --muted: #1a1a1a;
   --muted-foreground: #999999;
-  --accent: #ffd700;
-  --accent-foreground: #000000;
+  --accent: #1e1e1e;
+  --accent-foreground: #ffffff;
   --destructive: #ff6b6b;
   --destructive-foreground: #ffffff;
   --border: #2a2a2a;
   --input: #1a1a1a;
-  --ring: #4d9fff;
+  --ring: #ffffff;
 
-  /* Portal accents — luminous */
-  --portal-commercial: #ffd700;
-  --portal-production: #ff4444;
-  --portal-print: #00ff88;
-  --portal-editorial: #c77dff;
-  --portal-finance: #4d9fff;
-  --portal-think-tank: #ffaa00;
-  --portal-contacts: #4d9fff;
-  --portal-admin: #999999;
-  --chart-1: #ffd700;
-  --chart-2: #4d9fff;
-  --chart-3: #00ff88;
-  --chart-4: #c77dff;
-  --chart-5: #ff4444;
+  /* Portal accents — same hues, lifted for dark */
+  --portal-commercial: #C9A44A;
+  --portal-production: #D0584A;
+  --portal-print: #4E8F6C;
+  --portal-editorial: #9678BC;
+  --portal-finance: #5B7BC4;
+  --portal-think-tank: #D07C3E;
+  --portal-contacts: #5B7BC4;
+  --portal-admin: #8a8a86;
+  --chart-1: #C9A44A;
+  --chart-2: #5B7BC4;
+  --chart-3: #4E8F6C;
+  --chart-4: #9678BC;
+  --chart-5: #D0584A;
   --sidebar: #0f0f0f;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #ffd700;
+  --sidebar-primary: #C9A44A;
   --sidebar-primary-foreground: #000000;
   --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #2a2a2a;
-  --sidebar-ring: #4d9fff;
+  --sidebar-ring: #ffffff;
 
   /* Safety-net remap of the Tailwind palette tint-shades (50/100/200) to dark
-     values. Components now carry explicit dark: variants (which win by
-     specificity); these variables only catch stragglers and opacity variants
-     (bg-gray-50/60, bg-amber-50/40, …), which resolve through these vars via
-     color-mix. Bright shades (300–900) are left untouched. Scoped to .dark so
-     light mode keeps the genuine Tailwind palette. */
+     values — unchanged from the previous file. */
   --color-gray-50: #1a1a1a;   --color-gray-100: #1c1c1c;   --color-gray-200: #2a2a2a;
   --color-slate-50: #1a1a1a;  --color-slate-100: #1c1c1c;  --color-slate-200: #2a2a2a;
   --color-neutral-50: #1a1a1a;--color-neutral-100: #1c1c1c;--color-neutral-200: #2a2a2a;
   --color-zinc-50: #1a1a1a;   --color-zinc-100: #1c1c1c;   --color-zinc-200: #2a2a2a;
   --color-stone-50: #1a1a1a;  --color-stone-100: #1c1c1c;  --color-stone-200: #2a2a2a;
 
-  --color-amber-50: color-mix(in srgb, #ffd700 12%, #141414);  --color-amber-100: color-mix(in srgb, #ffd700 16%, #141414);
-  --color-yellow-50: color-mix(in srgb, #ffd700 12%, #141414); --color-yellow-100: color-mix(in srgb, #ffd700 16%, #141414);
-  --color-orange-50: color-mix(in srgb, #ffaa00 12%, #141414); --color-orange-100: color-mix(in srgb, #ffaa00 16%, #141414);
-  --color-green-50: color-mix(in srgb, #00ff88 12%, #141414);  --color-green-100: color-mix(in srgb, #00ff88 16%, #141414);
-  --color-emerald-50: color-mix(in srgb, #00ff88 12%, #141414);--color-emerald-100: color-mix(in srgb, #00ff88 16%, #141414);
-  --color-teal-50: color-mix(in srgb, #00ff88 12%, #141414);   --color-teal-100: color-mix(in srgb, #00ff88 16%, #141414);
+  --color-amber-50: color-mix(in srgb, #C9A44A 12%, #141414);  --color-amber-100: color-mix(in srgb, #C9A44A 16%, #141414);
+  --color-yellow-50: color-mix(in srgb, #C9A44A 12%, #141414); --color-yellow-100: color-mix(in srgb, #C9A44A 16%, #141414);
+  --color-orange-50: color-mix(in srgb, #D07C3E 12%, #141414); --color-orange-100: color-mix(in srgb, #D07C3E 16%, #141414);
+  --color-green-50: color-mix(in srgb, #4E8F6C 12%, #141414);  --color-green-100: color-mix(in srgb, #4E8F6C 16%, #141414);
+  --color-emerald-50: color-mix(in srgb, #4E8F6C 12%, #141414);--color-emerald-100: color-mix(in srgb, #4E8F6C 16%, #141414);
+  --color-teal-50: color-mix(in srgb, #4E8F6C 12%, #141414);   --color-teal-100: color-mix(in srgb, #4E8F6C 16%, #141414);
   --color-red-50: color-mix(in srgb, #ff6b6b 12%, #141414);    --color-red-100: color-mix(in srgb, #ff6b6b 16%, #141414);
   --color-rose-50: color-mix(in srgb, #ff6b6b 12%, #141414);   --color-rose-100: color-mix(in srgb, #ff6b6b 16%, #141414);
   --color-pink-50: color-mix(in srgb, #ff6b6b 12%, #141414);   --color-pink-100: color-mix(in srgb, #ff6b6b 16%, #141414);
-  --color-blue-50: color-mix(in srgb, #4d9fff 12%, #141414);   --color-blue-100: color-mix(in srgb, #4d9fff 16%, #141414);
-  --color-sky-50: color-mix(in srgb, #4d9fff 12%, #141414);    --color-sky-100: color-mix(in srgb, #4d9fff 16%, #141414);
-  --color-indigo-50: color-mix(in srgb, #4d9fff 12%, #141414); --color-indigo-100: color-mix(in srgb, #4d9fff 16%, #141414);
-  --color-cyan-50: color-mix(in srgb, #4d9fff 12%, #141414);   --color-cyan-100: color-mix(in srgb, #4d9fff 16%, #141414);
-  --color-purple-50: color-mix(in srgb, #c77dff 12%, #141414); --color-purple-100: color-mix(in srgb, #c77dff 16%, #141414);
-  --color-violet-50: color-mix(in srgb, #c77dff 12%, #141414); --color-violet-100: color-mix(in srgb, #c77dff 16%, #141414);
+  --color-blue-50: color-mix(in srgb, #5B7BC4 12%, #141414);   --color-blue-100: color-mix(in srgb, #5B7BC4 16%, #141414);
+  --color-sky-50: color-mix(in srgb, #5B7BC4 12%, #141414);    --color-sky-100: color-mix(in srgb, #5B7BC4 16%, #141414);
+  --color-indigo-50: color-mix(in srgb, #5B7BC4 12%, #141414); --color-indigo-100: color-mix(in srgb, #5B7BC4 16%, #141414);
+  --color-cyan-50: color-mix(in srgb, #5B7BC4 12%, #141414);   --color-cyan-100: color-mix(in srgb, #5B7BC4 16%, #141414);
+  --color-purple-50: color-mix(in srgb, #9678BC 12%, #141414); --color-purple-100: color-mix(in srgb, #9678BC 16%, #141414);
+  --color-violet-50: color-mix(in srgb, #9678BC 12%, #141414); --color-violet-100: color-mix(in srgb, #9678BC 16%, #141414);
 }
 
 @layer base {
@@ -188,6 +267,12 @@
   html {
     @apply font-sans;
   }
+  /* Editorial serif on page-level headings. Components keep their size/weight
+     utilities; only the family changes. Remove this rule to revert. */
+  h1, h2 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.015em;
+  }
 }
 
 /* Monospace numerals */
@@ -199,20 +284,21 @@
 /* OutlanderOS surfaces — theme-aware via CSS variables */
 .os-card {
   background: var(--card);
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 .os-card-hover:hover {
-  border-color: var(--ring);
-  filter: brightness(1.05);
-  transform: translateY(-2px);
+  border-color: #c9c9c6;
+}
+.dark .os-card-hover:hover {
+  border-color: #3a3a3a;
 }
 .os-glass {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.85);
 }
 .dark .os-glass {
   background: rgba(20,20,20,0.8);
@@ -221,28 +307,31 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  border-radius: 9999px;
+  border-radius: 4px;   /* near-square chips (was 9999px) */
   padding: 2px 10px;
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.04em;
   line-height: 1.5;
 }
 
-/* Apple design utilities — theme-aware */
+/* Apple design utilities — retuned to editorial flat */
 .card-apple {
   background: var(--card);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: none;
   border: 1px solid var(--border);
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 .card-apple:hover {
-  border-color: var(--ring);
-  filter: brightness(1.05);
+  border-color: #c9c9c6;
+}
+.dark .card-apple:hover {
+  border-color: #3a3a3a;
 }
 .glass-header {
   backdrop-filter: blur(20px);
-  background: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.9);
   border-bottom: 1px solid var(--border);
 }
 .dark .glass-header {
@@ -251,13 +340,14 @@
 .btn-primary {
   background: var(--primary);
   color: var(--primary-foreground);
-  border-radius: 10px;
+  border-radius: 6px;
   padding: 10px 20px;
   font-weight: 600;
-  transition: all 0.2s;
+  letter-spacing: 0.02em;
+  transition: opacity 0.2s;
 }
 .btn-primary:hover {
-  filter: brightness(1.1);
+  opacity: 0.85;
 }
 
 /* Scrollbar styling */
@@ -269,11 +359,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbced3;
+  background: #d6d6d3;
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #aab0b8;
+  background: #b8b8b5;
 }
 .dark ::-webkit-scrollbar-thumb {
   background: #2a2a2a;
@@ -282,22 +372,57 @@
   background: #3a3a3a;
 }
 
-/* ── Dark-theme safety net ───────────────────────────────────────────────────
-   Remaps the common light Tailwind utilities still scattered across pages to
-   their dark-monochrome equivalents. Scoped to .dark so light mode keeps the
-   genuine light utilities. Unlayered, so these win over Tailwind's @layer
-   utilities. Per-file edits using arbitrary values (e.g. bg-[#141414]) replace
-   the class entirely, so they never conflict. Scoped out of print.
+/* ── Light-theme gold retirement ─────────────────────────────────────────────
+   The old gold #ffd700 survives in components as arbitrary-value utilities
+   (text-[#ffd700], bg-[#ffd700], focus:border-[#ffd700], …). This unlayered
+   net remaps them so the reskin lands without touching every file. Inline
+   style={{ }} hex accents in TSX are covered by the mapping table in the
+   README instead (CSS can't reach those). Remove rules here as files get
+   migrated. Scoped out of print. */
+@media not print {
+  html:not(.dark) .text-\[\#ffd700\] { color: #9C7C2E; }
+  html:not(.dark) .hover\:text-\[\#ffd700\]:hover { color: #9C7C2E; }
+  html:not(.dark) .bg-\[\#ffd700\] { background-color: #111111; color: #ffffff; }
+  html:not(.dark) .hover\:bg-\[\#ffd700\]:hover { background-color: #333333; }
+  html:not(.dark) .border-\[\#ffd700\] { border-color: #111111; }
+  html:not(.dark) .focus\:border-\[\#ffd700\]:focus { border-color: #111111; }
+  html:not(.dark) .focus\:ring-amber-200\/60:focus { --tw-ring-color: rgba(17,17,17,0.12); }
+  html:not(.dark) .ring-amber-200\/60 { --tw-ring-color: rgba(17,17,17,0.12); }
 
-   NOTE: components are being migrated to carry explicit dark: variants. Where a
-   component already has one (e.g. bg-white dark:bg-gray-900), this unlayered
-   net wins by cascade — both values are dark, so the result stays correct while
-   guaranteeing coverage for the components not yet migrated. Kept in place until
-   the per-file sweep is complete and browser-verified. */
+  /* Dark mode: gold becomes the lifted brass */
+  .dark .text-\[\#ffd700\] { color: #C9A44A; }
+  .dark .hover\:text-\[\#ffd700\]:hover { color: #C9A44A; }
+  .dark .bg-\[\#ffd700\] { background-color: #ffffff; color: #000000; }
+  .dark .border-\[\#ffd700\] { border-color: #C9A44A; }
+  .dark .focus\:border-\[\#ffd700\]:focus { border-color: #C9A44A; }
+}
+
+/* ── Light-theme editorial flattening ────────────────────────────────────────
+   Squares off the oversized radii and kills drop shadows so existing
+   components read as hairline print surfaces without per-file edits.
+   Remove any rule if a specific screen needs its old value back. */
+@media not print {
+  html:not(.dark) .rounded-xl { border-radius: 8px; }
+  html:not(.dark) .rounded-2xl { border-radius: 10px; }
+  html:not(.dark) .rounded-lg { border-radius: 6px; }
+  html:not(.dark) .shadow-sm { box-shadow: none; }
+  html:not(.dark) .shadow-md,
+  html:not(.dark) .hover\:shadow-md:hover { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  html:not(.dark) .shadow-lg { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  /* Hairline tints: warm greys → neutral hairlines */
+  html:not(.dark) .border-gray-100, html:not(.dark) .border-slate-100, html:not(.dark) .border-neutral-100 { border-color: #f0f0ee; }
+  html:not(.dark) .border-gray-200, html:not(.dark) .border-slate-200, html:not(.dark) .border-neutral-200 { border-color: #e8e8e6; }
+  html:not(.dark) .divide-gray-50 > :not([hidden]) ~ :not([hidden]),
+  html:not(.dark) .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+  html:not(.dark) .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #f0f0ee; }
+}
+
+/* ── Dark-theme safety net ───────────────────────────────────────────────────
+   Unchanged from the previous file — remaps common light Tailwind utilities
+   to dark-monochrome equivalents until the per-file sweep is complete. */
 @media not print {
   /* Surfaces */
   .dark .bg-white { background-color: #141414; }
-  /* White glass / overlay opacity variants (can't remap --color-white) */
   .dark .bg-white\/95, .dark .bg-white\/90, .dark .bg-white\/85, .dark .bg-white\/80,
   .dark .bg-white\/75, .dark .bg-white\/70, .dark .bg-white\/60 { background-color: rgba(20,20,20,0.82); }
   .dark .bg-white\/50, .dark .bg-white\/40, .dark .bg-white\/30 { background-color: rgba(30,30,30,0.55); }
@@ -341,28 +466,27 @@
 }
 
 /* ── Status pill / accent remap (dark only) ──────────────────────────────────
-   Light pastel utilities (bg-amber-50, text-emerald-700, …) become luminous
-   low-opacity pills on the dark surface. Screen only — print falls back. */
+   Unchanged in structure; hues follow the new muted accents. */
 @media not print {
-  /* GOLD — amber / yellow */
-  .dark .bg-amber-50, .dark .bg-amber-100, .dark .bg-yellow-50, .dark .bg-yellow-100 { background-color: rgba(255,215,0,0.10); }
-  .dark .hover\:bg-amber-50:hover, .dark .hover\:bg-amber-100:hover { background-color: rgba(255,215,0,0.16); }
+  /* BRASS — amber / yellow */
+  .dark .bg-amber-50, .dark .bg-amber-100, .dark .bg-yellow-50, .dark .bg-yellow-100 { background-color: rgba(201,164,74,0.12); }
+  .dark .hover\:bg-amber-50:hover, .dark .hover\:bg-amber-100:hover { background-color: rgba(201,164,74,0.18); }
   .dark .text-amber-500, .dark .text-amber-600, .dark .text-amber-700, .dark .text-amber-800, .dark .text-amber-900,
-  .dark .text-yellow-500, .dark .text-yellow-600, .dark .text-yellow-700, .dark .text-yellow-800 { color: #ffd700; }
-  .dark .border-amber-100, .dark .border-amber-200, .dark .border-amber-300, .dark .border-yellow-200 { border-color: rgba(255,215,0,0.25); }
+  .dark .text-yellow-500, .dark .text-yellow-600, .dark .text-yellow-700, .dark .text-yellow-800 { color: #C9A44A; }
+  .dark .border-amber-100, .dark .border-amber-200, .dark .border-amber-300, .dark .border-yellow-200 { border-color: rgba(201,164,74,0.3); }
 
-  /* AMBER WARN — orange */
-  .dark .bg-orange-50, .dark .bg-orange-100 { background-color: rgba(255,170,0,0.10); }
-  .dark .text-orange-500, .dark .text-orange-600, .dark .text-orange-700, .dark .text-orange-800 { color: #ffaa00; }
-  .dark .border-orange-200, .dark .border-orange-300 { border-color: rgba(255,170,0,0.25); }
+  /* SIENNA WARN — orange */
+  .dark .bg-orange-50, .dark .bg-orange-100 { background-color: rgba(208,124,62,0.12); }
+  .dark .text-orange-500, .dark .text-orange-600, .dark .text-orange-700, .dark .text-orange-800 { color: #D07C3E; }
+  .dark .border-orange-200, .dark .border-orange-300 { border-color: rgba(208,124,62,0.3); }
 
-  /* GREEN — green / emerald / teal */
-  .dark .bg-green-50, .dark .bg-green-100, .dark .bg-emerald-50, .dark .bg-emerald-100, .dark .bg-teal-50, .dark .bg-teal-100 { background-color: rgba(0,255,136,0.10); }
-  .dark .hover\:bg-emerald-50:hover, .dark .hover\:bg-green-50:hover { background-color: rgba(0,255,136,0.16); }
+  /* FOREST — green / emerald / teal */
+  .dark .bg-green-50, .dark .bg-green-100, .dark .bg-emerald-50, .dark .bg-emerald-100, .dark .bg-teal-50, .dark .bg-teal-100 { background-color: rgba(78,143,108,0.14); }
+  .dark .hover\:bg-emerald-50:hover, .dark .hover\:bg-green-50:hover { background-color: rgba(78,143,108,0.2); }
   .dark .text-green-500, .dark .text-green-600, .dark .text-green-700, .dark .text-green-800,
   .dark .text-emerald-500, .dark .text-emerald-600, .dark .text-emerald-700, .dark .text-emerald-800,
-  .dark .text-teal-500, .dark .text-teal-600, .dark .text-teal-700 { color: #00ff88; }
-  .dark .border-green-200, .dark .border-emerald-100, .dark .border-emerald-200, .dark .border-emerald-300, .dark .border-teal-200 { border-color: rgba(0,255,136,0.25); }
+  .dark .text-teal-500, .dark .text-teal-600, .dark .text-teal-700 { color: #4E8F6C; }
+  .dark .border-green-200, .dark .border-emerald-100, .dark .border-emerald-200, .dark .border-emerald-300, .dark .border-teal-200 { border-color: rgba(78,143,108,0.3); }
 
   /* RED — red / rose / pink */
   .dark .bg-red-50, .dark .bg-red-100, .dark .bg-rose-50, .dark .bg-rose-100, .dark .bg-pink-50, .dark .bg-pink-100 { background-color: rgba(255,107,107,0.10); }
@@ -372,27 +496,25 @@
   .dark .text-pink-500, .dark .text-pink-600, .dark .text-pink-700 { color: #ff6b6b; }
   .dark .border-red-100, .dark .border-red-200, .dark .border-red-300, .dark .border-rose-200, .dark .border-pink-200 { border-color: rgba(255,107,107,0.25); }
 
-  /* BLUE — blue / sky / cyan / indigo */
-  .dark .bg-blue-50, .dark .bg-blue-100, .dark .bg-sky-50, .dark .bg-sky-100, .dark .bg-cyan-50, .dark .bg-cyan-100, .dark .bg-indigo-50, .dark .bg-indigo-100 { background-color: rgba(77,159,255,0.10); }
-  .dark .hover\:bg-blue-50:hover, .dark .hover\:bg-sky-50:hover { background-color: rgba(77,159,255,0.16); }
+  /* ROYAL — blue / sky / cyan / indigo */
+  .dark .bg-blue-50, .dark .bg-blue-100, .dark .bg-sky-50, .dark .bg-sky-100, .dark .bg-cyan-50, .dark .bg-cyan-100, .dark .bg-indigo-50, .dark .bg-indigo-100 { background-color: rgba(91,123,196,0.14); }
+  .dark .hover\:bg-blue-50:hover, .dark .hover\:bg-sky-50:hover { background-color: rgba(91,123,196,0.2); }
   .dark .text-blue-500, .dark .text-blue-600, .dark .text-blue-700, .dark .text-blue-800,
   .dark .text-sky-500, .dark .text-sky-600, .dark .text-sky-700,
-  .dark .text-cyan-600, .dark .text-cyan-700, .dark .text-indigo-500, .dark .text-indigo-600, .dark .text-indigo-700 { color: #4d9fff; }
-  .dark .border-blue-100, .dark .border-blue-200, .dark .border-blue-300, .dark .border-sky-200, .dark .border-indigo-200 { border-color: rgba(77,159,255,0.25); }
+  .dark .text-cyan-600, .dark .text-cyan-700, .dark .text-indigo-500, .dark .text-indigo-600, .dark .text-indigo-700 { color: #5B7BC4; }
+  .dark .border-blue-100, .dark .border-blue-200, .dark .border-blue-300, .dark .border-sky-200, .dark .border-indigo-200 { border-color: rgba(91,123,196,0.3); }
 
-  /* PURPLE — purple / violet */
-  .dark .bg-purple-50, .dark .bg-purple-100, .dark .bg-violet-50, .dark .bg-violet-100 { background-color: rgba(199,125,255,0.10); }
-  .dark .hover\:bg-purple-50:hover { background-color: rgba(199,125,255,0.16); }
+  /* AUBERGINE — purple / violet */
+  .dark .bg-purple-50, .dark .bg-purple-100, .dark .bg-violet-50, .dark .bg-violet-100 { background-color: rgba(150,120,188,0.14); }
+  .dark .hover\:bg-purple-50:hover { background-color: rgba(150,120,188,0.2); }
   .dark .text-purple-500, .dark .text-purple-600, .dark .text-purple-700, .dark .text-purple-800,
-  .dark .text-violet-500, .dark .text-violet-600, .dark .text-violet-700 { color: #c77dff; }
-  .dark .border-purple-100, .dark .border-purple-200, .dark .border-purple-300, .dark .border-violet-200 { border-color: rgba(199,125,255,0.25); }
+  .dark .text-violet-500, .dark .text-violet-600, .dark .text-violet-700 { color: #9678BC; }
+  .dark .border-purple-100, .dark .border-purple-200, .dark .border-purple-300, .dark .border-violet-200 { border-color: rgba(150,120,188,0.3); }
 }
 
 
 /* ── Call sheet print / PDF export ──────────────────────────────────────────
-   Scoped to pages that render a call sheet document ([data-callsheet-print]).
-   Hides portal chrome and unlocks the fixed-height portal shell so the
-   document flows across printed pages. */
+   Unchanged from the previous file. */
 @media print {
   body:has([data-callsheet-print]) header,
   body:has([data-callsheet-print]) aside,
@@ -412,9 +534,6 @@
   body:has([data-callsheet-print]) [data-callsheet-print] {
     min-height: 0 !important;
   }
-  /* Restore the light Tailwind palette for the printed call sheet so it reads
-     as paper. Set on the call-sheet body (not :root — PostCSS rejects :root in
-     @media), cascading the original tint shades back to the document. */
   body:has([data-callsheet-print]) {
     --color-gray-50: #f9fafb;   --color-gray-100: #f3f4f6;   --color-gray-200: #e5e7eb;
     --color-slate-50: #f8fafc;  --color-slate-100: #f1f5f9;  --color-slate-200: #e2e8f0;

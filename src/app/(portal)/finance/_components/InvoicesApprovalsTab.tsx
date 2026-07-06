@@ -33,7 +33,7 @@ interface AgedResponse {
   error?: string
 }
 
-const inputCls = 'rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:border-[#ffd700] focus:outline-none'
+const inputCls = 'rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:border-[#9C7C2E] focus:outline-none'
 
 function AddInvoiceForm({ projects, onDone }: { projects: ProjectsResponse['projects']; onDone: () => void }) {
   const [supplierName, setSupplierName] = useState('')
@@ -74,7 +74,7 @@ function AddInvoiceForm({ projects, onDone }: { projects: ProjectsResponse['proj
   }
 
   return (
-    <div className="rounded-xl border border-[#ffd700]/40 bg-amber-50/40 dark:bg-amber-900/30 p-4">
+    <div className="rounded-xl border border-[#9C7C2E]/40 bg-amber-50/40 dark:bg-amber-900/30 p-4">
       <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Log a Supplier Invoice</p>
       <div className="flex flex-wrap items-center gap-2">
         <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Supplier name *" className={inputCls} />
@@ -90,7 +90,7 @@ function AddInvoiceForm({ projects, onDone }: { projects: ProjectsResponse['proj
         <button
           onClick={submit}
           disabled={saving}
-          className="rounded-lg bg-[#ffd700] px-3 py-1.5 text-xs font-semibold text-gray-900 transition-colors hover:bg-[#ffd700] disabled:opacity-50"
+          className="rounded-lg bg-[#9C7C2E] px-3 py-1.5 text-xs font-semibold text-gray-900 transition-colors hover:bg-[#9C7C2E] disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Add Invoice'}
         </button>
@@ -282,7 +282,7 @@ function Incoming({
                             onKeyDown={(e) => e.key === 'Enter' && flag(inv.id)}
                             placeholder="Why is this flagged?"
                             autoFocus
-                            className="w-36 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[10px] focus:border-[#ffd700] focus:outline-none"
+                            className="w-36 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[10px] focus:border-[#9C7C2E] focus:outline-none"
                           />
                           <button onClick={() => flag(inv.id)} disabled={busy === inv.id || !flagNote.trim()} className="rounded-md bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50">
                             Flag
@@ -315,7 +315,7 @@ function Incoming({
                             <button
                               onClick={() => setStatus(inv.id, 'PAID')}
                               disabled={busy === inv.id}
-                              className="rounded-md bg-[#ffd700] px-2 py-0.5 text-[10px] font-semibold text-gray-900 transition-colors hover:bg-[#ffd700] disabled:opacity-50"
+                              className="rounded-md bg-[#9C7C2E] px-2 py-0.5 text-[10px] font-semibold text-gray-900 transition-colors hover:bg-[#9C7C2E] disabled:opacity-50"
                             >
                               Mark Paid
                             </button>
@@ -396,7 +396,7 @@ export default function InvoicesApprovalsTab() {
             <button
               key={s}
               onClick={() => setSection(s)}
-              className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold capitalize transition-colors ${section === s ? 'bg-[#ffd700] text-gray-900' : 'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold capitalize transition-colors ${section === s ? 'bg-[#9C7C2E] text-gray-900' : 'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
             >
               {s === 'incoming' ? 'Incoming — Supplier Invoices' : 'Outgoing — Client Invoices'}
             </button>

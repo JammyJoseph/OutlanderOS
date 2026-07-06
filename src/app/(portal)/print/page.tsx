@@ -47,7 +47,7 @@ export default function PrintDashboard() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-[#00ff88]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#2E5E44]" />
       </div>
     );
   }
@@ -62,7 +62,7 @@ export default function PrintDashboard() {
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/90 px-6 py-3 backdrop-blur">
         <div>
           <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            <span className="h-2 w-2 rounded-full bg-[#00ff88]" />
+            <span className="h-2 w-2 rounded-full bg-[#2E5E44]" />
             Print — Outlander Magazine
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -73,7 +73,7 @@ export default function PrintDashboard() {
           <button
             onClick={handleNewIssue}
             disabled={creating || !issues.length}
-            className="flex items-center gap-1.5 rounded-lg bg-[#00ff88] px-3 py-1.5 text-xs font-semibold text-black hover:bg-[#00ff88]/90 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-[#2E5E44] px-3 py-1.5 text-xs font-semibold text-black hover:bg-[#2E5E44]/90 disabled:opacity-50"
           >
             {creating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -108,7 +108,7 @@ export default function PrintDashboard() {
             <button
               onClick={handleNewIssue}
               disabled={creating || !issues.length}
-              className="flex min-h-[164px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card text-gray-500 dark:text-gray-400 transition hover:border-[#00ff88]/40 hover:text-[#00ff88] disabled:opacity-50"
+              className="flex min-h-[164px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card text-gray-500 dark:text-gray-400 transition hover:border-[#2E5E44]/40 hover:text-[#2E5E44] disabled:opacity-50"
             >
               {creating ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -177,7 +177,7 @@ function IssueCard({ issue, isCurrent }: { issue: IssueSummary; isCurrent: boole
         <span>
           Complete <span className="font-mono font-semibold text-gray-300 dark:text-gray-300">{issue.stats.completePct}%</span>
         </span>
-        <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 transition group-hover:text-[#00ff88]">
+        <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 transition group-hover:text-[#2E5E44]">
           Open <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
         </span>
       </div>

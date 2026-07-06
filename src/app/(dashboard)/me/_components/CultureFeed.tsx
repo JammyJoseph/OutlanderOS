@@ -109,7 +109,7 @@ export function CultureFeed() {
                   href={s.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="line-clamp-2 text-sm text-gray-800 hover:text-[#ffd700] dark:text-gray-200"
+                  className="line-clamp-2 text-sm text-gray-800 hover:text-[#9C7C2E] dark:text-gray-200"
                 >
                   {s.title}
                 </a>

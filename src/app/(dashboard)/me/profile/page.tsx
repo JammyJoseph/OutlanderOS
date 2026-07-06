@@ -259,7 +259,7 @@ export default function ProfilePage() {
               <button
                 onClick={save}
                 disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50"
               >
                 <Check className="h-4 w-4" />
                 {saving ? 'Saving…' : 'Save changes'}
@@ -290,7 +290,7 @@ export default function ProfilePage() {
 
       <div className="mt-8 rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-sm border border-gray-100 dark:border-gray-800">
         <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#ffd700]"><Sun className="h-4 w-4" /></div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#9C7C2E]"><Sun className="h-4 w-4" /></div>
           <div>
             <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Appearance</h2>
             <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Choose how OutlanderOS looks for you</p>
@@ -484,7 +484,7 @@ function EditUserModal({
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
-          <button onClick={save} disabled={saving} className="rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
+          <button onClick={save} disabled={saving} className="rounded-xl bg-[#9C7C2E] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>

@@ -59,7 +59,7 @@ export default function CateringWidget() {
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm h-full overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800">
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <UtensilsCrossed size={15} className="text-[#ffd700]" />
+          <UtensilsCrossed size={15} className="text-[#9C7C2E]" />
           Catering Readiness
         </h2>
         <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
@@ -95,9 +95,9 @@ export default function CateringWidget() {
                   >
                     <span
                       className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: s.billingType === "PAID" ? "#ffd700" : "#00c853" }}
+                      style={{ backgroundColor: s.billingType === "PAID" ? "#9C7C2E" : "#00c853" }}
                     />
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-[#ffd700] transition-colors">
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-[#9C7C2E] transition-colors">
                       {s.productionTitle}
                     </span>
                     <span className="text-[11px] text-gray-400 dark:text-gray-500 shrink-0">
@@ -111,7 +111,7 @@ export default function CateringWidget() {
                     className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg transition-colors ${
                       done
                         ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-gray-500 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-[#ffd700]"
+                        : "text-gray-500 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-[#9C7C2E]"
                     } disabled:opacity-60`}
                   >
                     {busyId === s.callSheetId ? (
@@ -128,7 +128,7 @@ export default function CateringWidget() {
                   <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
-                        complete ? "bg-emerald-500" : "bg-[#ffd700]"
+                        complete ? "bg-emerald-500" : "bg-[#9C7C2E]"
                       }`}
                       style={{ width: `${pct}%` }}
                     />

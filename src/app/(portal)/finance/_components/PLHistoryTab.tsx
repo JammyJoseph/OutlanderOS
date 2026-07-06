@@ -109,7 +109,7 @@ export default function PLHistoryTab() {
   const lastPL = lastYear.data?.profitAndLoss
   const yoy = lastPL && lastPL.revenue > 0 && thisPL ? ((thisPL.revenue - lastPL.revenue) / lastPL.revenue) * 100 : null
 
-  const selectCls = 'rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:border-[#ffd700] focus:outline-none'
+  const selectCls = 'rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:border-[#9C7C2E] focus:outline-none'
 
   return (
     <div className="space-y-5">
@@ -127,7 +127,7 @@ export default function PLHistoryTab() {
                 setGranularity(g)
                 setPeriod(periodOptions(g)[0].value)
               }}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${granularity === g ? 'bg-[#ffd700] text-gray-900' : 'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${granularity === g ? 'bg-[#9C7C2E] text-gray-900' : 'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
             >
               {g}
             </button>

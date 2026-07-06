@@ -85,7 +85,7 @@ export default function ScheduleTab({
                 onClick={() => setActiveDay(d)}
                 className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
                   activeDay === d
-                    ? "bg-[#ffd700] text-black"
+                    ? "bg-[#9C7C2E] text-black"
                     : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
               >
@@ -108,7 +108,7 @@ export default function ScheduleTab({
           </div>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
           >
             <Plus size={13} /> Add block
           </button>
@@ -127,7 +127,7 @@ export default function ScheduleTab({
             <p className="text-sm text-gray-500 dark:text-gray-400">No schedule blocks for Day {activeDay}.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
             >
               <Plus size={12} /> Add your first block
             </button>
@@ -200,7 +200,7 @@ function TimelineRow({
         />
       </div>
       <div className="relative flex flex-col items-center pt-3.5 shrink-0">
-        <span className="w-2.5 h-2.5 bg-[#ffd700] rounded-full ring-4 ring-white dark:ring-gray-900" />
+        <span className="w-2.5 h-2.5 bg-[#9C7C2E] rounded-full ring-4 ring-white dark:ring-gray-900" />
       </div>
       <div className="flex-1 min-w-0 bg-gray-50/50 dark:bg-gray-800/50 hover:bg-amber-50/20 dark:hover:bg-amber-900/30 transition-colors rounded-xl p-3 -ml-1">
         <input
@@ -285,33 +285,33 @@ function AddBlockForm({
         type="time"
         value={time}
         onChange={(e) => setTime(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700] tabular-nums"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] tabular-nums"
       />
       <input
         type="text"
         value={activity}
         onChange={(e) => setActivity(e.target.value)}
         placeholder="Activity (Crew call, Setup, Talent arrives…)"
-        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <input
         type="text"
         value={location}
         onChange={(e) => setLocation(e.target.value)}
         placeholder="Location"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <input
         type="text"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors"
+          className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E] transition-colors"
         >
           Add
         </button>

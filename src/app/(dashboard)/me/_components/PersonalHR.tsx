@@ -54,7 +54,7 @@ export function PersonalHR({ holiday }: Props) {
         href="/me/holiday"
         className="mt-2 flex items-center gap-3 rounded-lg py-2 transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-800/60"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#ffd700]/10 text-[#ffd700]">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#9C7C2E]/10 text-[#9C7C2E]">
           <Plane className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">

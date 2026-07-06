@@ -31,9 +31,9 @@ function BreakdownBar({ media, production, margin }: { media: number; production
   const total = media + production + margin
   if (total <= 0) return null
   const seg = [
-    { label: 'Media spend', value: media, color: 'bg-[#4d9fff]' },
-    { label: 'Production cost', value: production, color: 'bg-[#ff4444]' },
-    { label: 'Margin', value: margin, color: 'bg-[#ffd700]' },
+    { label: 'Media spend', value: media, color: 'bg-[#2F4B8F]' },
+    { label: 'Production cost', value: production, color: 'bg-[#A93B2E]' },
+    { label: 'Margin', value: margin, color: 'bg-[#9C7C2E]' },
   ].filter((s) => s.value > 0)
   return (
     <div>
@@ -85,7 +85,7 @@ function ClientCard({ r, onOpen }: { r: ClientRollup; onOpen: () => void }) {
         </div>
         <div>
           <dt className="text-gray-400 dark:text-gray-500">Margin</dt>
-          <dd className="font-mono text-[#ffd700]">{fmtGBP(r.margin)}</dd>
+          <dd className="font-mono text-[#9C7C2E]">{fmtGBP(r.margin)}</dd>
         </div>
       </dl>
       <BreakdownBar media={r.mediaSpend} production={r.productionCost} margin={r.margin} />
@@ -108,7 +108,7 @@ function ClientDetail({ r, onBack, onOpenProject }: { r: ClientRollup; onBack: (
         {r.clientId && (
           <Link
             href={`/commercial/clients/${r.clientId}`}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-[#4d9fff] hover:text-[#3d8fef]"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-[#2F4B8F] hover:text-[#3d8fef]"
           >
             <Briefcase className="h-3 w-3" /> View in Commercial <ArrowUpRight className="h-3 w-3" />
           </Link>
@@ -119,7 +119,7 @@ function ClientDetail({ r, onBack, onOpenProject }: { r: ClientRollup; onBack: (
         <StatTile label="Total Budget (exc. VAT)" value={fmtGBP(r.totalBudget)} />
         <StatTile label="Total Spent" value={fmtGBP(r.totalSpent)} cls={r.totalSpent > r.totalBudget ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'} />
         <StatTile label="Outstanding" value={fmtGBP(r.totalOutstanding)} cls={r.totalOutstanding < 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'} />
-        <StatTile label="Margin" value={fmtGBP(r.margin)} cls="text-[#ffd700]" />
+        <StatTile label="Margin" value={fmtGBP(r.margin)} cls="text-[#9C7C2E]" />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-5 shadow-sm">
@@ -152,7 +152,7 @@ function ClientDetail({ r, onBack, onOpenProject }: { r: ClientRollup; onBack: (
             >
               <div className="col-span-2 min-w-0 sm:col-span-4">
                 <p className="flex items-center gap-1.5 truncate font-semibold text-gray-900 dark:text-gray-100">
-                  {p.source === 'production' ? <Clapperboard className="h-3 w-3 shrink-0 text-[#ff4444]" /> : <Briefcase className="h-3 w-3 shrink-0 text-gray-400 dark:text-gray-500" />}
+                  {p.source === 'production' ? <Clapperboard className="h-3 w-3 shrink-0 text-[#A93B2E]" /> : <Briefcase className="h-3 w-3 shrink-0 text-gray-400 dark:text-gray-500" />}
                   <span className="truncate">{p.campaignName}</span>
                 </p>
                 {p.shootDate && <p className="text-[10px] text-gray-400 dark:text-gray-500">Shoot {fmtDate(p.shootDate)}</p>}

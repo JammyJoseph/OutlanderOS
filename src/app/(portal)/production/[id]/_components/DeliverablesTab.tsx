@@ -136,7 +136,7 @@ export default function DeliverablesTab({
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-50">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <Package size={15} className="text-[#ffd700]" />
+              <Package size={15} className="text-[#9C7C2E]" />
               Sold Deliverables
               <span className="text-[11px] font-normal text-gray-400">from the deal</span>
             </h2>
@@ -216,12 +216,12 @@ export default function DeliverablesTab({
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-            <Package size={15} className="text-[#ffd700]" />
+            <Package size={15} className="text-[#9C7C2E]" />
             Deliverables
           </h2>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
           >
             <Plus size={13} /> Add deliverable
           </button>
@@ -234,7 +234,7 @@ export default function DeliverablesTab({
             <p className="text-sm text-gray-500 dark:text-gray-400">No deliverables tracked yet.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
             >
               <Plus size={12} /> Add your first deliverable
             </button>
@@ -337,7 +337,7 @@ function DeliverableRow({
             href={deliverable.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-[#ffd700]"
+            className="text-gray-400 hover:text-[#9C7C2E]"
           >
             <ExternalLink size={13} />
           </a>
@@ -362,7 +362,7 @@ function DeliverableRow({
           shots={shots}
           selected={deliverable.linkedShots ?? []}
           onChange={(next) => onUpdate({ linkedShots: next })}
-          accent="#ffd700"
+          accent="#9C7C2E"
         />
       </div>
     </div>
@@ -379,7 +379,7 @@ function FormatRow({
   onUpdate: (patch: Partial<ProductionDeliverable>) => void;
 }) {
   const selCls =
-    "text-[11px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-1.5 py-1 text-gray-600 dark:text-gray-300 focus:outline-none focus:border-[#ffd700]";
+    "text-[11px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-1.5 py-1 text-gray-600 dark:text-gray-300 focus:outline-none focus:border-[#9C7C2E]";
   function applyDefaults() {
     const d = defaultFormatFor(deliverable.type, deliverable.title);
     onUpdate({
@@ -422,7 +422,7 @@ function FormatRow({
       {empty && (
         <button
           onClick={applyDefaults}
-          className="text-[10px] font-medium text-[#ffd700] hover:underline"
+          className="text-[10px] font-medium text-[#9C7C2E] hover:underline"
           title="Fill sensible format defaults for this deliverable type"
         >
           Use defaults
@@ -466,7 +466,7 @@ function AddDeliverableForm({
       <select
         value={type}
         onChange={(e) => setType(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       >
         {(DELIVERABLE_TYPES ?? []).map((t) => (
           <option key={t.key} value={t.key}>
@@ -479,25 +479,25 @@ function AddDeliverableForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <input
         type="date"
         value={dueDate}
         onChange={(e) => setDueDate(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <input
         type="url"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="URL"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors"
+          className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E] transition-colors"
         >
           Add
         </button>

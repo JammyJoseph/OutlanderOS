@@ -105,7 +105,7 @@ export function ShareModal({
                 />
                 <button
                   onClick={copy}
-                  className="flex items-center gap-1.5 bg-[#ff4444] text-white px-3.5 py-2 rounded-xl text-sm font-medium shrink-0"
+                  className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-3.5 py-2 rounded-xl text-sm font-medium shrink-0"
                 >
                   {copied ? <Check size={14} /> : <Link2 size={14} />}
                   {copied ? "Copied" : "Copy"}
@@ -121,7 +121,7 @@ export function ShareModal({
                   value={emails}
                   onChange={(e) => setEmails(e.target.value)}
                   placeholder="name@example.com, other@example.com"
-                  className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4444]/25 focus:border-[#ff4444]"
+                  className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#A93B2E]/25 focus:border-[#A93B2E]"
                 />
                 <button
                   onClick={sendEmail}

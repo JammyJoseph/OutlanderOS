@@ -61,7 +61,7 @@ export function PdfExportModal({
           </button>
           <button
             onClick={() => onExport(sections, includeContacts)}
-            className="flex items-center gap-1.5 bg-[#ff4444] text-white px-4 py-2 rounded-xl text-sm font-medium"
+            className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-4 py-2 rounded-xl text-sm font-medium"
           >
             <FileDown size={14} /> Export / Print
           </button>
@@ -90,7 +90,7 @@ function Row({
     >
       <span
         className={`mt-0.5 shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-          checked ? "bg-[#ff4444] border-[#ff4444]" : "border-gray-300 dark:border-gray-600"
+          checked ? "bg-[#A93B2E] border-[#A93B2E]" : "border-gray-300 dark:border-gray-600"
         }`}
       >
         {checked && <Check size={11} className="text-white" />}

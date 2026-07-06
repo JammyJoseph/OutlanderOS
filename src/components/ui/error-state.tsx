@@ -46,7 +46,7 @@ export function ErrorState({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-3.5 py-2 text-xs font-semibold text-black hover:brightness-95"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-3.5 py-2 text-xs font-semibold text-black hover:brightness-95"
         >
           <RotateCw className="h-3.5 w-3.5" /> Try again
         </button>

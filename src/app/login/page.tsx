@@ -105,9 +105,9 @@ export default function LoginPage() {
             {/* Flagpole + waving Outlander flag, planted on the moon */}
             <div className="absolute left-1/2 top-[-58px] -translate-x-1/2">
               <div className="relative h-[64px] w-[2px] bg-gradient-to-b from-[#f2f4fa] to-[#aab2c8]">
-                <span className="absolute left-1/2 top-[-3px] h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#ffd700] shadow-[0_0_6px_#ffd700]" />
+                <span className="absolute left-1/2 top-[-3px] h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#9C7C2E] shadow-[0_0_6px_#9C7C2E]" />
                 <div className="absolute left-[2px] top-0 origin-left login-flag-wave">
-                  <div className="flex h-[26px] w-[38px] items-center justify-center rounded-r-[3px] bg-gradient-to-r from-[#ffd700] to-[#e6b800] shadow-md">
+                  <div className="flex h-[26px] w-[38px] items-center justify-center rounded-r-[3px] bg-gradient-to-r from-[#9C7C2E] to-[#e6b800] shadow-md">
                     <span className="font-extrabold text-[15px] leading-none text-black">O</span>
                   </div>
                 </div>
@@ -117,15 +117,15 @@ export default function LoginPage() {
         </div>
 
         {/* Subtle colour washes for depth */}
-        <div className="absolute -bottom-40 -left-40 h-[480px] w-[480px] rounded-full bg-[#4d9fff]/8 blur-3xl" />
-        <div className="absolute -top-32 -right-24 h-[420px] w-[420px] rounded-full bg-[#c77dff]/8 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-[480px] w-[480px] rounded-full bg-[#2F4B8F]/8 blur-3xl" />
+        <div className="absolute -top-32 -right-24 h-[420px] w-[420px] rounded-full bg-[#6B4E8E]/8 blur-3xl" />
       </div>
 
       {/* ── Login card ─────────────────────────────────────────────────── */}
       <div className="relative w-full max-w-sm px-4">
         <div className="text-center mb-8">
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-400 mb-2">Outlander Magazine</p>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Outlander<span className="text-[#ffd700]">OS</span></h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">Outlander<span className="text-[#9C7C2E]">OS</span></h1>
           <p className="text-sm text-gray-400 mt-2">Sign in to your workspace</p>
         </div>
         <form onSubmit={handleSubmit} className="rounded-2xl border border-[#2a2a2a] bg-[#0e1018]/80 p-6 shadow-2xl shadow-black/50 backdrop-blur-md space-y-4">
@@ -133,16 +133,16 @@ export default function LoginPage() {
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#ffd700] focus:border-transparent transition-all"
+              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all"
               placeholder="you@outlandermag.com" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700] focus:border-transparent transition-all" />
+              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all" />
           </div>
           <button type="submit" disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-[#ffd700] text-black font-semibold text-sm hover:brightness-110 disabled:opacity-50 transition-all duration-200">
+            className="w-full py-2.5 rounded-lg bg-[#9C7C2E] text-black font-semibold text-sm hover:brightness-110 disabled:opacity-50 transition-all duration-200">
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>

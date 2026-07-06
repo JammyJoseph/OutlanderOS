@@ -40,7 +40,7 @@ export function SunStrip({ sun }: { sun: SunInfo }) {
           className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 px-3 py-2 text-center"
         >
           <p className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            <span className="text-[#ff4444]">{it.icon}</span> {it.label}
+            <span className="text-[#A93B2E]">{it.icon}</span> {it.label}
           </p>
           <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
             {it.value}
@@ -89,7 +89,7 @@ export function TimelineBar({ hourly }: { hourly: HourlyForecast[] }) {
                   title={`${h.pop}% rain`}
                 />
                 <div
-                  className="absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ff4444]"
+                  className="absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#A93B2E]"
                   style={{ bottom: `${tempPct}%` }}
                   title={`${h.temp}°`}
                 />
@@ -103,7 +103,7 @@ export function TimelineBar({ hourly }: { hourly: HourlyForecast[] }) {
       </div>
       <div className="mt-1.5 flex items-center gap-3 text-[10px] text-gray-400">
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#ff4444]" /> Temp {min}°–{max}°
+          <span className="w-2 h-2 rounded-full bg-[#A93B2E]" /> Temp {min}°–{max}°
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-sm bg-blue-300 dark:bg-blue-500/50" /> Rain %
@@ -120,7 +120,7 @@ function windDir(deg: number): string {
 
 function ConditionIcon({ condition, size = 22 }: { condition: string; size?: number }) {
   const c = condition.toLowerCase();
-  const cls = "text-[#ff4444]";
+  const cls = "text-[#A93B2E]";
   if (c.includes("thunder")) return <CloudLightning size={size} className={cls} />;
   if (c.includes("drizzle")) return <CloudDrizzle size={size} className={cls} />;
   if (c.includes("rain")) return <CloudRain size={size} className={cls} />;
@@ -136,7 +136,7 @@ function DayCard({ day, highlight }: { day: DailyForecast; highlight: boolean })
   return (
     <div
       className={`flex-1 rounded-xl border p-3 text-center ${
-        highlight ? "border-[#ff4444] bg-[#ff4444]/5" : "border-gray-100 bg-gray-50/50"
+        highlight ? "border-[#A93B2E] bg-[#A93B2E]/5" : "border-gray-100 bg-gray-50/50"
       }`}
     >
       <p className="text-xs font-semibold text-gray-500">
@@ -184,10 +184,10 @@ export function HourlyTimeline({
             <div
               key={h.time}
               className={`flex-shrink-0 w-[78px] rounded-xl border p-2 text-center ${
-                inShoot ? "border-[#ff4444] bg-[#ff4444]/5" : "border-gray-100 bg-gray-50/50"
+                inShoot ? "border-[#A93B2E] bg-[#A93B2E]/5" : "border-gray-100 bg-gray-50/50"
               }`}
             >
-              <p className={`text-xs font-bold ${inShoot ? "text-[#ff4444]" : "text-gray-600"}`}>
+              <p className={`text-xs font-bold ${inShoot ? "text-[#A93B2E]" : "text-gray-600"}`}>
                 {h.time}
               </p>
               <div className="flex justify-center my-1">
@@ -339,7 +339,7 @@ export function WeatherEditor({
         <button
           onClick={fetchForecast}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E] hover:text-[#A93B2E] transition-colors disabled:opacity-40"
         >
           {loading ? (
             <Loader2 size={13} className="animate-spin" />

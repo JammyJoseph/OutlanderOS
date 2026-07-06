@@ -32,7 +32,7 @@ export default function GoogleCallbackPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#141414] px-6">
       <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
         <h1 className="text-xl font-bold text-gray-900">
-          Outlander<span className="text-[#ffd700]">OS</span>
+          Outlander<span className="text-[#9C7C2E]">OS</span>
         </h1>
 
         {error ? (
@@ -56,7 +56,7 @@ export default function GoogleCallbackPage() {
                 </code>
                 <button
                   onClick={copyCode}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-3 py-2 text-sm font-semibold text-black hover:brightness-95"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-3 py-2 text-sm font-semibold text-black hover:brightness-95"
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   {copied ? 'Copied' : 'Copy'}

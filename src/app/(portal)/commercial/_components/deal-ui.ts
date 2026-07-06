@@ -1,7 +1,7 @@
 // Shared UI constants + types for the Commercial deal pipeline pages.
 
-export const GOLD = "#ffd700";
-export const GOLD_DARK = "#ffd700";
+export const GOLD = "#9C7C2E";
+export const GOLD_DARK = "#9C7C2E";
 
 export type DealStage =
   // ── current pipeline ──
@@ -168,7 +168,7 @@ export const STAGE_GROUPS: {
     label: "Deal",
     stages: ["SIGN_OFF", "IO_SIGNED_KICK_OFF"],
     accent: "text-[#9C7424]",
-    dot: "bg-[#ffd700]",
+    dot: "bg-[#9C7C2E]",
   },
   {
     key: "active",
@@ -217,8 +217,8 @@ export const STAGE_STYLES: Record<
     label: "IO Signed & Kick Off",
     bg: "bg-yellow-100",
     text: "text-yellow-700",
-    dot: "bg-[#ffd700]",
-    bar: "bg-[#ffd700]",
+    dot: "bg-[#9C7C2E]",
+    bar: "bg-[#9C7C2E]",
   },
   IN_PRODUCTION: {
     label: "In Production",
@@ -243,7 +243,7 @@ export const STAGE_STYLES: Record<
   CREATIVE_BRIEF: { label: "New Brief", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", bar: "bg-gray-400" },
   CREATIVE_REVIEW: { label: "Pitching & Feedback", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
   CREATIVE_APPROVED: { label: "Sign Off", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-400", bar: "bg-amber-400" },
-  IO_SIGNED: { label: "IO Signed & Kick Off", bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-[#ffd700]", bar: "bg-[#ffd700]" },
+  IO_SIGNED: { label: "IO Signed & Kick Off", bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-[#9C7C2E]", bar: "bg-[#9C7C2E]" },
   CLEARED_FOR_PRODUCTION: { label: "In Production", bg: "bg-red-100", text: "text-red-700", dot: "bg-red-500", bar: "bg-red-500" },
   NEGOTIATING: { label: "Pitching & Feedback", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
   BRIEF_RECEIVED: { label: "New Brief", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", bar: "bg-gray-400" },
@@ -251,7 +251,7 @@ export const STAGE_STYLES: Record<
   CLIENT_REVIEW: { label: "Pitching & Feedback", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
   CLIENT_APPROVED: { label: "Sign Off", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-400", bar: "bg-amber-400" },
   CONTRACTED: { label: "Sign Off", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-400", bar: "bg-amber-400" },
-  BUDGET_SET: { label: "IO Signed & Kick Off", bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-[#ffd700]", bar: "bg-[#ffd700]" },
+  BUDGET_SET: { label: "IO Signed & Kick Off", bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-[#9C7C2E]", bar: "bg-[#9C7C2E]" },
 };
 
 // Creative status — where the brief/response/approval loop is.

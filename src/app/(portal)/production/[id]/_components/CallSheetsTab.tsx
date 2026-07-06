@@ -79,7 +79,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
         <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <ClipboardList size={15} className="text-[#ffd700]" />
+              <ClipboardList size={15} className="text-[#9C7C2E]" />
               Call Sheets
               <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">({sheets.length})</span>
             </h2>
@@ -110,7 +110,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
             </button>
             <button
               onClick={() => setWizardOpen(true)}
-              className="flex items-center gap-1.5 bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
+              className="flex items-center gap-1.5 bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
               title="Build a call sheet in 5 quick steps"
             >
               <Wand2 size={13} /> New call sheet
@@ -129,7 +129,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
             </p>
             <button
               onClick={() => setWizardOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+              className="flex items-center gap-1.5 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
             >
               <Wand2 size={13} />
               Create call sheet
@@ -155,7 +155,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="text-center w-11 shrink-0">
-                        <div className="text-[10px] font-semibold text-[#ffd700] uppercase leading-none">
+                        <div className="text-[10px] font-semibold text-[#9C7C2E] uppercase leading-none">
                           {format(parseISO(cs.shootDate), "MMM")}
                         </div>
                         <div className="text-xl font-bold text-gray-800 dark:text-gray-200 leading-tight">
@@ -163,7 +163,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
                         </div>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-[#ffd700] transition-colors truncate">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-[#9C7C2E] transition-colors truncate">
                           {sheetTitle}
                         </p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
@@ -179,7 +179,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
                       </span>
                       <ChevronRight
                         size={15}
-                        className="text-gray-300 dark:text-gray-600 group-hover:text-[#ffd700] transition-colors"
+                        className="text-gray-300 dark:text-gray-600 group-hover:text-[#9C7C2E] transition-colors"
                       />
                     </div>
                   </Link>

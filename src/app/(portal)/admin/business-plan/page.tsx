@@ -27,7 +27,7 @@ export default function BusinessPlanPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <FileText size={20} className="text-[#ffd700]" />
+          <FileText size={20} className="text-[#9C7C2E]" />
           <div>
             <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Business Plan</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">Outlander Magazine — Strategic Plan</p>
@@ -41,7 +41,7 @@ export default function BusinessPlanPage() {
               onClick={() => setActiveDoc(i)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 activeDoc === i
-                  ? 'bg-[#ffd700] text-black'
+                  ? 'bg-[#9C7C2E] text-black'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >

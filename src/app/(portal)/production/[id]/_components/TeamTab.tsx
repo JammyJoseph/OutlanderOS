@@ -215,7 +215,7 @@ export default function TeamTab({ production, productionId, members, refresh }: 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Stat label="Crew" value={String(counts.total)} icon={<Users size={14} />} />
         <Stat label="Suggested" value={String(counts.suggested)} dot="bg-gray-300 dark:bg-gray-600" />
-        <Stat label="Confirmed" value={String(counts.confirmed)} dot="bg-[#ffd700]" />
+        <Stat label="Confirmed" value={String(counts.confirmed)} dot="bg-[#9C7C2E]" />
         <Stat label="Contracted" value={String(counts.contracted)} dot="bg-emerald-500" />
       </div>
 
@@ -239,7 +239,7 @@ export default function TeamTab({ production, productionId, members, refresh }: 
             </button>
             <button
               onClick={() => setShowAdd((v) => !v)}
-              className="flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+              className="flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
             >
               <Plus size={13} /> Add member
             </button>
@@ -253,7 +253,7 @@ export default function TeamTab({ production, productionId, members, refresh }: 
             <p className="text-sm text-gray-500 dark:text-gray-400">No team members yet.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
             >
               <Plus size={12} /> Add your first member
             </button>
@@ -369,7 +369,7 @@ function OutlanderTeamSection({
         className="w-full px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between text-left"
       >
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <Building2 size={15} className="text-[#ffd700]" /> Outlander Team
+          <Building2 size={15} className="text-[#9C7C2E]" /> Outlander Team
           <span className="text-[11px] font-normal text-gray-400">one-click add internal staff</span>
         </h2>
         <span className="text-xs text-gray-400">{collapsed ? "Show" : "Hide"}</span>
@@ -396,7 +396,7 @@ function OutlanderTeamSection({
                   className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
                     added
                       ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default"
-                      : "bg-[#ffd700] text-black hover:opacity-90"
+                      : "bg-[#9C7C2E] text-black hover:opacity-90"
                   }`}
                 >
                   {busyId === u.id ? (
@@ -441,7 +441,7 @@ function DirectoryAddPrompt({
       <div className="w-full max-w-md rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Contact size={15} className="text-[#ffd700]" /> Add to Directory?
+            <Contact size={15} className="text-[#9C7C2E]" /> Add to Directory?
           </h2>
           <button onClick={onCancel} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
             <X size={18} />
@@ -505,7 +505,7 @@ function DirectoryAddPrompt({
               await onConfirm({ ...form, email: email || null, phone: phone || null }, { instagram, category });
             }}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-3.5 py-2 text-xs font-medium text-black hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-3.5 py-2 text-xs font-medium text-black hover:opacity-90 disabled:opacity-50"
           >
             {busy ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
             Add to directory &amp; team
@@ -517,7 +517,7 @@ function DirectoryAddPrompt({
 }
 
 const promptInputCls =
-  "w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1.5 text-sm focus:outline-none focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/30";
+  "w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1.5 text-sm focus:outline-none focus:border-[#9C7C2E] focus:ring-1 focus:ring-[#9C7C2E]/30";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -658,7 +658,7 @@ function CateringPanel({
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <UtensilsCrossed size={15} className="text-[#ffd700]" /> Catering
+          <UtensilsCrossed size={15} className="text-[#9C7C2E]" /> Catering
         </h2>
         <span
           className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
@@ -708,7 +708,7 @@ function CateringPanel({
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Catering brief</p>
             <button
               onClick={copyBrief}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:opacity-80"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#9C7C2E] hover:opacity-80"
             >
               {copied ? <Check size={13} /> : <ClipboardCopy size={13} />}
               {copied ? "Copied" : "Copy brief"}
@@ -732,7 +732,7 @@ function CateringPanel({
             <button
               onClick={requestQuotes}
               disabled={loadingCaterers || savingQuotes}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#ffd700] hover:opacity-80 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#9C7C2E] hover:opacity-80 disabled:opacity-50"
               title="Pull caterers from the Directory and start tracking their quotes"
             >
               {loadingCaterers ? <Loader2 size={13} className="animate-spin" /> : <ChefHat size={13} />}
@@ -764,7 +764,7 @@ function CateringPanel({
                       updateQuote(i, { quoteAmount: e.target.value === "" ? null : Number(e.target.value) })
                     }
                     placeholder="£ quote"
-                    className="w-20 text-xs text-right rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 focus:outline-none focus:border-[#ffd700]"
+                    className="w-20 text-xs text-right rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 focus:outline-none focus:border-[#9C7C2E]"
                   />
                   <select
                     value={q.status}
@@ -873,13 +873,13 @@ function DirectoryPicker({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search contacts…"
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-8 pr-3 text-sm focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-8 pr-3 text-sm focus:border-[#9C7C2E] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30"
             />
           </div>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 focus:border-[#ffd700] focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30"
+            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 focus:border-[#9C7C2E] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30"
           >
             <option value="">All categories</option>
             {PICKER_CATEGORIES.map((c) => (
@@ -909,8 +909,8 @@ function DirectoryPicker({
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{c.name}</p>
                         {c.rating ? (
-                          <span className="inline-flex items-center gap-0.5 text-[11px] text-[#ffd700]">
-                            <Star size={11} className="fill-[#ffd700] text-[#ffd700]" /> {c.rating}
+                          <span className="inline-flex items-center gap-0.5 text-[11px] text-[#9C7C2E]">
+                            <Star size={11} className="fill-[#9C7C2E] text-[#9C7C2E]" /> {c.rating}
                           </span>
                         ) : null}
                       </div>
@@ -924,7 +924,7 @@ function DirectoryPicker({
                       className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                         isAdded
                           ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-                          : "bg-[#ffd700] text-black hover:bg-[#ffd700]"
+                          : "bg-[#9C7C2E] text-black hover:bg-[#9C7C2E]"
                       }`}
                       title={alreadyOnTeam ? "Already has a member with this name" : "Add to team"}
                     >
@@ -995,7 +995,7 @@ function MemberRow({
           {member.email && (
             <a
               href={`mailto:${member.email}`}
-              className="inline-flex items-center gap-1 hover:text-[#ffd700] truncate"
+              className="inline-flex items-center gap-1 hover:text-[#9C7C2E] truncate"
             >
               <Mail size={11} className="shrink-0" />
               <span className="truncate">{member.email}</span>
@@ -1004,7 +1004,7 @@ function MemberRow({
           {member.phone && (
             <a
               href={`tel:${member.phone}`}
-              className="inline-flex items-center gap-1 hover:text-[#ffd700] truncate"
+              className="inline-flex items-center gap-1 hover:text-[#9C7C2E] truncate"
             >
               <Phone size={11} className="shrink-0" />
               <span className="truncate">{member.phone}</span>
@@ -1128,14 +1128,14 @@ function AddMemberForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <input
         type="text"
         value={role}
         onChange={(e) => setRole(e.target.value)}
         placeholder="Role (Director, DP, MUA…)"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <input
         type="email"
@@ -1145,7 +1145,7 @@ function AddMemberForm({
         className={`md:col-span-2 px-3 py-2 rounded-xl border text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 ${
           emailInvalid
             ? "border-red-400 focus:ring-red-200 focus:border-red-400"
-            : "border-gray-200 dark:border-gray-700 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+            : "border-gray-200 dark:border-gray-700 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
         }`}
       />
       <input
@@ -1153,7 +1153,7 @@ function AddMemberForm({
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Phone"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <div className="md:col-span-2 flex items-center gap-1">
         <span className="text-xs text-gray-400 dark:text-gray-500">£</span>
@@ -1166,7 +1166,7 @@ function AddMemberForm({
           className={`flex-1 px-2 py-2 rounded-xl border text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 ${
             rateNeg
               ? "border-red-400 focus:ring-red-200 focus:border-red-400"
-              : "border-gray-200 dark:border-gray-700 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+              : "border-gray-200 dark:border-gray-700 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
           }`}
         />
         <select
@@ -1182,7 +1182,7 @@ function AddMemberForm({
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors"
+          className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E] transition-colors"
         >
           Add
         </button>
@@ -1214,7 +1214,7 @@ function Stat({
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
       <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
         {dot && <span className={`w-2 h-2 rounded-full ${dot}`} />}
-        {icon && <span className="text-[#ffd700]">{icon}</span>}
+        {icon && <span className="text-[#9C7C2E]">{icon}</span>}
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
       <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">{value}</p>

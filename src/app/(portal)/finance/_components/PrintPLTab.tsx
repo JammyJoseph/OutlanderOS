@@ -121,7 +121,7 @@ export default function PrintPLTab() {
                     <td className="px-3 py-2.5 text-center">
                       <Link
                         href={`/print/flat-plan?issue=${iss.issueNumber}`}
-                        className="inline-flex items-center gap-1 text-[11px] text-[#4d9fff] hover:underline"
+                        className="inline-flex items-center gap-1 text-[11px] text-[#2F4B8F] hover:underline"
                       >
                         Budget <ExternalLink className="h-3 w-3" />
                       </Link>

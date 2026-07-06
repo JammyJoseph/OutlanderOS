@@ -54,25 +54,25 @@ export default function ChangePasswordPage() {
   }
 
   const inputCls =
-    "w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#ffd700] focus:border-transparent transition-all";
+    "w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all";
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-900 p-4">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 right-1/4 h-[420px] w-[420px] rounded-full bg-[#ffd700]/8 blur-3xl"
+        className="pointer-events-none absolute -top-32 right-1/4 h-[420px] w-[420px] rounded-full bg-[#9C7C2E]/8 blur-3xl"
       />
 
       <div className="relative w-full max-w-sm">
         <div className="mb-8 text-center">
-          <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#ffd700]/15 ring-1 ring-[#ffd700]/30">
-            <ShieldCheck className="h-6 w-6 text-[#ffd700]" />
+          <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#9C7C2E]/15 ring-1 ring-[#9C7C2E]/30">
+            <ShieldCheck className="h-6 w-6 text-[#9C7C2E]" />
           </span>
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
             Outlander Magazine
           </p>
           <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Welcome to Outlander<span className="text-[#ffd700]">OS</span>
+            Welcome to Outlander<span className="text-[#9C7C2E]">OS</span>
           </h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Please set your new password to get started.</p>
         </div>
@@ -134,7 +134,7 @@ export default function ChangePasswordPage() {
           <button
             type="submit"
             disabled={saving}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#ffd700] py-2.5 text-sm font-semibold text-black transition-all duration-200 hover:brightness-110 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#9C7C2E] py-2.5 text-sm font-semibold text-black transition-all duration-200 hover:brightness-110 disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
             {saving ? "Setting password…" : "Set Password & Enter"}

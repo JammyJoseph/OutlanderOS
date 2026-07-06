@@ -223,7 +223,7 @@ export function CallSheetDeliverables({
             <button
               onClick={runImport}
               disabled={busy || !raw.trim()}
-              className="flex items-center gap-1.5 bg-[#ff4444] text-white px-3.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
+              className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-3.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
             >
               {busy ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
               Parse into deliverables
@@ -270,7 +270,7 @@ export function CallSheetDeliverables({
                 </select>
                 <button
                   onClick={() => remove(d.id)}
-                  className="p-1.5 rounded-lg text-gray-300 hover:text-[#ff4444] hover:bg-red-50"
+                  className="p-1.5 rounded-lg text-gray-300 hover:text-[#A93B2E] hover:bg-red-50"
                   title="Remove deliverable"
                 >
                   <Trash2 size={14} />
@@ -290,7 +290,7 @@ export function CallSheetDeliverables({
                 shots={shots}
                 selected={d.linkedShots ?? []}
                 onChange={(next) => patch(d.id, { linkedShots: next })}
-                accent="#ff4444"
+                accent="#A93B2E"
               />
             </div>
           ))}
@@ -300,7 +300,7 @@ export function CallSheetDeliverables({
       <button
         onClick={() => addOne({ type: "photo", title: "New deliverable", status: "AWAITING" })}
         disabled={busy}
-        className="flex items-center gap-1.5 text-sm font-medium text-[#ff4444] hover:text-[#ff4444] disabled:opacity-40"
+        className="flex items-center gap-1.5 text-sm font-medium text-[#A93B2E] hover:text-[#A93B2E] disabled:opacity-40"
       >
         <Plus size={15} /> Add deliverable
       </button>

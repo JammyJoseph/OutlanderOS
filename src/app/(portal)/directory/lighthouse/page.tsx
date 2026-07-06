@@ -116,7 +116,7 @@ function ComingSoonSection({
                 <div className="h-2.5 w-1/2 rounded-full bg-secondary" />
                 <div className="flex items-center gap-2 pt-1 text-gray-400 dark:text-gray-500">
                   {section.key === "spotlight" ? (
-                    <Star size={12} className="fill-[#ffd700] text-[#ffd700]" />
+                    <Star size={12} className="fill-[#9C7C2E] text-[#9C7C2E]" />
                   ) : (
                     <Users size={12} />
                   )}

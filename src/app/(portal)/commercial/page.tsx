@@ -191,7 +191,7 @@ export default function CommercialDashboard() {
             </Link>
             <button
               onClick={() => setShowNewDeal(true)}
-              className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors shadow-sm"
             >
               <Plus size={16} />
               New Deal
@@ -512,7 +512,7 @@ function StageSummary({
               key={s.stage}
               onClick={() => onPick(s.stage)}
               className={`w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
-                isActive ? "bg-[#ffd700]/10" : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                isActive ? "bg-[#9C7C2E]/10" : "hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
               <span className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300 min-w-0">
@@ -613,7 +613,7 @@ function CampaignCalendar({
               key={key}
               className={`min-h-[84px] rounded-lg border p-1.5 ${
                 inMonth ? "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900" : "border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50"
-              } ${today ? "ring-1 ring-[#ffd700]" : ""}`}
+              } ${today ? "ring-1 ring-[#9C7C2E]" : ""}`}
             >
               <p className={`text-[10px] font-semibold ${inMonth ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-600"}`}>
                 {format(day, "d")}

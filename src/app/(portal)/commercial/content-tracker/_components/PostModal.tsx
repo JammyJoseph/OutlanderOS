@@ -264,7 +264,7 @@ export default function PostModal({ post, campaigns, onClose, onSave }: Props) {
               <button
                 onClick={save}
                 disabled={saving}
-                className="rounded-lg bg-[#ffd700] px-4 py-1.5 text-sm font-medium text-black shadow-sm hover:bg-[#ffd700] disabled:opacity-60"
+                className="rounded-lg bg-[#9C7C2E] px-4 py-1.5 text-sm font-medium text-black shadow-sm hover:bg-[#9C7C2E] disabled:opacity-60"
               >
                 {saving ? "Saving…" : "Save"}
               </button>

@@ -200,7 +200,7 @@ export default function HolidayPage() {
             </div>
             <button
               onClick={() => setShowForm((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-3.5 py-2 text-sm font-semibold text-black hover:brightness-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-3.5 py-2 text-sm font-semibold text-black hover:brightness-95"
             >
               <Plus className="h-4 w-4" /> Request time off
             </button>
@@ -261,7 +261,7 @@ export default function HolidayPage() {
               <div className="mt-4 flex justify-end gap-2">
                 <button onClick={() => setShowForm(false)} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
                 <button onClick={submitRequest} disabled={submitting}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 disabled:opacity-50">
                   <Check className="h-4 w-4" /> {submitting ? 'Submitting…' : 'Submit'}
                 </button>
               </div>
@@ -418,7 +418,7 @@ function BalanceTile({ label, value, suffix, tone }: { label: string; value: str
   const toneClass =
     tone === 'green' ? 'text-emerald-600 dark:text-emerald-400' :
     tone === 'amber' ? 'text-amber-600 dark:text-amber-400' :
-    tone === 'primary' ? 'text-[#ffd700]' :
+    tone === 'primary' ? 'text-[#9C7C2E]' :
     'text-gray-900 dark:text-gray-100'
   return (
     <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-800/40 p-4">
@@ -460,11 +460,11 @@ function prettyType(t: HolidayType): string {
 
 // Per-person colour palette for the team calendar rows.
 const TEAM_COLORS = [
-  { bar: 'bg-[#ffd700]', text: 'text-[#ffd700]', dot: 'bg-[#ffd700]' },
-  { bar: 'bg-[#4d9fff]', text: 'text-[#4d9fff]', dot: 'bg-[#4d9fff]' },
-  { bar: 'bg-[#00ff88]', text: 'text-[#00ff88]', dot: 'bg-[#00ff88]' },
-  { bar: 'bg-[#ff4444]', text: 'text-[#ff4444]', dot: 'bg-[#ff4444]' },
-  { bar: 'bg-[#c77dff]', text: 'text-[#c77dff]', dot: 'bg-[#c77dff]' },
+  { bar: 'bg-[#9C7C2E]', text: 'text-[#9C7C2E]', dot: 'bg-[#9C7C2E]' },
+  { bar: 'bg-[#2F4B8F]', text: 'text-[#2F4B8F]', dot: 'bg-[#2F4B8F]' },
+  { bar: 'bg-[#2E5E44]', text: 'text-[#2E5E44]', dot: 'bg-[#2E5E44]' },
+  { bar: 'bg-[#A93B2E]', text: 'text-[#A93B2E]', dot: 'bg-[#A93B2E]' },
+  { bar: 'bg-[#6B4E8E]', text: 'text-[#6B4E8E]', dot: 'bg-[#6B4E8E]' },
   { bar: 'bg-pink-400', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-400' },
 ]
 
@@ -567,7 +567,7 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
                     <th
                       key={i}
                       className={`min-w-5 pb-1 text-center text-[9px] font-medium ${
-                        isToday ? 'text-[#ffd700] font-bold' : isWeekend ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-gray-500'
+                        isToday ? 'text-[#9C7C2E] font-bold' : isWeekend ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-gray-500'
                       }`}
                     >
                       {i + 1}
@@ -649,7 +649,7 @@ function MiniCalendar({ dateMap }: { dateMap: Map<string, HolidayStatus> }) {
           if (status === 'APPROVED') cls += 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'
           else if (status === 'PENDING') cls += 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
           else cls += 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-          if (isToday) cls += ' ring-2 ring-[#ffd700]'
+          if (isToday) cls += ' ring-2 ring-[#9C7C2E]'
           return <div key={i} className={cls}>{c.day}</div>
         })}
       </div>

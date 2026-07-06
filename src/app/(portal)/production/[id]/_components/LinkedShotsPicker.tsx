@@ -15,7 +15,7 @@ export function LinkedShotsPicker({
   shots,
   selected,
   onChange,
-  accent = "#ffd700",
+  accent = "#9C7C2E",
 }: {
   shots: ShotOption[];
   selected: string[];

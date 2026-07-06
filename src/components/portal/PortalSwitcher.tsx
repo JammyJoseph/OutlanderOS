@@ -64,7 +64,7 @@ export function PortalSwitcher() {
   const visiblePortals = PORTALS.filter((p) => !p.adminOnly || isAdmin);
 
   const active = currentPortal(pathname);
-  const triggerAccent = active ? PORTAL_ACCENTS[active.key] : "#ffd700";
+  const triggerAccent = active ? PORTAL_ACCENTS[active.key] : "#9C7C2E";
   const triggerLabel = active ? active.name : "Portals";
 
   function go(href: string) {

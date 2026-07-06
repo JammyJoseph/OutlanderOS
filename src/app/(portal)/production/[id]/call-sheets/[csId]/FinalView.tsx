@@ -77,7 +77,7 @@ export function FinalView({
             </button>
             <button
               onClick={() => setShareOpen(true)}
-              className="flex items-center gap-1.5 bg-[#ff4444] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#ff4444] transition-colors shadow-sm"
+              className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#A93B2E] transition-colors shadow-sm"
             >
               <Share2 size={13} /> Share Call Sheet
             </button>
@@ -295,7 +295,7 @@ function DistributionPanel({
     <div className="mt-6 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
-          <Users size={15} className="text-[#ff4444]" />
+          <Users size={15} className="text-[#A93B2E]" />
           <h3 className="text-sm font-bold text-gray-800">Crew Distribution</h3>
           {entries.length > 0 && (
             <>

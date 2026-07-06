@@ -193,7 +193,7 @@ export function MapLinks({
   const a = appleMapsUrl(location);
   if (!g && !w && !a) return null;
   const btn =
-    "flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#ff4444] hover:text-[#ff4444] dark:hover:text-[#ff6666] transition-colors";
+    "flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#A93B2E] hover:text-[#A93B2E] dark:hover:text-[#ff6666] transition-colors";
   return (
     <div className={`flex items-center gap-1.5 flex-wrap ${className}`}>
       {g && (
@@ -224,7 +224,7 @@ export function RouteActions({ locations }: { locations: CallSheetLocation[] }) 
 
   const label = (locations[0]?.name || "shoot").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   const btn =
-    "flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#ff4444] hover:text-[#ff4444] dark:hover:text-[#ff6666] transition-colors disabled:opacity-40";
+    "flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#A93B2E] hover:text-[#A93B2E] dark:hover:text-[#ff6666] transition-colors disabled:opacity-40";
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -404,7 +404,7 @@ export function LocationEditor({
                 onClick={() => pickSuggestion(s)}
                 className="flex items-start gap-2 w-full text-left px-3.5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0"
               >
-                <MapPin size={13} className="text-[#ff4444] mt-0.5 shrink-0" />
+                <MapPin size={13} className="text-[#A93B2E] mt-0.5 shrink-0" />
                 <span className="text-xs text-gray-700 dark:text-gray-300 leading-snug">{s.display_name}</span>
               </button>
             ))}
@@ -414,7 +414,7 @@ export function LocationEditor({
           <button
             onClick={findOnMap}
             disabled={locating || !(location.address || "").trim()}
-            className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E] hover:text-[#A93B2E] transition-colors disabled:opacity-40"
           >
             {locating ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
             Find on map
@@ -589,7 +589,7 @@ export function LocationsEditor({
       {hasRoute && (
         <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 p-3 space-y-2.5">
           <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
-            <RouteIcon size={14} className="text-[#ff4444]" />
+            <RouteIcon size={14} className="text-[#A93B2E]" />
             {formatJourneySummary(stats)}
           </p>
           <RouteActions locations={locations} />
@@ -613,7 +613,7 @@ export function LocationsEditor({
             <div className="flex items-center justify-center gap-2 py-1.5 text-xs text-gray-400 dark:text-gray-500">
               {legs[i] ? (
                 <span className="flex items-center gap-1.5">
-                  <Car size={12} className="text-[#ff4444]" />
+                  <Car size={12} className="text-[#A93B2E]" />
                   {formatDistance(legs[i]!.distanceKm)} · {formatDuration(legs[i]!.driveMins)} drive
                 </span>
               ) : (
@@ -627,7 +627,7 @@ export function LocationsEditor({
       ))}
       <button
         onClick={add}
-        className="flex items-center gap-1.5 text-sm font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors"
+        className="flex items-center gap-1.5 text-sm font-medium text-[#A93B2E] hover:text-[#A93B2E] transition-colors"
       >
         <Plus size={15} /> Add location
       </button>
@@ -748,7 +748,7 @@ function LocationCard({
           <button
             onClick={onRemove}
             title="Remove location"
-            className="p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:text-[#ff4444] hover:bg-red-50 dark:hover:bg-red-900/30"
+            className="p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:text-[#A93B2E] hover:bg-red-50 dark:hover:bg-red-900/30"
           >
             <Trash2 size={14} />
           </button>
@@ -769,7 +769,7 @@ function LocationCard({
           <button
             onClick={() => geocode(false)}
             disabled={locating || !(location.address || "").trim()}
-            className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E] hover:text-[#A93B2E] transition-colors disabled:opacity-40"
           >
             {locating ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
             Find on map
@@ -846,7 +846,7 @@ export function MovementTimeline({
     <div className="space-y-2">
       {stats.totalKm > 0 && (
         <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-          <RouteIcon size={12} className="text-[#ff4444]" />
+          <RouteIcon size={12} className="text-[#A93B2E]" />
           {formatJourneySummary(stats)}
         </p>
       )}
@@ -861,7 +861,7 @@ export function MovementTimeline({
                 <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                   {step.name}
                   {step.arriveTime && (
-                    <span className="ml-2 text-xs font-mono font-normal text-[#ff4444]">
+                    <span className="ml-2 text-xs font-mono font-normal text-[#A93B2E]">
                       arrive {step.arriveTime}
                     </span>
                   )}
@@ -874,11 +874,11 @@ export function MovementTimeline({
             </li>
           ) : (
             <li key={i} className="flex items-center gap-2.5 pl-1">
-              <span className="flex items-center justify-center w-6 shrink-0 text-[#ff4444]">
+              <span className="flex items-center justify-center w-6 shrink-0 text-[#A93B2E]">
                 <Car size={15} />
               </span>
               <div className="flex-1 rounded-lg bg-red-50/70 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300">
-                <span className="font-medium text-[#ff4444]">Travel</span>{" "}
+                <span className="font-medium text-[#A93B2E]">Travel</span>{" "}
                 {formatDistance(step.leg.distanceKm)} · {formatDuration(step.leg.driveMins)}
                 {step.departTime && step.arriveTime && (
                   <span className="ml-1 inline-flex items-center gap-1 font-mono text-gray-500 dark:text-gray-400">

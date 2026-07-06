@@ -113,7 +113,7 @@ function Stars({
             size={size}
             className={
               i <= (rating ?? 0)
-                ? "fill-[#ffd700] text-[#ffd700]"
+                ? "fill-[#9C7C2E] text-[#9C7C2E]"
                 : "text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500"
             }
           />
@@ -241,8 +241,8 @@ export default function ContactDetailPage({
                   size={24}
                   className={
                     contact.isFavourite
-                      ? "fill-[#ffd700] text-[#ffd700]"
-                      : "text-gray-400 dark:text-gray-500 hover:text-[#ffd700]"
+                      ? "fill-[#9C7C2E] text-[#9C7C2E]"
+                      : "text-gray-400 dark:text-gray-500 hover:text-[#9C7C2E]"
                   }
                 />
               </button>

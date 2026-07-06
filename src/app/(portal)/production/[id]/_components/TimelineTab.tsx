@@ -58,7 +58,7 @@ const STATUS_BADGE: Record<MilestoneStatus, { bg: string; text: string; label: s
 };
 
 const inputCls =
-  "px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
+  "px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]";
 
 // Deadline tone: overdue (red), due within 2 days (yellow), otherwise neutral.
 type DeadlineTone = "overdue" | "soon" | "ok";
@@ -195,7 +195,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
         <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <CalendarClock size={15} className="text-[#ffd700]" />
+              <CalendarClock size={15} className="text-[#9C7C2E]" />
               Timeline
             </h2>
             <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
@@ -224,7 +224,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
               <button
                 onClick={() => setView("list")}
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  view === "list" ? "bg-[#ffd700] text-black" : "text-gray-500 dark:text-gray-400"
+                  view === "list" ? "bg-[#9C7C2E] text-black" : "text-gray-500 dark:text-gray-400"
                 }`}
               >
                 <ListChecks size={13} /> List
@@ -232,7 +232,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
               <button
                 onClick={() => setView("calendar")}
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  view === "calendar" ? "bg-[#ffd700] text-black" : "text-gray-500 dark:text-gray-400"
+                  view === "calendar" ? "bg-[#9C7C2E] text-black" : "text-gray-500 dark:text-gray-400"
                 }`}
               >
                 <CalendarDays size={13} /> Calendar
@@ -240,7 +240,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
             </div>
             <button
               onClick={() => setShowAdd((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+              className="inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
             >
               <Plus size={13} /> Add
             </button>
@@ -254,7 +254,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
               onClick={() => generateTemplate(false)}
               disabled={seeding || !hasShootDate}
               title={hasShootDate ? "" : "Set a shoot date first (Overview tab)"}
-              className="inline-flex items-center gap-1.5 bg-[#ffd700] text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[#ffd700] disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 bg-[#9C7C2E] text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[#9C7C2E] disabled:opacity-40"
             >
               {seeding ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
               Generate standard timeline
@@ -302,7 +302,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
                   "PRE-PRODUCTION — WED 1 JUL — PUMA FEEDBACK ON V1 DECK — Schedule, route, locations, crew approved\nPRODUCTION — TUE 7 JUL — SHOOT DAY — Shoot\nPOST-PRODUCTION — WED 15 JUL — V1 ASSETS DELIVERED\nPOST-PRODUCTION — FRI 24 JUL — GO LIVE — Launch"
                 }
                 rows={6}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-mono bg-white dark:bg-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-mono bg-white dark:bg-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
               />
               {importError && (
                 <p className="text-xs font-medium text-red-600 dark:text-red-400">{importError}</p>
@@ -310,7 +310,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
               <button
                 onClick={runImport}
                 disabled={busy || !raw.trim()}
-                className="inline-flex items-center gap-1.5 bg-[#ffd700] text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[#ffd700] disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 bg-[#9C7C2E] text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[#9C7C2E] disabled:opacity-40"
               >
                 {busy ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
                 Parse into timeline
@@ -325,7 +325,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
             <p className="text-sm text-gray-500 dark:text-gray-400">No timeline items yet.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
             >
               <Plus size={12} /> Add your first item
             </button>
@@ -379,7 +379,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
           scheduled timeline. */}
       <div>
         <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
-          <ListChecks size={13} className="text-[#ffd700]" />
+          <ListChecks size={13} className="text-[#9C7C2E]" />
           Working Tasks
         </h3>
         <ActionTrackPanel productionId={productionId} />
@@ -466,7 +466,7 @@ function MilestoneRow({
       {/* Glyph: diamond for milestones, circle for tasks */}
       <div className="pt-3 shrink-0">
         {isDiamond ? (
-          <Flag size={13} className="text-[#ffd700]" />
+          <Flag size={13} className="text-[#9C7C2E]" />
         ) : (
           <Circle size={11} className="text-gray-300 dark:text-gray-600 mt-0.5" />
         )}
@@ -517,7 +517,7 @@ function MilestoneRow({
               </label>
               <button
                 onClick={saveEdits}
-                className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700]"
+                className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E]"
               >
                 Save
               </button>
@@ -625,13 +625,13 @@ function MilestoneRow({
                       }
                     }}
                     placeholder="Sub-task… (Enter to add)"
-                    className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-[#ffd700]/30"
+                    className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-[#9C7C2E]/30"
                   />
                 </div>
               ) : (
                 <button
                   onClick={() => setAddingSub(true)}
-                  className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 dark:text-gray-500 hover:text-[#ffd700] transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 dark:text-gray-500 hover:text-[#9C7C2E] transition-opacity"
                 >
                   <Plus size={11} /> Sub-task
                 </button>
@@ -716,7 +716,7 @@ function AddMilestoneForm({
         </label>
         <button
           onClick={submit}
-          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors"
+          className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E] transition-colors"
         >
           Add
         </button>
@@ -816,14 +816,14 @@ function TimelineCalendar({
               onClick={() => setSelectedKey(isSelected ? null : list.length ? k : null)}
               className={`text-left flex flex-col rounded-lg border p-1.5 min-h-[80px] transition-all ${
                 isSelected
-                  ? "border-[#ffd700] bg-amber-50/60 dark:bg-amber-900/20"
+                  ? "border-[#9C7C2E] bg-amber-50/60 dark:bg-amber-900/20"
                   : "border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
               }`}
             >
               <span
                 className={`text-xs font-semibold leading-none mb-1 inline-flex items-center justify-center h-5 w-5 rounded-full ${
                   current
-                    ? "bg-[#ffd700] text-black"
+                    ? "bg-[#9C7C2E] text-black"
                     : !inMonth
                     ? "text-gray-300 dark:text-gray-600"
                     : "text-gray-700 dark:text-gray-300"
@@ -849,7 +849,7 @@ function TimelineCalendar({
                       title={m.title}
                     >
                       {m.isMilestone ? (
-                        <span className="inline-block w-2 h-2 rotate-45 bg-[#ffd700] shrink-0" />
+                        <span className="inline-block w-2 h-2 rotate-45 bg-[#9C7C2E] shrink-0" />
                       ) : (
                         <span className="inline-block w-2 h-2 rounded-full border border-gray-400 shrink-0" />
                       )}
@@ -890,7 +890,7 @@ function TimelineCalendar({
                     <Check size={11} />
                   </button>
                   {m.isMilestone ? (
-                    <Flag size={12} className="text-[#ffd700] shrink-0" />
+                    <Flag size={12} className="text-[#9C7C2E] shrink-0" />
                   ) : (
                     <Circle size={10} className="text-gray-300 dark:text-gray-600 shrink-0" />
                   )}

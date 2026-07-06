@@ -192,7 +192,7 @@ function Stars({
         const star = (
           <Star
             size={size}
-            className={i <= (rating ?? 0) ? "fill-[#ffd700] text-[#ffd700]" : "text-gray-300 dark:text-gray-600"}
+            className={i <= (rating ?? 0) ? "fill-[#9C7C2E] text-[#9C7C2E]" : "text-gray-300 dark:text-gray-600"}
           />
         );
         return onChange ? (
@@ -688,14 +688,14 @@ function Directory() {
                   title="Show favourites only"
                   className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                     favouritesOnly
-                      ? "border-[#ffd700] text-gray-900 dark:text-gray-100"
+                      ? "border-[#9C7C2E] text-gray-900 dark:text-gray-100"
                       : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                   }`}
                   style={favouritesOnly ? { backgroundColor: "rgba(255,215,0,0.12)" } : undefined}
                 >
                   <Star
                     size={14}
-                    className={favouritesOnly ? "fill-[#ffd700] text-[#ffd700]" : "text-gray-400 dark:text-gray-500"}
+                    className={favouritesOnly ? "fill-[#9C7C2E] text-[#9C7C2E]" : "text-gray-400 dark:text-gray-500"}
                   />
                   Favourites
                 </button>
@@ -1200,8 +1200,8 @@ function FavouriteStar({
         }}
         className={
           favourite
-            ? "fill-[#ffd700] text-[#ffd700]"
-            : "text-gray-400 dark:text-gray-500 hover:text-[#ffd700]"
+            ? "fill-[#9C7C2E] text-[#9C7C2E]"
+            : "text-gray-400 dark:text-gray-500 hover:text-[#9C7C2E]"
         }
       />
     </button>

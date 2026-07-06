@@ -79,7 +79,7 @@ const HAIR = "#e7e7e7"; // hairline between rows
 const RULE = "#111111"; // section-header underline (crisp black)
 const SOFTRULE = "#d7d7d7"; // softer rule under table headers
 const GOLD = "#c99a1e"; // Outlander accent (readable on white)
-const GOLD_ASTERISK = "#ffd700"; // hero asterisk (used at low opacity)
+const GOLD_ASTERISK = "#9C7C2E"; // hero asterisk (used at low opacity)
 
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
 const SERIF = 'Georgia, "Times New Roman", "Iowan Old Style", serif';

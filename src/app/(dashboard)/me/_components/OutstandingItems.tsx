@@ -41,7 +41,7 @@ export function OutstandingItems() {
         <h2 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
           Outstanding Items
         </h2>
-        <ReceiptText className="h-4 w-4 text-[#4d9fff] opacity-70" />
+        <ReceiptText className="h-4 w-4 text-[#2F4B8F] opacity-70" />
       </div>
 
       {failed ? (
@@ -89,7 +89,7 @@ export function OutstandingItems() {
           )}
           <Link
             href="/finance"
-            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#4d9fff] hover:underline"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#2F4B8F] hover:underline"
           >
             View in Finance <ArrowUpRight className="h-3 w-3" />
           </Link>

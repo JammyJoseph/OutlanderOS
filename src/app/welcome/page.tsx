@@ -98,7 +98,7 @@ export default function WelcomePage() {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 left-1/3 h-[460px] w-[460px] rounded-full bg-[#ffd700]/10 blur-3xl"
+        className="pointer-events-none absolute -top-40 left-1/3 h-[460px] w-[460px] rounded-full bg-[#9C7C2E]/10 blur-3xl"
       />
 
       <div className="relative w-full max-w-lg">
@@ -109,11 +109,11 @@ export default function WelcomePage() {
         ) : (
           <>
             <div className="mb-8 text-center">
-              <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#ffd700]/15 ring-1 ring-[#ffd700]/30">
-                <Sparkles className="h-6 w-6 text-[#ffd700]" />
+              <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#9C7C2E]/15 ring-1 ring-[#9C7C2E]/30">
+                <Sparkles className="h-6 w-6 text-[#9C7C2E]" />
               </span>
               <h1 className="text-3xl font-extrabold tracking-tight text-white">
-                Welcome to Outlander<span className="text-[#ffd700]">OS</span>
+                Welcome to Outlander<span className="text-[#9C7C2E]">OS</span>
                 {name ? <span className="text-white">, {name}</span> : ""}
               </h1>
               <p className="mt-3 text-sm text-gray-400">
@@ -129,8 +129,8 @@ export default function WelcomePage() {
                     key={p.title}
                     className="flex items-center gap-3 rounded-xl border border-[#2a2a2a] bg-[#0e1018]/80 px-4 py-3 backdrop-blur-md"
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#ffd700]/15">
-                      <Icon className="h-4 w-4 text-[#ffd700]" />
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#9C7C2E]/15">
+                      <Icon className="h-4 w-4 text-[#9C7C2E]" />
                     </span>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-white">{p.title}</p>
@@ -144,7 +144,7 @@ export default function WelcomePage() {
             <button
               onClick={getStarted}
               disabled={entering}
-              className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-[#ffd700] py-3 text-sm font-semibold text-black transition-all duration-200 hover:brightness-110 disabled:opacity-50"
+              className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-[#9C7C2E] py-3 text-sm font-semibold text-black transition-all duration-200 hover:brightness-110 disabled:opacity-50"
             >
               {entering ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Get Started

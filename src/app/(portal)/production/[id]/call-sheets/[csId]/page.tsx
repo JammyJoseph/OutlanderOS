@@ -387,7 +387,7 @@ export default function CallSheetPage() {
           <p className="text-gray-500 dark:text-gray-400 mb-4">Call sheet not found.</p>
           <Link
             href={`/production/${id}`}
-            className="text-[#ff4444] text-sm font-medium hover:underline"
+            className="text-[#A93B2E] text-sm font-medium hover:underline"
           >
             Back to Project
           </Link>
@@ -444,7 +444,7 @@ export default function CallSheetPage() {
             <button
               onClick={manualSave}
               disabled={saving}
-              className="flex items-center gap-1.5 bg-[#ff4444] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#ff4444] transition-colors disabled:opacity-60 shadow-sm"
+              className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#A93B2E] transition-colors disabled:opacity-60 shadow-sm"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
               Save
@@ -531,7 +531,7 @@ export default function CallSheetPage() {
               <button
                 onClick={publishSheet}
                 disabled={saving}
-                className="flex items-center gap-2 bg-[#ff4444] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ff4444] transition-colors disabled:opacity-60 shadow-sm"
+                className="flex items-center gap-2 bg-[#A93B2E] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#A93B2E] transition-colors disabled:opacity-60 shadow-sm"
               >
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 Publish &amp; Share

@@ -138,13 +138,14 @@ export function taskTabFor(portal: string | null): Exclude<TaskTab, "all"> {
   return "general";
 }
 
-// Portal accent colours — Commercial gold, Production red, Finance blue, Print green.
+// Portal accent colours — "Paper Standard" muted editorial set.
+// Commercial brass, Production oxblood, Finance royal, Print forest.
 export const PORTAL_COLORS: Record<string, { accent: string; bg: string; text: string }> = {
-  commercial: { accent: "#ffd700", bg: "#ffd7001A", text: "#9a7322" },
-  production: { accent: "#DC4B4B", bg: "#DC4B4B1A", text: "#a83232" },
-  finance: { accent: "#3B82F6", bg: "#3B82F61A", text: "#1d4ed8" },
-  print: { accent: "#22A06B", bg: "#22A06B1A", text: "#15803d" },
-  followup: { accent: "#c77dff", bg: "#c77dff1A", text: "#5b3fb0" },
+  commercial: { accent: "#9C7C2E", bg: "#9C7C2E1A", text: "#7a5f20" },
+  production: { accent: "#A93B2E", bg: "#A93B2E1A", text: "#8a2f24" },
+  finance: { accent: "#2F4B8F", bg: "#2F4B8F1A", text: "#263c73" },
+  print: { accent: "#2E5E44", bg: "#2E5E441A", text: "#254b37" },
+  followup: { accent: "#6B4E8E", bg: "#6B4E8E1A", text: "#563f73" },
   personal: { accent: "#6B7280", bg: "#6B72801A", text: "#4b5563" },
 };
 

@@ -49,7 +49,7 @@ export default function FlatPlanPage() {
     <Suspense
       fallback={
         <div className="flex h-full items-center justify-center bg-background">
-          <Loader2 className="h-6 w-6 animate-spin text-[#00ff88]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[#2E5E44]" />
         </div>
       }
     >
@@ -207,7 +207,7 @@ function FlatPlanInner() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-[#00ff88]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#2E5E44]" />
       </div>
     );
   }
@@ -218,7 +218,7 @@ function FlatPlanInner() {
         <Cloud className="mb-3 h-8 w-8 text-gray-400 dark:text-gray-500" />
         <p className="text-sm">Couldn&apos;t load the magazine plan.</p>
         {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
-        <Link href="/print" className="mt-3 text-xs text-[#00ff88] hover:underline">
+        <Link href="/print" className="mt-3 text-xs text-[#2E5E44] hover:underline">
           ← Back to all issues
         </Link>
       </div>
@@ -252,7 +252,7 @@ function FlatPlanInner() {
           </Link>
           <div>
             <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <span className="h-2 w-2 rounded-full bg-[#00ff88]" />
+              <span className="h-2 w-2 rounded-full bg-[#2E5E44]" />
               Issue {String(plan.issueNumber).padStart(2, "0")} — {plan.issueName}
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -268,7 +268,7 @@ function FlatPlanInner() {
             <button
               onClick={() => setView("tracker")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "tracker" ? "bg-[#00ff88] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
+                view === "tracker" ? "bg-[#2E5E44] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <Table2 className="h-3.5 w-3.5" /> Tracker
@@ -276,7 +276,7 @@ function FlatPlanInner() {
             <button
               onClick={() => setView("flatplan")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "flatplan" ? "bg-[#00ff88] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
+                view === "flatplan" ? "bg-[#2E5E44] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" /> Flat Plan
@@ -284,7 +284,7 @@ function FlatPlanInner() {
             <button
               onClick={() => setView("budget")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "budget" ? "bg-[#00ff88] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
+                view === "budget" ? "bg-[#2E5E44] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <PoundSterling className="h-3.5 w-3.5" /> Budget
@@ -469,7 +469,7 @@ function TrackerView({
                     onChange={(e) => setSignatureStock(sig.sigIndex, e.target.value as StockType)}
                     title="Stock applies to the whole signature"
                     className="cursor-pointer rounded bg-transparent text-[10px] font-bold uppercase focus:outline-none"
-                    style={{ color: sig.stock === "coated" ? "#2563eb" : "#6b7280" }}
+                    style={{ color: sig.stock === "coated" ? "#2F4B8F" : "#6b7280" }}
                   >
                     <option value="coated" className="bg-popover text-foreground">Coated</option>
                     <option value="uncoated" className="bg-popover text-foreground">Uncoated</option>
@@ -510,7 +510,7 @@ function TrackerView({
                 />
                 <td className={td}>
                   <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-                    <button onClick={() => addRowAfter(i)} title="Add row" className="rounded p-0.5 text-gray-500 dark:text-gray-400 hover:text-[#00ff88]">
+                    <button onClick={() => addRowAfter(i)} title="Add row" className="rounded p-0.5 text-gray-500 dark:text-gray-400 hover:text-[#2E5E44]">
                       <Plus className="h-3.5 w-3.5" />
                     </button>
                     <button onClick={() => removeRow(i)} title="Remove row" className="rounded p-0.5 text-gray-500 dark:text-gray-400 hover:text-red-400">
@@ -620,7 +620,7 @@ function AssetsCell({
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="flex items-center gap-0.5 text-[10px] text-gray-400 dark:text-gray-500 hover:text-[#00ff88]"
+            className="flex items-center gap-0.5 text-[10px] text-gray-400 dark:text-gray-500 hover:text-[#2E5E44]"
           >
             <Plus className="h-2.5 w-2.5" /> {links.length ? "Add" : "Link"}
           </button>
@@ -677,7 +677,7 @@ function CheckCell({ checked, onToggle }: { checked: boolean; onToggle: (v: bool
       <button
         onClick={() => onToggle(!checked)}
         className={`mx-auto flex h-4 w-4 items-center justify-center rounded border ${
-          checked ? "border-[#00ff88] bg-[#00ff88] text-black" : "border-border bg-transparent"
+          checked ? "border-[#2E5E44] bg-[#2E5E44] text-black" : "border-border bg-transparent"
         }`}
       >
         {checked && <Check className="h-3 w-3" />}
@@ -855,12 +855,12 @@ function SignatureBlock({
   // Tab (and signature) colours — coated reads blue, uncoated neutral grey. This
   // is how a real print flat plan flags a stock change: a small overhanging tab on
   // the left edge of the signature, not a space-eating inline header.
-  const tabBg = coated ? "#2563eb" : "#9ca3af";
+  const tabBg = coated ? "#2F4B8F" : "#9ca3af";
 
   return (
     <div className="relative ml-3">
       {showSigRule && (
-        <span className="absolute -top-[5px] left-0 z-10 h-[3px] w-full rounded bg-[#3b82f6]" />
+        <span className="absolute -top-[5px] left-0 z-10 h-[3px] w-full rounded bg-[#2F4B8F]" />
       )}
 
       {/* ── Left signature tab (overhangs the block; drag to move, click for stock) ── */}
@@ -904,7 +904,7 @@ function SignatureBlock({
               >
                 <span
                   className="h-2.5 w-2.5 rounded-full"
-                  style={{ background: st === "coated" ? "#2563eb" : "#9ca3af" }}
+                  style={{ background: st === "coated" ? "#2F4B8F" : "#9ca3af" }}
                 />
                 {st === "coated" ? "Coated" : "Uncoated"}
                 {sig.stockType === st && <Check className="ml-auto h-3 w-3" />}
@@ -1045,10 +1045,10 @@ function PageSlot({
   return (
     <div className="relative">
       {showLeftRule && (
-        <span className="absolute -left-[1px] top-0 z-10 h-full w-[2px] rounded bg-[#3b82f6]" />
+        <span className="absolute -left-[1px] top-0 z-10 h-full w-[2px] rounded bg-[#2F4B8F]" />
       )}
       {showRightRule && (
-        <span className="absolute -right-[1px] top-0 z-10 h-full w-[2px] rounded bg-[#3b82f6]" />
+        <span className="absolute -right-[1px] top-0 z-10 h-full w-[2px] rounded bg-[#2F4B8F]" />
       )}
       <button
         draggable
@@ -1228,7 +1228,7 @@ function EditModal({
 }
 
 const modalInput =
-  "w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[#00ff88]/50 focus:outline-none";
+  "w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[#2E5E44]/50 focus:outline-none";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (

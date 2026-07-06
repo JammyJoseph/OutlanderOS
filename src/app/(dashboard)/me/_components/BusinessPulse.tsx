@@ -37,7 +37,7 @@ function PulseCard({ label, value, sub, icon, accent, href }: CardProps) {
   const body = (
     <div
       className={`rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 ${
-        href ? "transition-shadow hover:shadow-md" : ""
+        href ? "transition-colors hover:border-[#c9c9c6] dark:hover:border-[#3a3a3a]" : ""
       }`}
     >
       <div className="flex items-center justify-between">
@@ -113,7 +113,7 @@ export function BusinessPulse() {
           value={pulse.activeProjects}
           sub={`${pulse.activeDealCount} deal${pulse.activeDealCount === 1 ? "" : "s"} · ${pulse.activeProductionCount} production${pulse.activeProductionCount === 1 ? "" : "s"}`}
           icon={<FolderKanban className="h-4 w-4" />}
-          accent="#ffd700"
+          accent="#9C7C2E"
           href="/commercial/pipeline"
         />
         <PulseCard
@@ -121,7 +121,7 @@ export function BusinessPulse() {
           value={pulse.upcomingDeliveries}
           sub="due in the next 14 days"
           icon={<PackageCheck className="h-4 w-4" />}
-          accent="#ff4444"
+          accent="#A93B2E"
         />
         <PulseCard
           label="Next Shoot"
@@ -132,7 +132,7 @@ export function BusinessPulse() {
               : "Schedule one in Production"
           }
           icon={<Clapperboard className="h-4 w-4" />}
-          accent="#22A06B"
+          accent="#2E5E44"
           href={shoot ? `/production/${shoot.productionId}` : "/production"}
         />
       </div>
@@ -140,7 +140,7 @@ export function BusinessPulse() {
   }
 
   const connectXero = (
-    <Link href="/finance" className="font-semibold text-[#4d9fff] hover:underline">
+    <Link href="/finance" className="font-semibold text-[#2F4B8F] dark:text-[#5B7BC4] hover:underline">
       Connect Xero
     </Link>
   );
@@ -152,7 +152,7 @@ export function BusinessPulse() {
         value={formatGBP(pulse.pipelineValue)}
         sub={`${pulse.activeDealCount} active deal${pulse.activeDealCount === 1 ? "" : "s"}`}
         icon={<TrendingUp className="h-4 w-4" />}
-        accent="#ffd700"
+        accent="#9C7C2E"
       />
       <PulseCard
         label="Receivables"
@@ -163,14 +163,14 @@ export function BusinessPulse() {
             : "Xero not connected"
         }
         icon={<Banknote className="h-4 w-4" />}
-        accent="#4d9fff"
+        accent="#2F4B8F"
       />
       <PulseCard
         label="Bank Balance"
         value={pulse.xeroConnected ? formatGBP(pulse.bankBalance) : connectXero}
         sub={pulse.xeroConnected ? pulse.bankAccountName || "Xero" : "Xero not connected"}
         icon={<Landmark className="h-4 w-4" />}
-        accent="#22A06B"
+        accent="#2E5E44"
       />
     </div>
   );

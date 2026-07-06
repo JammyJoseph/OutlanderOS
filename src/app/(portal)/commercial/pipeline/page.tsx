@@ -211,7 +211,7 @@ function PipelineBoard() {
   }
 
   const inputCls =
-    "rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
+    "rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]";
 
   return (
     <div className="min-h-screen bg-card">
@@ -237,7 +237,7 @@ function PipelineBoard() {
             </Link>
             <button
               onClick={() => setShowNewDeal(true)}
-              className="flex items-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors shadow-sm"
             >
               <Plus size={16} />
               New Deal
@@ -367,9 +367,9 @@ function PipelineBoard() {
                             isOver && dropBlocked
                               ? "border-gray-300 dark:border-gray-600 ring-2 ring-gray-300/40 dark:ring-gray-600/40 opacity-60"
                               : isOver
-                                ? "border-[#ffd700] ring-2 ring-[#ffd700]/30 bg-amber-50/60 dark:bg-amber-900/30"
+                                ? "border-[#9C7C2E] ring-2 ring-[#9C7C2E]/30 bg-amber-50/60 dark:bg-amber-900/30"
                                 : isFocused
-                                  ? "border-[#ffd700]/50 ring-1 ring-[#ffd700]/20"
+                                  ? "border-[#9C7C2E]/50 ring-1 ring-[#9C7C2E]/20"
                                   : group.creative
                                     ? "border-purple-200/60 dark:border-purple-800/60"
                                     : "border-gray-200/60 dark:border-gray-700/60"
@@ -481,7 +481,7 @@ function TypeFilterDropdown({
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-1.5 rounded-xl border bg-white dark:bg-gray-900 text-sm px-3 py-2 transition-colors ${
           selected.length
-            ? "border-[#ffd700] text-[var(--portal-commercial)] font-medium"
+            ? "border-[#9C7C2E] text-[var(--portal-commercial)] font-medium"
             : "border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
         }`}
       >
@@ -505,7 +505,7 @@ function TypeFilterDropdown({
                   type="checkbox"
                   checked={selected.includes(t)}
                   onChange={() => toggle(t)}
-                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 accent-[#ffd700]"
+                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 accent-[#9C7C2E]"
                 />
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${TYPE_STYLES[t].bg} ${TYPE_STYLES[t].text}`}

@@ -355,7 +355,7 @@ function AddDeliverableForm({
   const [approvedBy, setApprovedBy] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const accent = additional ? "amber" : "[#ffd700]";
+  const accent = additional ? "amber" : "[#9C7C2E]";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -470,7 +470,7 @@ function AddDeliverableForm({
           type="submit"
           disabled={!title.trim() || busy}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${
-            additional ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-[#ffd700] text-black hover:bg-[#ffd700]"
+            additional ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-[#9C7C2E] text-black hover:bg-[#9C7C2E]"
           }`}
         >
           {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}

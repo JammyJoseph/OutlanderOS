@@ -181,7 +181,7 @@ export default function DashboardTab() {
           </div>
           <div>
             <p className="text-[11px] text-gray-400 dark:text-gray-500">Profit</p>
-            <p className="font-mono text-lg font-bold text-[#ffd700]">{connected ? fmtGBP(pl.profit) : '—'}</p>
+            <p className="font-mono text-lg font-bold text-[#9C7C2E]">{connected ? fmtGBP(pl.profit) : '—'}</p>
           </div>
           <div>
             <p className="text-[11px] text-gray-400 dark:text-gray-500">Margin</p>

@@ -224,9 +224,9 @@ export const MILESTONE_PHASE_STYLES: Record<
   },
   PRODUCTION: {
     label: "Production",
-    dot: "bg-[#ffd700]",
+    dot: "bg-[#9C7C2E]",
     chip: "bg-amber-50 text-amber-700",
-    bar: "bg-[#ffd700]",
+    bar: "bg-[#9C7C2E]",
   },
   POST_PRODUCTION: {
     label: "Post-Production",
@@ -433,7 +433,7 @@ export const PRODUCTION_STATUS_STYLES: Record<
     dot: "bg-purple-400",
     label: "Pre-Production",
   },
-  SHOOTING: { bg: "bg-amber-100", text: "text-amber-700", dot: "bg-[#ffd700]", label: "Shooting" },
+  SHOOTING: { bg: "bg-amber-100", text: "text-amber-700", dot: "bg-[#9C7C2E]", label: "Shooting" },
   POST_PRODUCTION: {
     bg: "bg-orange-100",
     text: "text-orange-700",

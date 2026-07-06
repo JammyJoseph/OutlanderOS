@@ -74,7 +74,7 @@ export default function MePage() {
         <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 rounded-xl bg-[#ffd700] px-4 py-2 text-sm font-semibold text-black"
+          className="flex items-center gap-1.5 rounded-md bg-[#111111] px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
         >
           <RefreshCw className="h-4 w-4" /> Retry
         </button>
@@ -91,7 +91,7 @@ export default function MePage() {
       <div className="mx-auto max-w-6xl space-y-4">
         {/* Top strip — greeting + date */}
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
             {greeting()}, {firstName}
           </h1>
           <span className="text-sm text-gray-400 dark:text-gray-500">{todayLabel()}</span>

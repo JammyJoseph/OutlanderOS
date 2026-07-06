@@ -35,7 +35,7 @@ export default function ExpensesTab() {
     <div className="space-y-5">
       {/* Connect empty state */}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-white to-amber-50/50 p-8 text-center shadow-sm">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#ffd700]/15 text-[#ffd700]">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#9C7C2E]/15 text-[#9C7C2E]">
           <CreditCard className="h-6 w-6" />
         </div>
         <h2 className="mb-1 text-sm font-bold text-gray-900 dark:text-gray-100">Connect MOSS</h2>
@@ -46,7 +46,7 @@ export default function ExpensesTab() {
         <button
           disabled
           title="MOSS integration coming soon"
-          className="cursor-not-allowed rounded-lg bg-[#ffd700]/50 px-4 py-2 text-xs font-semibold text-black"
+          className="cursor-not-allowed rounded-lg bg-[#9C7C2E]/50 px-4 py-2 text-xs font-semibold text-black"
         >
           Connect MOSS
         </button>

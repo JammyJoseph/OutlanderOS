@@ -113,7 +113,7 @@ export default function NewDealModal({
   }
 
   const inputCls =
-    "w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]";
+    "w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]";
   const labelCls = "block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5";
 
   const cfg = jobType ? JOB_TYPE_CONFIG[jobType] : null;
@@ -244,14 +244,14 @@ export default function NewDealModal({
                       <label
                         key={ext}
                         className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors ${
-                          checked ? "border-[#ffd700] bg-amber-50/50 dark:bg-amber-900/30" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                          checked ? "border-[#9C7C2E] bg-amber-50/50 dark:bg-amber-900/30" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleExtension(ext)}
-                          className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 accent-[#ffd700]"
+                          className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 accent-[#9C7C2E]"
                         />
                         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
                           {style.label}
@@ -276,7 +276,7 @@ export default function NewDealModal({
               <button
                 type="submit"
                 disabled={!title.trim() || creating}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#ffd700] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#ffd700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creating ? <Loader2 size={15} className="animate-spin" /> : null}
                 Create Deal

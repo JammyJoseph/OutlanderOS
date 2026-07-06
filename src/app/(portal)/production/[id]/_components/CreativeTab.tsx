@@ -81,7 +81,7 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Creative & References</h2>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
           >
             <Plus size={13} /> Add asset
           </button>
@@ -96,7 +96,7 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
             </p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#ffd700] hover:text-[#ffd700]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
             >
               <Plus size={12} /> Add your first asset
             </button>
@@ -135,7 +135,7 @@ function AssetCard({
             title={asset.title}
           />
         ) : (
-          <Icon size={36} className="text-[#ffd700]/60" />
+          <Icon size={36} className="text-[#9C7C2E]/60" />
         )}
         <button
           onClick={onRemove}
@@ -161,7 +161,7 @@ function AssetCard({
             href={asset.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-[#ffd700] hover:underline"
+            className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-[#9C7C2E] hover:underline"
           >
             Open <ExternalLink size={11} />
           </a>
@@ -198,7 +198,7 @@ function AddAssetForm({
       <select
         value={type}
         onChange={(e) => setType(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       >
         {(CREATIVE_TYPES ?? []).map((t) => (
           <option key={t.key} value={t.key}>
@@ -211,26 +211,26 @@ function AddAssetForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <input
         type="url"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://…"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <input
         type="text"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Notes"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#ffd700] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#ffd700] transition-colors"
+          className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E] transition-colors"
         >
           Add
         </button>

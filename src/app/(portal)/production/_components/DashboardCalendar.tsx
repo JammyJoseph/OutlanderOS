@@ -218,7 +218,7 @@ export default function DashboardCalendar({
       {/* Header: title + view toggle + nav */}
       <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <CalendarIcon size={16} className="text-[#ffd700]" />
+          <CalendarIcon size={16} className="text-[#9C7C2E]" />
           <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{heading}</h2>
         </div>
         <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ export default function DashboardCalendar({
                 }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${
                   view === v
-                    ? "bg-[#ffd700] text-black"
+                    ? "bg-[#9C7C2E] text-black"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 }`}
               >
@@ -324,14 +324,14 @@ export default function DashboardCalendar({
                     view === "week" ? "min-h-[140px]" : "min-h-[86px]"
                   } ${
                     isSelected
-                      ? "border-[#ffd700] bg-amber-50/60 dark:bg-amber-900/20"
+                      ? "border-[#9C7C2E] bg-amber-50/60 dark:bg-amber-900/20"
                       : "border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   }`}
                 >
                   <span
                     className={`text-xs font-semibold leading-none mb-1 inline-flex items-center justify-center h-5 w-5 rounded-full ${
                       current
-                        ? "bg-[#ffd700] text-black"
+                        ? "bg-[#9C7C2E] text-black"
                         : !inMonth
                         ? "text-gray-300 dark:text-gray-600"
                         : "text-gray-700 dark:text-gray-300"
@@ -451,7 +451,7 @@ function DayAgenda({
                 {e.kind === "shoot" && e.callSheetId && (
                   <Link
                     href={`/production/${e.productionId}/call-sheets/${e.callSheetId}`}
-                    className="text-[11px] font-medium text-[#ffd700] hover:underline shrink-0"
+                    className="text-[11px] font-medium text-[#9C7C2E] hover:underline shrink-0"
                   >
                     Call sheet
                   </Link>

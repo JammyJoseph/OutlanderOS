@@ -269,7 +269,7 @@ export default function ClientDetailPage() {
           <div className="flex items-center gap-4">
             <div
               className="flex h-14 w-14 items-center justify-center rounded-xl text-white font-bold text-lg"
-              style={{ backgroundColor: client.brandColor ?? "#ffd700" }}
+              style={{ backgroundColor: client.brandColor ?? "#9C7C2E" }}
             >
               {initials(client.name)}
             </div>

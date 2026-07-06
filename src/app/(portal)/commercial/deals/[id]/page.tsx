@@ -672,7 +672,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               onClick={() => setTab(t.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 tab === t.key
-                  ? "bg-[#ffd700]/10 text-[var(--portal-commercial)]"
+                  ? "bg-[#9C7C2E]/10 text-[var(--portal-commercial)]"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
@@ -854,7 +854,7 @@ function EditableTitle({ title, onSave }: { title: string; onSave: (t: string) =
             setEditing(false);
           }
         }}
-        className="w-full text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight bg-transparent border-b-2 border-[#ffd700] focus:outline-none"
+        className="w-full text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight bg-transparent border-b-2 border-[#9C7C2E] focus:outline-none"
       />
     );
   }
@@ -906,7 +906,7 @@ function EditableValue({
               setEditing(false);
             }
           }}
-          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums rounded-xl border-2 border-[#ffd700] focus:outline-none"
+          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums rounded-xl border-2 border-[#9C7C2E] focus:outline-none"
         />
       </div>
     );
@@ -966,7 +966,7 @@ function TypePills({
           <button
             onClick={() => setAdding((a) => !a)}
             title="Add type"
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-[#ffd700] hover:text-[var(--portal-commercial)] transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-[#9C7C2E] hover:text-[var(--portal-commercial)] transition-colors"
           >
             <Plus size={11} /> Add
           </button>
@@ -1046,7 +1046,7 @@ function OverviewTab({
             onBlur={saveDescription}
             rows={4}
             placeholder="What's the deal? Scope, deliverables, context — saved automatically when you click away…"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
           />
         </div>
 
@@ -1062,7 +1062,7 @@ function OverviewTab({
             onBlur={saveNotes}
             rows={6}
             placeholder="Internal notes — saved automatically when you click away…"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#ffd700]/30 focus:border-[#ffd700]"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
           />
         </div>
       </div>

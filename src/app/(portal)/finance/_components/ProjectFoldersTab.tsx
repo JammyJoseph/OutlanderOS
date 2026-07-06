@@ -65,7 +65,7 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
         <Link
           href={`/commercial/deals/${p.deal.id}`}
           onClick={(e) => e.stopPropagation()}
-          className="mb-2 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[#ffd700] hover:text-[#ffd700]"
+          className="mb-2 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
         >
           <Briefcase className="h-3 w-3 shrink-0" />
           <span className="truncate">Deal: {p.deal.title}</span>
@@ -93,7 +93,7 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
         {p.targetMarginAmount != null && (
           <div className="col-span-2">
             <dt className="text-gray-400 dark:text-gray-500">Target margin</dt>
-            <dd className="font-mono font-semibold text-[#ffd700]">
+            <dd className="font-mono font-semibold text-[#9C7C2E]">
               {fmtGBP(p.targetMarginAmount)}
               {p.targetMarginPercent != null && <span className="text-gray-400 dark:text-gray-500"> ({fmtPct(p.targetMarginPercent)})</span>}
             </dd>
@@ -186,7 +186,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
             {deal && (
               <Link
                 href={`/commercial/deals/${deal.id}`}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#ffd700] hover:text-[#ffd700]"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
               >
                 <Briefcase className="h-3 w-3" /> Deal: {deal.title} in Commercial
                 <span className="text-gray-400 dark:text-gray-500">· {dealStageLabel(deal.stage)}</span>
@@ -196,7 +196,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
             {production && (
               <Link
                 href={`/production/${production.id}`}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#ff4444] hover:text-red-600"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#A93B2E] hover:text-red-600"
               >
                 <Clapperboard className="h-3 w-3" /> Production: {production.title}
                 <span className="text-gray-400 dark:text-gray-500">· {production.status.replace(/_/g, ' ').toLowerCase()}</span>
@@ -222,7 +222,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
           { label: 'Total Budget', value: fmtGBP(project.totalBudget), cls: 'text-gray-900 dark:text-gray-100' },
           { label: 'Costs Logged', value: fmtGBP(project.totalCosts), cls: over ? 'text-red-500' : 'text-gray-900 dark:text-gray-100' },
           { label: 'Paid by Client (Xero)', value: xero.connected ? fmtGBP(xero.totalPaid) : '—', cls: 'text-emerald-600' },
-          { label: 'Budget Remaining', value: fmtGBP(project.remaining), cls: project.remaining < 0 ? 'text-red-500' : 'text-[#ffd700]' },
+          { label: 'Budget Remaining', value: fmtGBP(project.remaining), cls: project.remaining < 0 ? 'text-red-500' : 'text-[#9C7C2E]' },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3.5 shadow-sm">
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{s.label}</p>
@@ -242,8 +242,8 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
               <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`} />
               <Tooltip formatter={(v) => `£${Number(v ?? 0).toLocaleString('en-GB')}`} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="budget" name="Budget" fill="#ffd700" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="actual" name="Actual" fill={over ? '#ef4444' : '#10b981'} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="budget" name="Budget" fill="#9C7C2E" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="actual" name="Actual" fill={over ? '#c33b2a' : '#10b981'} radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -262,7 +262,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                     <span className="font-mono font-semibold text-gray-900 dark:text-gray-100">{fmtGBP(s.value)}</span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                    <div className="h-full rounded-full bg-[#ffd700]" style={{ width: `${project.totalBudget > 0 ? (s.value / project.totalBudget) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-[#9C7C2E]" style={{ width: `${project.totalBudget > 0 ? (s.value / project.totalBudget) * 100 : 0}%` }} />
                   </div>
                 </li>
               ))}
@@ -304,12 +304,12 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                 </div>
                 <div className="flex items-center justify-between pl-3">
                   <span className="text-gray-500 dark:text-gray-400">Production Margin{eco.productionMarginPct != null ? ` (${Math.round(eco.productionMarginPct)}%)` : ''}</span>
-                  <span className="font-mono font-semibold text-[#ffd700]">{fmtGBP(eco.targetMarginAmount)}</span>
+                  <span className="font-mono font-semibold text-[#9C7C2E]">{fmtGBP(eco.targetMarginAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between pl-3">
                   <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                     Production Hard Costs
-                    <span className="rounded-full bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 text-[9px] font-semibold text-[#ff4444]">PRODUCTION</span>
+                    <span className="rounded-full bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 text-[9px] font-semibold text-[#A93B2E]">PRODUCTION</span>
                   </span>
                   <span className="font-mono font-semibold text-gray-900 dark:text-gray-100">{fmtGBP(eco.productionAllocation)}</span>
                 </div>
@@ -356,7 +356,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                 <div className="mt-3">
                   <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                     <div
-                      className={`h-full rounded-full ${eco.productionActuals > eco.productionAllocation ? 'bg-red-500' : 'bg-[#ffd700]'}`}
+                      className={`h-full rounded-full ${eco.productionActuals > eco.productionAllocation ? 'bg-red-500' : 'bg-[#9C7C2E]'}`}
                       style={{ width: `${Math.min((eco.productionActuals / eco.productionAllocation) * 100, 100)}%` }}
                     />
                   </div>
@@ -408,7 +408,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                 <div>
                   <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                     <div
-                      className="h-full bg-[#ffd700]"
+                      className="h-full bg-[#9C7C2E]"
                       style={{ width: `${Math.min((eco.targetMarginAmount / eco.dealTotal) * 100, 100)}%` }}
                       title={`Target margin ${fmtGBP(eco.targetMarginAmount)}`}
                     />
@@ -421,7 +421,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                     )}
                   </div>
                   <div className="mt-1.5 flex items-center gap-4 text-[10px] text-gray-500 dark:text-gray-400">
-                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#ffd700]" /> Target margin</span>
+                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#9C7C2E]" /> Target margin</span>
                     {eco.productionSavings > 0 && (
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Production savings</span>
                     )}
@@ -706,7 +706,7 @@ function ClientGroupedList({ projects, onOpen }: { projects: ProjectSummary[]; o
                   >
                     <div className="col-span-2 min-w-0 sm:col-span-4">
                       <p className="flex items-center gap-1.5 truncate font-semibold text-gray-900 dark:text-gray-100">
-                        {p.source === 'production' && <Clapperboard className="h-3 w-3 shrink-0 text-[#ff4444]" />}
+                        {p.source === 'production' && <Clapperboard className="h-3 w-3 shrink-0 text-[#A93B2E]" />}
                         <span className="truncate">{p.campaignName}</span>
                         {p.archived && <span className="shrink-0 rounded-full bg-gray-200 px-1.5 py-0.5 text-[9px] font-semibold text-gray-500">Archived</span>}
                       </p>
@@ -790,7 +790,7 @@ export default function ProjectFoldersTab() {
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f.value ? 'bg-[#ffd700] text-gray-900' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f.value ? 'bg-[#9C7C2E] text-gray-900' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
           >
             {f.label} <span className={filter === f.value ? 'text-gray-700' : 'text-gray-400'}>({f.count})</span>
           </button>
@@ -812,7 +812,7 @@ export default function ProjectFoldersTab() {
             <button
               key={key}
               onClick={() => setView(key)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${view === key ? 'bg-[#ffd700] text-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${view === key ? 'bg-[#9C7C2E] text-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
             >
               <Icon className="h-3 w-3" /> {label}
             </button>

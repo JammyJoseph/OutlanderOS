@@ -25,7 +25,7 @@ const PORTALS = [
     description: 'Deal pipeline, clients & media plans',
     href: '/commercial',
     icon: TrendingUp,
-    accent: '#ffd700',
+    accent: '#9C7C2E',
     statKey: 'commercial' as keyof PortalStats,
     statLabel: 'campaigns',
   },
@@ -34,7 +34,7 @@ const PORTALS = [
     description: 'Briefs, call sheets & crew',
     href: '/production',
     icon: Film,
-    accent: '#ff4444',
+    accent: '#A93B2E',
     statKey: 'production' as keyof PortalStats,
     statLabel: 'productions',
   },
@@ -43,7 +43,7 @@ const PORTALS = [
     description: 'Deals, billing & cash flow',
     href: '/finance',
     icon: DollarSign,
-    accent: '#4d9fff',
+    accent: '#2F4B8F',
     restricted: true,
     statKey: 'finance' as keyof PortalStats,
     statLabel: 'booked',
@@ -53,7 +53,7 @@ const PORTALS = [
     description: 'Issues, flat plans & distribution',
     href: '/print',
     icon: Newspaper,
-    accent: '#00ff88',
+    accent: '#2E5E44',
     statKey: 'print' as keyof PortalStats,
     statLabel: 'issues',
   },
@@ -62,7 +62,7 @@ const PORTALS = [
     description: 'Contacts, collaborators & talent',
     href: '/directory',
     icon: Contact,
-    accent: '#e0e0e0',
+    accent: '#5B6470',
     statKey: 'directory' as keyof PortalStats,
     statLabel: 'contacts',
   },
@@ -141,18 +141,17 @@ export default function HubPage() {
               <Link
                 key={portal.href}
                 href={portal.href}
-                className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-border bg-white dark:bg-gray-900 p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-                style={{ borderTop: `3px solid ${portal.accent}` }}
+                className="group relative flex flex-col gap-3 overflow-hidden rounded-lg border border-border bg-white dark:bg-gray-900 p-5 transition-colors duration-200 hover:border-[#c9c9c6] dark:hover:border-[#3a3a3a]"
               >
                 {portal.restricted && (
-                  <span className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                  <span className="absolute top-3 right-3 flex items-center gap-1 rounded bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
                     <Lock className="h-2.5 w-2.5" />
                     Admin Only
                   </span>
                 )}
 
                 <div
-                  className="flex h-10 w-10 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110"
+                  className="flex h-10 w-10 items-center justify-center rounded-md"
                   style={{ backgroundColor: `${portal.accent}14` }}
                 >
                   <Icon className="h-5 w-5" style={{ color: portal.accent }} />
@@ -160,6 +159,7 @@ export default function HubPage() {
 
                 <div>
                   <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight flex items-center gap-1.5">
+                    <span className="h-2 w-2 shrink-0" style={{ backgroundColor: portal.accent }} />
                     {portal.name}
                     {portal.restricted && <Lock className="h-3 w-3 text-gray-400 dark:text-gray-500" />}
                   </p>

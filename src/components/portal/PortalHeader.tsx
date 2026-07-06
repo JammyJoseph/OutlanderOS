@@ -60,9 +60,9 @@ export function PortalHeader() {
       <div className="flex items-center gap-3">
         <Link
           href="/me"
-          className="text-sm font-bold text-gray-900 dark:text-gray-100 hover:text-[#ffd700] transition-colors"
+          className="text-sm font-bold tracking-[0.14em] uppercase text-gray-900 dark:text-gray-100 hover:opacity-70 transition-opacity"
         >
-          Outlander<span className="text-[#ffd700]">OS</span>
+          Outlander<span className="text-[#9C7C2E] dark:text-[#C9A44A]">OS</span>
         </Link>
         <span className="text-gray-300">/</span>
         <Link
@@ -94,13 +94,13 @@ export function PortalHeader() {
 
         <Link
           href="/me"
-          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
           My Dashboard
         </Link>
         <Link
           href="/me/calendar"
-          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
           Calendar
         </Link>

@@ -208,7 +208,7 @@ function BudgetRowView({
               <span className="flex items-center gap-1">
                 <Link
                   href={row.sourceHref}
-                  className="truncate text-[#4d9fff] hover:underline"
+                  className="truncate text-[#2F4B8F] hover:underline"
                   title={row.source}
                 >
                   {row.source}
@@ -330,7 +330,7 @@ function LinkPicker({
     );
   }
   return (
-    <label className="flex cursor-pointer items-center gap-0.5 rounded bg-secondary px-1 text-[9px] text-gray-400 hover:text-[#4d9fff]">
+    <label className="flex cursor-pointer items-center gap-0.5 rounded bg-secondary px-1 text-[9px] text-gray-400 hover:text-[#2F4B8F]">
       <Link2 className="h-2.5 w-2.5" />
       <span>{label}</span>
       <select

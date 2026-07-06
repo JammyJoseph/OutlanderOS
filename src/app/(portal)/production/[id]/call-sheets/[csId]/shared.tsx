@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import type { CrewMember, TalentMember } from "./types";
 
-export const ACCENT = "#ff4444";
-export const ACCENT_HOVER = "#ff4444";
+export const ACCENT = "#A93B2E";
+export const ACCENT_HOVER = "#A93B2E";
 
 export const inputCls =
-  "w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4444]/25 focus:border-[#ff4444]";
+  "w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#A93B2E]/25 focus:border-[#A93B2E]";
 
 export const smallInputCls =
-  "px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#ff4444]/25 focus:border-[#ff4444]";
+  "px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#A93B2E]/25 focus:border-[#A93B2E]";
 
 export const labelCls = "block text-xs font-medium text-gray-500 mb-1.5";
 
@@ -65,12 +65,12 @@ export function Section({
         >
           <ChevronDown
             size={15}
-            className={`text-[#ff4444] transition-transform duration-150 ${
+            className={`text-[#A93B2E] transition-transform duration-150 ${
               collapsed ? "-rotate-90" : ""
             }`}
           />
           {icon}
-          <h3 className="text-sm font-bold text-gray-800 group-hover:text-[#ff4444] transition-colors">
+          <h3 className="text-sm font-bold text-gray-800 group-hover:text-[#A93B2E] transition-colors">
             {title}
           </h3>
           {badge}
@@ -94,7 +94,7 @@ export function DocSection({
   return (
     <div className="break-inside-avoid">
       <div className="flex items-center gap-1.5 mb-3">
-        <span className="text-[#ff4444]">{icon}</span>
+        <span className="text-[#A93B2E]">{icon}</span>
         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">{title}</h3>
       </div>
       {children}
@@ -106,7 +106,7 @@ export function AddButton({ label, onClick }: { label: string; onClick: () => vo
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 text-xs font-medium text-[#ff4444] hover:text-[#ff4444] transition-colors mt-1"
+      className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E] hover:text-[#A93B2E] transition-colors mt-1"
     >
       <Plus size={13} /> {label}
     </button>
@@ -158,7 +158,7 @@ export function PeopleTable({
           >
             <span className="text-gray-600 font-medium">{p.role}</span>
             <span className="text-gray-800">{p.name}</span>
-            <span className="text-[#ff4444] font-mono text-xs">{p.callTime}</span>
+            <span className="text-[#A93B2E] font-mono text-xs">{p.callTime}</span>
             <span className="text-gray-500 text-xs truncate">{p.email}</span>
             <span className="text-gray-500 text-xs">{p.phone}</span>
           </div>
