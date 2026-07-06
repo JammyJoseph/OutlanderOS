@@ -4,6 +4,9 @@ export interface ScheduleItem {
   time: string;
   description: string;
   notes: string;
+  // Name of the CallSheetLocation this block happens at. Optional/back-compat —
+  // when set, the movement order auto-inserts a travel leg on location changes.
+  locationRef?: string;
 }
 
 export interface CrewMember {
@@ -39,6 +42,11 @@ export interface CallSheetLocation {
   mapLink: string;
   lat: number | null;
   lng: number | null;
+  // Cached drive estimate to the *next* stop in the movement order. Computed
+  // from coordinates (Haversine + London-average speed) and persisted so the
+  // shared/printed document doesn't have to recompute. Optional/back-compat.
+  distanceToNextKm?: number | null;
+  driveMinsToNext?: number | null;
 }
 
 // ── Industry-standard call sheet sections ──

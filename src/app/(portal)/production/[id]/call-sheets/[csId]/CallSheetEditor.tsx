@@ -451,31 +451,13 @@ export function CallSheetEditor(p: EditorProps) {
 
       {/* 8. Movement Order — stops derived from the ordered locations above */}
       <Section title="Movement Order" icon={<Route size={15} className={iconCls} />}>
-        {p.locations.length > 0 && (
-          <div className="mb-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 p-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
-              Stops ({p.locations.length})
-            </p>
-            <ol className="space-y-1">
-              {p.locations.map((l, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <span className="flex items-center justify-center w-5 h-5 rounded bg-gray-900 text-white text-[10px] font-bold shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <span>
-                    <span className="font-medium">{l.name || `Location ${i + 1}`}</span>
-                    {l.address ? <span className="text-gray-400 dark:text-gray-500"> — {l.address}</span> : null}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
         <MovementOrderEditor
           movementOrder={p.movementOrder}
           setMovementOrder={p.setMovementOrder}
           lat={p.locations[0]?.lat ?? p.locationLat}
           lng={p.locations[0]?.lng ?? p.locationLng}
+          locations={p.locations}
+          schedule={p.schedule}
         />
       </Section>
 
@@ -493,6 +475,12 @@ export function CallSheetEditor(p: EditorProps) {
       {/* 10. Schedule */}
       <Section title="Schedule" icon={<Clock size={15} className={iconCls} />}>
         <div className="space-y-2">
+          {p.locations.length > 0 && (
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Tag a block with its location and the Movement Order will auto-insert a travel
+              leg (with departure/arrival times) whenever the location changes.
+            </p>
+          )}
           {p.schedule.map((item, i) => (
             <div
               key={i}
@@ -515,7 +503,11 @@ export function CallSheetEditor(p: EditorProps) {
                 setDragIndex(null);
                 setDragOverIndex(null);
               }}
-              className={`grid grid-cols-[20px_100px_1fr_1fr_32px] gap-2 items-center rounded-lg transition-colors ${
+              className={`grid ${
+                p.locations.length > 0
+                  ? "grid-cols-[20px_100px_1fr_1fr_130px_32px]"
+                  : "grid-cols-[20px_100px_1fr_1fr_32px]"
+              } gap-2 items-center rounded-lg transition-colors ${
                 dragOverIndex === i && dragIndex !== null && dragIndex !== i
                   ? "bg-red-50/70 dark:bg-red-900/30 ring-1 ring-[#ff4444]/30"
                   : dragIndex === i
@@ -554,6 +546,30 @@ export function CallSheetEditor(p: EditorProps) {
                 placeholder="Notes"
                 className={smallInputCls}
               />
+              {p.locations.length > 0 && (
+                <select
+                  value={item.locationRef ?? ""}
+                  onChange={(e) =>
+                    p.setSchedule(
+                      p.schedule.map((s, j) =>
+                        j === i ? { ...s, locationRef: e.target.value || undefined } : s
+                      )
+                    )
+                  }
+                  className={smallInputCls}
+                  title="Location for this block"
+                >
+                  <option value="">— location —</option>
+                  {p.locations.map((l, li) => {
+                    const name = l.name || `Location ${li + 1}`;
+                    return (
+                      <option key={li} value={name}>
+                        {name}
+                      </option>
+                    );
+                  })}
+                </select>
+              )}
               <DeleteButton onClick={() => p.setSchedule(p.schedule.filter((_, j) => j !== i))} />
             </div>
           ))}

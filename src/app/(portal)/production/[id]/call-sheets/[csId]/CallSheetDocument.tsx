@@ -14,7 +14,11 @@ import type {
 } from "./types";
 import { CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, emptyCallSheetLocation } from "./types";
 import { DocSection } from "./shared";
-import { LocationMap } from "./LocationMap";
+import { LocationMap, MapLinks, RouteActions } from "./LocationMap";
+import {
+  computeRouteLegs, journeyStats, formatJourneySummary, formatDistance, formatDuration,
+} from "@/lib/route-utils";
+import { Car } from "lucide-react";
 import { WeatherDisplay } from "./WeatherWidget";
 import { ShotlistDoc } from "./Shotlist";
 import { CateringDoc } from "./CateringSection";
@@ -248,41 +252,71 @@ export function CallSheetDocument({
             title={stops.length > 1 ? "Locations & Movement Order" : "Location"}
             icon={<MapPin size={14} />}
           >
-            <div className="space-y-4">
-              {stops.map((loc, i) => (
-                <div
-                  key={i}
-                  className={stops.length > 1 ? "border border-gray-100 dark:border-gray-800 rounded-xl p-3" : ""}
-                >
-                  {stops.length > 1 && (
-                    <p className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                      <span className="flex items-center justify-center w-5 h-5 rounded bg-gray-900 text-white text-[10px] font-bold">
-                        {i + 1}
-                      </span>
-                      {loc.name || `Location ${i + 1}`}
-                    </p>
-                  )}
-                  {loc.address && <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{loc.address}</p>}
-                  {loc.lat != null && loc.lng != null && (
-                    <div className="mb-3">
-                      <LocationMap lat={loc.lat} lng={loc.lng} height={220} />
+            {(() => {
+              const legs = computeRouteLegs(stops);
+              const stats = journeyStats(stops);
+              const hasRoute = stops.length >= 2 && stats.totalKm > 0;
+              return (
+                <>
+                  {hasRoute && (
+                    <div className="mb-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 p-3 space-y-2.5 print:hidden">
+                      <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        <Route size={14} className="text-[#ff4444]" />
+                        {formatJourneySummary(stats)}
+                      </p>
+                      <RouteActions locations={stops} />
                     </div>
                   )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {loc.nearestAE && (
-                      <DocField label="Nearest A&E" value={loc.nearestAE} icon={<Hospital size={11} />} />
-                    )}
-                    {loc.postcode && <DocField label="Postcode" value={loc.postcode} />}
-                    {loc.whatThreeWords && <DocField label="what3words" value={loc.whatThreeWords} />}
-                    {loc.parkingNotes && <DocField label="Parking" value={loc.parkingNotes} />}
-                    {loc.contactPerson && (
-                      <DocField label="Contact" value={loc.contactPerson} icon={<Phone size={11} />} />
-                    )}
-                    {loc.mapLink && <DocField label="Map link" value={loc.mapLink} icon={<Navigation size={11} />} />}
+                  <div className="space-y-1">
+                    {stops.map((loc, i) => (
+                      <div key={i}>
+                        <div
+                          className={stops.length > 1 ? "border border-gray-100 dark:border-gray-800 rounded-xl p-3" : ""}
+                        >
+                          {stops.length > 1 && (
+                            <p className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                              <span className="flex items-center justify-center w-5 h-5 rounded bg-gray-900 text-white text-[10px] font-bold">
+                                {i + 1}
+                              </span>
+                              {loc.name || `Location ${i + 1}`}
+                            </p>
+                          )}
+                          {loc.address && <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{loc.address}</p>}
+                          {loc.lat != null && loc.lng != null && (
+                            <div className="mb-3">
+                              <LocationMap lat={loc.lat} lng={loc.lng} height={220} />
+                            </div>
+                          )}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {loc.nearestAE && (
+                              <DocField label="Nearest A&E" value={loc.nearestAE} icon={<Hospital size={11} />} />
+                            )}
+                            {loc.postcode && <DocField label="Postcode" value={loc.postcode} />}
+                            {loc.whatThreeWords && <DocField label="what3words" value={loc.whatThreeWords} />}
+                            {loc.parkingNotes && <DocField label="Parking" value={loc.parkingNotes} />}
+                            {loc.contactPerson && (
+                              <DocField label="Contact" value={loc.contactPerson} icon={<Phone size={11} />} />
+                            )}
+                            {loc.mapLink && <DocField label="Map link" value={loc.mapLink} icon={<Navigation size={11} />} />}
+                          </div>
+                          {(loc.lat != null && loc.lng != null) || loc.address || loc.postcode ? (
+                            <MapLinks location={loc} className="mt-3 print:hidden" />
+                          ) : null}
+                        </div>
+                        {i < stops.length - 1 && legs[i] && (
+                          <div className="flex items-center gap-2 py-1.5 pl-3 text-xs text-gray-500 dark:text-gray-400">
+                            <Car size={12} className="text-[#ff4444]" />
+                            <span>
+                              {formatDistance(legs[i]!.distanceKm)} · {formatDuration(legs[i]!.driveMins)} drive to next stop
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))}
-            </div>
+                </>
+              );
+            })()}
             {location.safetyNotes && (
               <p className="mt-3 text-sm font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-lg px-3 py-2">
                 NB: {location.safetyNotes}
