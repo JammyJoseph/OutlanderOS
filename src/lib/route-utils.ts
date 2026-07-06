@@ -237,6 +237,65 @@ export function staticMapUrl(
   return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&markers=${lat},${lng},red-pushpin`;
 }
 
+// Pick a zoom level that fits a lat/lng bounding box into a pixel viewport.
+// Standard slippy-map fit-bounds maths (Web Mercator), capped for sanity.
+function fitZoom(
+  minLat: number,
+  maxLat: number,
+  minLng: number,
+  maxLng: number,
+  width: number,
+  height: number
+): number {
+  const WORLD_PX = 256;
+  const latRad = (lat: number) => {
+    const s = Math.sin((lat * Math.PI) / 180);
+    const clamped = Math.min(Math.max(s, -0.9999), 0.9999);
+    return Math.log((1 + clamped) / (1 - clamped)) / 2;
+  };
+  const latFraction = (latRad(maxLat) - latRad(minLat)) / (2 * Math.PI);
+  const lngDiffRaw = maxLng - minLng;
+  const lngFraction = (lngDiffRaw < 0 ? lngDiffRaw + 360 : lngDiffRaw) / 360;
+  const zoomFor = (px: number, frac: number) =>
+    frac > 0 ? Math.log2(px / WORLD_PX / frac) : 21;
+  // -1 pad so the outermost pins aren't flush against the image edge.
+  const z = Math.min(zoomFor(height, latFraction), zoomFor(width, lngFraction)) - 1;
+  if (!Number.isFinite(z)) return 12;
+  return Math.max(3, Math.min(16, Math.floor(z)));
+}
+
+// One static OpenStreetMap image for the WHOLE journey: a red pin at every
+// located stop, joined by a path line, auto-centred and zoomed to fit them all.
+// Returns null if no stop is geocoded. This is the single map on the sheet —
+// there are deliberately no per-location map images.
+export function buildStaticRouteMapUrl(
+  locations: GeoPoint[],
+  width = 680,
+  height = 300
+): string | null {
+  const pts = locations.filter(hasCoords);
+  if (pts.length === 0) return null;
+  const lats = pts.map((p) => p.lat);
+  const lngs = pts.map((p) => p.lng);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const centerLat = (minLat + maxLat) / 2;
+  const centerLng = (minLng + maxLng) / 2;
+  const zoom =
+    pts.length === 1 ? 14 : fitZoom(minLat, maxLat, minLng, maxLng, width, height);
+  const markers = pts.map((p) => `${p.lat},${p.lng},red-pushpin`).join("|");
+  let url =
+    `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLng}` +
+    `&zoom=${zoom}&size=${width}x${height}&markers=${markers}`;
+  if (pts.length >= 2) {
+    const path = pts.map((p) => `${p.lat},${p.lng}`).join(",");
+    url += `&path=${path}`;
+  }
+  return url;
+}
+
 // ── Multi-stop route links ──
 
 // Turn one stop into a Google Maps directions waypoint (coords preferred).

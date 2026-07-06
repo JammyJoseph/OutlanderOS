@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { format } from "date-fns";
 import type {
   AgencyTeamMember, Attachment, CallSheetHeader, CallSheetLocation, CallTimeRow,
@@ -10,9 +9,9 @@ import type {
 } from "./types";
 import { CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, emptyCallSheetLocation } from "./types";
 import {
-  computeRouteLegs, journeyStats, formatJourneySummary, formatDistance, formatDuration,
+  journeyStats, formatJourneySummary,
   parseTime, googleMapsSearchUrl, wazeUrl, buildGoogleMapsRouteUrl, buildGpx,
-  downloadTextFile,
+  buildStaticRouteMapUrl, downloadTextFile,
 } from "@/lib/route-utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,12 +20,16 @@ import {
 // This is the OUTPUT format seen on the public share links and in the PDF/print
 // download. It renders on a WHITE background with black text: a serif display
 // hero, letter-spaced grey section labels, and hairline rules. Function over
-// form — every element earns its place. The Outlander gold asterisk appears as
-// a subtle accent beside the call-times block. Colours are baked into inline
-// styles with print-color-adjust so the sheet prints clean. Interactive CTAs
-// (Confirm receipt, Maps / Waze, Download route, Call / Email) are screen-only
-// and hidden in print via the `cs-noprint` class + the scoped <style> block.
-// The interactive editor is a separate concern and unchanged.
+// form — every element earns its place. Type is deliberately lean: a ~26px
+// serif hero, 11px tracked grey section labels, 13px body, 14px bold times —
+// no giant call-time boxes, so the whole sheet reads as one document. Every
+// information section is a consistent grid of hairline-ruled rows. The Outlander
+// gold asterisk appears as a subtle accent. Colours are baked into inline styles
+// with print-color-adjust so the sheet prints clean. Interactive CTAs (Maps /
+// Waze, Open full route, Download GPX, Call / Email) are screen-only and hidden
+// in print via the `cs-noprint` class + the scoped <style> block. The one map on
+// the sheet is a single static route image in the movement order — there are no
+// per-location maps. The interactive editor is a separate concern and unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CallSheetViewData {
@@ -102,23 +105,26 @@ const tableStyle: React.CSSProperties = {
   tableLayout: "fixed",
 };
 
+// Every table body cell shares this: same padding, same row height, hairline
+// rule beneath, 13px body text. Keeps every section on one consistent grid.
 const cellStyle: React.CSSProperties = {
-  padding: "7px 12px 7px 0",
+  padding: "9px 14px 9px 0",
   borderBottom: `1px solid ${HAIR}`,
   textAlign: "left",
   verticalAlign: "top",
   wordBreak: "break-word",
+  fontSize: "13px",
   color: TEXT,
 };
 
 const thStyle: React.CSSProperties = {
-  padding: "0 12px 7px 0",
+  padding: "0 14px 7px 0",
   borderBottom: `1px solid ${SOFTRULE}`,
   textAlign: "left",
   verticalAlign: "bottom",
-  fontSize: "8px",
+  fontSize: "11px",
   fontWeight: 700,
-  letterSpacing: "0.16em",
+  letterSpacing: "0.1em",
   textTransform: "uppercase",
   color: MUTED,
   whiteSpace: "nowrap",
@@ -127,9 +133,9 @@ const thStyle: React.CSSProperties = {
 const labelCellStyle: React.CSSProperties = {
   ...cellStyle,
   width: "150px",
-  fontSize: "8px",
+  fontSize: "11px",
   fontWeight: 700,
-  letterSpacing: "0.13em",
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
   color: MUTED,
   paddingRight: "14px",
@@ -138,12 +144,12 @@ const labelCellStyle: React.CSSProperties = {
 
 const padX: React.CSSProperties = { paddingLeft: "40px", paddingRight: "40px" };
 
-// Screen-only text link (Maps / Waze / Open route). Small uppercase, gold, with
-// a subtle underline — not a pill.
+// Screen-only text link (Maps / Waze / Open full route / Download GPX). Small
+// uppercase, gold, with a subtle underline — not a pill.
 const ctaLinkStyle: React.CSSProperties = {
   display: "inline-block",
   fontFamily: SANS,
-  fontSize: "9px",
+  fontSize: "10px",
   fontWeight: 600,
   letterSpacing: "0.07em",
   textTransform: "uppercase",
@@ -153,25 +159,6 @@ const ctaLinkStyle: React.CSSProperties = {
   paddingBottom: "1px",
   cursor: "pointer",
   background: "transparent",
-  lineHeight: 1.4,
-  whiteSpace: "nowrap",
-};
-
-// Screen-only bordered button (Confirm receipt / Download route).
-const buttonStyle: React.CSSProperties = {
-  display: "inline-block",
-  fontFamily: SANS,
-  fontSize: "9px",
-  fontWeight: 700,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  color: TEXT,
-  textDecoration: "none",
-  border: `1px solid ${TEXT}`,
-  borderRadius: "2px",
-  padding: "6px 14px",
-  background: "transparent",
-  cursor: "pointer",
   lineHeight: 1.4,
   whiteSpace: "nowrap",
 };
@@ -192,8 +179,6 @@ export function CallSheetDocument({
     notesGeneral, notesSafety, notesParking, header, clientTeam, agencyTeam,
     productionCompany, callTimes, productionMobiles, movementOrder, equipment,
   } = data;
-
-  const [receiptConfirmed, setReceiptConfirmed] = useState(false);
 
   // Default every section visible unless an explicit toggle map says otherwise.
   const show = (k: SectionKey) => (sections ? sections[k] !== false : true);
@@ -319,6 +304,10 @@ export function CallSheetDocument({
   const routeUrl = buildGoogleMapsRouteUrl(stops);
   const stats = journeyStats(stops);
   const showJourney = stops.length >= 2 && stats.totalKm > 0;
+  // The single route map: rendered only when at least two stops are geocoded,
+  // so it always depicts a genuine journey (never a lone per-location pin).
+  const locatedStopCount = stops.filter((s) => s.lat != null && s.lng != null).length;
+  const routeMapUrl = locatedStopCount >= 2 ? buildStaticRouteMapUrl(stops) : null;
 
   return (
     <div className="cs-doc" style={docStyle}>
@@ -412,16 +401,16 @@ export function CallSheetDocument({
       </div>
 
       {/* ── Hero ── */}
-      <div style={{ ...padX, paddingTop: "38px", paddingBottom: "30px", position: "relative" }}>
+      <div style={{ ...padX, paddingTop: "34px", paddingBottom: "26px", position: "relative" }}>
         <h1
           style={{
             fontFamily: SERIF,
-            fontSize: "42px",
+            fontSize: "26px",
             fontWeight: 600,
-            lineHeight: 1.08,
-            letterSpacing: "-0.015em",
+            lineHeight: 1.12,
+            letterSpacing: "-0.01em",
             color: TEXT,
-            margin: "0 0 12px",
+            margin: "0 0 10px",
           }}
         >
           {shootTitle || data.productionTitle || "Call Sheet"}
@@ -431,24 +420,6 @@ export function CallSheetDocument({
             {heroBits}
             {redacted ? `${heroBits ? " · " : ""}Client copy` : ""}
           </p>
-        )}
-        {!redacted && (
-          <div className="cs-noprint" style={{ marginTop: "20px" }}>
-            <button
-              type="button"
-              onClick={() => setReceiptConfirmed(true)}
-              disabled={receiptConfirmed}
-              style={{
-                ...buttonStyle,
-                color: receiptConfirmed ? BG : TEXT,
-                borderColor: receiptConfirmed ? GOLD : TEXT,
-                background: receiptConfirmed ? GOLD : "transparent",
-                cursor: receiptConfirmed ? "default" : "pointer",
-              }}
-            >
-              {receiptConfirmed ? "✓ Receipt confirmed" : "Confirm receipt"}
-            </button>
-          </div>
         )}
       </div>
 
@@ -495,7 +466,9 @@ export function CallSheetDocument({
           </div>
         </Section>
 
-        {/* ── Call times (crew / talent / wrap, or department table) ── */}
+        {/* ── Call times (crew / talent / wrap, or department table) ──
+            Integrated into the grid like every other section — no oversized
+            call-time boxes; the time is just 14px bold. */}
         <Section title="Call Times">
           <table style={tableStyle}>
             <colgroup>
@@ -510,7 +483,7 @@ export function CallSheetDocument({
                       ...cellStyle,
                       whiteSpace: "nowrap",
                       fontWeight: 700,
-                      fontSize: "13px",
+                      fontSize: "14px",
                     }}
                   >
                     {r.time}
@@ -548,12 +521,33 @@ export function CallSheetDocument({
           <Section
             title={stops.length > 1 ? "Locations / Movement Order" : "Location"}
             summary={showJourney ? formatJourneySummary(stats) : undefined}
-            action={
-              routeUrl ? (
-                <span className="cs-noprint" style={{ display: "inline-flex", gap: "14px" }}>
-                  <a href={routeUrl} target="_blank" rel="noopener noreferrer" style={ctaLinkStyle}>
-                    Open route
-                  </a>
+          >
+            {stops.length > 0 && <LocationsGrid stops={stops} />}
+
+            {/* The ONE map on the sheet: a single static route image for the
+                whole journey, with screen-only route CTAs below it. */}
+            {routeMapUrl && (
+              <div style={{ marginTop: "16px" }}>
+                <img
+                  src={routeMapUrl}
+                  alt="Route map showing all shoot locations"
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    height: "auto",
+                    border: `1px solid ${HAIR}`,
+                    borderRadius: "2px",
+                  }}
+                />
+                <div
+                  className="cs-noprint"
+                  style={{ display: "flex", gap: "18px", marginTop: "8px" }}
+                >
+                  {routeUrl && (
+                    <a href={routeUrl} target="_blank" rel="noopener noreferrer" style={ctaLinkStyle}>
+                      Open full route
+                    </a>
+                  )}
                   <button
                     type="button"
                     style={ctaLinkStyle}
@@ -565,20 +559,18 @@ export function CallSheetDocument({
                       )
                     }
                   >
-                    Download route
+                    Download GPX
                   </button>
-                </span>
-              ) : undefined
-            }
-          >
-            {stops.length > 0 && <LocationsList stops={stops} />}
+                </div>
+              </div>
+            )}
             {nearestAE && (
-              <p style={{ margin: "14px 0 0", fontSize: "10px" }}>
+              <p style={{ margin: "14px 0 0", fontSize: "13px" }}>
                 <span
                   style={{
-                    fontSize: "8px",
+                    fontSize: "11px",
                     fontWeight: 700,
-                    letterSpacing: "0.13em",
+                    letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     color: MUTED,
                   }}
@@ -852,8 +844,8 @@ export function CallSheetDocument({
               })}
             />
             {equipment.kitList && equipment.kitList.length > 0 && (
-              <p style={{ margin: "10px 0 0", color: TEXT }}>
-                <span style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase", color: MUTED }}>
+              <p style={{ margin: "10px 0 0", fontSize: "13px", color: TEXT }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: MUTED }}>
                   Kit List:{" "}
                 </span>
                 {equipment.kitList.join(", ")}
@@ -987,9 +979,9 @@ function Section({
       >
         <h2
           style={{
-            fontSize: "10px",
+            fontSize: "11px",
             fontWeight: 700,
-            letterSpacing: "0.18em",
+            letterSpacing: "0.16em",
             textTransform: "uppercase",
             color: TEXT,
             margin: 0,
@@ -1059,9 +1051,9 @@ function OverviewRow({
     <div style={{ padding: "9px 0", borderBottom: `1px solid ${HAIR}` }}>
       <div
         style={{
-          fontSize: "8px",
+          fontSize: "11px",
           fontWeight: 700,
-          letterSpacing: "0.14em",
+          letterSpacing: "0.08em",
           textTransform: "uppercase",
           color: MUTED,
           marginBottom: "3px",
@@ -1069,7 +1061,7 @@ function OverviewRow({
       >
         {label}
       </div>
-      <div style={{ fontSize: "12px", color: TEXT, display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+      <div style={{ fontSize: "13px", color: TEXT, display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
         <span>{value || "—"}</span>
         {contact}
       </div>
@@ -1277,89 +1269,61 @@ function welfareLine(weather: WeatherData | null, safetyNote: string): string {
   return Array.from(new Set(tips)).join(" ");
 }
 
-// Numbered movement-order list: each stop shows name + address, its schedule
-// context, and the travel leg to the next stop. Screen-only Maps / Waze links.
-function LocationsList({ stops }: { stops: CallSheetLocation[] }) {
-  const legs = computeRouteLegs(stops);
-  const multi = stops.length > 1;
+// Address cell for the locations grid: the address line, with subtle screen-only
+// Maps / Waze deep links sitting right next to it (hidden in print).
+function AddressCell({ loc }: { loc: CallSheetLocation }) {
+  const addressLine = [loc.address, loc.postcode].filter(Boolean).join(", ");
+  const gmaps = googleMapsSearchUrl(loc);
+  const waze = wazeUrl(loc);
   return (
     <div>
-      {stops.map((loc, i) => {
-        const detailBits = [
-          loc.address,
-          loc.postcode,
+      <span>{addressLine || "—"}</span>
+      {(gmaps || waze) && (
+        <span
+          className="cs-noprint"
+          style={{ display: "inline-flex", gap: "10px", marginLeft: "10px", whiteSpace: "nowrap" }}
+        >
+          {gmaps && (
+            <a href={gmaps} target="_blank" rel="noopener noreferrer" style={{ ...ctaLinkStyle, fontSize: "9px" }}>
+              Maps
+            </a>
+          )}
+          {waze && (
+            <a href={waze} target="_blank" rel="noopener noreferrer" style={{ ...ctaLinkStyle, fontSize: "9px" }}>
+              Waze
+            </a>
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Movement order as a clean grid — one consistent row per stop: number, name,
+// address (with Maps / Waze links), and notes (w3w / contact / parking). The
+// journey summary sits in the section header and the route map below the grid,
+// so the rows themselves stay tabular like every other section.
+function LocationsGrid({ stops }: { stops: CallSheetLocation[] }) {
+  return (
+    <GridTable
+      columns={[
+        { label: "#", width: "6%", nowrap: true },
+        { label: "Location", width: "26%" },
+        { label: "Address", width: "42%" },
+        { label: "Notes", width: "26%" },
+      ]}
+      rows={stops.map((loc, i) => [
+        String(i + 1),
+        <Bold key="n">{loc.name || `Location ${i + 1}`}</Bold>,
+        <AddressCell key="a" loc={loc} />,
+        [
           loc.whatThreeWords ? `w3w: ${loc.whatThreeWords}` : "",
           loc.contactPerson ? `Contact: ${loc.contactPerson}` : "",
           loc.parkingNotes ? `Parking: ${loc.parkingNotes}` : "",
-        ].filter(Boolean);
-        const addressLine = [loc.address, loc.postcode].filter(Boolean).join(", ");
-        const contextLine = detailBits
-          .filter((b) => b !== loc.address && b !== loc.postcode)
-          .join(" · ");
-        const leg = legs[i];
-        const gmaps = googleMapsSearchUrl(loc);
-        const waze = wazeUrl(loc);
-        const isLast = i === stops.length - 1;
-        return (
-          <div
-            key={i}
-            style={{
-              padding: "12px 0",
-              borderBottom: isLast ? "none" : `1px solid ${HAIR}`,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
-                gap: "16px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "baseline", gap: "10px", minWidth: 0 }}>
-                <span style={{ fontWeight: 700, color: TEXT, fontSize: "12px", flexShrink: 0 }}>
-                  {i + 1}
-                </span>
-                <span style={{ fontWeight: 700, color: TEXT, fontSize: "12px" }}>
-                  {loc.name || `Location ${i + 1}`}
-                </span>
-              </div>
-              {addressLine && (
-                <span style={{ color: MUTED, fontSize: "10px", textAlign: "right" }}>
-                  {addressLine}
-                </span>
-              )}
-            </div>
-            {contextLine && (
-              <div style={{ marginTop: "4px", marginLeft: "22px", color: MUTED, fontSize: "10px" }}>
-                {contextLine}
-              </div>
-            )}
-            {(gmaps || waze) && (
-              <div
-                className="cs-noprint"
-                style={{ display: "flex", gap: "14px", marginTop: "6px", marginLeft: "22px" }}
-              >
-                {gmaps && (
-                  <a href={gmaps} target="_blank" rel="noopener noreferrer" style={{ ...ctaLinkStyle, fontSize: "8px" }}>
-                    Open in Maps
-                  </a>
-                )}
-                {waze && (
-                  <a href={waze} target="_blank" rel="noopener noreferrer" style={{ ...ctaLinkStyle, fontSize: "8px" }}>
-                    Open in Waze
-                  </a>
-                )}
-              </div>
-            )}
-            {multi && !isLast && leg && (
-              <div style={{ marginTop: "6px", marginLeft: "22px", color: TEXT, fontSize: "10px", fontWeight: 600 }}>
-                → {formatDistance(leg.distanceKm)} · {formatDuration(leg.driveMins)} drive to next stop
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      ])}
+    />
   );
 }
