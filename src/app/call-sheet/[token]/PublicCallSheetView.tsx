@@ -57,14 +57,14 @@ export function PublicCallSheetView({
   }, [token, viewData.locationLat, viewData.locationLng]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] print:bg-[#0a0a0a]" data-callsheet-print>
+    <div className="min-h-screen bg-white print:bg-white" data-callsheet-print>
       <div className="max-w-4xl mx-auto px-6 py-8 print:px-0 print:py-0 print:max-w-none">
         <div className="flex items-center justify-between mb-6 print:hidden">
           <div>
-            <p className="text-sm font-extrabold tracking-[0.3em] uppercase text-white">
+            <p className="text-sm font-extrabold tracking-[0.3em] uppercase text-neutral-900">
               Outlander
             </p>
-            <p className="text-[11px] text-white/40 mt-0.5">
+            <p className="text-[11px] text-neutral-500 mt-0.5">
               {redacted
                 ? "Client call sheet · live weather for the shoot location"
                 : "Production call sheet · please confirm receipt with your contact"}
@@ -72,13 +72,13 @@ export function PublicCallSheetView({
           </div>
           <div className="flex items-center gap-3">
             {liveAt && (
-              <span className="hidden sm:flex items-center gap-1 text-[11px] text-emerald-400">
+              <span className="hidden sm:flex items-center gap-1 text-[11px] text-emerald-600">
                 <CloudSun size={12} /> Live weather {liveAt}
               </span>
             )}
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/15 text-sm font-medium text-white/70 hover:bg-white/5 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-neutral-300 text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
             >
               <FileDown size={13} /> Download PDF
             </button>
@@ -87,7 +87,7 @@ export function PublicCallSheetView({
 
         <CallSheetDocument data={data} redacted={redacted} />
 
-        <p className="mt-8 text-center text-[11px] text-white/25 print:hidden">
+        <p className="mt-8 text-center text-[11px] text-neutral-400 print:hidden">
           Outlander Magazine — confidential production document. Please don&apos;t forward
           this link outside the crew.
         </p>
