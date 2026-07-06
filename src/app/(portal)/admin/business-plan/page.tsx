@@ -41,7 +41,7 @@ export default function BusinessPlanPage() {
               onClick={() => setActiveDoc(i)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 activeDoc === i
-                  ? 'bg-[#9C7C2E] text-black'
+                  ? 'bg-[#111111] text-white dark:bg-white dark:text-black'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >

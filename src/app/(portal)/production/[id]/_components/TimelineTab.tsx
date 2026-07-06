@@ -224,7 +224,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
               <button
                 onClick={() => setView("list")}
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  view === "list" ? "bg-[#9C7C2E] text-black" : "text-gray-500 dark:text-gray-400"
+                  view === "list" ? "bg-[#111111] dark:bg-white text-white dark:text-black" : "text-gray-500 dark:text-gray-400"
                 }`}
               >
                 <ListChecks size={13} /> List
@@ -232,7 +232,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
               <button
                 onClick={() => setView("calendar")}
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  view === "calendar" ? "bg-[#9C7C2E] text-black" : "text-gray-500 dark:text-gray-400"
+                  view === "calendar" ? "bg-[#111111] dark:bg-white text-white dark:text-black" : "text-gray-500 dark:text-gray-400"
                 }`}
               >
                 <CalendarDays size={13} /> Calendar
@@ -254,7 +254,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
               onClick={() => generateTemplate(false)}
               disabled={seeding || !hasShootDate}
               title={hasShootDate ? "" : "Set a shoot date first (Overview tab)"}
-              className="inline-flex items-center gap-1.5 bg-[#9C7C2E] text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[#9C7C2E] disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 bg-[#111111] dark:bg-white text-white dark:text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-40"
             >
               {seeding ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
               Generate standard timeline
@@ -310,7 +310,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
               <button
                 onClick={runImport}
                 disabled={busy || !raw.trim()}
-                className="inline-flex items-center gap-1.5 bg-[#9C7C2E] text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[#9C7C2E] disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 bg-[#111111] dark:bg-white text-white dark:text-black px-3.5 py-1.5 rounded-lg text-xs font-medium hover:opacity-90 disabled:opacity-40"
               >
                 {busy ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
                 Parse into timeline
@@ -517,7 +517,7 @@ function MilestoneRow({
               </label>
               <button
                 onClick={saveEdits}
-                className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E]"
+                className="bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90"
               >
                 Save
               </button>
@@ -716,7 +716,7 @@ function AddMilestoneForm({
         </label>
         <button
           onClick={submit}
-          className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E] transition-colors"
+          className="bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
         >
           Add
         </button>
@@ -823,7 +823,7 @@ function TimelineCalendar({
               <span
                 className={`text-xs font-semibold leading-none mb-1 inline-flex items-center justify-center h-5 w-5 rounded-full ${
                   current
-                    ? "bg-[#9C7C2E] text-black"
+                    ? "bg-[#111111] dark:bg-white text-white dark:text-black"
                     : !inMonth
                     ? "text-gray-300 dark:text-gray-600"
                     : "text-gray-700 dark:text-gray-300"

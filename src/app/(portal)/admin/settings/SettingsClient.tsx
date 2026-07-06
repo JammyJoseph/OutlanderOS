@@ -221,7 +221,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                       onClick={() =>
                         router.push(`/api/google/connect?label=${account.id}`)
                       }
-                      className="bg-[#9C7C2E] text-zinc-900 hover:bg-[#9C7C2E]"
+                      className="bg-[#111111] text-white dark:bg-white dark:text-black"
                     >
                       Connect
                     </Button>
@@ -325,7 +325,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             </Button>
             <Button
               size="sm"
-              className="bg-[#9C7C2E] text-black hover:bg-[#9C7C2E] disabled:opacity-40"
+              className="bg-[#111111] text-white dark:bg-white dark:text-black disabled:opacity-40"
               onClick={handleAddSheet}
               disabled={testStatus !== "ok"}
             >
@@ -377,7 +377,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                 <Button
                   size="sm"
                   onClick={() => router.push('/api/xero/connect')}
-                  className="bg-[#9C7C2E] text-zinc-900 hover:bg-[#9C7C2E]"
+                  className="bg-[#111111] text-white dark:bg-white dark:text-black"
                 >
                   <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                   Connect

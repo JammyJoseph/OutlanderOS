@@ -209,7 +209,7 @@ function countdownLabel(date: Date): string {
 }
 
 function countdownTone(date: Date): { bg: string; text: string } {
-  if (isToday(date)) return { bg: "bg-[#9C7C2E]", text: "text-black" };
+  if (isToday(date)) return { bg: "bg-[#111111] dark:bg-white", text: "text-white dark:text-black" };
   if (isTomorrow(date)) return { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-800 dark:text-amber-300" };
   const days = differenceInCalendarDays(date, new Date());
   if (days <= 7) return { bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300" };
@@ -348,7 +348,7 @@ export default function ProductionDashboard() {
             </button>
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors shadow-sm"
             >
               <Plus size={16} />
               New Project
@@ -453,7 +453,7 @@ export default function ProductionDashboard() {
                   </p>
                   <button
                     onClick={() => setShowCreate(true)}
-                    className="flex items-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors"
+                    className="flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors"
                   >
                     <Plus size={16} />
                     Create your first project
@@ -1057,7 +1057,7 @@ function CreateProjectModal({
             <button
               type="submit"
               disabled={!title.trim() || creating}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#9C7C2E] text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#9C7C2E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creating ? <Loader2 size={15} className="animate-spin" /> : null}
               Create Project

@@ -45,7 +45,7 @@ const STATUS_TONE: Record<string, string> = {
 const SPLITS: { key: keyof Project; label: string; color: string }[] = [
   { key: "productionBudget", label: "Production", color: "#9C7C2E" },
   { key: "mediaBudget", label: "Media", color: "#5B8DEF" },
-  { key: "internalBudget", label: "Internal", color: "#10B981" },
+  { key: "internalBudget", label: "Internal", color: "#2E5E44" },
   { key: "otherBudget", label: "Other", color: "#9CA3AF" },
 ];
 

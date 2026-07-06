@@ -85,7 +85,7 @@ export default function ScheduleTab({
                 onClick={() => setActiveDay(d)}
                 className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
                   activeDay === d
-                    ? "bg-[#9C7C2E] text-black"
+                    ? "bg-[#111111] dark:bg-white text-white dark:text-black"
                     : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
               >
@@ -311,7 +311,7 @@ function AddBlockForm({
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E] transition-colors"
+          className="bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
         >
           Add
         </button>

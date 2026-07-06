@@ -280,7 +280,7 @@ export default function CampaignTrackerTab({
                         }
                       }}
                       placeholder="Paste live link…"
-                      className="w-44 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+                      className="w-44 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 dark:focus:ring-[#C9A44A]/30 focus:border-[#9C7C2E] dark:focus:border-[#C9A44A]"
                     />
                     {d.postedUrl ? (
                       <a
@@ -362,7 +362,7 @@ export default function CampaignTrackerTab({
                 key={key}
                 className={`min-h-[72px] rounded-lg border p-1.5 ${
                   inMonth ? "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900" : "border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50"
-                } ${today ? "ring-1 ring-[#9C7C2E]" : ""}`}
+                } ${today ? "ring-1 ring-[#9C7C2E] dark:ring-[#C9A44A]" : ""}`}
               >
                 <p className={`text-[10px] font-semibold ${inMonth ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-600"}`}>
                   {format(day, "d")}

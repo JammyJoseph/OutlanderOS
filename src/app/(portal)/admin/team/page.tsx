@@ -26,7 +26,7 @@ interface NewCredentials {
 }
 
 const TEAMS = [
-  { key: "COMMERCIAL", label: "Commercial", chip: "bg-[#9C7C2E]/15 text-[#9a7322]" },
+  { key: "COMMERCIAL", label: "Commercial", chip: "bg-[#9C7C2E]/15 text-[#9C7C2E] dark:text-[#C9A44A]" },
   { key: "PRODUCTION", label: "Production", chip: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
   { key: "FINANCE", label: "Finance", chip: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
   { key: "OPERATIONS", label: "Operations", chip: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
@@ -134,7 +134,7 @@ export default function TeamPage() {
           </div>
           <button
             onClick={() => setCreating(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-[#9C7C2E] px-3 py-1.5 text-xs font-medium text-black transition-colors hover:brightness-95"
+            className="flex items-center gap-1.5 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black px-3 py-1.5 text-xs font-medium transition-colors hover:brightness-95"
           >
             <Plus className="h-3.5 w-3.5" />
             Add Staff
@@ -343,7 +343,7 @@ function CredentialsModal({
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9C7C2E]/20">
-              <KeyRound className="h-4 w-4 text-[#9a7322]" />
+              <KeyRound className="h-4 w-4 text-[#9C7C2E] dark:text-[#C9A44A]" />
             </span>
             <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Account created</h2>
           </div>
@@ -389,7 +389,7 @@ function CredentialsModal({
           </button>
           <button
             onClick={onClose}
-            className="rounded-lg bg-[#9C7C2E] px-4 py-2 text-sm font-medium text-black hover:bg-[#9C7C2E]"
+            className="rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-medium"
           >
             Done
           </button>
@@ -502,7 +502,7 @@ function StaffModal({
           </div>
           {isNew ? (
             <div className="flex items-start gap-2 rounded-lg border border-[#9C7C2E]/40 bg-[#9C7C2E]/10 px-3 py-2.5">
-              <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9a7322]" />
+              <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9C7C2E] dark:text-[#C9A44A]" />
               <p className="text-xs text-gray-600 dark:text-gray-400">
                 A temporary password will be generated and shown once after creation. They&apos;ll be
                 prompted to change it on first login.
@@ -587,7 +587,7 @@ function StaffModal({
           <button
             onClick={save}
             disabled={saving}
-            className="flex items-center gap-1.5 rounded-lg bg-[#9C7C2E] px-4 py-2 text-sm font-medium text-black hover:bg-[#9C7C2E] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-medium disabled:opacity-50"
           >
             {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {isNew ? "Create" : "Save changes"}

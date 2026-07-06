@@ -144,7 +144,7 @@ export default function WelcomePage() {
             <button
               onClick={getStarted}
               disabled={entering}
-              className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-[#9C7C2E] py-3 text-sm font-semibold text-black transition-all duration-200 hover:brightness-110 disabled:opacity-50"
+              className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 disabled:opacity-50"
             >
               {entering ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Get Started

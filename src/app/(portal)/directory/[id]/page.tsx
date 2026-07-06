@@ -113,7 +113,7 @@ function Stars({
             size={size}
             className={
               i <= (rating ?? 0)
-                ? "fill-[#9C7C2E] text-[#9C7C2E]"
+                ? "fill-[#9C7C2E] text-[#9C7C2E] dark:fill-[#C9A44A] dark:text-[#C9A44A]"
                 : "text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500"
             }
           />
@@ -241,8 +241,8 @@ export default function ContactDetailPage({
                   size={24}
                   className={
                     contact.isFavourite
-                      ? "fill-[#9C7C2E] text-[#9C7C2E]"
-                      : "text-gray-400 dark:text-gray-500 hover:text-[#9C7C2E]"
+                      ? "fill-[#9C7C2E] text-[#9C7C2E] dark:fill-[#C9A44A] dark:text-[#C9A44A]"
+                      : "text-gray-400 dark:text-gray-500 hover:text-[#9C7C2E] dark:hover:text-[#C9A44A]"
                   }
                 />
               </button>

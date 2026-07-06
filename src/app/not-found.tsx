@@ -24,7 +24,7 @@ export default function NotFound() {
       <div className="mt-6 flex items-center gap-3">
         <Link
           href="/me"
-          className="rounded-xl bg-[#9C7C2E] px-5 py-2.5 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-[#9C7C2E]"
+          className="rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-5 py-2.5 text-sm font-semibold shadow-sm transition-colors hover:brightness-110"
         >
           Go to Dashboard
         </Link>

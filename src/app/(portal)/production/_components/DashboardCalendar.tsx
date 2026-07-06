@@ -232,7 +232,7 @@ export default function DashboardCalendar({
                 }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${
                   view === v
-                    ? "bg-[#9C7C2E] text-black"
+                    ? "bg-[#111111] dark:bg-white text-white dark:text-black"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 }`}
               >
@@ -331,7 +331,7 @@ export default function DashboardCalendar({
                   <span
                     className={`text-xs font-semibold leading-none mb-1 inline-flex items-center justify-center h-5 w-5 rounded-full ${
                       current
-                        ? "bg-[#9C7C2E] text-black"
+                        ? "bg-[#111111] dark:bg-white text-white dark:text-black"
                         : !inMonth
                         ? "text-gray-300 dark:text-gray-600"
                         : "text-gray-700 dark:text-gray-300"

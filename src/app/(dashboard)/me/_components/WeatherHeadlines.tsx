@@ -104,7 +104,7 @@ export function WeatherHeadlines() {
               <div className="flex items-center gap-3">
                 <WeatherIcon
                   condition={brief.weather.current.condition}
-                  className="h-9 w-9 text-[#9C7C2E]"
+                  className="h-9 w-9 text-[#9C7C2E] dark:text-[#C9A44A]"
                 />
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-1.5">

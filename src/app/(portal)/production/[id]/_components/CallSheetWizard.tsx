@@ -383,7 +383,7 @@ export default function CallSheetWizard({ production, onClose }: Props) {
             <button
               onClick={create}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-4 py-2 text-sm font-medium text-black hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:opacity-90 disabled:opacity-50"
             >
               {busy ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
               Create call sheet

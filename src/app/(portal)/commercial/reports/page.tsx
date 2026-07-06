@@ -85,7 +85,7 @@ export default function CampaignReportsPage() {
               <select
                 value={selectedCampaignId}
                 onChange={(e) => setSelectedCampaignId(e.target.value)}
-                className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:border-[#9C7C2E] focus:outline-none"
+                className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:border-[#9C7C2E] dark:focus:border-[#C9A44A] focus:outline-none"
               >
                 <option value="">Select a campaign…</option>
                 {campaigns.map((c) => (
@@ -105,21 +105,21 @@ export default function CampaignReportsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by caption…"
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 pl-8 pr-3 py-1.5 text-xs focus:border-[#9C7C2E] focus:outline-none"
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 pl-8 pr-3 py-1.5 text-xs focus:border-[#9C7C2E] dark:focus:border-[#C9A44A] focus:outline-none"
                 />
               </div>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs focus:border-[#9C7C2E] focus:outline-none"
+                className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs focus:border-[#9C7C2E] dark:focus:border-[#C9A44A] focus:outline-none"
               />
               <span className="text-xs text-gray-400">to</span>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs focus:border-[#9C7C2E] focus:outline-none"
+                className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs focus:border-[#9C7C2E] dark:focus:border-[#C9A44A] focus:outline-none"
               />
               <div className="flex items-center gap-1">
                 <Filter className="h-3.5 w-3.5 text-gray-400" />

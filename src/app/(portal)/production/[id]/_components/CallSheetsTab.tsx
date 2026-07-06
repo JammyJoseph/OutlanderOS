@@ -110,7 +110,7 @@ export default function CallSheetsTab({ production, creatingSheet, onCreateCallS
             </button>
             <button
               onClick={() => setWizardOpen(true)}
-              className="flex items-center gap-1.5 bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
+              className="flex items-center gap-1.5 bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
               title="Build a call sheet in 5 quick steps"
             >
               <Wand2 size={13} /> New call sheet

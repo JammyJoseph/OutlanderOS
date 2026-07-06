@@ -396,7 +396,7 @@ function OutlanderTeamSection({
                   className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
                     added
                       ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default"
-                      : "bg-[#9C7C2E] text-black hover:opacity-90"
+                      : "bg-[#111111] dark:bg-white text-white dark:text-black hover:opacity-90"
                   }`}
                 >
                   {busyId === u.id ? (
@@ -505,7 +505,7 @@ function DirectoryAddPrompt({
               await onConfirm({ ...form, email: email || null, phone: phone || null }, { instagram, category });
             }}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-3.5 py-2 text-xs font-medium text-black hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] dark:bg-white px-3.5 py-2 text-xs font-medium text-white dark:text-black hover:opacity-90 disabled:opacity-50"
           >
             {busy ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
             Add to directory &amp; team
@@ -924,7 +924,7 @@ function DirectoryPicker({
                       className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                         isAdded
                           ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-                          : "bg-[#9C7C2E] text-black hover:bg-[#9C7C2E]"
+                          : "bg-[#111111] dark:bg-white text-white dark:text-black hover:opacity-90"
                       }`}
                       title={alreadyOnTeam ? "Already has a member with this name" : "Add to team"}
                     >
@@ -1182,7 +1182,7 @@ function AddMemberForm({
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#9C7C2E] text-black text-xs font-medium px-3 py-2 rounded-xl hover:bg-[#9C7C2E] transition-colors"
+          className="bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
         >
           Add
         </button>

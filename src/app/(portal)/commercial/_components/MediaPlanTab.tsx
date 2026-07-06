@@ -243,7 +243,7 @@ export default function MediaPlanTab({
   }
 
   const inputCls =
-    "px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] disabled:opacity-60 disabled:cursor-not-allowed";
+    "px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 dark:focus:ring-[#C9A44A]/30 focus:border-[#9C7C2E] dark:focus:border-[#C9A44A] disabled:opacity-60 disabled:cursor-not-allowed";
   const autoCls =
     "px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums";
 
@@ -397,7 +397,7 @@ export default function MediaPlanTab({
               onClick={() => editable && fileInputRef.current?.click()}
               className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
                 editable ? "cursor-pointer" : "cursor-not-allowed opacity-60"
-              } ${dragOver ? "border-[#9C7C2E] bg-[#9C7C2E]/5" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`}
+              } ${dragOver ? "border-[#9C7C2E] dark:border-[#C9A44A] bg-[#9C7C2E]/5 dark:bg-[#C9A44A]/5" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`}
             >
               {uploading ? (
                 <Loader2 size={20} className="animate-spin text-gray-400 dark:text-gray-500" />
@@ -635,7 +635,7 @@ export default function MediaPlanTab({
             title={canLock ? "Lock the media plan" : "Set the deal value first"}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               locked
-                ? "bg-[#9C7C2E] text-black hover:bg-[#9C7C2E]"
+                ? "bg-[#111111] text-white dark:bg-white dark:text-black hover:bg-[#111111] dark:hover:bg-white"
                 : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_0_18px_rgba(16,185,129,0.35)]"
             }`}
           >

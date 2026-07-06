@@ -150,7 +150,7 @@ export default function BrandDetail({ name, onClose }: Props) {
               <button
                 onClick={generateReport}
                 disabled={reporting}
-                className="inline-flex items-center gap-1 rounded-lg bg-[#9C7C2E] px-3 py-1.5 text-xs font-medium text-black shadow-sm hover:bg-[#9C7C2E] disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-lg bg-[#111111] px-3 py-1.5 text-xs font-medium text-white dark:bg-white dark:text-black shadow-sm hover:bg-[#111111] dark:hover:bg-white disabled:opacity-60"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 Generate Report
@@ -227,7 +227,7 @@ function Timeline({
         <div key={t.month} className="flex flex-1 flex-col items-center gap-1">
           <div className="text-[10px] text-gray-500 dark:text-gray-400">{compactNumber(t.reach)}</div>
           <div
-            className="w-full rounded-t bg-[#9C7C2E]/80"
+            className="w-full rounded-t bg-[#9C7C2E]/80 dark:bg-[#C9A44A]/80"
             style={{ height: `${(t.reach / max) * 100}%`, minHeight: "2px" }}
             title={`${t.month}: ${t.posts} posts, ${compactNumber(t.reach)} reach`}
           />

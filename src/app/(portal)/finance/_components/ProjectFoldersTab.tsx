@@ -243,7 +243,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
               <Tooltip formatter={(v) => `£${Number(v ?? 0).toLocaleString('en-GB')}`} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="budget" name="Budget" fill="#9C7C2E" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="actual" name="Actual" fill={over ? '#c33b2a' : '#10b981'} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="actual" name="Actual" fill={over ? '#c33b2a' : '#2E5E44'} radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

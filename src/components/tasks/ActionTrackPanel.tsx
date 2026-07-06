@@ -87,7 +87,7 @@ function sortTasks(tasks: PanelTask[]): PanelTask[] {
 function badgeFor(task: PanelTask): { label: string; bg: string; text: string } | null {
   if (task.production) return { label: task.production.title, bg: "#A93B2E1A", text: "#A93B2E" };
   if (task.project) return { label: task.project.title, bg: "#9C7C2E1A", text: "#9C7C2E" };
-  if (task.portal === "print") return { label: "Print", bg: "#2E5E441A", text: "#15803d" };
+  if (task.portal === "print") return { label: "Print", bg: "#2E5E441A", text: "#2E5E44" };
   return null;
 }
 
@@ -324,7 +324,7 @@ function DoneRow({
         onClick={() => onReopen(task)}
         aria-label="Reopen task"
         title="Reopen"
-        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 border-[#2E5E44] bg-[#2E5E44] text-white transition-colors hover:border-[#15803d] hover:bg-[#15803d]"
+        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 border-[#2E5E44] bg-[#2E5E44] text-white transition-colors hover:border-[#2E5E44] hover:bg-[#2E5E44] dark:border-[#4E8F6C] dark:bg-[#4E8F6C] dark:hover:border-[#4E8F6C] dark:hover:bg-[#4E8F6C]"
       >
         <Check className="h-3 w-3" strokeWidth={3} />
       </button>
@@ -336,7 +336,7 @@ function DoneRow({
       {/* Where it came from — ACTION or TRACK */}
       <span
         className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-          cameFromTrack ? "bg-blue-50 text-blue-600" : "bg-[#9C7C2E]/10 text-[#b08900]"
+          cameFromTrack ? "bg-blue-50 text-blue-600" : "bg-[#9C7C2E]/10 text-[#7a5f20] dark:bg-[#C9A44A]/10 dark:text-[#C9A44A]"
         }`}
       >
         {cameFromTrack ? "was Track" : "was Action"}
@@ -543,9 +543,10 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
 
   return (
     <section className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-      {/* ACTION — amber/gold left border */}
-      <div className="border-l-[3px] border-[#9C7C2E]">
+      {/* ACTION — amber/gold marker */}
+      <div>
         <div className="flex items-center gap-2 px-4 pb-1 pt-3">
+          <span className="h-2 w-2 shrink-0" style={{ backgroundColor: "#9C7C2E" }} />
           <h2 className="text-sm font-bold tracking-wide text-gray-900">ACTION</h2>
           <span className="rounded-full bg-[#9C7C2E]/10 px-2 py-0.5 text-[11px] font-bold text-[#9C7C2E]">
             {actions.length}
@@ -567,9 +568,10 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
 
       <div className="h-px bg-gray-100" />
 
-      {/* TRACK — blue left border */}
-      <div className="border-l-[3px] border-[#2F4B8F]">
+      {/* TRACK — blue marker */}
+      <div>
         <div className="flex items-center gap-2 px-4 pb-1 pt-3">
+          <span className="h-2 w-2 shrink-0" style={{ backgroundColor: "#2F4B8F" }} />
           <h2 className="text-sm font-bold tracking-wide text-gray-900">TRACK</h2>
           <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">
             {tracks.length}
@@ -591,7 +593,7 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
 
       {/* DONE — green left border, visible by default, collapsible */}
       {done.length > 0 && (
-        <div className="border-t border-gray-100 border-l-[3px] border-l-[#2E5E44] bg-gray-50/40">
+        <div className="border-t border-gray-100 bg-gray-50/40">
           <div className="flex items-center justify-between pr-3">
             <button
               onClick={() => setShowDone((v) => !v)}
@@ -602,8 +604,9 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
               ) : (
                 <ChevronRight className="h-3.5 w-3.5" />
               )}
+              <span className="h-2 w-2 shrink-0" style={{ backgroundColor: "#2E5E44" }} />
               DONE
-              <span className="rounded-full bg-[#2E5E44]/10 px-2 py-0.5 text-[11px] font-bold text-[#15803d]">
+              <span className="rounded-full bg-[#2E5E44]/10 px-2 py-0.5 text-[11px] font-bold text-[#2E5E44]">
                 {done.length}
               </span>
             </button>

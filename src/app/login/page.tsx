@@ -142,7 +142,7 @@ export default function LoginPage() {
               className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all" />
           </div>
           <button type="submit" disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-[#9C7C2E] text-black font-semibold text-sm hover:brightness-110 disabled:opacity-50 transition-all duration-200">
+            className="w-full py-2.5 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black font-semibold text-sm hover:brightness-110 disabled:opacity-50 transition-all duration-200">
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>

@@ -123,7 +123,7 @@ export default function ClientsPage() {
           </button>
           <button
             disabled
-            className="flex items-center gap-2 rounded-lg bg-[#9C7C2E] px-4 py-2 text-sm font-medium text-black hover:bg-[#9C7C2E] transition-colors disabled:opacity-60"
+            className="flex items-center gap-2 rounded-lg bg-[#111111] px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black hover:bg-[#111111] dark:hover:bg-white transition-colors disabled:opacity-60"
           >
             <Plus className="h-4 w-4" />
             Add Client
@@ -154,7 +154,7 @@ export default function ClientsPage() {
                 className={`group relative rounded-xl border bg-white dark:bg-gray-900 p-5 transition-all ${
                   client.archived
                     ? "border-gray-200 dark:border-gray-700 opacity-70 hover:opacity-100"
-                    : "border-gray-200 dark:border-gray-700 hover:border-[#9C7C2E]/50 hover:shadow-md"
+                    : "border-gray-200 dark:border-gray-700 hover:border-[#9C7C2E]/50 dark:hover:border-[#C9A44A]/50 hover:shadow-md"
                 }`}
               >
                 <Link

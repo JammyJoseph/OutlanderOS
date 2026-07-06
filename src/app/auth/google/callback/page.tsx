@@ -56,7 +56,7 @@ export default function GoogleCallbackPage() {
                 </code>
                 <button
                   onClick={copyCode}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C7C2E] px-3 py-2 text-sm font-semibold text-black hover:brightness-95"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-3 py-2 text-sm font-semibold hover:brightness-95"
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   {copied ? 'Copied' : 'Copy'}

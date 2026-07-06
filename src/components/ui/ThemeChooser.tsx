@@ -25,7 +25,7 @@ export function ThemeChooser() {
                 : 'border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
           >
-            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-[#9C7C2E] text-black' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-[#111111] text-white dark:bg-white dark:text-black' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
               {opt.icon}
             </div>
             <div className="flex-1">

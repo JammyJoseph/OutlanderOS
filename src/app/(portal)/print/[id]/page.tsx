@@ -196,7 +196,7 @@ export default function PrintIssuePage() {
                 setNewPage({ pageNumber: "", type: "editorial", assignedTo: "" });
                 setAddPageOpen(true);
               }}
-              className="flex items-center gap-1.5 rounded-lg bg-[#9C7C2E] px-3 py-1.5 text-xs font-semibold text-black hover:bg-[#9C7C2E]"
+              className="flex items-center gap-1.5 rounded-lg bg-[#111111] dark:bg-white px-3 py-1.5 text-xs font-semibold text-white dark:text-black hover:opacity-90"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Page
@@ -368,7 +368,7 @@ export default function PrintIssuePage() {
                 <button
                   type="submit"
                   disabled={savingPage}
-                  className="rounded-lg bg-[#9C7C2E] px-4 py-2 text-xs font-semibold text-black hover:bg-[#9C7C2E] disabled:opacity-50"
+                  className="rounded-lg bg-[#111111] dark:bg-white px-4 py-2 text-xs font-semibold text-white dark:text-black hover:opacity-90 disabled:opacity-50"
                 >
                   {savingPage ? "Adding…" : "Add"}
                 </button>

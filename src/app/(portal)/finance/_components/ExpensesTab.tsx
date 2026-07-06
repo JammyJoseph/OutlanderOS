@@ -46,7 +46,7 @@ export default function ExpensesTab() {
         <button
           disabled
           title="MOSS integration coming soon"
-          className="cursor-not-allowed rounded-lg bg-[#9C7C2E]/50 px-4 py-2 text-xs font-semibold text-black"
+          className="cursor-not-allowed rounded-lg bg-[#111111]/50 dark:bg-white/50 px-4 py-2 text-xs font-semibold text-white dark:text-black"
         >
           Connect MOSS
         </button>
