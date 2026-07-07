@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { format } from "date-fns";
 import type {
   AgencyTeamMember, Attachment, CallSheetHeader, CallSheetLocation, CallTimeRow,
@@ -182,6 +183,35 @@ export function CallSheetDocument({
   // Default every section visible unless an explicit toggle map says otherwise.
   const show = (k: SectionKey) => (sections ? sections[k] !== false : true);
 
+  // Pageless PDF export: keep a persistent <style> whose @page height always
+  // matches the current rendered height of the sheet. A ResizeObserver updates
+  // it on every layout change so the correct size is in the DOM *before* the
+  // user ever opens the print dialog (the beforeprint event fired too late for
+  // Chrome to pick up). Result: one continuous page fitted to the content.
+  const docRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.id = "cs-page-size";
+    document.head.appendChild(style);
+
+    const updatePageSize = () => {
+      const el = docRef.current;
+      if (!el) return;
+      // px → mm (96dpi), plus a buffer to clear the @page margins.
+      const heightMm = Math.ceil(el.scrollHeight * 0.264583) + 20;
+      style.textContent = `@media print { @page { size: 210mm ${heightMm}mm; margin: 8mm; } }`;
+    };
+
+    const observer = new ResizeObserver(updatePageSize);
+    if (docRef.current) observer.observe(docRef.current);
+    updatePageSize();
+
+    return () => {
+      observer.disconnect();
+      style.remove();
+    };
+  }, []);
+
   const companyName = (
     productionCompany.name || header.productionCompany || "Outlander"
   ).trim();
@@ -309,17 +339,16 @@ export function CallSheetDocument({
   const showRouteMap = locatedStopCount >= 2;
 
   return (
-    <div className="cs-doc" style={docStyle}>
+    <div ref={docRef} className="cs-doc" style={docStyle}>
       {/* Scoped print + reset rules. Keeps the light theme in print and hides
           the screen-only CTAs. */}
       <style>{`
         @media print {
           .cs-noprint { display: none !important; }
           body:has(.cs-doc) { background: ${BG} !important; }
-          /* One continuous page: A4 width, a fixed tall-but-reasonable height
-             (~4ft) so the sheet prints as a single page without A4 breaks and
-             without the huge blank tail a 5000mm page left. */
-          @page { size: 210mm 1200mm; margin: 8mm; }
+          /* @page size is set dynamically from the measured content height by a
+             ResizeObserver (see the effect above) so the sheet prints as one
+             continuous page fitted to its content. */
         }
         .cs-doc a { color: inherit; }
       `}</style>
