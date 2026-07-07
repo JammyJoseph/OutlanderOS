@@ -316,7 +316,9 @@ export function CallSheetDocument({
         @media print {
           .cs-noprint { display: none !important; }
           body:has(.cs-doc) { background: ${BG} !important; }
-          @page { margin: 8mm; }
+          /* One continuous page: A4 width, very tall height so the PDF
+             renderer never inserts a page break. */
+          @page { size: 210mm 5000mm; margin: 8mm; }
         }
         .cs-doc a { color: inherit; }
       `}</style>
