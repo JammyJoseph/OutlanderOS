@@ -17,6 +17,7 @@ export function FinalView({
   sheet,
   viewData,
   onRevert,
+  onExport,
   saving,
   onSaveDistributions,
 }: {
@@ -25,6 +26,7 @@ export function FinalView({
   sheet: CallSheet;
   viewData: CallSheetViewData;
   onRevert: () => void;
+  onExport: () => void;
   saving: boolean;
   onSaveDistributions: (d: DistributionEntry[]) => Promise<void>;
 }) {
@@ -74,6 +76,12 @@ export function FinalView({
             >
               {saving ? <Loader2 size={13} className="animate-spin" /> : <Edit2 size={13} />}
               Back to Editor
+            </button>
+            <button
+              onClick={onExport}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <FileDown size={13} /> Export
             </button>
             <button
               onClick={() => setShareOpen(true)}

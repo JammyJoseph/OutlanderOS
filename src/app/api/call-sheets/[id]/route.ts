@@ -97,10 +97,11 @@ export const PUT = withAuth(async (
       updateData.distributedAt = body.distributedAt ? new Date(body.distributedAt) : null;
     }
 
-    // Publishing mints the public share tokens (once each — the links stay
-    // stable across unpublish/republish cycles). The internal token shows the
-    // full sheet; the client token renders the redacted version.
-    if (body.status === "PUBLISHED") {
+    // Publishing (or an explicit mintTokens request from the export panel) mints
+    // the public share tokens — once each, so the links stay stable across
+    // unpublish/republish cycles. The internal token shows the full sheet; the
+    // client token renders the redacted version.
+    if (body.status === "PUBLISHED" || body.mintTokens) {
       const existing = await prisma.callSheet.findUnique({
         where: { id },
         select: { shareToken: true, clientShareToken: true },

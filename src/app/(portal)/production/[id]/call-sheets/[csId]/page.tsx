@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Save, Eye, Send, Edit2, Loader2, Check, Link2, FileDown,
+  ArrowLeft, Save, Eye, Send, Edit2, Loader2, Check, Link2,
 } from "lucide-react";
 import type {
   AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallSheetLocation,
@@ -20,8 +20,7 @@ import {
 import { CallSheetEditor } from "./CallSheetEditor";
 import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
 import { FinalView } from "./FinalView";
-import { PdfExportModal } from "./PdfExportModal";
-import type { SectionKey } from "./types";
+import { ExportPanel } from "./ExportPanel";
 import { allSectionsVisible } from "./types";
 
 const STATUS_BADGES: Record<CallSheetStatus, { cls: string; label: string }> = {
@@ -38,30 +37,15 @@ export default function CallSheetPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [autoSavedAt, setAutoSavedAt] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"editor" | "preview">("editor");
+  // The share/export flow: Editor → Preview → Save & Export.
+  const [mode, setMode] = useState<"editor" | "preview" | "export">("editor");
   const [copied, setCopied] = useState(false);
-  const [pdfOpen, setPdfOpen] = useState(false);
-  const [docSections, setDocSections] = useState<Record<SectionKey, boolean>>(allSectionsVisible());
-  const [docRedacted, setDocRedacted] = useState(false);
   // Snapshot of the production deliverables so they render on the preview /
   // printed / PDF call sheet (the editor keeps the live, editable copy). The
   // public share views fetch these server-side; the in-app views need them here.
   const [deliverables, setDeliverables] = useState<
     { type: string; title: string; notes: string | null }[]
   >([]);
-
-  function handleExport(sections: Record<SectionKey, boolean>, includeContacts: boolean) {
-    setDocSections(sections);
-    setDocRedacted(!includeContacts);
-    setPdfOpen(false);
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        setDocSections(allSectionsVisible());
-        setDocRedacted(false);
-      }, 500);
-    }, 100);
-  }
 
   const [shootTitle, setShootTitle] = useState("");
   const [shootDate, setShootDate] = useState("");
@@ -229,7 +213,7 @@ export default function CallSheetPage() {
         )
       )
       .catch(() => {});
-  }, [id, activeTab]);
+  }, [id, mode]);
 
   // Capture the loaded state as the saved baseline once everything settles.
   useEffect(() => {
@@ -288,8 +272,15 @@ export default function CallSheetPage() {
 
   async function manualSave() {
     const next = sheet?.status === "DRAFT" ? "SAVED" : sheet?.status;
-    const updated = await saveSheet(next as CallSheetStatus | undefined);
-    if (updated && activeTab !== "editor") setActiveTab("preview");
+    await saveSheet(next as CallSheetStatus | undefined);
+  }
+
+  // Step 3 of the flow. Persist the sheet and publish it so the public share
+  // links resolve (publishing mints the crew + client tokens if missing), then
+  // drop into the export panel.
+  async function saveAndExport() {
+    const updated = await saveSheet("PUBLISHED");
+    if (updated) setMode("export");
   }
 
   // Auto-save: every 30s, persist quietly if the payload changed.
@@ -304,9 +295,28 @@ export default function CallSheetPage() {
     return () => clearInterval(interval);
   }, [sheet, saving, saveSheet]);
 
-  async function publishSheet() {
-    await saveSheet("PUBLISHED");
-  }
+  // On entering the export panel, make sure both share tokens exist. Save &
+  // Export mints them via publish, but a sheet published before the client
+  // token existed can arrive here missing one — top it up on demand.
+  useEffect(() => {
+    if (mode !== "export" || !sheet) return;
+    if (sheet.shareToken && sheet.clientShareToken) return;
+    fetch(`/api/call-sheets/${csId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mintTokens: true }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.sheet)
+          setSheet((prev) =>
+            prev
+              ? { ...prev, shareToken: d.sheet.shareToken, clientShareToken: d.sheet.clientShareToken }
+              : prev
+          );
+      })
+      .catch(() => {});
+  }, [mode, sheet, csId]);
 
   async function revertToEditor() {
     if (!sheet) return;
@@ -320,7 +330,7 @@ export default function CallSheetPage() {
       const data = await res.json();
       if (data.sheet) {
         setSheet((prev) => (prev ? { ...prev, status: "SAVED" } : prev));
-        setActiveTab("editor");
+        setMode("editor");
       }
     } finally {
       setSaving(false);
@@ -397,7 +407,10 @@ export default function CallSheetPage() {
     );
   }
 
-  if (sheet.status === "PUBLISHED") {
+  // A published sheet lands on the FinalView home (distribution tracking, share
+  // modal, PDF). Stepping into the export panel or re-previewing keeps us in the
+  // mode-driven flow below.
+  if (sheet.status === "PUBLISHED" && mode === "editor") {
     return (
       <FinalView
         productionTitle={sheet.production.title}
@@ -405,6 +418,7 @@ export default function CallSheetPage() {
         sheet={sheet}
         viewData={viewData}
         onRevert={revertToEditor}
+        onExport={() => setMode("export")}
         saving={saving}
         onSaveDistributions={saveDistributions}
       />
@@ -416,6 +430,7 @@ export default function CallSheetPage() {
   return (
     <div className="min-h-screen bg-card" data-callsheet-print>
       <div className="max-w-4xl mx-auto px-6 py-10 print:px-0 print:py-0 print:max-w-none">
+        {/* Top bar — actions vary by step in the flow */}
         <div className="flex items-center justify-between mb-6 print:hidden">
           <Link
             href={`/production/${id}`}
@@ -425,64 +440,86 @@ export default function CallSheetPage() {
             {sheet.production.title}
           </Link>
           <div className="flex items-center gap-2">
-            {saved && (
-              <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                <Check size={13} /> Saved
-              </span>
+            {mode === "editor" && (
+              <>
+                {saved && (
+                  <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                    <Check size={13} /> Saved
+                  </span>
+                )}
+                {!saved && autoSavedAt && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">Auto-saved {autoSavedAt}</span>
+                )}
+                {sheet.shareToken && (
+                  <button
+                    onClick={copyShareLink}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    {copied ? <Check size={13} className="text-emerald-600 dark:text-emerald-400" /> : <Link2 size={13} />}
+                    {copied ? "Copied!" : "Copy share link"}
+                  </button>
+                )}
+                <button
+                  onClick={() => setMode("preview")}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Eye size={14} /> Preview
+                </button>
+                <button
+                  onClick={manualSave}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 shadow-sm"
+                >
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  Save
+                </button>
+              </>
             )}
-            {!saved && autoSavedAt && (
-              <span className="text-xs text-gray-400 dark:text-gray-500">Auto-saved {autoSavedAt}</span>
+            {mode === "preview" && (
+              <>
+                <button
+                  onClick={() => setMode("editor")}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Edit2 size={14} /> Back to Editor
+                </button>
+                <button
+                  onClick={saveAndExport}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-5 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 shadow-sm"
+                >
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  Save &amp; Export
+                </button>
+              </>
             )}
-            {sheet.shareToken && (
-              <button
-                onClick={copyShareLink}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                {copied ? <Check size={13} className="text-emerald-600 dark:text-emerald-400" /> : <Link2 size={13} />}
-                {copied ? "Copied!" : "Copy share link"}
-              </button>
-            )}
-            <button
-              onClick={manualSave}
-              disabled={saving}
-              className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#A93B2E] transition-colors disabled:opacity-60 shadow-sm"
-            >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              Save
-            </button>
           </div>
         </div>
 
-        <div className="mb-6 print:hidden">
-          <input
-            type="text"
-            value={shootTitle}
-            onChange={(e) => setShootTitle(e.target.value)}
-            placeholder="Shoot Title"
-            className="text-2xl font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none w-full placeholder-gray-300 dark:placeholder-gray-600 tracking-tight"
-          />
-          <div className="flex items-center gap-3 mt-1">
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
-              {badge.label}
-            </span>
-            {sheet.production.campaign?.client?.name && (
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                {sheet.production.campaign.client.name}
+        {/* Title / status — editor only (preview & export render their own headings) */}
+        {mode === "editor" && (
+          <div className="mb-6 print:hidden">
+            <input
+              type="text"
+              value={shootTitle}
+              onChange={(e) => setShootTitle(e.target.value)}
+              placeholder="Shoot Title"
+              className="text-2xl font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none w-full placeholder-gray-300 dark:placeholder-gray-600 tracking-tight"
+            />
+            <div className="flex items-center gap-3 mt-1">
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
+                {badge.label}
               </span>
-            )}
+              {sheet.production.campaign?.client?.name && (
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  {sheet.production.campaign.client.name}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6 w-fit print:hidden">
-          <TabButton active={activeTab === "editor"} onClick={() => setActiveTab("editor")}>
-            <Edit2 size={13} /> Editor
-          </TabButton>
-          <TabButton active={activeTab === "preview"} onClick={() => setActiveTab("preview")}>
-            <Eye size={13} /> Preview
-          </TabButton>
-        </div>
-
-        {activeTab === "editor" ? (
+        {mode === "editor" && (
           <div className="print:hidden">
             <CallSheetEditor
               shootDate={shootDate} setShootDate={setShootDate}
@@ -513,56 +550,30 @@ export default function CallSheetPage() {
               onSyncDirectory={syncDirectory}
             />
           </div>
-        ) : (
-          <div>
-            <CallSheetDocument data={viewData} sections={docSections} redacted={docRedacted} />
-            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 print:hidden">
-              <button
-                onClick={() => setActiveTab("editor")}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                <Edit2 size={14} /> Back to Editor
-              </button>
-              <button
-                onClick={() => setPdfOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                <FileDown size={14} /> Download PDF
-              </button>
-              <button
-                onClick={publishSheet}
-                disabled={saving}
-                className="flex items-center gap-2 bg-[#A93B2E] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#A93B2E] transition-colors disabled:opacity-60 shadow-sm"
-              >
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                Publish &amp; Share
-              </button>
+        )}
+
+        {mode === "preview" && (
+          <CallSheetDocument data={viewData} sections={allSectionsVisible()} redacted={false} />
+        )}
+
+        {mode === "export" && (
+          <>
+            <ExportPanel
+              data={viewData}
+              shareToken={sheet.shareToken}
+              clientShareToken={sheet.clientShareToken}
+              onBackToEditor={() => setMode("editor")}
+              onBackToPreview={() => setMode("preview")}
+              onPrint={() => window.print()}
+            />
+            {/* Kept out of the screen but present in the DOM so "Download PDF"
+                (window.print) captures the call sheet, not the export panel. */}
+            <div className="hidden print:block">
+              <CallSheetDocument data={viewData} sections={allSectionsVisible()} redacted={false} />
             </div>
-          </div>
+          </>
         )}
       </div>
-      {pdfOpen && <PdfExportModal onClose={() => setPdfOpen(false)} onExport={handleExport} />}
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-        active ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-      }`}
-    >
-      <span className="flex items-center gap-1.5">{children}</span>
-    </button>
   );
 }
