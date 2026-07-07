@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { format } from "date-fns";
 import type {
   AgencyTeamMember, Attachment, CallSheetHeader, CallSheetLocation, CallTimeRow,
@@ -182,6 +183,37 @@ export function CallSheetDocument({
   // Default every section visible unless an explicit toggle map says otherwise.
   const show = (k: SectionKey) => (sections ? sections[k] !== false : true);
 
+  // Pageless PDF export: measure the actual rendered height just before print
+  // and size the single @page to fit exactly, so the sheet prints as one
+  // continuous page with no A4 breaks and no huge trailing blank area.
+  const docRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const STYLE_ID = "cs-page-size";
+    const setPageSize = () => {
+      const el = docRef.current;
+      if (!el) return;
+      // px → mm (96dpi), plus buffer to clear the @page margins.
+      const heightMm = Math.ceil(el.scrollHeight * 0.264583) + 20;
+      let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
+      if (!style) {
+        style = document.createElement("style");
+        style.id = STYLE_ID;
+        document.head.appendChild(style);
+      }
+      style.textContent = `@page { size: 210mm ${heightMm}mm; margin: 8mm; }`;
+    };
+    const clearPageSize = () => {
+      document.getElementById(STYLE_ID)?.remove();
+    };
+    window.addEventListener("beforeprint", setPageSize);
+    window.addEventListener("afterprint", clearPageSize);
+    return () => {
+      window.removeEventListener("beforeprint", setPageSize);
+      window.removeEventListener("afterprint", clearPageSize);
+      clearPageSize();
+    };
+  }, []);
+
   const companyName = (
     productionCompany.name || header.productionCompany || "Outlander"
   ).trim();
@@ -309,16 +341,17 @@ export function CallSheetDocument({
   const showRouteMap = locatedStopCount >= 2;
 
   return (
-    <div className="cs-doc" style={docStyle}>
+    <div ref={docRef} className="cs-doc" style={docStyle}>
       {/* Scoped print + reset rules. Keeps the light theme in print and hides
           the screen-only CTAs. */}
       <style>{`
         @media print {
           .cs-noprint { display: none !important; }
           body:has(.cs-doc) { background: ${BG} !important; }
-          /* One continuous page: A4 width, very tall height so the PDF
-             renderer never inserts a page break. */
-          @page { size: 210mm 5000mm; margin: 8mm; }
+          /* Fallback — a beforeprint handler replaces this with a @page whose
+             height matches the measured content, so the sheet prints as one
+             continuous page that fits the content exactly. */
+          @page { size: auto; margin: 8mm; }
         }
         .cs-doc a { color: inherit; }
       `}</style>
