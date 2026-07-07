@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -13,6 +13,12 @@ import {
   File,
   Check,
   X,
+  Cloud,
+  FolderPlus,
+  RefreshCw,
+  UploadCloud,
+  Loader2,
+  User as UserIcon,
 } from "lucide-react";
 import { CreativeAsset, CREATIVE_TYPES, ApprovalStatus } from "./types";
 import { useConfirm } from "@/components/ui/confirm-provider";
@@ -144,6 +150,8 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
 
   return (
     <div className="space-y-5">
+      <DrivePanel productionId={productionId} refresh={refresh} />
+
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
           <div>
@@ -233,6 +241,285 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
   );
 }
 
+// ── Google Drive panel ──
+// Connects the Creative tab to the production's Google Drive folder: prompts to
+// connect when the user has no Drive token, sets up the folder structure on
+// demand, uploads files (with progress) into "Assets", and syncs files that
+// were added to Drive directly back into the approval grid.
+
+interface DriveFolder {
+  id: string;
+  name: string;
+  subfolders?: Record<string, string>;
+}
+
+interface DriveState {
+  loading: boolean;
+  connected: boolean;
+  folder: DriveFolder | null;
+  fileCount: number;
+  accessible: boolean;
+  error: string | null;
+}
+
+function DrivePanel({ productionId, refresh }: { productionId: string; refresh: () => void }) {
+  const [state, setState] = useState<DriveState>({
+    loading: true,
+    connected: false,
+    folder: null,
+    fileCount: 0,
+    accessible: true,
+    error: null,
+  });
+  const [busy, setBusy] = useState<null | "setup" | "sync">(null);
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+
+  const loadFiles = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/productions/${productionId}/drive/files`);
+      const d = await r.json();
+      setState({
+        loading: false,
+        connected: !!d.connected,
+        folder: d.folder ?? null,
+        fileCount: Array.isArray(d.files) ? d.files.length : 0,
+        accessible: d.accessible !== false,
+        error: d.error ?? null,
+      });
+    } catch {
+      setState((s) => ({ ...s, loading: false, error: "Could not reach Google Drive" }));
+    }
+  }, [productionId]);
+
+  useEffect(() => {
+    loadFiles();
+  }, [loadFiles]);
+
+  function showFlash(msg: string) {
+    setFlash(msg);
+    setTimeout(() => setFlash(null), 2500);
+  }
+
+  async function setup() {
+    setBusy("setup");
+    try {
+      const r = await fetch(`/api/productions/${productionId}/drive/setup`, { method: "POST" });
+      const d = await r.json();
+      if (d.connected === false) {
+        setState((s) => ({ ...s, connected: false }));
+      } else if (d.accessible === false) {
+        setState((s) => ({ ...s, accessible: false, error: d.error ?? null }));
+        showFlash("Folder not shared with you");
+      } else if (d.folderId) {
+        showFlash("Drive folder ready");
+        await loadFiles();
+      } else {
+        showFlash(d.error || "Setup failed");
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function sync() {
+    setBusy("sync");
+    try {
+      const r = await fetch(`/api/productions/${productionId}/drive/sync`, { method: "POST" });
+      const d = await r.json();
+      if (d.connected === false) {
+        setState((s) => ({ ...s, connected: false }));
+      } else if (d.accessible === false) {
+        setState((s) => ({ ...s, accessible: false, error: d.error ?? null }));
+        showFlash("Folder not shared with you");
+      } else if (d.error) {
+        showFlash(d.error);
+      } else {
+        showFlash(`Synced — ${d.created} new, ${d.updated} updated`);
+        await loadFiles();
+        refresh();
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  // Upload via XHR so we can report progress. Falls back to a spinner-less bar
+  // if the browser can't report progress events.
+  function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    e.target.value = ""; // allow re-selecting the same file later
+    void uploadSequential(files);
+  }
+
+  async function uploadSequential(files: File[]) {
+    for (let i = 0; i < files.length; i++) {
+      await uploadOne(files[i], i + 1, files.length);
+    }
+    setUploadPct(null);
+    showFlash(files.length === 1 ? "Uploaded to Drive" : `Uploaded ${files.length} files`);
+    await loadFiles();
+    refresh();
+  }
+
+  function uploadOne(file: File, index: number, total: number): Promise<void> {
+    return new Promise((resolve) => {
+      const form = new FormData();
+      form.append("file", file);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `/api/productions/${productionId}/drive/upload`);
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) {
+          const pctThisFile = ev.loaded / ev.total;
+          const overall = ((index - 1 + pctThisFile) / total) * 100;
+          setUploadPct(Math.min(99, Math.round(overall)));
+        }
+      };
+      xhr.onload = () => {
+        try {
+          const d = JSON.parse(xhr.responseText || "{}");
+          if (d.connected === false) setState((s) => ({ ...s, connected: false }));
+        } catch {
+          /* ignore parse errors */
+        }
+        setUploadPct(Math.round((index / total) * 100));
+        resolve();
+      };
+      xhr.onerror = () => resolve();
+      setUploadPct(Math.round(((index - 1) / total) * 100));
+      xhr.send(form);
+    });
+  }
+
+  const uploading = uploadPct !== null;
+
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+            <Cloud size={16} className="text-blue-500 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Google Drive</h2>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+              {state.loading
+                ? "Checking connection…"
+                : !state.connected
+                ? "Not connected"
+                : !state.accessible
+                ? "Folder set up by another team member"
+                : !state.folder
+                ? "No project folder yet"
+                : `${state.folder.name ?? "Project folder"} · ${state.fileCount} file${state.fileCount === 1 ? "" : "s"}`}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {flash && (
+            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">{flash}</span>
+          )}
+
+          {!state.loading && !state.connected && (
+            <a
+              href="/me/settings"
+              className="inline-flex items-center gap-1.5 bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-opacity"
+            >
+              <Cloud size={13} /> Connect Google Drive
+            </a>
+          )}
+
+          {!state.loading && state.connected && !state.folder && state.accessible && (
+            <button
+              onClick={setup}
+              disabled={busy === "setup"}
+              className="inline-flex items-center gap-1.5 bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {busy === "setup" ? <Loader2 size={13} className="animate-spin" /> : <FolderPlus size={13} />}
+              Set up Drive folder
+            </button>
+          )}
+
+          {!state.loading && state.connected && state.folder && state.accessible && (
+            <>
+              <a
+                href={`https://drive.google.com/drive/folders/${state.folder.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-2"
+              >
+                Open in Drive <ExternalLink size={11} />
+              </a>
+              <button
+                onClick={sync}
+                disabled={busy === "sync" || uploading}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+              >
+                {busy === "sync" ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={13} />
+                )}
+                Sync from Drive
+              </button>
+              <button
+                onClick={() => fileInput.current?.click()}
+                disabled={uploading}
+                className="inline-flex items-center gap-1.5 bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                <UploadCloud size={13} /> Upload to Drive
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={onFilePicked}
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      {uploading && (
+        <div className="px-5 pb-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] text-gray-500 dark:text-gray-400">Uploading to Drive…</span>
+            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300">{uploadPct}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+            <div
+              className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-200"
+              style={{ width: `${uploadPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {!state.loading && !state.connected && (
+        <div className="px-5 pb-4 -mt-1">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500">
+            Connect your Google account under Settings to create a project folder, upload files, and
+            pull previews straight from Drive.
+          </p>
+        </div>
+      )}
+
+      {!state.loading && state.connected && !state.accessible && (
+        <div className="px-5 pb-4 -mt-1">
+          <p className="text-[11px] text-amber-600 dark:text-amber-400">
+            {state.error ||
+              "This project's Drive folder was set up by another team member. Ask them to share it with your Google account to manage files here."}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AssetCard({
   asset,
   onApprove,
@@ -249,9 +536,22 @@ function AssetCard({
   const meta = getTypeMeta(asset.type);
   const Icon = TYPE_ICONS[asset.type] || File;
   const embeddable = asset.type === "figma" && asset.url && isFigmaUrl(asset.url);
-  const showImage = !embeddable && isImageUrl(asset.url);
   const status = statusOf(asset);
   const statusStyle = STATUS_STYLES[status];
+  const isDrive = !!asset.driveFileId;
+
+  // Prefer the Drive thumbnail; otherwise fall back to a directly-linked image
+  // URL. Drive thumbnail links can 403 for viewers without a Google session, so
+  // we drop to the type icon on error.
+  const [imgError, setImgError] = useState(false);
+  const imageSrc = !embeddable && !imgError
+    ? asset.driveThumbnail || (isImageUrl(asset.url) ? asset.url : null)
+    : null;
+
+  const uploadedAt = asset.createdAt ? new Date(asset.createdAt) : null;
+  const uploadedLabel = uploadedAt && !isNaN(uploadedAt.getTime())
+    ? uploadedAt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    : null;
 
   return (
     <div
@@ -265,11 +565,21 @@ function AssetCard({
             allowFullScreen
             title={asset.title}
           />
-        ) : showImage ? (
+        ) : imageSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={asset.url!} alt={asset.title} className="w-full h-full object-cover" />
+          <img
+            src={imageSrc}
+            alt={asset.title}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
         ) : (
           <Icon size={36} className="text-[#9C7C2E]/60" />
+        )}
+        {isDrive && (
+          <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur text-[10px] font-medium text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-md">
+            <Cloud size={10} /> Drive
+          </span>
         )}
         <button
           onClick={onRemove}
@@ -320,6 +630,13 @@ function AssetCard({
         {asset.description && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{asset.description}</p>
         )}
+        {(asset.uploadedByName || uploadedLabel) && (
+          <p className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 mt-2">
+            <UserIcon size={11} />
+            {asset.uploadedByName || "Unknown"}
+            {uploadedLabel && <span className="text-gray-300 dark:text-gray-600">· {uploadedLabel}</span>}
+          </p>
+        )}
         {asset.url && (
           <a
             href={asset.url}
@@ -327,7 +644,7 @@ function AssetCard({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-[#9C7C2E] hover:underline"
           >
-            Open <ExternalLink size={11} />
+            {isDrive ? "Open in Drive" : "Open"} <ExternalLink size={11} />
           </a>
         )}
       </div>

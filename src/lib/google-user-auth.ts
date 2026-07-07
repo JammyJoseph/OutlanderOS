@@ -16,7 +16,11 @@ export const GOOGLE_USER_REDIRECT_URI = 'http://localhost:3000/api/google/callba
 export const GOOGLE_USER_SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/calendar.readonly',
-  'https://www.googleapis.com/auth/drive.readonly',
+  // Read-write Drive: production file management (folder creation, upload, move
+  // on approval, listing files uploaded directly to Drive) needs more than the
+  // old drive.readonly scope. Users connected before this change must reconnect
+  // — Google only grants the new scope on a fresh consent (prompt=consent).
+  'https://www.googleapis.com/auth/drive',
 ]
 
 export function createUserOAuthClient() {

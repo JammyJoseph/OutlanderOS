@@ -413,6 +413,10 @@ model Production {
   briefData        Json?
   archived         Boolean          @default(false)
   archivedAt       DateTime?
+  // Google Drive integration (per-user OAuth). Root folder "[Client] — [Project]"
+  // holding Assets / Selects / Approved / Reference sub-folders. Created lazily
+  // via /api/productions/[id]/drive/setup and reused thereafter.
+  driveFolderId    String?
   leadId           String?
   lead             User?            @relation("ProductionLead", fields: [leadId], references: [id])
   createdAt        DateTime         @default(now())
@@ -522,6 +526,14 @@ model CreativeAsset {
   approvalStatus String?  @default("PENDING")
   approvedBy     String?
   approvedAt     DateTime?
+  // Google Drive integration (Phase 6). driveFileId links this asset to a file
+  // in the production's Drive folder; driveThumbnail caches Drive's thumbnail
+  // URL. uploadedByName is the display name of whoever added it (tool upload or
+  // the file's last modifier when synced from Drive). mimeType aids rendering.
+  driveFileId    String?
+  driveThumbnail String?
+  uploadedByName String?
+  mimeType       String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }

@@ -129,6 +129,12 @@ export interface CreativeAsset {
   approvalStatus?: ApprovalStatus | null;
   approvedBy?: string | null;
   approvedAt?: string | null;
+  // Google Drive integration (Phase 6).
+  driveFileId?: string | null;
+  driveThumbnail?: string | null;
+  uploadedByName?: string | null;
+  mimeType?: string | null;
+  createdAt?: string | null;
 }
 
 export interface ScheduleBlock {

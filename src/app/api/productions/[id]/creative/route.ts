@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
+import { getUserDrive, resolveSubfolder, moveFileToFolder } from "@/lib/google-drive";
+
+// Best-effort: mirror a tool-side approval decision into Drive by moving the
+// backing file between the "Approved" and "Assets" sub-folders. Never throws —
+// a Drive hiccup must not break the approval itself.
+async function syncApprovalToDrive(
+  userId: string,
+  driveFileId: string,
+  rootFolderId: string,
+  status: string
+) {
+  try {
+    const drive = await getUserDrive(userId);
+    if (!drive) return;
+    const target = status === "APPROVED" ? "Approved" : "Assets";
+    const targetId = await resolveSubfolder(drive, rootFolderId, target);
+    await moveFileToFolder(drive, driveFileId, targetId);
+  } catch (e) {
+    console.error("syncApprovalToDrive", e);
+  }
+}
 
 export const GET = withAuth(async (
   _request: NextRequest,
@@ -42,7 +63,7 @@ export const POST = withAuth(async (
   }
 });
 
-export const PUT = withAuth(async (request: NextRequest) => {
+export const PUT = withAuth(async (request: NextRequest, _ctx, user) => {
   const url = new URL(request.url);
   const assetId = url.searchParams.get("assetId");
   if (!assetId) return NextResponse.json({ error: "assetId required" }, { status: 400 });
@@ -69,6 +90,24 @@ export const PUT = withAuth(async (request: NextRequest) => {
     }
 
     const asset = await prisma.creativeAsset.update({ where: { id: assetId }, data });
+
+    // When approval status changed on a Drive-backed asset, mirror the move in
+    // Drive (Approved ↔ Assets). Best-effort — does not block the response.
+    if (body.approvalStatus !== undefined && asset.driveFileId) {
+      const production = await prisma.production.findUnique({
+        where: { id: asset.productionId },
+        select: { driveFolderId: true },
+      });
+      if (production?.driveFolderId) {
+        await syncApprovalToDrive(
+          user.userId,
+          asset.driveFileId,
+          production.driveFolderId,
+          asset.approvalStatus || "PENDING"
+        );
+      }
+    }
+
     return NextResponse.json({ asset });
   } catch (e) {
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });
