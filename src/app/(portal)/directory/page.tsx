@@ -872,6 +872,7 @@ function Directory() {
         ) : view === "dashboard" ? (
           <Dashboard
             contacts={contacts}
+            total={contactsTotal}
             categories={categories}
             onNavigate={setView}
           />
@@ -1900,10 +1901,12 @@ function HottestCreatives() {
 
 function Dashboard({
   contacts,
+  total,
   categories,
   onNavigate,
 }: {
   contacts: ContactRecord[];
+  total: number;
   categories: { category: string; count: number }[];
   onNavigate: (v: View) => void;
 }) {
@@ -1946,7 +1949,7 @@ function Dashboard({
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={Users} label="Total Contacts" value={contacts.length} />
+        <StatCard icon={Users} label="Total Contacts" value={total} />
         <StatCard
           icon={Clock}
           label="Recently Added"
