@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Save, Eye, Send, Edit2, Loader2, Check, Link2,
+  ArrowLeft, Save, Send, Loader2, Check, Link2,
 } from "lucide-react";
 import type {
   AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallSheetLocation,
@@ -18,10 +18,9 @@ import {
   emptyMovementOrder, emptyProductionCompany, emptyShotStyle, migrateCatering,
 } from "./types";
 import { CallSheetEditor } from "./CallSheetEditor";
-import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
+import type { CallSheetViewData } from "./CallSheetDocument";
 import { FinalView } from "./FinalView";
 import { ExportPanel } from "./ExportPanel";
-import { allSectionsVisible } from "./types";
 
 const STATUS_BADGES: Record<CallSheetStatus, { cls: string; label: string }> = {
   DRAFT: { cls: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400", label: "Draft" },
@@ -37,8 +36,9 @@ export default function CallSheetPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [autoSavedAt, setAutoSavedAt] = useState<string | null>(null);
-  // The share/export flow: Editor → Preview → Save & Export.
-  const [mode, setMode] = useState<"editor" | "preview" | "export">("editor");
+  // Two modes only: the editor, and the distribution portal reached via
+  // Save & Export.
+  const [mode, setMode] = useState<"editor" | "export">("editor");
   const [copied, setCopied] = useState(false);
   // Snapshot of the production deliverables so they render on the preview /
   // printed / PDF call sheet (the editor keeps the live, editable copy). The
@@ -460,28 +460,12 @@ export default function CallSheetPage() {
                   </button>
                 )}
                 <button
-                  onClick={() => setMode("preview")}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <Eye size={14} /> Preview
-                </button>
-                <button
                   onClick={manualSave}
                   disabled={saving}
-                  className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-60"
                 >
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                   Save
-                </button>
-              </>
-            )}
-            {mode === "preview" && (
-              <>
-                <button
-                  onClick={() => setMode("editor")}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <Edit2 size={14} /> Back to Editor
                 </button>
                 <button
                   onClick={saveAndExport}
@@ -496,7 +480,7 @@ export default function CallSheetPage() {
           </div>
         </div>
 
-        {/* Title / status — editor only (preview & export render their own headings) */}
+        {/* Title / status — editor only (the portal renders its own heading) */}
         {mode === "editor" && (
           <div className="mb-6 print:hidden">
             <input
@@ -552,26 +536,13 @@ export default function CallSheetPage() {
           </div>
         )}
 
-        {mode === "preview" && (
-          <CallSheetDocument data={viewData} sections={allSectionsVisible()} redacted={false} />
-        )}
-
         {mode === "export" && (
-          <>
-            <ExportPanel
-              data={viewData}
-              shareToken={sheet.shareToken}
-              clientShareToken={sheet.clientShareToken}
-              onBackToEditor={() => setMode("editor")}
-              onBackToPreview={() => setMode("preview")}
-              onPrint={() => window.print()}
-            />
-            {/* Kept out of the screen but present in the DOM so "Download PDF"
-                (window.print) captures the call sheet, not the export panel. */}
-            <div className="hidden print:block">
-              <CallSheetDocument data={viewData} sections={allSectionsVisible()} redacted={false} />
-            </div>
-          </>
+          <ExportPanel
+            data={viewData}
+            shareToken={sheet.shareToken}
+            clientShareToken={sheet.clientShareToken}
+            onBackToEditor={() => setMode("editor")}
+          />
         )}
       </div>
     </div>
