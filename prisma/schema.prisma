@@ -52,6 +52,7 @@ model User {
   createdTasks    Task[]           @relation("createdTasks")
   notifications   Notification[]
   holidayRequests HolidayRequest[]
+  assignedMilestones ProductionMilestone[] @relation("milestoneAssignee")
 }
 
 // ===== TASKS =====
@@ -517,6 +518,10 @@ model CreativeAsset {
   url          String?
   description  String?
   sortOrder    Int        @default(0)
+  // Image approval workflow (Phase 5). PENDING | APPROVED | DENIED.
+  approvalStatus String?  @default("PENDING")
+  approvedBy     String?
+  approvedAt     DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -581,6 +586,9 @@ model ProductionMilestone {
   parentId     String?
   parent       ProductionMilestone?  @relation("milestoneSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks     ProductionMilestone[] @relation("milestoneSubtasks")
+  // Optional assignee — the Outlander team member responsible for this task.
+  assignedTo   String?
+  assignedUser User?      @relation("milestoneAssignee", fields: [assignedTo], references: [id])
   sortOrder    Int        @default(0)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt

@@ -16,6 +16,7 @@ type MilestoneInput = {
   isMilestone?: boolean;
   parentId?: string | null;
   templateKey?: string | null;
+  assignedTo?: string | null;
 };
 
 const PHASES = ["PRE_PRODUCTION", "PRODUCTION", "POST_PRODUCTION"];
@@ -122,6 +123,7 @@ export const POST = withAuth(async (
         done: !!m.done,
         isMilestone: !!m.isMilestone,
         parentId: m.parentId || null,
+        assignedTo: m.assignedTo || null,
         sortOrder: m.sortOrder ?? 0,
       },
     });
@@ -146,6 +148,7 @@ export const PUT = withAuth(async (request: NextRequest) => {
     if (body.done !== undefined) data.done = !!body.done;
     if (body.isMilestone !== undefined) data.isMilestone = !!body.isMilestone;
     if (body.parentId !== undefined) data.parentId = body.parentId || null;
+    if (body.assignedTo !== undefined) data.assignedTo = body.assignedTo || null;
     if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
 
     const item = await prisma.productionMilestone.update({

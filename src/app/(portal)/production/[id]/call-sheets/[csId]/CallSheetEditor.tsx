@@ -5,7 +5,7 @@ import {
   Clock, MapPin, Cloud, Camera, Users, Coffee, Paperclip, FileText,
   GripVertical, UserPlus, Contact as ContactIcon, Building2, Briefcase,
   Phone, Shield, Lock, Route, Aperture, RefreshCw, Check, Plus, Package,
-  ChevronDown, X, Wand2,
+  ChevronDown, ChevronRight, X, Wand2,
 } from "lucide-react";
 import type {
   AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallSheetLocation,
@@ -16,6 +16,7 @@ import type {
 import {
   AGENCY_TEAM_ROLES, CLIENT_TEAM_ROLES, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE,
   CREW_ROLE_PRESETS, defaultCallTimes, EQUIPMENT_CATEGORIES, KIT_TEMPLATES,
+  parseSchedule,
 } from "./types";
 import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls } from "./shared";
 import { PeopleTable } from "./shared";
@@ -357,51 +358,6 @@ export function CallSheetEditor(p: EditorProps) {
         </div>
       </Section>
 
-      {/* 5. Call Times */}
-      <Section
-        title="Call Times"
-        icon={<Clock size={15} className={iconCls} />}
-        action={
-          p.callTimes.length === 0 ? (
-            <button
-              onClick={() => p.setCallTimes(defaultCallTimes())}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E]"
-            >
-              <Plus size={13} /> Use template
-            </button>
-          ) : undefined
-        }
-      >
-        <div className="space-y-2">
-          {p.callTimes.map((row, i) => (
-            <div key={i} className="grid grid-cols-[110px_1fr_32px] gap-2 items-center">
-              <input
-                type="time"
-                value={row.time}
-                onChange={(e) =>
-                  p.setCallTimes(p.callTimes.map((r, j) => (j === i ? { ...r, time: e.target.value } : r)))
-                }
-                className={smallInputCls}
-              />
-              <input
-                type="text"
-                value={row.department}
-                onChange={(e) =>
-                  p.setCallTimes(p.callTimes.map((r, j) => (j === i ? { ...r, department: e.target.value } : r)))
-                }
-                placeholder="Department"
-                className={smallInputCls}
-              />
-              <DeleteButton onClick={() => p.setCallTimes(p.callTimes.filter((_, j) => j !== i))} />
-            </div>
-          ))}
-          <AddButton
-            label="Add Call Time"
-            onClick={() => p.setCallTimes([...p.callTimes, { time: "", department: "" }])}
-          />
-        </div>
-      </Section>
-
       {/* 6. Production Mobiles */}
       <Section title="Production Mobiles" icon={<Phone size={15} className={iconCls} />}>
         <div className="space-y-2">
@@ -472,16 +428,81 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 10. Schedule */}
-      <Section title="Schedule" icon={<Clock size={15} className={iconCls} />}>
-        <div className="space-y-2">
-          {p.locations.length > 0 && (
-            <p className="text-xs text-gray-400 dark:text-gray-500">
-              Tag a block with its location and the Movement Order will auto-insert a travel
-              leg (with departure/arrival times) whenever the location changes.
+      {/* 10. Schedule & Call Times — merged input, split output */}
+      <Section title="Schedule & Call Times" icon={<Clock size={15} className={iconCls} />}>
+        <div className="space-y-4">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Enter the whole day in one place. Call-time entries (crew call, talent
+            call, wrap, unit call, cast call…) are auto-detected and shown separately
+            under CALL TIMES on the call sheet; everything else becomes the Run of the
+            Day.
+          </p>
+
+          <ScheduleImporter
+            onParsed={({ callTimes, schedule }) => {
+              if (callTimes.length) p.setCallTimes([...p.callTimes, ...callTimes]);
+              if (schedule.length) p.setSchedule([...p.schedule, ...schedule]);
+            }}
+          />
+
+          {/* Call Times (auto-detected from the paste, or added manually) */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Call Times
+              </p>
+              {p.callTimes.length === 0 && (
+                <button
+                  onClick={() => p.setCallTimes(defaultCallTimes())}
+                  className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E]"
+                >
+                  <Plus size={13} /> Use template
+                </button>
+              )}
+            </div>
+            <div className="space-y-2">
+              {p.callTimes.map((row, i) => (
+                <div key={i} className="grid grid-cols-[110px_1fr_32px] gap-2 items-center">
+                  <input
+                    type="time"
+                    value={row.time}
+                    onChange={(e) =>
+                      p.setCallTimes(p.callTimes.map((r, j) => (j === i ? { ...r, time: e.target.value } : r)))
+                    }
+                    className={smallInputCls}
+                  />
+                  <input
+                    type="text"
+                    value={row.department}
+                    onChange={(e) =>
+                      p.setCallTimes(p.callTimes.map((r, j) => (j === i ? { ...r, department: e.target.value } : r)))
+                    }
+                    placeholder="Department (e.g. Crew Call, Talent Call)"
+                    className={smallInputCls}
+                  />
+                  <DeleteButton onClick={() => p.setCallTimes(p.callTimes.filter((_, j) => j !== i))} />
+                </div>
+              ))}
+              <AddButton
+                label="Add Call Time"
+                onClick={() => p.setCallTimes([...p.callTimes, { time: "", department: "" }])}
+              />
+            </div>
+          </div>
+
+          {/* Run of the Day (the rest of the schedule) */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
+              Run of the Day
             </p>
-          )}
-          {p.schedule.map((item, i) => (
+            <div className="space-y-2">
+              {p.locations.length > 0 && (
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  Tag a block with its location and the Movement Order will auto-insert a travel
+                  leg (with departure/arrival times) whenever the location changes.
+                </p>
+              )}
+              {p.schedule.map((item, i) => (
             <div
               key={i}
               draggable
@@ -573,10 +594,12 @@ export function CallSheetEditor(p: EditorProps) {
               <DeleteButton onClick={() => p.setSchedule(p.schedule.filter((_, j) => j !== i))} />
             </div>
           ))}
-          <AddButton
-            label="Add Row"
-            onClick={() => p.setSchedule([...p.schedule, { time: "", description: "", notes: "" }])}
-          />
+              <AddButton
+                label="Add Row"
+                onClick={() => p.setSchedule([...p.schedule, { time: "", description: "", notes: "" }])}
+              />
+            </div>
+          </div>
         </div>
       </Section>
 
@@ -724,6 +747,72 @@ export function CallSheetEditor(p: EditorProps) {
           onAdd={addFromPicker}
           defaultCallTime={p.callTime}
         />
+      )}
+    </div>
+  );
+}
+
+// ── Paste-a-schedule importer ─────────────────────────────────────────────────
+// Merged input: one pasted "full schedule" is split into call-time rows and
+// run-of-day schedule blocks (see parseSchedule). Output stays split.
+function ScheduleImporter({
+  onParsed,
+}: {
+  onParsed: (r: { callTimes: CallTimeRow[]; schedule: ScheduleItem[] }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [raw, setRaw] = useState("");
+
+  function run() {
+    if (!raw.trim()) return;
+    const parsed = parseSchedule(raw);
+    if (parsed.callTimes.length === 0 && parsed.schedule.length === 0) return;
+    onParsed(parsed);
+    setRaw("");
+    setOpen(false);
+  }
+
+  return (
+    <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+      >
+        {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        <Wand2 size={13} /> Paste full schedule
+      </button>
+      {open && (
+        <div className="mt-3 space-y-2">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
+            One entry per line, starting with a time — e.g.{" "}
+            <span className="font-mono">08:00 Crew Call</span>,{" "}
+            <span className="font-mono">08:30 Talent Call</span>,{" "}
+            <span className="font-mono">09:00 Breakfast &amp; setup</span>,{" "}
+            <span className="font-mono">18:00 Wrap</span>. Call times are detected
+            automatically; everything else becomes a schedule block.
+          </p>
+          <textarea
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            placeholder={
+              "08:00 Crew Call\n08:30 Talent Call\n09:00 HMU & styling\n10:00 Main Unit Call — first setup\n13:00 Lunch\n18:00 Wrap"
+            }
+            rows={7}
+            className={`${inputCls} resize-y font-mono text-xs`}
+          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={run}
+              disabled={!raw.trim()}
+              className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-3.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
+            >
+              <Wand2 size={13} /> Parse full schedule
+            </button>
+            <span className="text-[11px] text-gray-400 dark:text-gray-500">
+              Parsed rows are appended below — edit any field after.
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );

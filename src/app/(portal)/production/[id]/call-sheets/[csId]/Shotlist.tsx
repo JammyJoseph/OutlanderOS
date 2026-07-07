@@ -212,6 +212,15 @@ function ShotCard({
         <span className="flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg bg-gray-900 text-white text-xs font-bold">
           {shot.shotNumber || index + 1}
         </span>
+        {shot.referenceImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={shot.referenceImageUrl}
+            alt="Reference"
+            title="Visual reference"
+            className="w-8 h-8 rounded object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+          />
+        )}
         <input
           type="text"
           value={shot.description}
@@ -275,6 +284,26 @@ function ShotCard({
                 placeholder="e.g. 45 min"
                 className={inputCls}
               />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Visual Reference (image URL)</label>
+            <div className="flex items-start gap-3">
+              <input
+                type="url"
+                value={shot.referenceImageUrl ?? ""}
+                onChange={(e) => onChange({ referenceImageUrl: e.target.value })}
+                placeholder="https://… paste a reference image URL"
+                className={`${inputCls} flex-1`}
+              />
+              {shot.referenceImageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={shot.referenceImageUrl}
+                  alt="Reference"
+                  className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                />
+              )}
             </div>
           </div>
           {bodyField("Scene", "scene", "What happens in this shot")}

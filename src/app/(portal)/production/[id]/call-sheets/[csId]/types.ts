@@ -177,6 +177,7 @@ export interface Shot {
   dialogue?: string; // dialogue / interview prompts
   stills?: string; // stills the photographer should capture
   tone?: string; // per-shot tone / style notes
+  referenceImageUrl?: string; // visual reference image (URL) for this shot
 }
 
 // Overall creative approach shown at the top of the shot list.
@@ -662,6 +663,91 @@ export function parseShotList(raw: string): Shot[] {
     if (!s.description && s.scene) s.description = s.scene.split("\n")[0];
   }
   return shots;
+}
+
+// ── Merged schedule + call-time input ──
+// A single pasted "full schedule" is split into call-time rows and run-of-day
+// schedule blocks. A line is treated as a CALL TIME when its label matches one
+// of these keywords; everything else becomes a schedule block. Output stays
+// split (CALL TIMES vs RUN OF THE DAY) even though the input is merged.
+const CALL_TIME_KEYWORDS = [
+  "crew call",
+  "talent call",
+  "cast call",
+  "unit call",
+  "main unit call",
+  "client call",
+  "hmu call",
+  "wrap",
+];
+
+export function isCallTimeLabel(label: string): boolean {
+  const t = (label || "").toLowerCase();
+  if (CALL_TIME_KEYWORDS.some((k) => t.includes(k))) return true;
+  // Generic "<department> call" (e.g. "Styling call", "Runners call").
+  return /\bcall\b/.test(t);
+}
+
+// Pull a leading time token from a line: "08:00", "8.30", "8am", "08:00am".
+// Returns { time, rest } with a normalised HH:MM time, or null if none found.
+function extractLeadingTime(line: string): { time: string; rest: string } | null {
+  const m = line.match(
+    /^\s*(?:[-*•]\s*)?(\d{1,2})[:.](\d{2})\s*(am|pm)?\b[\s.\-–—:)]*|^\s*(?:[-*•]\s*)?(\d{1,2})\s*(am|pm)\b[\s.\-–—:)]*/i
+  );
+  if (!m) return null;
+  let hour: number;
+  let minute: number;
+  let ampm: string | undefined;
+  if (m[1] !== undefined) {
+    hour = parseInt(m[1], 10);
+    minute = parseInt(m[2], 10);
+    ampm = m[3];
+  } else {
+    hour = parseInt(m[4], 10);
+    minute = 0;
+    ampm = m[5];
+  }
+  if (ampm) {
+    const lower = ampm.toLowerCase();
+    if (lower === "pm" && hour < 12) hour += 12;
+    if (lower === "am" && hour === 12) hour = 0;
+  }
+  if (hour > 23 || minute > 59) return null;
+  const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  const rest = line.slice(m[0].length).trim();
+  return { time, rest };
+}
+
+export interface ParsedSchedule {
+  callTimes: CallTimeRow[];
+  schedule: ScheduleItem[];
+}
+
+// Parse a pasted "full schedule" (one entry per line) into split call-time rows
+// and run-of-day schedule blocks. Lines whose label reads as a call time are
+// routed to callTimes; the rest become schedule blocks. Lines without a
+// recognisable time are still kept (as schedule blocks) so nothing is dropped.
+export function parseSchedule(raw: string): ParsedSchedule {
+  const text = (raw || "").replace(/\r\n/g, "\n");
+  const callTimes: CallTimeRow[] = [];
+  const schedule: ScheduleItem[] = [];
+  if (!text.trim()) return { callTimes, schedule };
+
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    const parsed = extractLeadingTime(line);
+    const time = parsed?.time ?? "";
+    // Label = the text after the time; if there was no time, use the whole line.
+    let label = (parsed ? parsed.rest : line).trim();
+    label = label.replace(/^[-*•]\s*/, "").trim();
+    if (!label && !time) continue;
+    if (isCallTimeLabel(label)) {
+      callTimes.push({ time, department: label });
+    } else {
+      schedule.push({ time, description: label, notes: "" });
+    }
+  }
+  return { callTimes, schedule };
 }
 
 // A deliverable parsed from a pasted brief.

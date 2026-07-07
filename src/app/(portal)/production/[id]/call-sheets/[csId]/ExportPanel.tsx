@@ -148,6 +148,7 @@ export function ExportPanel({
             url={clientUrl}
             copied={copied === "client"}
             onCopy={() => copyText(clientUrl, "client")}
+            note="Client view excludes crew, photographer and talent contact details. Agency contacts remain visible."
           />
 
           {/* Email send */}
@@ -248,12 +249,14 @@ function LinkRow({
   url,
   copied,
   onCopy,
+  note,
 }: {
   label: string;
   hint: string;
   url: string;
   copied: boolean;
   onCopy: () => void;
+  note?: string;
 }) {
   return (
     <div className="p-4">
@@ -276,6 +279,9 @@ function LinkRow({
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
+      {note && (
+        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">{note}</p>
+      )}
     </div>
   );
 }

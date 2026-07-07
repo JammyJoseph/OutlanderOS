@@ -737,31 +737,55 @@ export function CallSheetDocument({
         )}
 
         {/* ── Shotlist / styling ── */}
-        {show("shotlist") && (shotlist.some((s) => s.description || s.scene) || hasShotStyle) && (
-          <Section title="Shotlist / Styling">
-            {hasShotStyle && (
-              <p style={{ margin: "0 0 10px", fontSize: "10px", color: MUTED }}>
-                {[shotStyle.tone, shotStyle.visualDevice, shotStyle.notes].filter(Boolean).join(" · ")}
-              </p>
-            )}
-            {shotlist.some((s) => s.description || s.scene) && (
-              <GridTable
-                columns={[
-                  { label: "#", width: "6%", nowrap: true },
-                  { label: "Shot / Scene", width: "54%" },
-                  { label: "Notes", width: "40%" },
-                ]}
-                rows={shotlist
-                  .filter((s) => s.description || s.scene)
-                  .map((s, i) => [
-                    s.shotNumber || String(i + 1),
-                    s.description || s.scene || "",
-                    [s.video, s.stills, s.dialogue, s.setup].filter(Boolean).join(" · "),
-                  ])}
-              />
-            )}
-          </Section>
-        )}
+        {show("shotlist") &&
+          (shotlist.some((s) => s.description || s.scene || s.referenceImageUrl) || hasShotStyle) && (
+            <Section title="Shotlist / Styling">
+              {hasShotStyle && (
+                <p style={{ margin: "0 0 10px", fontSize: "10px", color: MUTED }}>
+                  {[shotStyle.tone, shotStyle.visualDevice, shotStyle.notes].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              {shotlist.some((s) => s.description || s.scene || s.referenceImageUrl) && (
+                <GridTable
+                  columns={[
+                    { label: "#", width: "6%", nowrap: true },
+                    { label: "Shot / Scene", width: "54%" },
+                    { label: "Notes", width: "40%" },
+                  ]}
+                  rows={shotlist
+                    .filter((s) => s.description || s.scene || s.referenceImageUrl)
+                    .map((s, i) => {
+                      const text = s.description || s.scene || "";
+                      const shotCell = s.referenceImageUrl ? (
+                        <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={s.referenceImageUrl}
+                            alt=""
+                            style={{
+                              width: "54px",
+                              height: "54px",
+                              objectFit: "cover",
+                              borderRadius: "4px",
+                              border: `1px solid ${HAIR}`,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span>{text}</span>
+                        </div>
+                      ) : (
+                        text
+                      );
+                      return [
+                        s.shotNumber || String(i + 1),
+                        shotCell,
+                        [s.video, s.stills, s.dialogue, s.setup].filter(Boolean).join(" · "),
+                      ];
+                    })}
+                />
+              )}
+            </Section>
+          )}
 
         {/* ── Bottom row — catering + deliverables / weather ── */}
         {(() => {

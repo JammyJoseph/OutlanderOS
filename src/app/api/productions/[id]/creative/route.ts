@@ -33,6 +33,7 @@ export const POST = withAuth(async (
         url: body.url || null,
         description: body.description || null,
         sortOrder: body.sortOrder == null ? 0 : Number(body.sortOrder),
+        approvalStatus: body.approvalStatus || "PENDING",
       },
     });
     return NextResponse.json({ asset });
@@ -53,6 +54,19 @@ export const PUT = withAuth(async (request: NextRequest) => {
     if (body.url !== undefined) data.url = body.url || null;
     if (body.description !== undefined) data.description = body.description || null;
     if (body.sortOrder !== undefined) data.sortOrder = Number(body.sortOrder);
+    // Approval workflow (Phase 5). Stamp approvedBy/approvedAt server-side when
+    // the status moves to APPROVED/DENIED; clear them when reset to PENDING.
+    if (body.approvalStatus !== undefined) {
+      const status = body.approvalStatus || "PENDING";
+      data.approvalStatus = status;
+      if (status === "APPROVED" || status === "DENIED") {
+        data.approvedBy = body.approvedBy || null;
+        data.approvedAt = new Date();
+      } else {
+        data.approvedBy = null;
+        data.approvedAt = null;
+      }
+    }
 
     const asset = await prisma.creativeAsset.update({ where: { id: assetId }, data });
     return NextResponse.json({ asset });

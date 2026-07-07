@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Trash2,
+  Users,
   Wand2,
   ChevronDown,
   ChevronRight,
@@ -74,6 +75,67 @@ function deadlineTone(dateISO: string, done: boolean): DeadlineTone {
   return "ok";
 }
 
+// A pickable assignee — an active Outlander user (assignedTo stores User.id).
+interface TeamUser {
+  id: string;
+  name: string;
+}
+
+function initialsOf(name: string): string {
+  return (name || "")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function AssigneeBadge({ name }: { name: string }) {
+  return (
+    <span
+      title={name}
+      className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-[#9C7C2E]/15 text-[#9C7C2E] text-[9px] font-bold"
+    >
+      {initialsOf(name) || "?"}
+    </span>
+  );
+}
+
+// Compact assignee picker: initials badge + a small native select. assignedTo
+// references a User id, so only active users are offered (production team
+// members without a linked user account can't be stored as an assignee).
+function AssigneeSelect({
+  users,
+  value,
+  onChange,
+}: {
+  users: TeamUser[];
+  value: string | null | undefined;
+  onChange: (id: string | null) => void;
+}) {
+  const name = value ? users.find((u) => u.id === value)?.name ?? "Unknown" : "";
+  return (
+    <div className="flex items-center gap-1.5">
+      {value && <AssigneeBadge name={name} />}
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        title="Assign to a team member"
+        className="text-[11px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 outline-none focus:ring-2 focus:ring-[#9C7C2E]/30"
+      >
+        <option value="">Unassigned</option>
+        {users.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export default function TimelineTab({ productionId, milestones, shootDates, refresh }: Props) {
   const confirm = useConfirm();
   const [view, setView] = useState<"list" | "calendar">("list");
@@ -83,6 +145,23 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
   const [raw, setRaw] = useState("");
   const [busy, setBusy] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [users, setUsers] = useState<TeamUser[]>([]);
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("");
+
+  // Active Outlander users to assign tasks to.
+  useEffect(() => {
+    fetch("/api/users")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d))
+          setUsers(
+            d
+              .filter((u: { isActive?: boolean }) => u.isActive !== false)
+              .map((u: { id: string; name: string }) => ({ id: u.id, name: u.name }))
+          );
+      })
+      .catch(() => {});
+  }, []);
 
   const hasShootDate = (shootDates ?? []).filter(Boolean).length > 0;
   const hasTemplate = milestones.some((m) => m.templateKey);
@@ -203,6 +282,25 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            {view === "list" && milestones.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Users size={13} className="text-gray-400 dark:text-gray-500" />
+                <select
+                  value={assigneeFilter}
+                  onChange={(e) => setAssigneeFilter(e.target.value)}
+                  title="Filter by assignee"
+                  className="text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 px-2 py-1 outline-none focus:ring-2 focus:ring-[#9C7C2E]/30"
+                >
+                  <option value="">All assignees</option>
+                  <option value="__unassigned">Unassigned</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {milestones.length > 0 && (
               <div className="flex items-center gap-2 text-[11px]">
                 {overdueCount > 0 && (
@@ -277,7 +375,9 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
           )}
         </div>
 
-        {showAdd && <AddMilestoneForm onAdd={add} onCancel={() => setShowAdd(false)} />}
+        {showAdd && (
+          <AddMilestoneForm users={users} onAdd={add} onCancel={() => setShowAdd(false)} />
+        )}
 
         {/* Paste importer */}
         <div className="px-5 py-3 border-b border-gray-50 dark:border-gray-800">
@@ -335,7 +435,18 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
         ) : (
           <div className="px-5 py-5 space-y-6">
             {MILESTONE_PHASES.map(({ key }) => {
-              const items = byPhase[key];
+              // Apply the assignee filter: a top-level item shows if it matches,
+              // or if any of its sub-tasks match (so parents keep their context).
+              const matchesAssignee = (m: ProductionMilestone) => {
+                if (!assigneeFilter) return true;
+                const want = assigneeFilter === "__unassigned" ? null : assigneeFilter;
+                const self = (m.assignedTo ?? null) === want;
+                const child = (childrenOf.get(m.id) ?? []).some(
+                  (c) => (c.assignedTo ?? null) === want
+                );
+                return self || child;
+              };
+              const items = byPhase[key].filter(matchesAssignee);
               if (items.length === 0) return null;
               const style = MILESTONE_PHASE_STYLES[key];
               return (
@@ -352,6 +463,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
                       <MilestoneRow
                         key={m.id}
                         milestone={m}
+                        users={users}
                         subtasks={childrenOf.get(m.id) ?? []}
                         onUpdate={(patch) => update(m.id, patch)}
                         onUpdateChild={(cid, patch) => update(cid, patch)}
@@ -392,6 +504,7 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
 
 function MilestoneRow({
   milestone,
+  users,
   subtasks,
   onUpdate,
   onUpdateChild,
@@ -400,6 +513,7 @@ function MilestoneRow({
   onAddSubtask,
 }: {
   milestone: ProductionMilestone;
+  users: TeamUser[];
   subtasks: ProductionMilestone[];
   onUpdate: (patch: Partial<ProductionMilestone>) => void;
   onUpdateChild: (id: string, patch: Partial<ProductionMilestone>) => void;
@@ -419,6 +533,9 @@ function MilestoneRow({
   const badge = STATUS_BADGE[status];
   const tone = deadlineTone(milestone.date, milestone.done);
   const isDiamond = !!milestone.isMilestone;
+  const assigneeName = milestone.assignedTo
+    ? users.find((u) => u.id === milestone.assignedTo)?.name ?? "Unknown"
+    : "";
 
   const dateLabel = (() => {
     try {
@@ -558,6 +675,7 @@ function MilestoneRow({
                   >
                     {tone === "soon" && status === "PENDING" ? "Due soon" : badge.label}
                   </span>
+                  {assigneeName && <AssigneeBadge name={assigneeName} />}
                 </div>
                 {milestone.description && (
                   <p
@@ -568,6 +686,13 @@ function MilestoneRow({
                     {milestone.description}
                   </p>
                 )}
+                <div className="mt-2">
+                  <AssigneeSelect
+                    users={users}
+                    value={milestone.assignedTo}
+                    onChange={(assignedTo) => onUpdate({ assignedTo })}
+                  />
+                </div>
               </div>
             </div>
 
@@ -653,9 +778,11 @@ function MilestoneRow({
 // ─── Add form ─────────────────────────────────────────────────────────────────
 
 function AddMilestoneForm({
+  users,
   onAdd,
   onCancel,
 }: {
+  users: TeamUser[];
   onAdd: (form: Partial<ProductionMilestone>) => void;
   onCancel: () => void;
 }) {
@@ -664,6 +791,7 @@ function AddMilestoneForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isMilestone, setIsMilestone] = useState(false);
+  const [assignedTo, setAssignedTo] = useState<string>("");
 
   function submit() {
     if (!title.trim() || !date) return;
@@ -673,6 +801,7 @@ function AddMilestoneForm({
       title: title.trim(),
       description: description.trim() || null,
       isMilestone,
+      assignedTo: assignedTo || null,
     });
   }
 
@@ -700,16 +829,29 @@ function AddMilestoneForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className={`md:col-span-3 ${inputCls}`}
+        className={`md:col-span-4 ${inputCls}`}
       />
+      <select
+        value={assignedTo}
+        onChange={(e) => setAssignedTo(e.target.value)}
+        className={`md:col-span-3 ${inputCls}`}
+        title="Assignee"
+      >
+        <option value="">Unassigned</option>
+        {users.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.name}
+          </option>
+        ))}
+      </select>
       <input
         type="text"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Description"
-        className={`md:col-span-2 ${inputCls}`}
+        className={`md:col-span-8 ${inputCls}`}
       />
-      <div className="md:col-span-2 flex items-center gap-2 justify-end pt-0.5">
+      <div className="md:col-span-4 flex items-center gap-2 justify-end pt-0.5">
         <label className="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-400" title="Show as a milestone (diamond)">
           <input type="checkbox" checked={isMilestone} onChange={(e) => setIsMilestone(e.target.checked)} />
           Milestone

@@ -115,6 +115,8 @@ export interface TeamMember {
   contactId?: string | null;
 }
 
+export type ApprovalStatus = "PENDING" | "APPROVED" | "DENIED";
+
 export interface CreativeAsset {
   id: string;
   productionId: string;
@@ -123,6 +125,10 @@ export interface CreativeAsset {
   url: string | null;
   description: string | null;
   sortOrder: number;
+  // Image approval workflow (Phase 5).
+  approvalStatus?: ApprovalStatus | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
 }
 
 export interface ScheduleBlock {
@@ -204,6 +210,8 @@ export interface ProductionMilestone {
   templateKey?: string | null;
   // Parent milestone id when this row is a sub-task.
   parentId?: string | null;
+  // User id of the assigned team member (optional).
+  assignedTo?: string | null;
 }
 
 export const MILESTONE_PHASES: { key: MilestonePhase; label: string }[] = [
