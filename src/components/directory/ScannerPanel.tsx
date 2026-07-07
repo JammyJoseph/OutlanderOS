@@ -15,6 +15,7 @@ import {
   MapPin,
   Globe,
   Sparkles,
+  Network,
 } from "lucide-react";
 import { DIRECTORY_ACCENT } from "@/lib/directory";
 
@@ -109,6 +110,30 @@ interface QueueItem {
   status: "pending" | "scanning" | "done" | "failed" | "skipped";
   result?: ScanProfileResult;
   existingContact?: { id: string; name: string } | null;
+}
+
+interface NetworkPerson {
+  handle: string
+  name: string | null
+  category: string
+  matchedVia: "name" | "bio"
+  keyword: string
+  profilePic: string | null
+  added: boolean
+  existed: boolean
+}
+
+interface ScanNetworkResult {
+  ok: boolean
+  handle: string
+  scanned?: number
+  found?: number
+  added?: number
+  skippedExisting?: number
+  bioChecked?: number
+  breakdown?: Record<string, number>
+  people?: NetworkPerson[]
+  error?: string
 }
 
 const cardCls = "rounded-2xl border border-border bg-card p-5";
@@ -217,6 +242,10 @@ function SingleScanner({
   const [scanningCredits, setScanningCredits] = useState(false);
   const [addingAllCredits, setAddingAllCredits] = useState(false);
 
+  // Network (following) scan
+  const [network, setNetwork] = useState<ScanNetworkResult | null>(null);
+  const [scanningNetwork, setScanningNetwork] = useState(false);
+
   // Scan queue (Scan All)
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [queueRunning, setQueueRunning] = useState(false);
@@ -229,6 +258,7 @@ function SingleScanner({
     setScanning(true);
     setProfile(null);
     setCredits(null);
+    setNetwork(null);
     setQueue([]);
     setAddedId(null);
     try {
@@ -308,6 +338,33 @@ function SingleScanner({
       });
     } finally {
       setScanningCredits(false);
+    }
+  }
+
+  // Scan the profile's following list for creatives (by name/bio role keywords),
+  // auto-adding new ones to the directory. The server does the whole scan; we
+  // just render the summary + who was found.
+  async function scanNetwork() {
+    if (!profile?.handle) return;
+    setScanningNetwork(true);
+    setNetwork(null);
+    try {
+      const res = await fetch("/api/directory/scan-network", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handle: profile.handle }),
+      });
+      const data: ScanNetworkResult = await res.json();
+      setNetwork(data);
+      if (data.ok && (data.added ?? 0) > 0) onChanged?.();
+    } catch {
+      setNetwork({
+        ok: false,
+        handle: profile.handle,
+        error: "Network error — couldn't reach the scanner.",
+      });
+    } finally {
+      setScanningNetwork(false);
     }
   }
 
@@ -626,9 +683,25 @@ function SingleScanner({
               )}
               Scan Credits
             </button>
+            <button
+              onClick={scanNetwork}
+              disabled={scanningNetwork}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:border-[var(--ring)] disabled:opacity-50"
+              title="Scan who this profile follows and auto-add the creatives to the directory"
+            >
+              {scanningNetwork ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Network size={15} />
+              )}
+              Scan Network
+            </button>
           </div>
         </div>
       )}
+
+      {/* Network scan result */}
+      {network && <NetworkResult result={network} scanning={scanningNetwork} />}
 
       {/* Credits */}
       {credits && !credits.ok && (
@@ -925,6 +998,133 @@ function CreditRow({
           {adding ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />}
           Add
         </button>
+      )}
+    </div>
+  );
+}
+
+// ── Network (following) scan result ──────────────────────────────────────────────
+
+function NetworkResult({
+  result,
+  scanning,
+}: {
+  result: ScanNetworkResult;
+  scanning: boolean;
+}) {
+  if (scanning) {
+    return (
+      <div className={cardCls}>
+        <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <Loader2 size={15} className="animate-spin" />
+          Scanning @{result.handle}&apos;s network — reading who they follow and
+          checking bios…
+        </p>
+        <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+          This can take a minute for large accounts.
+        </p>
+      </div>
+    );
+  }
+
+  if (!result.ok) {
+    return (
+      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+        <p className="flex items-center gap-2 text-sm font-semibold text-amber-600 dark:text-amber-400">
+          <AlertTriangle size={15} /> {result.error || "Couldn't scan this network"}
+        </p>
+      </div>
+    );
+  }
+
+  const people = result.people ?? [];
+  const breakdown = result.breakdown ?? {};
+  // "found 12 creatives (4 photographers, 3 stylists, …)" style summary.
+  const parts = Object.entries(breakdown)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, n]) => `${n} ${cat}${n === 1 ? "" : "s"}`);
+  const summary =
+    people.length === 0
+      ? "no creatives found"
+      : `found ${people.length} creative${people.length === 1 ? "" : "s"}${
+          parts.length ? ` (${parts.join(", ")})` : ""
+        }`;
+
+  return (
+    <div className={cardCls}>
+      <div className="mb-3">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <Network size={15} style={{ color: ACCENT }} /> Network scan
+        </h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Scanned @{result.handle}&apos;s network: {summary}.
+        </p>
+        <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
+          {result.scanned ?? 0} following checked
+          {result.bioChecked ? ` · ${result.bioChecked} bios verified` : ""} ·{" "}
+          {result.added ?? 0} added
+          {result.skippedExisting ? ` · ${result.skippedExisting} already in directory` : ""}
+        </p>
+      </div>
+
+      {people.length === 0 ? (
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          None of the accounts @{result.handle} follows read as creative crew.
+        </p>
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-border">
+          {people.map((p, i) => (
+            <div
+              key={p.handle}
+              className={`flex items-center justify-between gap-2 px-3 py-2.5 ${
+                i === people.length - 1 ? "" : "border-b border-border"
+              }`}
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                {p.profilePic ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.profilePic}
+                    alt=""
+                    className="h-8 w-8 shrink-0 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                    {(p.name || p.handle).slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <a
+                    href={`https://www.instagram.com/${p.handle}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block truncate text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-[#dc2743]"
+                  >
+                    {p.name || `@${p.handle}`}
+                  </a>
+                  <p className="truncate text-[11px] text-gray-500 dark:text-gray-400">
+                    @{p.handle} · {p.keyword} · via {p.matchedVia}
+                  </p>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  {p.category}
+                </span>
+                {p.existed ? (
+                  <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                    in directory
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 size={12} /> added
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -147,6 +147,51 @@ export function categoryFromText(text: string | null | undefined): string | null
   return null
 }
 
+// Creative-role keywords for the network scan. Broader than CATEGORY_KEYWORDS —
+// it covers the full crew vocabulary the directory cares about (Gaffer, Grip,
+// Retoucher, Art Director, …) and reports *which* keyword matched so the added
+// contact can carry a human-readable "found via their bio" reference. Ordered so
+// more specific roles win over generic ones (e.g. "creative director" before
+// "director", "hair stylist" before "stylist").
+const CREATIVE_ROLE_KEYWORDS: { category: string; keyword: string; needles: string[] }[] = [
+  { category: "Creative Director", keyword: "Creative Director", needles: ["creative director", "creative direction"] },
+  { category: "Creative Director", keyword: "Art Director", needles: ["art director", "art direction"] },
+  // Casting must beat the generic "director" rule below ("casting director").
+  { category: "Casting Director", keyword: "Casting", needles: ["casting director", "casting"] },
+  { category: "Photographer", keyword: "Photographer", needles: ["photographer", "photography", "📷", "📸"] },
+  { category: "Videographer", keyword: "DOP", needles: ["dop", "d.o.p", "director of photography", "cinematographer", "cinematography"] },
+  { category: "Videographer", keyword: "Videographer", needles: ["videographer", "video director", "filmmaker"] },
+  { category: "Videographer", keyword: "Director", needles: ["film director", "commercial director", "music video director", " director"] },
+  { category: "MUA", keyword: "Makeup Artist", needles: ["makeup artist", "make up artist", "make-up artist", "mua", "makeup", "make up", "make-up"] },
+  { category: "MUA", keyword: "Hair Stylist", needles: ["hair stylist", "hairstylist", "hair artist", "hairdresser"] },
+  { category: "Stylist", keyword: "Stylist", needles: ["stylist", "styling", "wardrobe", "fashion editor"] },
+  { category: "Set Designer", keyword: "Set Designer", needles: ["set designer", "set design", "production designer", "production design", "prop stylist", "props"] },
+  { category: "Producer", keyword: "Producer", needles: ["producer", "production company", "line producer", "exec producer"] },
+  { category: "Model", keyword: "Model", needles: ["model", "signed to", "@models"] },
+  { category: "Editor", keyword: "Retoucher", needles: ["retoucher", "retouch", "retouching"] },
+  { category: "Editor", keyword: "Editor", needles: ["editor", "editing", "post production", "post-production"] },
+  { category: "Colorist", keyword: "Colourist", needles: ["colourist", "colorist", "colour grade", "color grade", "grading"] },
+  { category: "Other", keyword: "Sound", needles: ["sound design", "sound designer", "sound recordist", "audio engineer", "composer"] },
+  { category: "Other", keyword: "Gaffer", needles: ["gaffer", "lighting technician"] },
+  { category: "Other", keyword: "Grip", needles: ["key grip", " grip ", "grip department"] },
+]
+
+export interface CreativeRoleMatch {
+  category: string // canonical directory category
+  keyword: string // the human-readable role that matched (for the reference note)
+}
+
+// Detects whether a bio / name mentions a creative crew role. Returns the first
+// (most specific) match, or null. Powers the network scan's bio filter.
+export function detectCreativeRole(text: string | null | undefined): CreativeRoleMatch | null {
+  if (!text) return null
+  const lower = ` ${text.toLowerCase()} `
+  for (const { category, keyword, needles } of CREATIVE_ROLE_KEYWORDS) {
+    if (needles.some((n) => lower.includes(n))) return { category, keyword }
+  }
+  return null
+}
+
 // Pulls a likely location out of a bio. Looks for "based in X" / "X | London"
 // style phrases and known city names; returns the first match or null.
 const CITY_HINTS = [

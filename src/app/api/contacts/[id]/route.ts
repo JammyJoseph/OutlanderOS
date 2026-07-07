@@ -121,6 +121,14 @@ function parseRating(value: unknown): number | null {
   return Math.min(5, Math.max(1, Math.round(n)))
 }
 
+// Print Directory tier: 1–3, or null to unfile. Anything else clears it.
+function parsePrintTier(value: unknown): number | null {
+  if (value === null) return null
+  const n = Number(value)
+  if (!Number.isFinite(n) || n < 1 || n > 3) return null
+  return Math.round(n)
+}
+
 const updateContact = withAuth(async (
   request: NextRequest,
   { params }: { params?: Promise<Record<string, string>> }
@@ -155,6 +163,13 @@ const updateContact = withAuth(async (
         body.archived !== undefined ? (body.archived ? new Date() : null) : undefined,
       notes: body.notes !== undefined ? (body.notes === null ? null : sanitizeString(body.notes, 4000)) : undefined,
       portfolioLinks: body.portfolioLinks !== undefined ? sanitizePortfolio(body.portfolioLinks) : undefined,
+      printTier: body.printTier !== undefined ? parsePrintTier(body.printTier) : undefined,
+      printTierAt:
+        body.printTier !== undefined
+          ? parsePrintTier(body.printTier) === null
+            ? null
+            : new Date()
+          : undefined,
       isRadar: body.isRadar !== undefined ? Boolean(body.isRadar) : undefined,
       radarStatus: body.radarStatus !== undefined ? (body.radarStatus || null) : undefined,
       radarLink: body.radarLink !== undefined ? (body.radarLink || null) : undefined,

@@ -141,6 +141,9 @@ model Contact {
   recentPosts     Json      @default("[]") // [{ shortcode, imageUrl, caption? }] — most recent posts captured at scan time
   collaborations  Json      @default("[]") // [{ contactId?, handle, count, lastProject?, role? }] — who they've worked with
   scannedAt       DateTime? // last time this contact's profile was scraped
+  // ── Print Directory: keyboard-filed shortlist for the printed directory ──
+  printTier       Int? // 1 (top priority) | 2 (strong) | 3 (maybe) — filed via 1/2/3 keys
+  printTierAt     DateTime? // when the contact was filed into its current print tier
   // ── Outlander Radar: emerging talent / accounts to watch ──
   isRadar         Boolean   @default(false)
   radarStatus     String? // WATCHING | REACHED_OUT | CONNECTED | COLLABORATING

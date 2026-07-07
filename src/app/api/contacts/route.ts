@@ -11,6 +11,7 @@ export const GET = withAuth(async (request: NextRequest) => {
   const categories = searchParams.get('categories') || ''
   const radar = searchParams.get('radar') // "true" | "false" | null
   const includeArchived = searchParams.get('includeArchived') === 'true'
+  const hasPrintTier = searchParams.get('hasPrintTier') === 'true' // Print Directory view
 
   const categoryFilter = categories
     ? { category: { in: categories.split(',').map((c) => c.trim()).filter(Boolean) } }
@@ -39,6 +40,8 @@ export const GET = withAuth(async (request: NextRequest) => {
         : {},
       categoryFilter,
       radarFilter,
+      // Print Directory view asks only for contacts filed into a tier.
+      hasPrintTier ? { printTier: { not: null } } : {},
       // Archived contacts are hidden from the directory unless explicitly requested.
       includeArchived ? {} : { archived: false },
     ],

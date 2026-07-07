@@ -115,17 +115,20 @@ async function runProfileScraper(handle: string): Promise<ApifyProfileItem | nul
 // mentions can't blow up the run.
 const APIFY_BIO_LOOKUP_CAP = 25
 const APIFY_BIO_TIMEOUT_MS = 120_000
-export async function apifyProfileBios(handles: string[]): Promise<Map<string, string | null>> {
+export async function apifyProfileBios(
+  handles: string[],
+  cap = APIFY_BIO_LOOKUP_CAP
+): Promise<Map<string, string | null>> {
   const out = new Map<string, string | null>()
   const unique = [
     ...new Set(handles.map((h) => normalizeHandle(h)).filter(Boolean) as string[]),
   ]
-  const limited = unique.slice(0, APIFY_BIO_LOOKUP_CAP)
+  const limited = unique.slice(0, cap)
   if (!limited.length || !apifyConfigured()) return out
   if (unique.length > limited.length) {
     logger.info(
       "instagram-apify",
-      `Bio-verifying ${limited.length}/${unique.length} mentions (cap ${APIFY_BIO_LOOKUP_CAP}); the rest stay unverified`
+      `Bio-verifying ${limited.length}/${unique.length} mentions (cap ${cap}); the rest stay unverified`
     )
   }
   const items = await runProfileScraperItems(limited, APIFY_BIO_TIMEOUT_MS)
@@ -229,5 +232,99 @@ export async function apifyScanCredits(handleInput: string): Promise<ScanCredits
     collaborationPairs,
     postsScanned: posts.length,
     ok: true,
+  }
+}
+
+// ── Following scan (network) ────────────────────────────────────────────────
+// The profile scraper doesn't return an account's following list, so the
+// network scan uses a dedicated no-login following actor. It's configurable via
+// APIFY_FOLLOWING_ACTOR so the actor can be swapped without a code change; the
+// default (thenetaji/instagram-followers-followings-scraper) takes
+// { username: string[], type: "followings", maxItem } and returns basic profile
+// rows. The input contract is actor-specific — swap only for a compatible actor.
+const FOLLOWING_ACTOR =
+  process.env.APIFY_FOLLOWING_ACTOR || "thenetaji~instagram-followers-followings-scraper"
+const FOLLOWING_TIMEOUT_MS = 180_000
+
+// One account from a following list. `name` and `profilePic` may be absent.
+export interface FollowingAccount {
+  handle: string
+  name: string | null
+  profilePic: string | null
+  isPrivate: boolean
+  isVerified: boolean
+}
+
+// A row as returned by the following actor. Field names vary between actors, so
+// we read several common spellings defensively.
+interface FollowingItemRaw {
+  username?: string | null
+  handle?: string | null
+  full_name?: string | null
+  fullName?: string | null
+  profile_pic_url?: string | null
+  profilePicUrl?: string | null
+  is_private?: boolean | null
+  isPrivate?: boolean | null
+  is_verified?: boolean | null
+  isVerified?: boolean | null
+  error?: string | null
+}
+
+// Fetches up to `cap` accounts that `handleInput` follows. Returns null when
+// Apify is unconfigured or the run fails/returns nothing, so callers can report
+// the graceful "couldn't read this profile's network" fallback.
+export async function apifyScanFollowing(
+  handleInput: string,
+  cap = 200
+): Promise<FollowingAccount[] | null> {
+  const handle = normalizeHandle(handleInput)
+  if (!handle || !apifyConfigured()) return null
+
+  const token = process.env.APIFY_API_KEY!
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), FOLLOWING_TIMEOUT_MS)
+  try {
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/${FOLLOWING_ACTOR}/run-sync-get-dataset-items?token=${encodeURIComponent(token)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: [handle],
+          type: "followings",
+          maxItem: cap,
+        }),
+        signal: controller.signal,
+      }
+    )
+    if (!res.ok) {
+      logger.warn("instagram-apify", `Following run for @${handle} → ${res.status}`)
+      return null
+    }
+    const items = await res.json()
+    if (!Array.isArray(items)) return null
+
+    const accounts: FollowingAccount[] = []
+    const seen = new Set<string>()
+    for (const raw of items as FollowingItemRaw[]) {
+      if (!raw || raw.error) continue
+      const uname = normalizeHandle(raw.username ?? raw.handle)
+      if (!uname || uname === handle || seen.has(uname)) continue
+      seen.add(uname)
+      accounts.push({
+        handle: uname,
+        name: (raw.full_name ?? raw.fullName)?.trim() || null,
+        profilePic: raw.profile_pic_url ?? raw.profilePicUrl ?? null,
+        isPrivate: Boolean(raw.is_private ?? raw.isPrivate),
+        isVerified: Boolean(raw.is_verified ?? raw.isVerified),
+      })
+    }
+    return accounts
+  } catch (err) {
+    logger.warn("instagram-apify", `Following run for @${handle} failed`, err)
+    return null
+  } finally {
+    clearTimeout(timer)
   }
 }

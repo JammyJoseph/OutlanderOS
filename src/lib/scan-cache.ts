@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger"
 
 const TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
-export type ScanKind = "profile" | "credits"
+export type ScanKind = "profile" | "credits" | "following"
 
 // Returns cached scrape data if it's fresh (< 24h), else null.
 export async function getCachedScan<T>(

@@ -48,7 +48,8 @@ export interface ScannedContactInput {
   profilePic?: string | null
   recentPosts?: RecentPost[] | null
   confidence?: Confidence | null
-  scanSource?: string | null // handle of the credit-scan this contact came from
+  scanSource?: string | null // handle of the credit/network-scan this contact came from
+  source?: string | null // provenance tag (e.g. "instagram_scan", "network_scan")
 }
 
 // Sanitises incoming post data into [{ shortcode, imageUrl, caption? }], capped
@@ -116,7 +117,7 @@ export async function upsertScannedContact(
     }
     data.scannedAt = new Date()
     // Never flip a manually-added contact's source, but tag if it had none.
-    if (!current.source) data.source = "instagram_scan"
+    if (!current.source) data.source = input.source ?? "instagram_scan"
 
     const updated = await prisma.contact.update({
       where: { id: existing.id },
@@ -138,7 +139,7 @@ export async function upsertScannedContact(
       profilePic: input.profilePic ?? null,
       recentPosts: sanitizeRecentPosts(input.recentPosts) as unknown as object,
       confidence: input.confidence ?? "UNVERIFIED",
-      source: "instagram_scan",
+      source: input.source ?? "instagram_scan",
       scanSource: input.scanSource ? normalizeHandle(input.scanSource) ?? input.scanSource : null,
       scannedAt: new Date(),
       createdBy: userId,

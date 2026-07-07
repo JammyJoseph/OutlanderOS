@@ -32,6 +32,8 @@ import {
   TrendingUp,
   Handshake,
   Trophy,
+  Printer,
+  FileText,
 } from "lucide-react";
 import {
   CONTACT_CATEGORIES,
@@ -69,12 +71,14 @@ interface ContactRecord {
   radarStatus: string | null;
   radarLink: string | null;
   source?: string | null;
+  scanSource?: string | null;
   confidence?: "VERIFIED" | "LIKELY" | "UNVERIFIED" | null;
   followers?: number | null;
   profilePic?: string | null;
   recentPosts?: { shortcode: string; imageUrl: string; caption?: string | null }[];
   collaborations?: unknown[];
   scannedAt?: string | null;
+  printTier?: number | null;
   createdAt: string;
   updatedAt: string;
   creator?: { id: string; name: string } | null;
@@ -88,6 +92,7 @@ type View =
   | "recent"
   | "scanner"
   | "network"
+  | "print"
   | "lighthouse";
 type SortKey = "name" | "za" | "category" | "followers" | "recent";
 
@@ -99,7 +104,8 @@ function isView(v: string | null): v is View {
     v === "radar" ||
     v === "recent" ||
     v === "scanner" ||
-    v === "network"
+    v === "network" ||
+    v === "print"
   );
 }
 
@@ -223,6 +229,48 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
+// Profile-picture avatar with a graceful fallback: shows the scanned Instagram
+// photo when we have a URL that loads, otherwise the contact's initials. Instagram
+// CDN URLs expire, so `onError` catches dead links and swaps to initials rather
+// than leaving a broken image — this is what makes the preview reliable.
+function Avatar({
+  name,
+  src,
+  size = 32,
+  className = "",
+}: {
+  name: string;
+  src?: string | null;
+  size?: number;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const initials = name.slice(0, 2).toUpperCase();
+  const dims = { width: size, height: size };
+  const base = `shrink-0 rounded-full object-cover ${className}`;
+  if (src && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={name}
+        style={dims}
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
+        className={base}
+      />
+    );
+  }
+  return (
+    <span
+      style={{ ...dims, fontSize: Math.max(9, Math.round(size * 0.34)) }}
+      className={`flex items-center justify-center rounded-full bg-secondary font-semibold text-gray-500 dark:text-gray-400 ${className}`}
+    >
+      {initials}
+    </span>
+  );
+}
+
 const inputCls =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
 const labelCls = "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1";
@@ -336,21 +384,31 @@ function Directory() {
     setCategories(Array.isArray(data?.categories) ? data.categories : []);
   }, []);
 
+  // Print Directory — every contact filed into a tier (across all pages).
+  const [printContacts, setPrintContacts] = useState<ContactRecord[]>([]);
+  const loadPrint = useCallback(async () => {
+    const res = await fetch("/api/contacts?hasPrintTier=true&limit=200");
+    const data = await res.json();
+    const list: ContactRecord[] = Array.isArray(data) ? data : data?.data ?? [];
+    setPrintContacts(list);
+  }, []);
+
   // (Re)load whatever the current view needs. Categories load for the chip row too.
   useEffect(() => {
     let active = true;
     setLoading(true);
     const jobs: Promise<unknown>[] = [];
     if (view === "radar") jobs.push(loadRadar());
+    else if (view === "print") jobs.push(loadPrint());
     else jobs.push(loadContacts());
-    if (view !== "radar") jobs.push(loadCategories());
+    if (view !== "radar" && view !== "print") jobs.push(loadCategories());
     Promise.all(jobs).finally(() => {
       if (active) setLoading(false);
     });
     return () => {
       active = false;
     };
-  }, [view, loadContacts, loadRadar, loadCategories]);
+  }, [view, loadContacts, loadRadar, loadCategories, loadPrint]);
 
   async function saveContact(payload: Partial<ContactRecord>, id?: string) {
     const res = await fetch(id ? `/api/contacts/${id}` : "/api/contacts", {
@@ -455,6 +513,27 @@ function Directory() {
     }
   }
 
+  // File a contact into a Print Directory tier (1/2/3), or unfile when the same
+  // tier is pressed again. Optimistic — updates the row, toasts, then persists.
+  async function fileContact(contact: ContactRecord, tier: number | null) {
+    const next = contact.printTier === tier ? null : tier;
+    const handle = igHandle(contact.instagram);
+    const label = handle ? `@${handle}` : contact.name;
+    setContacts((prev) =>
+      prev.map((c) => (c.id === contact.id ? { ...c, printTier: next } : c))
+    );
+    setPrintContacts((prev) => {
+      const others = prev.filter((c) => c.id !== contact.id);
+      return next ? [...others, { ...contact, printTier: next }] : others;
+    });
+    showToast(next ? `Filed ${label} as Tier ${next}` : `Removed ${label} from Print Directory`);
+    await fetch(`/api/contacts/${contact.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ printTier: next }),
+    });
+  }
+
   // Selection helpers
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -544,6 +623,7 @@ function Directory() {
     { key: "contacts", label: "All Contacts", icon: ContactIcon },
     { key: "scanner", label: "Scanner", icon: ScanLine },
     { key: "network", label: "Network", icon: NetworkIcon },
+    { key: "print", label: "Print Directory", icon: Printer },
     { key: "lighthouse", label: "Lighthouse", icon: Sparkles, href: "/directory/lighthouse" },
     { key: "recent", label: "Recently Added", icon: Clock },
   ];
@@ -551,7 +631,8 @@ function Directory() {
   // The contact list only sorts/filters in "All Contacts" — "Recently Added" is
   // a fixed 30-day recency view.
   const showContactTools = view === "contacts";
-  const isToolView = view === "scanner" || view === "network" || view === "dashboard";
+  const isToolView =
+    view === "scanner" || view === "network" || view === "dashboard" || view === "print";
 
   return (
     <div className="min-h-full px-6 py-8 pb-28">
@@ -571,6 +652,8 @@ function Directory() {
                 ? "Profile Scanner"
                 : view === "network"
                 ? "Collaboration Network"
+                : view === "print"
+                ? "Print Directory"
                 : view === "recent"
                 ? "Recently Added"
                 : "Contact Directory"}
@@ -584,6 +667,8 @@ function Directory() {
                 ? "Scan Instagram profiles to build the directory and map who works with whom."
                 : view === "network"
                 ? "Who's collaborated with whom, mapped from scanned post credits."
+                : view === "print"
+                ? "Your shortlist for the printed directory — file contacts with the 1 / 2 / 3 keys."
                 : view === "recent"
                 ? "Contacts added to the directory in the last 30 days."
                 : "Outlander's network of contacts, collaborators & talent."}
@@ -806,6 +891,13 @@ function Directory() {
             onAdd={() => setAddingRadar(null)}
             onConvert={convertRadar}
           />
+        ) : view === "print" ? (
+          <PrintDirectory
+            contacts={printContacts}
+            onFile={fileContact}
+            onEdit={(c) => setEditing(c)}
+            onBrowse={() => setView("contacts")}
+          />
         ) : (
           <SplitPanel
             contacts={displayedContacts}
@@ -813,6 +905,7 @@ function Directory() {
             onToggleSelect={toggleSelect}
             onToggleFavourite={toggleFavourite}
             onArchive={archiveContact}
+            onFile={fileContact}
             onEdit={(c) => setEditing(c)}
             onAdd={() => setEditing(null)}
           />
@@ -913,6 +1006,7 @@ function SplitPanel({
   onToggleSelect,
   onToggleFavourite,
   onArchive,
+  onFile,
   onEdit,
   onAdd,
 }: {
@@ -921,6 +1015,7 @@ function SplitPanel({
   onToggleSelect: (id: string) => void;
   onToggleFavourite: (c: ContactRecord) => void;
   onArchive: (c: ContactRecord) => void;
+  onFile: (c: ContactRecord, tier: number | null) => void;
   onEdit: (c: ContactRecord) => void;
   onAdd: () => void;
 }) {
@@ -930,6 +1025,8 @@ function SplitPanel({
   const [confirmArchive, setConfirmArchive] = useState<ContactRecord | null>(null);
   // True for a beat after a → favourite so the detail-panel star pops.
   const [favPulse, setFavPulse] = useState(false);
+  // Tier flashed on the active row for a beat after a 1/2/3 filing (0 = none).
+  const [fileFlash, setFileFlash] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Default to (or fall back to) the first contact whenever the list changes.
@@ -945,10 +1042,13 @@ function SplitPanel({
 
   // Keyboard shortcuts (ignored while typing in a field):
   //   ↑ ↓  move the highlight   →  favourite (instant)   ←  archive (confirm)
+  //   1 2 3  file the highlighted contact into a Print Directory tier
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      // Don't hijack browser/OS shortcuts (⌘1 to switch tabs, etc.).
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       // While an archive confirmation is up, Enter confirms, anything else cancels.
       if (confirmArchive) {
@@ -984,11 +1084,19 @@ function SplitPanel({
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         if (current) setConfirmArchive(current);
+      } else if (e.key === "1" || e.key === "2" || e.key === "3") {
+        e.preventDefault();
+        if (current) {
+          const tier = Number(e.key);
+          onFile(current, tier);
+          setFileFlash(tier);
+          window.setTimeout(() => setFileFlash(0), 700);
+        }
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [contacts, activeId, confirmArchive, onArchive, onToggleFavourite]);
+  }, [contacts, activeId, confirmArchive, onArchive, onToggleFavourite, onFile]);
 
   // Auto-dismiss the archive confirmation if it's left unanswered.
   useEffect(() => {
@@ -1034,6 +1142,7 @@ function SplitPanel({
               contact={c}
               active={c.id === active?.id}
               selected={selected.has(c.id)}
+              flashTier={c.id === active?.id ? fileFlash : 0}
               onSelect={() => setActiveId(c.id)}
               onToggleSelect={() => onToggleSelect(c.id)}
               onToggleFavourite={() => onToggleFavourite(c)}
@@ -1048,6 +1157,8 @@ function SplitPanel({
           <span className="text-gray-500 dark:text-gray-400">↑↓</span> Navigate
           <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
           <span className="text-gray-500 dark:text-gray-400">→</span> Favourite
+          <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+          <span className="text-gray-500 dark:text-gray-400">1·2·3</span> File to Print
         </div>
 
         {/* Archive confirmation — brief overlay, Enter to confirm / Esc to cancel. */}
@@ -1102,6 +1213,7 @@ function SplitRow({
   contact: c,
   active,
   selected,
+  flashTier = 0,
   onSelect,
   onToggleSelect,
   onToggleFavourite,
@@ -1109,6 +1221,7 @@ function SplitRow({
   contact: ContactRecord;
   active: boolean;
   selected: boolean;
+  flashTier?: number;
   onSelect: () => void;
   onToggleSelect: () => void;
   onToggleFavourite: () => void;
@@ -1119,16 +1232,14 @@ function SplitRow({
     <div
       data-cid={c.id}
       onClick={onSelect}
-      className={`flex cursor-pointer items-center gap-2.5 border-b border-border px-3 py-2.5 transition-colors ${
+      className={`relative flex cursor-pointer items-center gap-2.5 border-b border-border px-3 py-2.5 transition-colors ${
         active ? "bg-secondary" : "hover:bg-secondary/60"
       }`}
       style={active ? { boxShadow: `inset 3px 0 0 ${ACCENT}` } : undefined}
     >
       <SelectBox selected={selected} onToggle={onToggleSelect} />
       <FavouriteStar favourite={Boolean(c.isFavourite)} onToggle={onToggleFavourite} />
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-        {c.name.slice(0, 2).toUpperCase()}
-      </span>
+      <Avatar name={c.name} src={c.profilePic} size={32} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[15px] font-bold leading-tight text-gray-900 dark:text-gray-100">{c.name}</p>
         <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
@@ -1144,10 +1255,45 @@ function SplitRow({
           )}
         </div>
       </div>
+      {c.printTier ? <PrintTierBadge tier={c.printTier} /> : null}
       <span className="hidden shrink-0 sm:block">
         <CategoryBadge category={c.category} />
       </span>
+      {/* Brief confirmation pill flashed on the active row after a 1/2/3 filing. */}
+      {flashTier > 0 && (
+        <span
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-0.5 text-[11px] font-bold text-black shadow"
+          style={{ backgroundColor: TIER_COLORS[flashTier] }}
+        >
+          Tier {flashTier}
+        </span>
+      )}
     </div>
+  );
+}
+
+// Colours for the three Print Directory tiers — gold, silver, bronze.
+const TIER_COLORS: Record<number, string> = {
+  1: "#f5b301",
+  2: "#9ca3af",
+  3: "#cd7f32",
+};
+const TIER_LABELS: Record<number, string> = {
+  1: "Tier 1 · Definite",
+  2: "Tier 2 · Strong",
+  3: "Tier 3 · Maybe",
+};
+
+// Small pill showing which Print Directory tier a contact is filed in.
+function PrintTierBadge({ tier }: { tier: number }) {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold text-black"
+      style={{ backgroundColor: TIER_COLORS[tier] ?? "#9ca3af" }}
+      title={`Print Directory — ${TIER_LABELS[tier] ?? `Tier ${tier}`}`}
+    >
+      <Printer size={9} /> {tier}
+    </span>
   );
 }
 
@@ -1234,6 +1380,8 @@ function ContactDetailPanel({
 }) {
   const [detail, setDetail] = useState<ContactDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [rescanning, setRescanning] = useState(false);
+  const [rescanError, setRescanError] = useState<string | null>(null);
 
   // Pull the full profile (collaborations, portfolio, etc.) for the selection.
   const id = contact.id;
@@ -1262,6 +1410,61 @@ function ContactDetailPanel({
   const portfolio = c.portfolioLinks ?? [];
   const tags = c.tags ?? [];
   const recentPosts = (c.recentPosts ?? []).filter((p) => p?.imageUrl && p?.shortcode);
+
+  // Scan freshness — prompt a rescan when the profile has an IG handle but the
+  // preview is thin (no pic or no posts) or the last scrape is over 30 days old.
+  const scannedAt = c.scannedAt ? new Date(c.scannedAt) : null;
+  const scanStale =
+    !!handle &&
+    (!c.profilePic ||
+      recentPosts.length === 0 ||
+      !scannedAt ||
+      Date.now() - scannedAt.getTime() > 30 * 24 * 60 * 60 * 1000);
+
+  async function rescan() {
+    if (!handle || rescanning) return;
+    setRescanning(true);
+    setRescanError(null);
+    try {
+      const res = await fetch("/api/directory/scan-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handle }),
+      });
+      const data = await res.json();
+      if (data?.ok) {
+        // Persist the fresh scan (fills empty fields, refreshes pic + posts).
+        await fetch("/api/directory/scan-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contacts: [
+              {
+                handle,
+                name: data.name,
+                bio: data.bio,
+                category: data.category,
+                location: data.location,
+                website: data.website,
+                followers: data.followers,
+                profilePic: data.profilePic,
+                recentPosts: data.recentPosts ?? [],
+                confidence: data.confidence,
+              },
+            ],
+          }),
+        });
+        const r = await fetch(`/api/contacts/${id}`);
+        if (r.ok) setDetail(await r.json());
+      } else {
+        setRescanError(data?.error || "Instagram is blocking this scan — try again later.");
+      }
+    } catch {
+      setRescanError("Rescan failed — check your connection and try again.");
+    } finally {
+      setRescanning(false);
+    }
+  }
 
   return (
     <>
@@ -1297,9 +1500,7 @@ function ContactDetailPanel({
         {/* Identity */}
         <div>
           <div className="flex items-start gap-3">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-gray-500 dark:text-gray-400">
-              {c.name.slice(0, 2).toUpperCase()}
-            </span>
+            <Avatar name={c.name} src={c.profilePic} size={48} />
             <div className="min-w-0 flex-1">
               <h2 className="text-xl font-semibold leading-tight text-gray-900 dark:text-gray-100">{c.name}</h2>
               {(c.role || c.company) && (
@@ -1311,8 +1512,14 @@ function ContactDetailPanel({
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <CategoryBadge category={c.category} />
-            {c.source === "instagram_scan" && c.confidence && (
+            {c.printTier ? <PrintTierBadge tier={c.printTier} /> : null}
+            {(c.source === "instagram_scan" || c.source === "network_scan") && c.confidence && (
               <ConfidenceBadge confidence={c.confidence} />
+            )}
+            {c.source === "network_scan" && c.scanSource && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                <NetworkIcon size={9} /> via @{c.scanSource}
+              </span>
             )}
             {c.rating ? <Stars rating={c.rating} /> : null}
             {c.location && (
@@ -1384,9 +1591,33 @@ function ContactDetailPanel({
             otherwise a tall live embed. */}
         {handle && (
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              Instagram
-            </p>
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Instagram
+              </p>
+              {scanStale && (
+                <button
+                  onClick={rescan}
+                  disabled={rescanning}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 text-[11px] font-semibold text-gray-600 dark:text-gray-400 hover:border-[var(--ring)] hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-50"
+                  title={
+                    scannedAt
+                      ? `Last scanned ${scannedAt.toLocaleDateString()}`
+                      : "Not scanned yet"
+                  }
+                >
+                  {rescanning ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <ScanLine size={11} />
+                  )}
+                  {rescanning ? "Rescanning…" : "Rescan"}
+                </button>
+              )}
+            </div>
+            {rescanError && (
+              <p className="mb-1.5 text-[11px] text-amber-600 dark:text-amber-400">{rescanError}</p>
+            )}
             {recentPosts.length > 0 ? (
               <PostGrid handle={handle} posts={recentPosts} />
             ) : (
@@ -2002,6 +2233,169 @@ function RadarList({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ── Print Directory ─────────────────────────────────────────────────────────────
+// The keyboard-filed shortlist, grouped into the three priority tiers. Contacts
+// land here via the 1/2/3 keys in the contact list; here you can re-tier or
+// remove them, and print the whole shortlist.
+
+function PrintDirectory({
+  contacts,
+  onFile,
+  onEdit,
+  onBrowse,
+}: {
+  contacts: ContactRecord[];
+  onFile: (c: ContactRecord, tier: number | null) => void;
+  onEdit: (c: ContactRecord) => void;
+  onBrowse: () => void;
+}) {
+  const tiers = [1, 2, 3] as const;
+  const byTier = useMemo(() => {
+    const m: Record<number, ContactRecord[]> = { 1: [], 2: [], 3: [] };
+    for (const c of contacts) {
+      if (c.printTier && m[c.printTier]) m[c.printTier].push(c);
+    }
+    for (const t of tiers) {
+      m[t].sort(
+        (a, b) =>
+          (b.printTier ?? 0) - (a.printTier ?? 0) || a.name.localeCompare(b.name)
+      );
+    }
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contacts]);
+
+  if (contacts.length === 0) {
+    return (
+      <EmptyState
+        icon={Printer}
+        title="Nothing filed for print yet"
+        body="Open All Contacts, browse with ↑ ↓, and press 1, 2 or 3 to file a contact into a Print Directory tier. They'll show up here, grouped by priority."
+        action="Browse contacts"
+        onAction={onBrowse}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Summary + print action */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4">
+        <div className="flex flex-wrap items-center gap-4">
+          {tiers.map((t) => (
+            <div key={t} className="flex items-center gap-2">
+              <span
+                className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold text-black"
+                style={{ backgroundColor: TIER_COLORS[t] }}
+              >
+                {t}
+              </span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
+                {byTier[t].length}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{TIER_LABELS[t]}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => window.print()}
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+          style={{ backgroundColor: ACCENT }}
+        >
+          <FileText size={15} /> Print / Export
+        </button>
+      </div>
+
+      {tiers.map((t) => (
+        <div key={t}>
+          <div className="mb-2 flex items-center gap-2">
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold text-black"
+              style={{ backgroundColor: TIER_COLORS[t] }}
+            >
+              {t}
+            </span>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {TIER_LABELS[t]}
+            </h3>
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              {byTier[t].length} contact{byTier[t].length === 1 ? "" : "s"}
+            </span>
+          </div>
+          {byTier[t].length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border bg-card px-4 py-5 text-center text-xs text-gray-400 dark:text-gray-500">
+              Nothing filed here yet — press {t} on a contact to add them.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {byTier[t].map((c) => (
+                <PrintCard key={c.id} contact={c} onFile={onFile} onEdit={onEdit} />
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PrintCard({
+  contact: c,
+  onFile,
+  onEdit,
+}: {
+  contact: ContactRecord;
+  onFile: (c: ContactRecord, tier: number | null) => void;
+  onEdit: (c: ContactRecord) => void;
+}) {
+  const handle = igHandle(c.instagram);
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+      <Avatar name={c.name} src={c.profilePic} size={40} />
+      <div className="min-w-0 flex-1">
+        <button
+          onClick={() => onEdit(c)}
+          className="block truncate text-left text-sm font-semibold text-gray-900 dark:text-gray-100 hover:underline"
+        >
+          {c.name}
+        </button>
+        <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+          {handle ? (
+            <span className="truncate font-semibold text-[#dc2743]">@{handle}</span>
+          ) : (
+            <span className="truncate">{c.role || c.company || c.category}</span>
+          )}
+        </div>
+      </div>
+      {/* Re-tier / remove controls */}
+      <div className="flex shrink-0 items-center gap-1">
+        {[1, 2, 3].map((t) => (
+          <button
+            key={t}
+            onClick={() => onFile(c, t)}
+            title={`Move to ${TIER_LABELS[t]}`}
+            className="flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold transition-transform hover:scale-110"
+            style={
+              c.printTier === t
+                ? { backgroundColor: TIER_COLORS[t], color: "#000" }
+                : { backgroundColor: "var(--secondary)", color: "#9ca3af" }
+            }
+          >
+            {t}
+          </button>
+        ))}
+        <button
+          onClick={() => onFile(c, null)}
+          title="Remove from Print Directory"
+          className="ml-0.5 flex h-6 w-6 items-center justify-center rounded-md text-gray-400 dark:text-gray-500 hover:text-red-500"
+        >
+          <X size={13} />
+        </button>
+      </div>
     </div>
   );
 }
