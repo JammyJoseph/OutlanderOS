@@ -44,6 +44,7 @@ export default async function ClientCallSheetPage({
               id: true,
               title: true,
               clientName: true,
+              figmaUrl: true,
               campaign: { select: { client: { select: { name: true } } } },
               prodDeliverables: {
                 select: { type: true, title: true, notes: true },

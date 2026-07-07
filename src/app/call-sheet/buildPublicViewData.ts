@@ -51,6 +51,7 @@ interface RawSheet {
     id: string;
     title: string;
     clientName: string | null;
+    figmaUrl: string | null;
     campaign: { client: { name: string } } | null;
     prodDeliverables?: { type: string; title: string; notes: string | null }[];
   };
@@ -85,6 +86,7 @@ export function buildPublicViewData(sheet: RawSheet): CallSheetViewData {
       ? { ...emptyShotStyle(), ...(sheet.shotStyle as object) }
       : emptyShotStyle(),
     productionId: sheet.production.id,
+    figmaUrl: sheet.production.figmaUrl ?? null,
     deliverables: (sheet.production.prodDeliverables ?? []).map((d) => ({
       type: d.type,
       title: d.title,

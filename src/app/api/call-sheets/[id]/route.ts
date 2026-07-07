@@ -15,6 +15,8 @@ const productionInclude = {
       status: true,
       // Budget is never surfaced on a call sheet (portal overhaul rule #6).
       clientName: true,
+      // Creative deck / treatment link surfaced on the printed/public sheet.
+      figmaUrl: true,
       campaign: {
         select: {
           title: true,

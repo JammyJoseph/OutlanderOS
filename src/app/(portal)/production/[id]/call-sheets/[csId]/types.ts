@@ -334,6 +334,7 @@ export interface CallSheet {
     id: string;
     title: string;
     clientName: string | null;
+    figmaUrl: string | null;
     campaign: {
       title: string;
       briefContent: string | null;

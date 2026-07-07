@@ -47,6 +47,9 @@ export interface CallSheetViewData {
   locations: CallSheetLocation[];
   shotStyle: ShotStyle;
   productionId?: string;
+  // Creative deck / treatment link on the Production (screen: clickable link;
+  // print: shows the URL as text). Omitted from the sheet when empty.
+  figmaUrl?: string | null;
   // Production deliverables snapshot for the printed/public sheet (the editor
   // manages the live, editable copy in its own section).
   deliverables?: { type: string; title: string; notes: string | null }[];
@@ -174,7 +177,7 @@ export function CallSheetDocument({
 }) {
   const {
     shootTitle, clientName, shootDate, callTime, wrapTime, location, locationLat,
-    locationLng, locations, shotStyle, deliverables, weatherData, schedule,
+    locationLng, locations, shotStyle, deliverables, figmaUrl, weatherData, schedule,
     shotlist, crew, talent, catering, documents,
     notesGeneral, notesSafety, notesParking, header, clientTeam, agencyTeam,
     productionCompany, callTimes, productionMobiles, movementOrder, equipment,
@@ -270,12 +273,8 @@ export function CallSheetDocument({
           .map((c) => ({ time: c.time || "TBC", label: c.department }))
       : derivedTimes;
 
-  // Hero subtitle location: first named stop, else its city-ish address tail.
-  const heroPlace =
-    (stops[0]?.name || "").trim() ||
-    (stops[0]?.address || location.address || "").split(",").pop()?.trim() ||
-    "";
-  const heroBits = [formattedDate, heroPlace, jobNumber ? `Job ${jobNumber}` : ""]
+  // Hero subtitle: date · job number only (location deliberately omitted).
+  const heroBits = [formattedDate, jobNumber ? `Job ${jobNumber}` : ""]
     .filter(Boolean)
     .join(" · ");
 
@@ -301,16 +300,30 @@ export function CallSheetDocument({
       email: t0.email,
     });
 
+  // People already surfaced in Shoot Details (Exec Producer / Producer /
+  // Creative / Talent) must not repeat in the Contacts — Crew / Talent table.
+  // Match on name or email; Shoot Details takes priority.
+  const norm = (s?: string) => (s || "").trim().toLowerCase();
+  const shownNames = new Set(
+    [productionCompany.execProducer, productionCompany.producer, creative?.name, t0?.name]
+      .map(norm)
+      .filter(Boolean)
+  );
+  const shownEmails = new Set(
+    [creative?.email, t0?.email].map(norm).filter(Boolean)
+  );
+  const contactCrew = crew.filter(
+    (c) =>
+      (c.role || c.name) &&
+      !shownNames.has(norm(c.name)) &&
+      !(c.email && shownEmails.has(norm(c.email)))
+  );
+
   const facts: [string, string][] = [];
   if (clientName) facts.push(["Client", clientName]);
   if (jobNumber) facts.push(["Job Number", jobNumber]);
   if (formattedDate) facts.push(["Shoot Date", formattedDate]);
-  facts.push([
-    "Production Co.",
-    [productionCompany.name || companyName, productionCompany.address]
-      .filter(Boolean)
-      .join(", "),
-  ]);
+  facts.push(["Production Co.", productionCompany.name || companyName]);
 
   const weatherSummary = weatherLine(weatherData, shootDate);
   const welfareSummary = welfareLine(weatherData, notesSafety);
@@ -432,6 +445,21 @@ export function CallSheetDocument({
               {facts.map(([label, value], i) => (
                 <OverviewRow key={i} label={label} value={value} />
               ))}
+              {figmaUrl && figmaUrl.trim() && (
+                <OverviewRow
+                  label="Creative Deck"
+                  value={
+                    <a
+                      href={figmaUrl.trim().startsWith("http") ? figmaUrl.trim() : `https://${figmaUrl.trim()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: TEXT, textDecoration: "underline", wordBreak: "break-all" }}
+                    >
+                      {figmaUrl.trim()}
+                    </a>
+                  }
+                />
+              )}
             </div>
             <div>
               {people.length === 0 ? (
@@ -586,7 +614,7 @@ export function CallSheetDocument({
         )}
 
         {/* ── Contacts — crew / talent ── */}
-        {show("crew") && crew.some((c) => c.role || c.name) && (
+        {show("crew") && contactCrew.length > 0 && (
           <Section title="Contacts — Crew / Talent">
             <GridTable
               columns={[
@@ -595,8 +623,7 @@ export function CallSheetDocument({
                 { label: "Phone", width: "24%" },
                 { label: "Email", width: "24%" },
               ]}
-              rows={crew
-                .filter((c) => c.role || c.name)
+              rows={contactCrew
                 .map((c) => [
                   c.role,
                   <Bold key="n">{c.name}</Bold>,

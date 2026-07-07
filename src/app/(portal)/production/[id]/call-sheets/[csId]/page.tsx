@@ -370,6 +370,7 @@ export default function CallSheetPage() {
     clientName: sheet?.production.campaign?.client?.name || sheet?.production.clientName || "",
     productionTitle: sheet?.production.title || "",
     productionId: sheet?.production.id || "",
+    figmaUrl: sheet?.production.figmaUrl || null,
   };
 
   if (loading) {
