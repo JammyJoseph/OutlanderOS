@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Save, Send, Loader2, Check, Link2,
+  ArrowLeft, Loader2, Check, Edit2, Share2, X,
+  FileDown, MessageSquareText, Users, Briefcase,
 } from "lucide-react";
 import type {
   AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallSheetLocation,
   CallSheetStatus, CallTimeRow, CateringDetails, ClientTeamMember, CrewMember,
-  DistributionEntry, EquipmentInfo, LocationData, MovementOrder,
+  EquipmentInfo, LocationData, MovementOrder,
   ProductionCompanyInfo, ProductionMobile, ScheduleItem, Shot, ShotStyle,
   TalentMember, WeatherData,
 } from "./types";
@@ -18,15 +19,22 @@ import {
   emptyMovementOrder, emptyProductionCompany, emptyShotStyle, migrateCatering,
 } from "./types";
 import { CallSheetEditor } from "./CallSheetEditor";
-import type { CallSheetViewData } from "./CallSheetDocument";
-import { FinalView } from "./FinalView";
-import { ExportPanel } from "./ExportPanel";
+import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
+import { generateSMSSummary } from "./smsSummary";
 
 const STATUS_BADGES: Record<CallSheetStatus, { cls: string; label: string }> = {
   DRAFT: { cls: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400", label: "Draft" },
   SAVED: { cls: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300", label: "Saved" },
   PUBLISHED: { cls: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300", label: "Published" },
 };
+
+// Two modes, full stop:
+//   editor  — fill in the call sheet. One button, "Finish", which saves +
+//             publishes and drops you into the preview.
+//   preview — the live CallSheetDocument exactly as it will be shared. Two
+//             buttons: "Back to Editor" and "Share" (opens the share popup).
+// The share popup is a plain overlay on top of the preview — no separate page.
+type Mode = "editor" | "preview";
 
 export default function CallSheetPage() {
   const { id, csId } = useParams<{ id: string; csId: string }>();
@@ -36,10 +44,8 @@ export default function CallSheetPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [autoSavedAt, setAutoSavedAt] = useState<string | null>(null);
-  // Two modes only: the editor, and the distribution portal reached via
-  // Save & Export.
-  const [mode, setMode] = useState<"editor" | "export">("editor");
-  const [copied, setCopied] = useState(false);
+  const [mode, setMode] = useState<Mode>("editor");
+  const [showShare, setShowShare] = useState(false);
   // Snapshot of the production deliverables so they render on the preview /
   // printed / PDF call sheet (the editor keeps the live, editable copy). The
   // public share views fetch these server-side; the in-app views need them here.
@@ -141,6 +147,9 @@ export default function CallSheetPage() {
         if (!d.sheet) return;
         const s: CallSheet = d.sheet;
         setSheet(s);
+        // A sheet that's already published loads straight into the preview;
+        // everything else opens in the editor.
+        setMode(s.status === "PUBLISHED" ? "preview" : "editor");
         setShootTitle(s.shootTitle || s.production.title);
         setShootDate(s.shootDate.split("T")[0]);
         setCallTime(s.callTime || "08:00");
@@ -239,13 +248,9 @@ export default function CallSheetPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...payload,
-            // Auto-save keeps the current lifecycle stage; manual save promotes
-            // a fresh draft to SAVED.
-            ...(newStatus
-              ? { status: newStatus }
-              : opts?.auto
-              ? {}
-              : { status: undefined }),
+            // Auto-save keeps the current lifecycle stage; an explicit status
+            // (Finish → PUBLISHED, Back to Editor → SAVED) promotes it.
+            ...(newStatus ? { status: newStatus } : {}),
           }),
         });
         const data = await res.json();
@@ -270,17 +275,20 @@ export default function CallSheetPage() {
     [csId]
   );
 
-  async function manualSave() {
-    const next = sheet?.status === "DRAFT" ? "SAVED" : sheet?.status;
-    await saveSheet(next as CallSheetStatus | undefined);
+  // "Finish" — persist the sheet and publish it (publishing mints the crew +
+  // client share tokens so the links resolve), then show the preview.
+  async function finish() {
+    const updated = await saveSheet("PUBLISHED");
+    if (updated) setMode("preview");
   }
 
-  // Step 3 of the flow. Persist the sheet and publish it so the public share
-  // links resolve (publishing mints the crew + client tokens if missing), then
-  // drop into the export panel.
-  async function saveAndExport() {
-    const updated = await saveSheet("PUBLISHED");
-    if (updated) setMode("export");
+  // "Back to Editor" — drop the sheet back to SAVED (so it's no longer live and
+  // auto-save resumes) and return to the editing interface.
+  async function backToEditor() {
+    if (sheet && sheet.status === "PUBLISHED") {
+      await saveSheet("SAVED");
+    }
+    setMode("editor");
   }
 
   // Auto-save: every 30s, persist quietly if the payload changed.
@@ -295,11 +303,11 @@ export default function CallSheetPage() {
     return () => clearInterval(interval);
   }, [sheet, saving, saveSheet]);
 
-  // On entering the export panel, make sure both share tokens exist. Save &
-  // Export mints them via publish, but a sheet published before the client
-  // token existed can arrive here missing one — top it up on demand.
+  // Entering the preview, make sure both share tokens exist. Finish mints them
+  // via publish, but a sheet published before the client token existed can
+  // arrive here missing one — top it up on demand.
   useEffect(() => {
-    if (mode !== "export" || !sheet) return;
+    if (mode !== "preview" || !sheet) return;
     if (sheet.shareToken && sheet.clientShareToken) return;
     fetch(`/api/call-sheets/${csId}`, {
       method: "PUT",
@@ -318,25 +326,6 @@ export default function CallSheetPage() {
       .catch(() => {});
   }, [mode, sheet, csId]);
 
-  async function revertToEditor() {
-    if (!sheet) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/call-sheets/${csId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "SAVED" }),
-      });
-      const data = await res.json();
-      if (data.sheet) {
-        setSheet((prev) => (prev ? { ...prev, status: "SAVED" } : prev));
-        setMode("editor");
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
-
   // Persist crew into the Directory with this production tagged as a credit.
   async function syncDirectory() {
     await fetch(`/api/call-sheets/${csId}/sync-directory`, {
@@ -344,31 +333,6 @@ export default function CallSheetPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ crew: stateRef.current.crew }),
     });
-  }
-
-  async function saveDistributions(distributions: DistributionEntry[]) {
-    const res = await fetch(`/api/call-sheets/${csId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ distributions }),
-    });
-    const data = await res.json();
-    if (data.sheet) {
-      setSheet((prev) => (prev ? { ...prev, distributions: data.sheet.distributions } : prev));
-    }
-  }
-
-  function shareUrl(): string | null {
-    if (!sheet?.shareToken) return null;
-    return `${window.location.origin}/call-sheet/${sheet.shareToken}`;
-  }
-
-  function copyShareLink() {
-    const url = shareUrl();
-    if (!url) return;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   }
 
   const viewData: CallSheetViewData = {
@@ -407,30 +371,12 @@ export default function CallSheetPage() {
     );
   }
 
-  // A published sheet lands on the FinalView home (distribution tracking, share
-  // modal, PDF). Stepping into the export panel or re-previewing keeps us in the
-  // mode-driven flow below.
-  if (sheet.status === "PUBLISHED" && mode === "editor") {
-    return (
-      <FinalView
-        productionTitle={sheet.production.title}
-        productionId={id}
-        sheet={sheet}
-        viewData={viewData}
-        onRevert={revertToEditor}
-        onExport={() => setMode("export")}
-        saving={saving}
-        onSaveDistributions={saveDistributions}
-      />
-    );
-  }
-
   const badge = STATUS_BADGES[sheet.status];
 
   return (
-    <div className="min-h-screen bg-card" data-callsheet-print>
+    <div className="min-h-screen bg-card print:bg-white" data-callsheet-print>
       <div className="max-w-4xl mx-auto px-6 py-10 print:px-0 print:py-0 print:max-w-none">
-        {/* Top bar — actions vary by step in the flow */}
+        {/* Top bar — actions vary by mode */}
         <div className="flex items-center justify-between mb-6 print:hidden">
           <Link
             href={`/production/${id}`}
@@ -440,7 +386,7 @@ export default function CallSheetPage() {
             {sheet.production.title}
           </Link>
           <div className="flex items-center gap-2">
-            {mode === "editor" && (
+            {mode === "editor" ? (
               <>
                 {saved && (
                   <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
@@ -450,101 +396,259 @@ export default function CallSheetPage() {
                 {!saved && autoSavedAt && (
                   <span className="text-xs text-gray-400 dark:text-gray-500">Auto-saved {autoSavedAt}</span>
                 )}
-                {sheet.shareToken && (
-                  <button
-                    onClick={copyShareLink}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    {copied ? <Check size={13} className="text-emerald-600 dark:text-emerald-400" /> : <Link2 size={13} />}
-                    {copied ? "Copied!" : "Copy share link"}
-                  </button>
-                )}
                 <button
-                  onClick={manualSave}
-                  disabled={saving}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-60"
-                >
-                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                  Save
-                </button>
-                <button
-                  onClick={saveAndExport}
+                  onClick={finish}
                   disabled={saving}
                   className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-5 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60 shadow-sm"
                 >
-                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                  Save &amp; Export
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                  Finish
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={backToEditor}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-60"
+                >
+                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Edit2 size={13} />}
+                  Back to Editor
+                </button>
+                <button
+                  onClick={() => setShowShare(true)}
+                  className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-5 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <Share2 size={14} /> Share
                 </button>
               </>
             )}
           </div>
         </div>
 
-        {/* Title / status — editor only (the portal renders its own heading) */}
         {mode === "editor" && (
-          <div className="mb-6 print:hidden">
-            <input
-              type="text"
-              value={shootTitle}
-              onChange={(e) => setShootTitle(e.target.value)}
-              placeholder="Shoot Title"
-              className="text-2xl font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none w-full placeholder-gray-300 dark:placeholder-gray-600 tracking-tight"
-            />
-            <div className="flex items-center gap-3 mt-1">
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
-                {badge.label}
-              </span>
-              {sheet.production.campaign?.client?.name && (
-                <span className="text-xs text-gray-400 dark:text-gray-500">
-                  {sheet.production.campaign.client.name}
+          <>
+            {/* Title / status */}
+            <div className="mb-6 print:hidden">
+              <input
+                type="text"
+                value={shootTitle}
+                onChange={(e) => setShootTitle(e.target.value)}
+                placeholder="Shoot Title"
+                className="text-2xl font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none w-full placeholder-gray-300 dark:placeholder-gray-600 tracking-tight"
+              />
+              <div className="flex items-center gap-3 mt-1">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
+                  {badge.label}
                 </span>
-              )}
+                {sheet.production.campaign?.client?.name && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {sheet.production.campaign.client.name}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+
+            <div className="print:hidden">
+              <CallSheetEditor
+                shootDate={shootDate} setShootDate={setShootDate}
+                callTime={callTime} setCallTime={setCallTime}
+                wrapTime={wrapTime} setWrapTime={setWrapTime}
+                schedule={schedule} setSchedule={setSchedule}
+                locations={locations} setLocations={setLocations}
+                locationLat={locationLat} locationLng={locationLng} setCoords={setCoords}
+                weatherData={weatherData} setWeatherData={setWeatherData}
+                shotlist={shotlist} setShotlist={setShotlist}
+                shotStyle={shotStyle} setShotStyle={setShotStyle}
+                crew={crew} setCrew={setCrew}
+                talent={talent} setTalent={setTalent}
+                catering={catering} setCatering={setCatering}
+                documents={documents} setDocuments={setDocuments}
+                notesGeneral={notesGeneral} setNotesGeneral={setNotesGeneral}
+                notesSafety={notesSafety} setNotesSafety={setNotesSafety}
+                notesParking={notesParking} setNotesParking={setNotesParking}
+                header={header} setHeader={setHeader}
+                clientTeam={clientTeam} setClientTeam={setClientTeam}
+                agencyTeam={agencyTeam} setAgencyTeam={setAgencyTeam}
+                productionCompany={productionCompany} setProductionCompany={setProductionCompany}
+                callTimes={callTimes} setCallTimes={setCallTimes}
+                productionMobiles={productionMobiles} setProductionMobiles={setProductionMobiles}
+                movementOrder={movementOrder} setMovementOrder={setMovementOrder}
+                equipment={equipment} setEquipment={setEquipment}
+                production={sheet.production}
+                onSyncDirectory={syncDirectory}
+              />
+            </div>
+          </>
         )}
 
-        {mode === "editor" && (
-          <div className="print:hidden">
-            <CallSheetEditor
-              shootDate={shootDate} setShootDate={setShootDate}
-              callTime={callTime} setCallTime={setCallTime}
-              wrapTime={wrapTime} setWrapTime={setWrapTime}
-              schedule={schedule} setSchedule={setSchedule}
-              locations={locations} setLocations={setLocations}
-              locationLat={locationLat} locationLng={locationLng} setCoords={setCoords}
-              weatherData={weatherData} setWeatherData={setWeatherData}
-              shotlist={shotlist} setShotlist={setShotlist}
-              shotStyle={shotStyle} setShotStyle={setShotStyle}
-              crew={crew} setCrew={setCrew}
-              talent={talent} setTalent={setTalent}
-              catering={catering} setCatering={setCatering}
-              documents={documents} setDocuments={setDocuments}
-              notesGeneral={notesGeneral} setNotesGeneral={setNotesGeneral}
-              notesSafety={notesSafety} setNotesSafety={setNotesSafety}
-              notesParking={notesParking} setNotesParking={setNotesParking}
-              header={header} setHeader={setHeader}
-              clientTeam={clientTeam} setClientTeam={setClientTeam}
-              agencyTeam={agencyTeam} setAgencyTeam={setAgencyTeam}
-              productionCompany={productionCompany} setProductionCompany={setProductionCompany}
-              callTimes={callTimes} setCallTimes={setCallTimes}
-              productionMobiles={productionMobiles} setProductionMobiles={setProductionMobiles}
-              movementOrder={movementOrder} setMovementOrder={setMovementOrder}
-              equipment={equipment} setEquipment={setEquipment}
-              production={sheet.production}
-              onSyncDirectory={syncDirectory}
-            />
-          </div>
-        )}
+        {/* Preview — the live document, exactly as it will be shared / printed.
+            What you see here IS the PDF (window.print captures this node). */}
+        {mode === "preview" && <CallSheetDocument data={viewData} />}
+      </div>
 
-        {mode === "export" && (
-          <ExportPanel
-            data={viewData}
-            shareToken={sheet.shareToken}
-            clientShareToken={sheet.clientShareToken}
-            onBackToEditor={() => setMode("editor")}
+      {showShare && (
+        <ShareModal
+          data={viewData}
+          shareToken={sheet.shareToken}
+          clientShareToken={sheet.clientShareToken}
+          onClose={() => setShowShare(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Share popup ───────────────────────────────────────────────────────────────
+// Plain overlay on top of the preview. Download PDF, copy the SMS summary, and
+// copy the two share links. Click outside or the X to dismiss.
+type CopyKey = "sms" | "team" | "client";
+
+function ShareModal({
+  data,
+  shareToken,
+  clientShareToken,
+  onClose,
+}: {
+  data: CallSheetViewData;
+  shareToken: string | null;
+  clientShareToken: string | null;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState<CopyKey | null>(null);
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const teamUrl = shareToken ? `${origin}/call-sheet/${shareToken}` : "";
+  const clientUrl = clientShareToken ? `${origin}/call-sheet/client/${clientShareToken}` : "";
+
+  function copyText(text: string, key: CopyKey) {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied((c) => (c === key ? null : c)), 2000);
+  }
+
+  // Close the popup first so it never lands in the printout, then print the
+  // preview (the CallSheetDocument) underneath.
+  function downloadPdf() {
+    onClose();
+    setTimeout(() => window.print(), 60);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 print:hidden"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Share call sheet</h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-2.5">
+          <ShareRow
+            icon={<FileDown size={16} />}
+            title="Download PDF"
+            subtitle="Print the call sheet exactly as previewed"
+            onClick={downloadPdf}
           />
-        )}
+          <ShareRow
+            icon={<MessageSquareText size={16} />}
+            title="Copy SMS summary"
+            subtitle={copied === "sms" ? "Copied to clipboard" : "Short text roundup with the team link"}
+            active={copied === "sms"}
+            onClick={() => copyText(generateSMSSummary(data, teamUrl || null), "sms")}
+          />
+          <ShareRow
+            icon={<Users size={16} />}
+            title="Team link"
+            subtitle={
+              copied === "team"
+                ? "Copied to clipboard"
+                : teamUrl
+                ? "Full details — crew contacts, talent, deliverables"
+                : "Publish the sheet to generate this link"
+            }
+            active={copied === "team"}
+            disabled={!teamUrl}
+            onClick={() => copyText(teamUrl, "team")}
+          />
+          <ShareRow
+            icon={<Briefcase size={16} />}
+            title="Client link"
+            subtitle={
+              copied === "client"
+                ? "Copied to clipboard"
+                : clientUrl
+                ? "Contact numbers hidden (agency contacts stay visible)"
+                : "Publish the sheet to generate this link"
+            }
+            active={copied === "client"}
+            disabled={!clientUrl}
+            onClick={() => copyText(clientUrl, "client")}
+          />
+        </div>
+
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
+  );
+}
+
+function ShareRow({
+  icon,
+  title,
+  subtitle,
+  onClick,
+  active,
+  disabled,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center gap-3 w-full text-left p-3 rounded-xl border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+        active
+          ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20"
+          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+      }`}
+    >
+      <span className={`shrink-0 ${active ? "text-emerald-600 dark:text-emerald-400" : "text-[#A93B2E]"}`}>
+        {active ? <Check size={16} /> : icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</span>
+        <span
+          className={`block text-xs mt-0.5 ${
+            active ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
+          {subtitle}
+        </span>
+      </span>
+    </button>
   );
 }

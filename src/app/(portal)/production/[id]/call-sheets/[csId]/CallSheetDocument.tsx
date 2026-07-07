@@ -25,13 +25,14 @@ import { RouteMap } from "./RouteMap";
 // form — every element earns its place. Type is deliberately lean: a ~26px
 // serif hero, 11px tracked grey section labels, 13px body, 14px bold times —
 // no giant call-time boxes, so the whole sheet reads as one document. Every
-// information section is a consistent grid of hairline-ruled rows. The Outlander
-// gold asterisk appears as a subtle accent. Colours are baked into inline styles
-// with print-color-adjust so the sheet prints clean. Interactive CTAs (Maps /
-// Waze, Open full route, Download GPX, Call / Email) are screen-only and hidden
-// in print via the `cs-noprint` class + the scoped <style> block. The one map on
-// the sheet is a single static route image in the movement order — there are no
-// per-location maps. The interactive editor is a separate concern and unchanged.
+// information section is a consistent grid of hairline-ruled rows. Colours are
+// baked into inline styles with print-color-adjust so the sheet prints clean.
+// The PDF is a faithful copy of this preview: everything on screen — including
+// the Maps / Waze / route links and tap-to-call / email links — also prints, so
+// what you see is what gets shared (the links appear as text/clickable anchors,
+// useful even in a PDF). The one map on the sheet is a single static route image
+// in the movement order — there are no per-location maps. The interactive editor
+// is a separate concern and unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CallSheetViewData {
@@ -353,11 +354,11 @@ export function CallSheetDocument({
 
   return (
     <div ref={docRef} className="cs-doc" style={docStyle}>
-      {/* Scoped print + reset rules. Keeps the light theme in print and hides
-          the screen-only CTAs. */}
+      {/* Scoped print + reset rules. Keeps the light theme in print. The PDF is
+          a faithful copy of the on-screen preview — nothing is hidden in print,
+          so the Maps / Waze / route and call / email links print as text too. */}
       <style>{`
         @media print {
-          .cs-noprint { display: none !important; }
           body:has(.cs-doc) { background: ${BG} !important; }
           /* @page size is set dynamically from the measured content height by a
              ResizeObserver (see the effect above) so the sheet prints as one
@@ -552,10 +553,7 @@ export function CallSheetDocument({
             {showRouteMap && (
               <div style={{ marginTop: "16px" }}>
                 <RouteMap stops={stops} />
-                <div
-                  className="cs-noprint"
-                  style={{ display: "flex", gap: "18px", marginTop: "8px" }}
-                >
+                <div style={{ display: "flex", gap: "18px", marginTop: "8px" }}>
                   {routeUrl && (
                     <a href={routeUrl} target="_blank" rel="noopener noreferrer" style={ctaLinkStyle}>
                       Open full route
@@ -1109,7 +1107,7 @@ function OverviewRow({
 function QuickLinks({ phone, email }: { phone?: string; email?: string }) {
   if (!phone && !email) return null;
   return (
-    <span className="cs-noprint" style={{ display: "inline-flex", gap: "10px" }}>
+    <span style={{ display: "inline-flex", gap: "10px" }}>
       {phone && (
         <a href={`tel:${phone.replace(/\s+/g, "")}`} style={{ ...ctaLinkStyle, fontSize: "8px" }}>
           Call
@@ -1316,7 +1314,6 @@ function AddressCell({ loc }: { loc: CallSheetLocation }) {
       <span>{addressLine || "—"}</span>
       {(gmaps || waze) && (
         <span
-          className="cs-noprint"
           style={{ display: "inline-flex", gap: "10px", marginLeft: "10px", whiteSpace: "nowrap" }}
         >
           {gmaps && (
