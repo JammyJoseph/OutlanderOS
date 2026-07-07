@@ -1755,6 +1755,11 @@ function PostGrid({
             alt={p.caption?.slice(0, 80) || `Post by @${handle}`}
             loading="lazy"
             referrerPolicy="no-referrer"
+            onError={(e) => {
+              // IG CDN thumbnails expire — hide the broken image so the tile just
+              // shows its neutral background rather than a broken-image icon.
+              e.currentTarget.style.display = "none";
+            }}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-opacity group-hover:bg-black/30 group-hover:opacity-100">
@@ -1872,19 +1877,7 @@ function HottestCreatives() {
                 >
                   {rank}
                 </span>
-                {c.profilePic ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={c.profilePic}
-                    alt={c.name}
-                    referrerPolicy="no-referrer"
-                    className="h-7 w-7 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-gray-500 dark:text-gray-400">
-                    {c.name.slice(0, 2).toUpperCase()}
-                  </span>
-                )}
+                <Avatar name={c.name} src={c.profilePic} size={28} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                   {c.name}
                 </span>
@@ -2060,19 +2053,7 @@ function Dashboard({
                   href={`/directory/${c.id}`}
                   className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2 transition-colors hover:border-[var(--ring)]"
                 >
-                  {c.profilePic ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={c.profilePic}
-                      alt={c.name}
-                      referrerPolicy="no-referrer"
-                      className="h-9 w-9 shrink-0 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                      {c.name.slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
+                  <Avatar name={c.name} src={c.profilePic} size={36} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{c.name}</p>
                     {handle && (
@@ -2353,6 +2334,7 @@ function PrintCard({
   onEdit: (c: ContactRecord) => void;
 }) {
   const handle = igHandle(c.instagram);
+  const followers = fmtFollowers(c.followers);
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
       <Avatar name={c.name} src={c.profilePic} size={40} />
@@ -2363,12 +2345,18 @@ function PrintCard({
         >
           {c.name}
         </button>
-        <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
           {handle ? (
             <span className="truncate font-semibold text-[#dc2743]">@{handle}</span>
-          ) : (
-            <span className="truncate">{c.role || c.company || c.category}</span>
+          ) : c.role || c.company ? (
+            <span className="truncate">{c.role || c.company}</span>
+          ) : null}
+          {followers && (
+            <span className="inline-flex shrink-0 items-center gap-0.5" title="Followers">
+              <Users size={10} /> {followers}
+            </span>
           )}
+          <CategoryBadge category={c.category} />
         </div>
       </div>
       {/* Re-tier / remove controls */}

@@ -26,6 +26,7 @@ import {
   ScanLine,
   Network,
   Sparkles,
+  Printer,
 } from "lucide-react";
 
 type NavItem = {
@@ -78,6 +79,7 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "All Contacts", href: "/directory?view=contacts", icon: Contact },
       { label: "Scanner", href: "/directory?view=scanner", icon: ScanLine },
       { label: "Network", href: "/directory?view=network", icon: Network },
+      { label: "Print Directory", href: "/directory?view=print", icon: Printer },
       { label: "Lighthouse", href: "/directory/lighthouse", icon: Sparkles },
       { label: "Leaderboard", href: "/directory/leaderboard", icon: Trophy },
       { label: "Recently Added", href: "/directory?view=recent", icon: Clock },
