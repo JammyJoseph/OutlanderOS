@@ -33,7 +33,6 @@ import {
   startOfDay,
 } from "date-fns";
 import DashboardCalendar from "./_components/DashboardCalendar";
-import CateringWidget from "./_components/CateringWidget";
 import { billingTheme } from "./_components/billing";
 
 type ProductionStatus =
@@ -431,9 +430,8 @@ export default function ProductionDashboard() {
               />
             </div>
 
-            {/* Catering readiness + upcoming shoots */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
-              <CateringWidget />
+            {/* Upcoming shoots */}
+            <div className="mb-8">
               <UpcomingList productions={list} />
             </div>
 

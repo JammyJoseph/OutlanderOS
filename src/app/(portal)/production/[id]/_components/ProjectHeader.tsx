@@ -82,8 +82,8 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
               </button>
               {showStatus && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowStatus(false)} />
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden w-48 py-1">
+                  <div className="fixed inset-0 z-40" onClick={() => setShowStatus(false)} />
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg z-50 overflow-hidden w-48 py-1">
                     {(STATUS_OPTIONS ?? []).map((s: ProductionStatus) => {
                       const st = PRODUCTION_STATUS_STYLES[s];
                       return (
