@@ -504,6 +504,39 @@ export default function CallSheetPage() {
 // copy the two share links. Click outside or the X to dismiss.
 type CopyKey = "sms" | "team" | "client";
 
+// Copy text to the clipboard across environments. Prefers the async Clipboard
+// API (HTTPS / secure context), falls back to a hidden textarea + execCommand
+// so it still works when navigator.clipboard is unavailable. Never throws.
+function copyToClipboard(text: string): void {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+      return;
+    }
+  } catch {
+    /* fall through to the textarea path */
+  }
+  fallbackCopy(text);
+}
+
+function fallbackCopy(text: string): void {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  } catch {
+    /* nothing more we can do — feedback still shows optimistically */
+  }
+}
+
 function ShareModal({
   data,
   shareToken,
@@ -523,7 +556,11 @@ function ShareModal({
 
   function copyText(text: string, key: CopyKey) {
     if (!text) return;
-    navigator.clipboard.writeText(text);
+    // copyToClipboard is resilient: it uses the async Clipboard API when it's
+    // available in a secure context, and falls back to execCommand otherwise
+    // (some proxied / non-HTTPS setups leave navigator.clipboard undefined,
+    // which used to throw here and silently kill the whole handler).
+    copyToClipboard(text);
     setCopied(key);
     setTimeout(() => setCopied((c) => (c === key ? null : c)), 2000);
   }
