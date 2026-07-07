@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import {
   Film,
   Plus,
@@ -15,8 +15,12 @@ import {
   Clock,
   AlertCircle,
   Archive,
+  Search,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { isValidUrl } from "@/lib/validation";
 import {
   format,
@@ -215,7 +219,37 @@ function countdownTone(date: Date): { bg: string; text: string } {
   return { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400" };
 }
 
-export default function ProductionDashboard() {
+// The Production portal is a single route (/production) that swaps its main
+// content off the `view` query param, driven by the sidebar:
+//   • (none)          → Overview dashboard
+//   • ?view=projects  → filterable/sortable project list
+//   • ?view=calendar  → full production calendar
+// useSearchParams() requires a Suspense boundary, hence the thin wrapper.
+export default function ProductionPage() {
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <ProductionInner />
+    </Suspense>
+  );
+}
+
+function PageLoading() {
+  return (
+    <div className="min-h-screen bg-card">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-center py-24">
+          <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductionInner() {
+  const searchParams = useSearchParams();
+  const view = searchParams.get("view"); // null → overview | "projects" | "calendar"
+  const isOverview = view !== "projects" && view !== "calendar";
+
   const [allProductions, setAllProductions] = useState<Production[]>([]);
   const [creativeDeals, setCreativeDeals] = useState<CreativeDeal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -223,11 +257,13 @@ export default function ProductionDashboard() {
   const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
-    fetch(showArchived ? "/api/productions?includeArchived=true" : "/api/productions")
+    // Always pull archived rows: the Projects list has its own Archived filter
+    // tab, and the Overview reveals them behind a toggle — no refetch needed.
+    fetch("/api/productions?includeArchived=true")
       .then((r) => r.json())
       .then((d) => setAllProductions(d.productions ?? []))
       .finally(() => setLoading(false));
-  }, [showArchived]);
+  }, []);
 
   useEffect(() => {
     fetch("/api/production/creative-pipeline")
@@ -245,8 +281,6 @@ export default function ProductionDashboard() {
     () => allProductions.filter((p) => p.archived),
     [allProductions]
   );
-
-  const today = startOfDay(new Date());
 
   // Quick-complete a milestone/task from the calendar. Optimistic local update,
   // then persist. On failure the next dashboard load re-syncs.
@@ -280,6 +314,113 @@ export default function ProductionDashboard() {
       // ignore — optimistic; refetch on next mount corrects any drift
     }
   }
+
+  const subtitle =
+    view === "projects"
+      ? "all projects"
+      : view === "calendar"
+      ? "production calendar"
+      : "live overview";
+
+  return (
+    <div className="min-h-screen bg-card">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Page header */}
+        <div className="flex items-end justify-between mb-7">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#A93B2E]">
+              OutlanderOS · Production
+            </p>
+            <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
+              Production Studio
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+              {productions.length} project{productions.length !== 1 ? "s" : ""} · {subtitle}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isOverview && (
+              <button
+                onClick={() => setShowArchived((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-xl border bg-white dark:bg-gray-900 px-3 py-2.5 text-sm transition-colors ${
+                  showArchived
+                    ? "border-gray-400 dark:border-gray-500 text-gray-700 dark:text-gray-300 font-medium"
+                    : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
+                }`}
+                title={showArchived ? "Hide archived projects" : "Show archived projects"}
+              >
+                <Archive size={14} className="text-gray-400 dark:text-gray-500" />
+                {showArchived ? "Showing archived" : "Archived"}
+              </button>
+            )}
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors shadow-sm"
+            >
+              <Plus size={16} />
+              New Project
+            </button>
+          </div>
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-24">
+            <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
+          </div>
+        )}
+
+        {!loading && view === "projects" && (
+          <ProjectsListView productions={allProductions} />
+        )}
+
+        {!loading && view === "calendar" && (
+          <CalendarView productions={productions} onToggleDone={toggleMilestoneDone} />
+        )}
+
+        {!loading && isOverview && (
+          <OverviewView
+            productions={productions}
+            archivedProjects={archivedProjects}
+            creativeDeals={creativeDeals}
+            showArchived={showArchived}
+            onToggleDone={toggleMilestoneDone}
+            onCreate={() => setShowCreate(true)}
+          />
+        )}
+      </div>
+
+      {showCreate && (
+        <CreateProjectModal
+          onClose={() => setShowCreate(false)}
+          onCreated={(p) => {
+            setAllProductions((prev) => [p, ...prev]);
+            setShowCreate(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Overview view — the default dashboard ──────────────────────────────────
+
+function OverviewView({
+  productions,
+  archivedProjects,
+  creativeDeals,
+  showArchived,
+  onToggleDone,
+  onCreate,
+}: {
+  productions: Production[];
+  archivedProjects: Production[];
+  creativeDeals: CreativeDeal[];
+  showArchived: boolean;
+  onToggleDone: (productionId: string, milestoneId: string, done: boolean) => void;
+  onCreate: () => void;
+}) {
+  const today = startOfDay(new Date());
 
   // Dashboard stats
   const stats = useMemo(() => {
@@ -317,207 +458,445 @@ export default function ProductionDashboard() {
   const archived = list.filter((p) => ["DELIVERED", "ARCHIVED"].includes(p.status));
 
   return (
-    <div className="min-h-screen bg-card">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Page header */}
-        <div className="flex items-end justify-between mb-7">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#A93B2E]">
-              OutlanderOS · Production
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
-              Production Studio
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-              {list.length} project{list.length !== 1 ? "s" : ""} · live overview
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowArchived((v) => !v)}
-              className={`flex items-center gap-1.5 rounded-xl border bg-white dark:bg-gray-900 px-3 py-2.5 text-sm transition-colors ${
-                showArchived
-                  ? "border-gray-400 dark:border-gray-500 text-gray-700 dark:text-gray-300 font-medium"
-                  : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
-              }`}
-              title={showArchived ? "Hide archived projects" : "Show archived projects"}
-            >
-              <Archive size={14} className="text-gray-400 dark:text-gray-500" />
-              {showArchived ? "Showing archived" : "Archived"}
-            </button>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors shadow-sm"
-            >
-              <Plus size={16} />
-              New Project
-            </button>
-          </div>
-        </div>
+    <>
+      {/* Stats */}
+      <section className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          label="Active Projects"
+          value={stats.active}
+          icon={<Film size={15} />}
+          tone="amber"
+        />
+        <StatCard
+          label="Upcoming Shoots"
+          value={stats.upcoming}
+          icon={<CalendarIcon size={15} />}
+          tone="emerald"
+          subtitle="next 30 days"
+        />
+        <StatCard
+          label="Draft Call Sheets"
+          value={stats.drafts}
+          icon={<AlertCircle size={15} />}
+          tone="orange"
+          subtitle={stats.drafts > 0 ? "needs attention" : "all sorted"}
+        />
+        <StatCard
+          label="Completed"
+          value={stats.completed}
+          icon={<CheckCircle2 size={15} />}
+          tone="blue"
+          subtitle="this month"
+        />
+      </section>
 
-        {/* Loading */}
-        {loading && (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
-          </div>
-        )}
-
-        {!loading && (
-          <>
-            {/* Stats */}
-            <section className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <StatCard
-                label="Active Projects"
-                value={stats.active}
-                icon={<Film size={15} />}
-                tone="amber"
-              />
-              <StatCard
-                label="Upcoming Shoots"
-                value={stats.upcoming}
-                icon={<CalendarIcon size={15} />}
-                tone="emerald"
-                subtitle="next 30 days"
-              />
-              <StatCard
-                label="Draft Call Sheets"
-                value={stats.drafts}
-                icon={<AlertCircle size={15} />}
-                tone="orange"
-                subtitle={stats.drafts > 0 ? "needs attention" : "all sorted"}
-              />
-              <StatCard
-                label="Completed"
-                value={stats.completed}
-                icon={<CheckCircle2 size={15} />}
-                tone="blue"
-                subtitle="this month"
-              />
-            </section>
-
-            {/* Brief → production conversion (Phase 4F win-rate metric).
-                Converted = commercial productions cleared from a brief;
-                in-flight = creative-brief deals not yet cleared. */}
-            {(() => {
-              const converted = list.filter((p) => (p.type ?? "") === "COMMERCIAL").length;
-              const inFlight = creativeDeals.length;
-              const total = converted + inFlight;
-              if (total === 0) return null;
-              const rate = Math.round((converted / total) * 100);
-              return (
-                <div className="mb-6 flex items-center gap-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 shadow-sm">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    Brief conversion
-                  </span>
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                    <div className="h-full rounded-full bg-[#A93B2E]" style={{ width: `${rate}%` }} />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
-                    {rate}%
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {converted} cleared · {inFlight} brief{inFlight === 1 ? "" : "s"} in flight
-                  </span>
-                </div>
-              );
-            })()}
-
-            {/* Hero calendar — the main dashboard view */}
-            <div id="calendar" className="mb-5">
-              <DashboardCalendar
-                productions={list}
-                onToggleDone={toggleMilestoneDone}
-              />
+      {/* Brief → production conversion (Phase 4F win-rate metric).
+          Converted = commercial productions cleared from a brief;
+          in-flight = creative-brief deals not yet cleared. */}
+      {(() => {
+        const converted = list.filter((p) => (p.type ?? "") === "COMMERCIAL").length;
+        const inFlight = creativeDeals.length;
+        const total = converted + inFlight;
+        if (total === 0) return null;
+        const rate = Math.round((converted / total) * 100);
+        return (
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 shadow-sm">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Brief conversion
+            </span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+              <div className="h-full rounded-full bg-[#A93B2E]" style={{ width: `${rate}%` }} />
             </div>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
+              {rate}%
+            </span>
+            <span className="text-xs text-gray-400">
+              {converted} cleared · {inFlight} brief{inFlight === 1 ? "" : "s"} in flight
+            </span>
+          </div>
+        );
+      })()}
 
-            {/* Upcoming shoots */}
-            <div className="mb-8">
-              <UpcomingList productions={list} />
-            </div>
-
-            {/* Creative in progress — incoming work still in the creative loop */}
-            {creativeDeals.length > 0 && <CreativeInProgress deals={creativeDeals} />}
-
-            {/* Projects */}
-            <section id="projects">
-              {list.length === 0 ? (
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12 flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-4">
-                    <Film size={28} className="text-[#9C7C2E]" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">No projects yet</h2>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-sm">
-                    Productions you create will land here with their shoot dates, call sheets, and crew.
-                  </p>
-                  <button
-                    onClick={() => setShowCreate(true)}
-                    className="flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors"
-                  >
-                    <Plus size={16} />
-                    Create your first project
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {active.length > 0 && (
-                    <div className="mb-8">
-                      <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
-                        Active — {active.length}
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {active.map((p) => (
-                          <ProjectCard key={p.id} production={p} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {archived.length > 0 && (
-                    <div>
-                      <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
-                        Completed — {archived.length}
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {archived.map((p) => (
-                          <ProjectCard key={p.id} production={p} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Archived projects — visible only via the toggle, shown muted.
-                  Commercial projects are unarchived from the parent deal. */}
-              {showArchived && archivedProjects.length > 0 && (
-                <div className="mt-8">
-                  <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <Archive size={12} /> Archived — {archivedProjects.length}
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60 grayscale">
-                    {archivedProjects.map((p) => (
-                      <ProjectCard key={p.id} production={p} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {showArchived && archivedProjects.length === 0 && (
-                <p className="mt-8 text-xs text-gray-400 dark:text-gray-500">No archived projects.</p>
-              )}
-            </section>
-          </>
-        )}
+      {/* Hero calendar — the main dashboard view */}
+      <div id="calendar" className="mb-5">
+        <DashboardCalendar productions={list} onToggleDone={onToggleDone} />
       </div>
 
-      {showCreate && (
-        <CreateProjectModal
-          onClose={() => setShowCreate(false)}
-          onCreated={(p) => {
-            setAllProductions((prev) => [p, ...prev]);
-            setShowCreate(false);
-          }}
+      {/* Upcoming shoots */}
+      <div className="mb-8">
+        <UpcomingList productions={list} />
+      </div>
+
+      {/* Creative in progress — incoming work still in the creative loop */}
+      {creativeDeals.length > 0 && <CreativeInProgress deals={creativeDeals} />}
+
+      {/* Projects */}
+      <section id="projects">
+        {list.length === 0 ? (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-4">
+              <Film size={28} className="text-[#9C7C2E]" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">No projects yet</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-sm">
+              Productions you create will land here with their shoot dates, call sheets, and crew.
+            </p>
+            <button
+              onClick={onCreate}
+              className="flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors"
+            >
+              <Plus size={16} />
+              Create your first project
+            </button>
+          </div>
+        ) : (
+          <>
+            {active.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                  Active — {active.length}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {active.map((p) => (
+                    <ProjectCard key={p.id} production={p} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {archived.length > 0 && (
+              <div>
+                <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                  Completed — {archived.length}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {archived.map((p) => (
+                    <ProjectCard key={p.id} production={p} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Archived projects — visible only via the toggle, shown muted.
+            Commercial projects are unarchived from the parent deal. */}
+        {showArchived && archivedProjects.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <Archive size={12} /> Archived — {archivedProjects.length}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60 grayscale">
+              {archivedProjects.map((p) => (
+                <ProjectCard key={p.id} production={p} />
+              ))}
+            </div>
+          </div>
+        )}
+        {showArchived && archivedProjects.length === 0 && (
+          <p className="mt-8 text-xs text-gray-400 dark:text-gray-500">No archived projects.</p>
+        )}
+      </section>
+    </>
+  );
+}
+
+// ─── Projects list view — filterable, sortable table ────────────────────────
+
+type ProjectSortKey =
+  | "name"
+  | "client"
+  | "type"
+  | "status"
+  | "shoot"
+  | "budget"
+  | "team"
+  | "updated";
+
+type ProjectFilter = "all" | "active" | "completed" | "archived";
+
+function formatBudget(n?: number | null): string {
+  if (n === null || n === undefined) return "—";
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+// Earliest upcoming shoot, or earliest shoot overall, as a sortable timestamp.
+function firstShootTime(p: Production): number | null {
+  const next = getNextShoot(p);
+  if (next) return next.date.getTime();
+  const all = getAllShootDates(p).sort((a, b) => a.getTime() - b.getTime());
+  return all.length ? all[0].getTime() : null;
+}
+
+function firstShootLabel(p: Production): string {
+  const t = firstShootTime(p);
+  return t !== null ? format(new Date(t), "d MMM yyyy") : "—";
+}
+
+function ProjectsListView({ productions }: { productions: Production[] }) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<ProjectFilter>("all");
+  const [sortKey, setSortKey] = useState<ProjectSortKey>("updated");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const counts = useMemo(() => {
+    let all = 0,
+      activeC = 0,
+      completedC = 0,
+      archivedC = 0;
+    for (const p of productions) {
+      all += 1;
+      const isArch = p.archived === true;
+      const isComplete = ["DELIVERED", "ARCHIVED"].includes(p.status);
+      if (isArch) archivedC += 1;
+      else if (isComplete) completedC += 1;
+      else activeC += 1;
+    }
+    return { all, active: activeC, completed: completedC, archived: archivedC };
+  }, [productions]);
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let list = productions.filter((p) => {
+      const isArch = p.archived === true;
+      const isComplete = ["DELIVERED", "ARCHIVED"].includes(p.status);
+      if (filter === "archived") return isArch;
+      if (filter === "active") return !isArch && !isComplete;
+      if (filter === "completed") return !isArch && isComplete;
+      return true; // all
+    });
+    if (q) {
+      list = list.filter((p) => {
+        const name = p.title.toLowerCase();
+        const client = (getClientName(p) ?? "").toLowerCase();
+        return name.includes(q) || client.includes(q);
+      });
+    }
+    const dir = sortDir === "asc" ? 1 : -1;
+    const val = (p: Production): string | number => {
+      switch (sortKey) {
+        case "name":
+          return p.title.toLowerCase();
+        case "client":
+          return (getClientName(p) ?? "").toLowerCase();
+        case "type":
+          return billingTheme(p).label;
+        case "status":
+          return STATUS_STYLES[p.status]?.label ?? "";
+        case "shoot":
+          // No-date projects sink to the bottom regardless of direction.
+          return firstShootTime(p) ?? (sortDir === "asc" ? Infinity : -Infinity);
+        case "budget":
+          return p.budgetTotal ?? -1;
+        case "team":
+          return (p.crew ?? []).length;
+        case "updated":
+          return p.updatedAt ? parseISO(p.updatedAt).getTime() : 0;
+      }
+    };
+    return [...list].sort((a, b) => {
+      const va = val(a);
+      const vb = val(b);
+      if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+      return String(va).localeCompare(String(vb)) * dir;
+    });
+  }, [productions, query, filter, sortKey, sortDir]);
+
+  function toggleSort(k: ProjectSortKey) {
+    if (sortKey === k) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(k);
+      // Text columns read best ascending; numeric/date columns descending.
+      setSortDir(k === "name" || k === "client" || k === "type" ? "asc" : "desc");
+    }
+  }
+
+  const FILTER_TABS: { key: ProjectFilter; label: string; count: number }[] = [
+    { key: "all", label: "All", count: counts.all },
+    { key: "active", label: "Active", count: counts.active },
+    { key: "completed", label: "Completed", count: counts.completed },
+    { key: "archived", label: "Archived", count: counts.archived },
+  ];
+
+  return (
+    <div>
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search
+          size={16}
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
         />
-      )}
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search projects or clients…"
+          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        />
+      </div>
+
+      {/* Filter tabs */}
+      <div className="mb-4 flex items-center gap-1.5 flex-wrap">
+        {FILTER_TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setFilter(t.key)}
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              filter === t.key
+                ? "bg-[#111111] dark:bg-white text-white dark:text-black"
+                : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            }`}
+          >
+            {t.label}
+            <span
+              className={`tabular-nums ${
+                filter === t.key ? "opacity-70" : "text-gray-400 dark:text-gray-500"
+              }`}
+            >
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
+                <SortHeader label="Project" k="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortHeader label="Client" k="client" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortHeader label="Type" k="type" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortHeader label="Status" k="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortHeader label="Shoot" k="shoot" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortHeader label="Budget (exc. VAT)" k="budget" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                <SortHeader label="Team" k="team" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                <SortHeader label="Updated" k="updated" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
+                    No projects match.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((p) => {
+                  const style = STATUS_STYLES[p.status] || STATUS_STYLES.DRAFT;
+                  const bill = billingTheme(p);
+                  const client = getClientName(p);
+                  return (
+                    <tr
+                      key={p.id}
+                      onClick={() => router.push(`/production/${p.id}`)}
+                      className="border-b border-gray-50 dark:border-gray-800 last:border-0 cursor-pointer hover:bg-gray-50/70 dark:hover:bg-gray-800/50 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{p.title}</span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{client || "—"}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${bill.chip}`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: bill.hex }} />
+                          {bill.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                          {style.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                        {firstShootLabel(p)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
+                        {formatBudget(p.budgetTotal)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400 tabular-nums">
+                        <span className="inline-flex items-center gap-1 justify-end">
+                          <Users size={12} className="text-gray-400 dark:text-gray-500" />
+                          {(p.crew ?? []).length}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        {p.updatedAt ? format(parseISO(p.updatedAt), "d MMM yyyy") : "—"}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SortHeader({
+  label,
+  k,
+  sortKey,
+  sortDir,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  k: ProjectSortKey;
+  sortKey: ProjectSortKey;
+  sortDir: "asc" | "desc";
+  onSort: (k: ProjectSortKey) => void;
+  align?: "left" | "right";
+}) {
+  const activeSort = sortKey === k;
+  return (
+    <th
+      className={`px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 ${
+        align === "right" ? "text-right" : "text-left"
+      }`}
+    >
+      <button
+        onClick={() => onSort(k)}
+        className={`inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300 transition-colors ${
+          align === "right" ? "flex-row-reverse" : ""
+        } ${activeSort ? "text-gray-700 dark:text-gray-300" : ""}`}
+      >
+        {label}
+        {activeSort &&
+          (sortDir === "asc" ? <ArrowUp size={11} /> : <ArrowDown size={11} />)}
+      </button>
+    </th>
+  );
+}
+
+// ─── Calendar view — the full production calendar, front and centre ─────────
+
+function CalendarView({
+  productions,
+  onToggleDone,
+}: {
+  productions: Production[];
+  onToggleDone: (productionId: string, milestoneId: string, done: boolean) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        Every shoot, milestone and task across all projects — colour-coded by billing type.
+      </p>
+      <DashboardCalendar productions={productions} onToggleDone={onToggleDone} />
     </div>
   );
 }
