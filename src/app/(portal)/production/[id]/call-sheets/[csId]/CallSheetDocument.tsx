@@ -11,8 +11,9 @@ import { CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, emptyCallSheetLocation } from "
 import {
   journeyStats, formatJourneySummary,
   parseTime, googleMapsSearchUrl, wazeUrl, buildGoogleMapsRouteUrl, buildGpx,
-  buildStaticRouteMapUrl, downloadTextFile,
+  downloadTextFile,
 } from "@/lib/route-utils";
+import { RouteMap } from "./RouteMap";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Printable / shareable call sheet — clean, light, editorial one-page layout.
@@ -305,7 +306,7 @@ export function CallSheetDocument({
   // The single route map: rendered only when at least two stops are geocoded,
   // so it always depicts a genuine journey (never a lone per-location pin).
   const locatedStopCount = stops.filter((s) => s.lat != null && s.lng != null).length;
-  const routeMapUrl = locatedStopCount >= 2 ? buildStaticRouteMapUrl(stops) : null;
+  const showRouteMap = locatedStopCount >= 2;
 
   return (
     <div className="cs-doc" style={docStyle}>
@@ -485,21 +486,12 @@ export function CallSheetDocument({
           >
             {stops.length > 0 && <LocationsGrid stops={stops} />}
 
-            {/* The ONE map on the sheet: a single static route image for the
-                whole journey, with screen-only route CTAs below it. */}
-            {routeMapUrl && (
+            {/* The ONE map on the sheet: a single route map for the whole
+                journey (composited from OSM tiles into an inline SVG so it
+                prints), with screen-only route CTAs below it. */}
+            {showRouteMap && (
               <div style={{ marginTop: "16px" }}>
-                <img
-                  src={routeMapUrl}
-                  alt="Route map showing all shoot locations"
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    height: "auto",
-                    border: `1px solid ${HAIR}`,
-                    borderRadius: "2px",
-                  }}
-                />
+                <RouteMap stops={stops} />
                 <div
                   className="cs-noprint"
                   style={{ display: "flex", gap: "18px", marginTop: "8px" }}

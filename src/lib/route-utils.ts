@@ -264,17 +264,70 @@ function fitZoom(
   return Math.max(3, Math.min(16, Math.floor(z)));
 }
 
-// One static OpenStreetMap image for the WHOLE journey: a red pin at every
-// located stop, joined by a path line, auto-centred and zoomed to fit them all.
-// Returns null if no stop is geocoded. This is the single map on the sheet —
-// there are deliberately no per-location map images.
-export function buildStaticRouteMapUrl(
+// ── Self-composited static route map (OpenStreetMap tiles) ──
+//
+// We used to point an <img> at a third-party static-map renderer
+// (staticmap.openstreetmap.de), but that community service was shut down and
+// its domain stopped resolving — every route map turned into a broken image.
+// Instead we now build the map ourselves from OSM's own tile CDN
+// (tile.openstreetmap.org, which needs no API key): compute the fit-to-bounds
+// tile grid + each stop's on-screen pixel position here, then paint the tiles,
+// route line and numbered pins into an inline SVG in <RouteMap>. This depends
+// only on OSM's core tiles, renders as real DOM (so it prints), and degrades to
+// a clean schematic if a tile fails to load.
+
+export const TILE_SIZE = 256;
+
+// Project lat/lng to fractional GLOBAL pixel coordinates at a given zoom
+// (standard Web Mercator / slippy-map). One world = TILE_SIZE * 2^zoom px.
+export function projectToPixels(
+  lat: number,
+  lng: number,
+  zoom: number
+): { x: number; y: number } {
+  const scale = TILE_SIZE * Math.pow(2, zoom);
+  const x = ((lng + 180) / 360) * scale;
+  const sinLat = Math.min(Math.max(Math.sin((lat * Math.PI) / 180), -0.9999), 0.9999);
+  const y = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * scale;
+  return { x, y };
+}
+
+// One OSM tile to paint, with its top-left offset inside the viewport.
+export interface RouteMapTile {
+  key: string;
+  url: string;
+  left: number;
+  top: number;
+}
+
+// A stop's on-screen position within the viewport, plus its 1-based marker number.
+export interface RouteMapPoint {
+  x: number;
+  y: number;
+  label: number;
+}
+
+// Everything <RouteMap> needs to render the whole-journey map.
+export interface RouteMapView {
+  width: number;
+  height: number;
+  zoom: number;
+  tiles: RouteMapTile[];
+  points: RouteMapPoint[];
+}
+
+// Compute a fit-to-bounds static route map for every geocoded stop: the OSM
+// tile grid covering the viewport, each tile's pixel offset, and each stop's
+// pixel position + marker number. Returns null if no stop is geocoded. This is
+// the single map on the sheet — there are deliberately no per-location maps.
+export function computeRouteMapView(
   locations: GeoPoint[],
   width = 680,
-  height = 300
-): string | null {
+  height = 320
+): RouteMapView | null {
   const pts = locations.filter(hasCoords);
   if (pts.length === 0) return null;
+
   const lats = pts.map((p) => p.lat);
   const lngs = pts.map((p) => p.lng);
   const minLat = Math.min(...lats);
@@ -285,15 +338,39 @@ export function buildStaticRouteMapUrl(
   const centerLng = (minLng + maxLng) / 2;
   const zoom =
     pts.length === 1 ? 14 : fitZoom(minLat, maxLat, minLng, maxLng, width, height);
-  const markers = pts.map((p) => `${p.lat},${p.lng},red-pushpin`).join("|");
-  let url =
-    `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLng}` +
-    `&zoom=${zoom}&size=${width}x${height}&markers=${markers}`;
-  if (pts.length >= 2) {
-    const path = pts.map((p) => `${p.lat},${p.lng}`).join(",");
-    url += `&path=${path}`;
+
+  // Top-left of the viewport in global pixel space.
+  const center = projectToPixels(centerLat, centerLng, zoom);
+  const originX = center.x - width / 2;
+  const originY = center.y - height / 2;
+
+  const worldTiles = Math.pow(2, zoom);
+  const tiles: RouteMapTile[] = [];
+  const minTx = Math.floor(originX / TILE_SIZE);
+  const maxTx = Math.floor((originX + width) / TILE_SIZE);
+  const minTy = Math.floor(originY / TILE_SIZE);
+  const maxTy = Math.floor((originY + height) / TILE_SIZE);
+  for (let tx = minTx; tx <= maxTx; tx++) {
+    for (let ty = minTy; ty <= maxTy; ty++) {
+      // No vertical wrap (poles); wrap horizontally so a route straddling the
+      // antimeridian still resolves to valid tile x indices.
+      if (ty < 0 || ty >= worldTiles) continue;
+      const wrappedX = ((tx % worldTiles) + worldTiles) % worldTiles;
+      tiles.push({
+        key: `${tx}_${ty}`,
+        url: `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${ty}.png`,
+        left: tx * TILE_SIZE - originX,
+        top: ty * TILE_SIZE - originY,
+      });
+    }
   }
-  return url;
+
+  const points: RouteMapPoint[] = pts.map((p, i) => {
+    const g = projectToPixels(p.lat, p.lng, zoom);
+    return { x: g.x - originX, y: g.y - originY, label: i + 1 };
+  });
+
+  return { width, height, zoom, tiles, points };
 }
 
 // ── Multi-stop route links ──
