@@ -16,8 +16,6 @@ import {
   AlertCircle,
   Archive,
   Search,
-  ArrowUp,
-  ArrowDown,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -221,9 +219,8 @@ function countdownTone(date: Date): { bg: string; text: string } {
 
 // The Production portal is a single route (/production) that swaps its main
 // content off the `view` query param, driven by the sidebar:
-//   • (none)          → Overview dashboard
-//   • ?view=projects  → filterable/sortable project list
-//   • ?view=calendar  → full production calendar
+//   • (none)          → Overview dashboard (includes the calendar)
+//   • ?view=projects  → projects grouped by client
 // useSearchParams() requires a Suspense boundary, hence the thin wrapper.
 export default function ProductionPage() {
   return (
@@ -247,8 +244,8 @@ function PageLoading() {
 
 function ProductionInner() {
   const searchParams = useSearchParams();
-  const view = searchParams.get("view"); // null → overview | "projects" | "calendar"
-  const isOverview = view !== "projects" && view !== "calendar";
+  const view = searchParams.get("view"); // null → overview | "projects"
+  const isOverview = view !== "projects";
 
   const [allProductions, setAllProductions] = useState<Production[]>([]);
   const [creativeDeals, setCreativeDeals] = useState<CreativeDeal[]>([]);
@@ -315,12 +312,7 @@ function ProductionInner() {
     }
   }
 
-  const subtitle =
-    view === "projects"
-      ? "all projects"
-      : view === "calendar"
-      ? "production calendar"
-      : "live overview";
+  const subtitle = view === "projects" ? "all projects" : "live overview";
 
   return (
     <div className="min-h-screen bg-card">
@@ -372,10 +364,6 @@ function ProductionInner() {
 
         {!loading && view === "projects" && (
           <ProjectsListView productions={allProductions} />
-        )}
-
-        {!loading && view === "calendar" && (
-          <CalendarView productions={productions} onToggleDone={toggleMilestoneDone} />
         )}
 
         {!loading && isOverview && (
@@ -601,17 +589,7 @@ function OverviewView({
   );
 }
 
-// ─── Projects list view — filterable, sortable table ────────────────────────
-
-type ProjectSortKey =
-  | "name"
-  | "client"
-  | "type"
-  | "status"
-  | "shoot"
-  | "budget"
-  | "team"
-  | "updated";
+// ─── Projects list view — grouped by client ─────────────────────────────────
 
 type ProjectFilter = "all" | "active" | "completed" | "archived";
 
@@ -637,12 +615,34 @@ function firstShootLabel(p: Production): string {
   return t !== null ? format(new Date(t), "d MMM yyyy") : "—";
 }
 
+// Human "last updated" label — Today / Yesterday / N days/weeks/months ago,
+// falling back to an absolute date for anything older than a year.
+function updatedLabel(p: Production): string {
+  if (!p.updatedAt) return "—";
+  const d = parseISO(p.updatedAt);
+  const days = differenceInCalendarDays(new Date(), d);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return `${days} days ago`;
+  if (days < 14) return "1 week ago";
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  if (days < 60) return "1 month ago";
+  if (days < 365) return `${Math.floor(days / 30)} months ago`;
+  return format(d, "d MMM yyyy");
+}
+
+interface ClientGroup {
+  client: string | null; // null → Uncategorised
+  key: string;
+  projects: Production[];
+  totalBudget: number;
+  lastModified: number;
+}
+
 function ProjectsListView({ productions }: { productions: Production[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ProjectFilter>("all");
-  const [sortKey, setSortKey] = useState<ProjectSortKey>("updated");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const counts = useMemo(() => {
     let all = 0,
@@ -660,7 +660,10 @@ function ProjectsListView({ productions }: { productions: Production[] }) {
     return { all, active: activeC, completed: completedC, archived: archivedC };
   }, [productions]);
 
-  const rows = useMemo(() => {
+  // Filter by tab + search, then bucket by client. Client sections are ordered
+  // by their most-recently-modified project (Uncategorised always last); within
+  // a section, projects run chronologically by shoot date (no-date sinks last).
+  const groups = useMemo<ClientGroup[]>(() => {
     const q = query.trim().toLowerCase();
     let list = productions.filter((p) => {
       const isArch = p.archived === true;
@@ -677,45 +680,45 @@ function ProjectsListView({ productions }: { productions: Production[] }) {
         return name.includes(q) || client.includes(q);
       });
     }
-    const dir = sortDir === "asc" ? 1 : -1;
-    const val = (p: Production): string | number => {
-      switch (sortKey) {
-        case "name":
-          return p.title.toLowerCase();
-        case "client":
-          return (getClientName(p) ?? "").toLowerCase();
-        case "type":
-          return billingTheme(p).label;
-        case "status":
-          return STATUS_STYLES[p.status]?.label ?? "";
-        case "shoot":
-          // No-date projects sink to the bottom regardless of direction.
-          return firstShootTime(p) ?? (sortDir === "asc" ? Infinity : -Infinity);
-        case "budget":
-          return p.budgetTotal ?? -1;
-        case "team":
-          return (p.crew ?? []).length;
-        case "updated":
-          return p.updatedAt ? parseISO(p.updatedAt).getTime() : 0;
-      }
-    };
-    return [...list].sort((a, b) => {
-      const va = val(a);
-      const vb = val(b);
-      if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
-      return String(va).localeCompare(String(vb)) * dir;
-    });
-  }, [productions, query, filter, sortKey, sortDir]);
 
-  function toggleSort(k: ProjectSortKey) {
-    if (sortKey === k) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(k);
-      // Text columns read best ascending; numeric/date columns descending.
-      setSortDir(k === "name" || k === "client" || k === "type" ? "asc" : "desc");
+    const updatedTime = (p: Production) =>
+      p.updatedAt ? parseISO(p.updatedAt).getTime() : 0;
+
+    const map = new Map<string, ClientGroup>();
+    for (const p of list) {
+      const client = getClientName(p);
+      const key = client ?? "__uncategorised__";
+      let g = map.get(key);
+      if (!g) {
+        g = { client, key, projects: [], totalBudget: 0, lastModified: 0 };
+        map.set(key, g);
+      }
+      g.projects.push(p);
     }
-  }
+
+    const out = Array.from(map.values()).map((g) => {
+      const projects = [...g.projects].sort((a, b) => {
+        const ta = firstShootTime(a);
+        const tb = firstShootTime(b);
+        if (ta == null && tb == null) return 0;
+        if (ta == null) return 1;
+        if (tb == null) return -1;
+        return ta - tb;
+      });
+      const totalBudget = projects.reduce((s, p) => s + (p.budgetTotal ?? 0), 0);
+      const lastModified = projects.reduce((m, p) => Math.max(m, updatedTime(p)), 0);
+      return { ...g, projects, totalBudget, lastModified };
+    });
+
+    out.sort((a, b) => {
+      if (a.client === null) return 1; // Uncategorised last
+      if (b.client === null) return -1;
+      return b.lastModified - a.lastModified;
+    });
+    return out;
+  }, [productions, query, filter]);
+
+  const totalRows = groups.reduce((s, g) => s + g.projects.length, 0);
 
   const FILTER_TABS: { key: ProjectFilter; label: string; count: number }[] = [
     { key: "all", label: "All", count: counts.all },
@@ -765,138 +768,87 @@ function ProjectsListView({ productions }: { productions: Production[] }) {
         ))}
       </div>
 
-      {/* Table */}
-      <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
-                <SortHeader label="Project" k="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <SortHeader label="Client" k="client" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <SortHeader label="Type" k="type" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <SortHeader label="Status" k="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <SortHeader label="Shoot" k="shoot" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <SortHeader label="Budget (exc. VAT)" k="budget" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
-                <SortHeader label="Team" k="team" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
-                <SortHeader label="Updated" k="updated" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
-                    No projects match.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((p) => {
-                  const style = STATUS_STYLES[p.status] || STATUS_STYLES.DRAFT;
-                  const bill = billingTheme(p);
-                  const client = getClientName(p);
-                  return (
-                    <tr
-                      key={p.id}
-                      onClick={() => router.push(`/production/${p.id}`)}
-                      className="border-b border-gray-50 dark:border-gray-800 last:border-0 cursor-pointer hover:bg-gray-50/70 dark:hover:bg-gray-800/50 transition-colors"
-                    >
-                      <td className="px-4 py-3">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{p.title}</span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{client || "—"}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${bill.chip}`}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: bill.hex }} />
-                          {bill.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-                          {style.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                        {firstShootLabel(p)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
-                        {formatBudget(p.budgetTotal)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400 tabular-nums">
-                        <span className="inline-flex items-center gap-1 justify-end">
-                          <Users size={12} className="text-gray-400 dark:text-gray-500" />
-                          {(p.crew ?? []).length}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {p.updatedAt ? format(parseISO(p.updatedAt), "d MMM yyyy") : "—"}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      {/* Grouped by client */}
+      {totalRows === 0 ? (
+        <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
+          No projects match.
         </div>
-      </div>
-    </div>
-  );
-}
-
-function SortHeader({
-  label,
-  k,
-  sortKey,
-  sortDir,
-  onSort,
-  align = "left",
-}: {
-  label: string;
-  k: ProjectSortKey;
-  sortKey: ProjectSortKey;
-  sortDir: "asc" | "desc";
-  onSort: (k: ProjectSortKey) => void;
-  align?: "left" | "right";
-}) {
-  const activeSort = sortKey === k;
-  return (
-    <th
-      className={`px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 ${
-        align === "right" ? "text-right" : "text-left"
-      }`}
-    >
-      <button
-        onClick={() => onSort(k)}
-        className={`inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300 transition-colors ${
-          align === "right" ? "flex-row-reverse" : ""
-        } ${activeSort ? "text-gray-700 dark:text-gray-300" : ""}`}
-      >
-        {label}
-        {activeSort &&
-          (sortDir === "asc" ? <ArrowUp size={11} /> : <ArrowDown size={11} />)}
-      </button>
-    </th>
-  );
-}
-
-// ─── Calendar view — the full production calendar, front and centre ─────────
-
-function CalendarView({
-  productions,
-  onToggleDone,
-}: {
-  productions: Production[];
-  onToggleDone: (productionId: string, milestoneId: string, done: boolean) => void;
-}) {
-  return (
-    <div>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-        Every shoot, milestone and task across all projects — colour-coded by billing type.
-      </p>
-      <DashboardCalendar productions={productions} onToggleDone={onToggleDone} />
+      ) : (
+        <div className="space-y-5">
+          {groups.map((g) => (
+            <div
+              key={g.key}
+              className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden"
+            >
+              {/* Client section header */}
+              <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 flex items-baseline justify-between gap-3">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  {g.client ?? "Uncategorised"}
+                </h3>
+                <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                  {g.projects.length} project{g.projects.length !== 1 ? "s" : ""} ·{" "}
+                  {formatBudget(g.totalBudget)} total
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 dark:border-gray-800 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      <th className="px-4 py-2 text-left">Project</th>
+                      <th className="px-4 py-2 text-left">Status</th>
+                      <th className="px-4 py-2 text-left">Shoot Date</th>
+                      <th className="px-4 py-2 text-right">Budget</th>
+                      <th className="px-4 py-2 text-right">Team</th>
+                      <th className="px-4 py-2 text-left">Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {g.projects.map((p) => {
+                      const style = STATUS_STYLES[p.status] || STATUS_STYLES.DRAFT;
+                      return (
+                        <tr
+                          key={p.id}
+                          onClick={() => router.push(`/production/${p.id}`)}
+                          className="border-b border-gray-50 dark:border-gray-800 last:border-0 cursor-pointer hover:bg-gray-50/70 dark:hover:bg-gray-800/50 transition-colors"
+                        >
+                          <td className="px-4 py-3">
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                              {p.title}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                              {style.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            {firstShootLabel(p)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
+                            {formatBudget(p.budgetTotal)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400 tabular-nums">
+                            <span className="inline-flex items-center gap-1 justify-end">
+                              <Users size={12} className="text-gray-400 dark:text-gray-500" />
+                              {(p.crew ?? []).length}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                            {updatedLabel(p)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,7 +9,6 @@ import {
   Users,
   FileText,
   BarChart2,
-  Calendar,
   Shield,
   Settings,
   Server,
@@ -52,7 +51,6 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
     items: [
       { label: "Overview", href: "/production", icon: LayoutDashboard },
       { label: "All Projects", href: "/production?view=projects", icon: Film },
-      { label: "Calendar", href: "/production?view=calendar", icon: Calendar },
     ],
   },
   print: {

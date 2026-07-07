@@ -296,7 +296,26 @@ export default function BudgetTab({
   const subtotalExcVat = totals.budgeted;
   const totalVat = totals.vat;
   const totalIncVat = totals.incVat;
-  const variance = campaignBudget != null ? campaignBudget - subtotalExcVat : null;
+  // Budget Remaining = headroom on PLANNED costs (campaign budget − budgeted
+  // costs exc. VAT). Positive = headroom, negative = over. This is distinct
+  // from actuals below.
+  const budgetRemaining = campaignBudget != null ? campaignBudget - subtotalExcVat : null;
+
+  // Actuals lens — what's actually been invoiced/paid, separate from the plan.
+  // Actual costs = sum of every line's actual; paid = lines marked PAID;
+  // outstanding = actual not yet paid. "Actuals vs Budget" compares actual
+  // spend against the campaign budget (positive = under).
+  const actualCosts = totals.actual;
+  const paidCost = useMemo(
+    () =>
+      (items ?? []).reduce(
+        (sum, it) => (it.invoiceStatus === "PAID" ? sum + (it.actual || 0) : sum),
+        0
+      ),
+    [items]
+  );
+  const outstanding = actualCosts - paidCost;
+  const actualsVsBudget = campaignBudget != null ? campaignBudget - actualCosts : null;
 
   // Deal context + margin impact (commercial productions only).
   const deal = production.campaign;
@@ -787,60 +806,165 @@ export default function BudgetTab({
         )}
       </div>
 
-      {/* Budget summary — matches the exported PDF exactly: subtotal exc. VAT,
-          VAT, inc. VAT, then the allocation and the variance. The total that
-          matters always excludes VAT, so the variance is allocation minus the
-          exc-VAT subtotal (positive = headroom / in the green, negative = over). */}
+      {/* Budget summary — two distinct lenses, kept apart on purpose:
+          1. BUDGET REMAINING — headroom on the PLANNED budget (campaign budget
+             − budgeted costs exc. VAT). Nothing to do with what's been spent.
+          2. ACTUAL COSTS — what's actually been invoiced / paid so far.
+          A breakdown at the bottom lays both out side by side. */}
+
+      {/* 1 — Budget Remaining (planned-cost headroom) */}
+      <div
+        className={`rounded-2xl border shadow-sm px-5 py-4 flex items-center justify-between gap-4 ${
+          budgetRemaining == null
+            ? "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800"
+            : budgetRemaining >= 0
+              ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800"
+              : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
+        }`}
+      >
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+            Budget Remaining
+          </p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+            Total campaign budget − budgeted costs (exc. VAT)
+          </p>
+        </div>
+        <div className="text-right shrink-0">
+          {budgetRemaining == null ? (
+            <span className="text-sm text-gray-400 dark:text-gray-500">
+              Set a campaign budget to see headroom
+            </span>
+          ) : (
+            <>
+              <span
+                className={`text-2xl font-bold tabular-nums inline-flex items-center gap-1.5 ${
+                  budgetRemaining >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                }`}
+              >
+                {budgetRemaining >= 0 ? <CheckCircle2 size={18} /> : <TrendingUp size={18} />}
+                {budgetRemaining >= 0
+                  ? gbp(budgetRemaining)
+                  : `−${gbp(Math.abs(budgetRemaining))}`}
+              </span>
+              <p
+                className={`text-[11px] font-medium ${
+                  budgetRemaining >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+                }`}
+              >
+                {budgetRemaining >= 0 ? "under budget" : "over budget"}
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 2 — Actual costs (invoiced / paid) */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">
+            Actual Costs
+          </p>
+        </div>
+        <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
+              Actual Costs
+            </p>
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
+              {gbp(actualCosts)}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
+              Paid
+            </p>
+            <p className="text-xl font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {gbp(paidCost)}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
+              Outstanding
+            </p>
+            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
+              {gbp(outstanding)}
+            </p>
+          </div>
+        </div>
+        {actualsVsBudget != null && (
+          <div className="px-5 pb-4">
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+                actualsVsBudget >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              {actualsVsBudget >= 0 ? <TrendingDown size={13} /> : <TrendingUp size={13} />}
+              Actuals vs Budget:{" "}
+              {actualsVsBudget >= 0
+                ? `${gbp(actualsVsBudget)} under`
+                : `${gbp(Math.abs(actualsVsBudget))} over`}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* 3 — Breakdown: planned costs vs budget, then actuals separately */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="px-5 py-3 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800">
           <p className="text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">Budget Summary</p>
         </div>
         <div className="px-5 py-4 space-y-2.5 max-w-xl ml-auto">
-          <SummaryRow label="Subtotal Excl. VAT" value={gbp(subtotalExcVat)} strong />
+          {/* Planned costs */}
+          <SummaryRow label="Budgeted Costs (exc. VAT)" value={gbp(subtotalExcVat)} strong />
           <SummaryRow label="Total VAT Amount" value={gbp(totalVat)} />
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-2.5">
-            <SummaryRow label="Total Incl. VAT" value={gbp(totalIncVat)} grand />
-          </div>
+          <SummaryRow label="Total Incl. VAT" value={gbp(totalIncVat)} muted />
           <div className="border-t border-gray-100 dark:border-gray-800 pt-2.5 space-y-2.5">
             <SummaryRow
-              label={locked ? "Allocated Budget (Commercial)" : "Allocated Budget"}
+              label={locked ? "Total Campaign Budget (Commercial)" : "Total Campaign Budget"}
               value={gbp(allocation)}
               muted
             />
-            {campaignBudget != null && (
+            {budgetRemaining != null && (
               <div
                 className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${
-                  variance! >= 0
+                  budgetRemaining >= 0
                     ? "bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800"
                     : "bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800"
                 }`}
               >
                 <span
                   className={`text-xs font-semibold inline-flex items-center gap-1.5 ${
-                    variance! >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                    budgetRemaining >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
                   }`}
                 >
-                  {variance! >= 0 ? (
+                  {budgetRemaining >= 0 ? (
                     <>
-                      <CheckCircle2 size={14} /> Variance — in the green
+                      <CheckCircle2 size={14} /> Budget Remaining
                     </>
                   ) : (
                     <>
-                      <TrendingUp size={14} /> Variance — over budget
+                      <TrendingUp size={14} /> Over Budget
                     </>
                   )}
                 </span>
                 <span
                   className={`text-sm font-bold tabular-nums ${
-                    variance! >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                    budgetRemaining >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
                   }`}
                 >
-                  {variance! >= 0
-                    ? `+${gbp(variance!)} headroom`
-                    : `−${gbp(Math.abs(variance!))} over`}
+                  {budgetRemaining >= 0
+                    ? `+${gbp(budgetRemaining)} headroom`
+                    : `−${gbp(Math.abs(budgetRemaining))} over`}
                 </span>
               </div>
             )}
+          </div>
+          {/* Actuals — separate from the plan */}
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-2.5 space-y-2.5">
+            <SummaryRow label="Total Actuals" value={gbp(actualCosts)} />
+            <SummaryRow label="Total Paid" value={gbp(paidCost)} />
+            <SummaryRow label="Outstanding" value={gbp(outstanding)} strong />
           </div>
         </div>
       </div>

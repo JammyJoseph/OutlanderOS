@@ -140,7 +140,7 @@
 /* ===== LIGHT THEME — DEFAULT (no class on <html>) =====
    White ground, hairline borders, black primary. */
 :root {
-  --background: #fbfbfa;          /* page wash */
+  --background: #f3f3f1;          /* page wash — slightly darker so white cards pop */
   --foreground: #111111;
   --card: #ffffff;                /* cards sit brighter than the page */
   --card-foreground: #111111;
