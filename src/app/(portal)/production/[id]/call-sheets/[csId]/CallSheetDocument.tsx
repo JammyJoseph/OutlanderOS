@@ -78,8 +78,6 @@ const FAINT = "#9a9a9a"; // footer / tertiary
 const HAIR = "#e7e7e7"; // hairline between rows
 const RULE = "#111111"; // section-header underline (crisp black)
 const SOFTRULE = "#d7d7d7"; // softer rule under table headers
-const GOLD = "#c99a1e"; // Outlander accent (readable on white)
-const GOLD_ASTERISK = "#9C7C2E"; // hero asterisk (used at low opacity)
 
 const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
 const SERIF = 'Georgia, "Times New Roman", "Iowan Old Style", serif';
@@ -145,7 +143,7 @@ const labelCellStyle: React.CSSProperties = {
 const padX: React.CSSProperties = { paddingLeft: "40px", paddingRight: "40px" };
 
 // Screen-only text link (Maps / Waze / Open full route / Download GPX). Small
-// uppercase, gold, with a subtle underline — not a pill.
+// uppercase, black, with a subtle underline — not a pill.
 const ctaLinkStyle: React.CSSProperties = {
   display: "inline-block",
   fontFamily: SANS,
@@ -153,9 +151,9 @@ const ctaLinkStyle: React.CSSProperties = {
   fontWeight: 600,
   letterSpacing: "0.07em",
   textTransform: "uppercase",
-  color: GOLD,
+  color: TEXT,
   textDecoration: "none",
-  borderBottom: `1px solid ${GOLD}55`,
+  borderBottom: `1px solid ${TEXT}`,
   paddingBottom: "1px",
   cursor: "pointer",
   background: "transparent",
@@ -322,25 +320,6 @@ export function CallSheetDocument({
         .cs-doc a { color: inherit; }
       `}</style>
 
-      {/* ── Gold asterisk accent (subtle, right side) ── */}
-      <span
-        aria-hidden
-        style={{
-          position: "absolute",
-          top: "150px",
-          right: "34px",
-          fontSize: "120px",
-          lineHeight: 1,
-          color: GOLD_ASTERISK,
-          opacity: 0.28,
-          pointerEvents: "none",
-          userSelect: "none",
-          fontFamily: SERIF,
-        }}
-      >
-        ✳
-      </span>
-
       {/* ── Top bar ── */}
       <div
         className="cs-topbar"
@@ -356,24 +335,6 @@ export function CallSheetDocument({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "22px",
-              height: "22px",
-              borderRadius: "999px",
-              border: `1px solid ${TEXT}`,
-              fontFamily: SERIF,
-              fontSize: "12px",
-              fontWeight: 700,
-              color: TEXT,
-              flexShrink: 0,
-            }}
-          >
-            O<span style={{ color: GOLD }}>.</span>
-          </span>
           <span
             style={{
               fontSize: "9px",
@@ -866,7 +827,7 @@ export function CallSheetDocument({
                 .map((d) => [
                   d.title || "Document",
                   d.url ? (
-                    <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ color: GOLD, textDecoration: "none" }}>
+                    <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ color: TEXT, textDecoration: "underline" }}>
                       {d.url}
                     </a>
                   ) : (

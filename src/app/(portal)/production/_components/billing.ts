@@ -11,7 +11,7 @@ export interface BillingTheme {
   dotText: "black" | "white"; // legible text colour on top of the hex
 }
 
-export const EDITORIAL_HEX = "#00c853";
+export const EDITORIAL_HEX = "#2E5E44";
 export const PAID_HEX = "#9C7C2E";
 
 const EDITORIAL: BillingTheme = {

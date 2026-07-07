@@ -95,7 +95,7 @@ export default function CateringWidget() {
                   >
                     <span
                       className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: s.billingType === "PAID" ? "#9C7C2E" : "#00c853" }}
+                      style={{ backgroundColor: s.billingType === "PAID" ? "#9C7C2E" : "#2E5E44" }}
                     />
                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-[#9C7C2E] transition-colors">
                       {s.productionTitle}

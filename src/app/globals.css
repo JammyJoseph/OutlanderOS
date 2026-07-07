@@ -372,29 +372,15 @@
   background: #3a3a3a;
 }
 
-/* ── Light-theme gold retirement ─────────────────────────────────────────────
-   The old gold #ffd700 survives in components as arbitrary-value utilities
-   (text-[#ffd700], bg-[#ffd700], focus:border-[#ffd700], …). This unlayered
-   net remaps them so the reskin lands without touching every file. Inline
-   style={{ }} hex accents in TSX are covered by the mapping table in the
-   README instead (CSS can't reach those). Remove rules here as files get
-   migrated. Scoped out of print. */
+/* ── Amber focus-ring neutraliser ────────────────────────────────────────────
+   The per-file sweep retired the old #ffd700 gold utilities, so those remaps
+   were removed. What remains: a few inputs still use Tailwind's amber-200 focus
+   ring (focus:ring-amber-200/60) as a gold-ish glow — neutralise it to a hairline
+   black ring so no gold leaks in. Amber is otherwise kept as a semantic warning
+   colour elsewhere. Scoped out of print. */
 @media not print {
-  html:not(.dark) .text-\[\#ffd700\] { color: #9C7C2E; }
-  html:not(.dark) .hover\:text-\[\#ffd700\]:hover { color: #9C7C2E; }
-  html:not(.dark) .bg-\[\#ffd700\] { background-color: #111111; color: #ffffff; }
-  html:not(.dark) .hover\:bg-\[\#ffd700\]:hover { background-color: #333333; }
-  html:not(.dark) .border-\[\#ffd700\] { border-color: #111111; }
-  html:not(.dark) .focus\:border-\[\#ffd700\]:focus { border-color: #111111; }
   html:not(.dark) .focus\:ring-amber-200\/60:focus { --tw-ring-color: rgba(17,17,17,0.12); }
   html:not(.dark) .ring-amber-200\/60 { --tw-ring-color: rgba(17,17,17,0.12); }
-
-  /* Dark mode: gold becomes the lifted brass */
-  .dark .text-\[\#ffd700\] { color: #C9A44A; }
-  .dark .hover\:text-\[\#ffd700\]:hover { color: #C9A44A; }
-  .dark .bg-\[\#ffd700\] { background-color: #ffffff; color: #000000; }
-  .dark .border-\[\#ffd700\] { border-color: #C9A44A; }
-  .dark .focus\:border-\[\#ffd700\]:focus { border-color: #C9A44A; }
 }
 
 /* ── Light-theme editorial flattening ────────────────────────────────────────

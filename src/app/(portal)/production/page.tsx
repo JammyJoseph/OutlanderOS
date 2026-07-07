@@ -968,7 +968,7 @@ function CreateProjectModal({
             <div className="grid grid-cols-2 gap-2">
               {(
                 [
-                  { key: "EDITORIAL", label: "Editorial", hex: "#00c853" },
+                  { key: "EDITORIAL", label: "Editorial", hex: "#2E5E44" },
                   { key: "PAID", label: "Paid / Commercial", hex: "#9C7C2E" },
                 ] as const
               ).map((opt) => (

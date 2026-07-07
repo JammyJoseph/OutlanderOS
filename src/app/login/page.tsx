@@ -107,7 +107,7 @@ export default function LoginPage() {
               <div className="relative h-[64px] w-[2px] bg-gradient-to-b from-[#f2f4fa] to-[#aab2c8]">
                 <span className="absolute left-1/2 top-[-3px] h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#9C7C2E] shadow-[0_0_6px_#9C7C2E]" />
                 <div className="absolute left-[2px] top-0 origin-left login-flag-wave">
-                  <div className="flex h-[26px] w-[38px] items-center justify-center rounded-r-[3px] bg-gradient-to-r from-[#9C7C2E] to-[#e6b800] shadow-md">
+                  <div className="flex h-[26px] w-[38px] items-center justify-center rounded-r-[3px] bg-gradient-to-r from-[#9C7C2E] to-[#C9A44A] shadow-md">
                     <span className="font-extrabold text-[15px] leading-none text-black">O</span>
                   </div>
                 </div>
