@@ -44,11 +44,11 @@ export function generateSMSSummary(
     .filter((s) => s.time || s.description || s.locationRef)
     .map((s) => {
       const time = (s.time || "").trim();
-      const locName = resolveLocationName(s.locationRef, locations);
+      const locName = resolveScheduleLocation(s.locationRef, locations);
       const rawDesc = (s.description || "").trim();
       // A description that's just a "Location N" pointer becomes the real name.
-      const desc = /^location\s+\d+$/i.test(rawDesc)
-        ? resolveLocationName(rawDesc, locations)
+      const desc = isGenericLocationLabel(rawDesc)
+        ? resolveScheduleLocation(rawDesc, locations)
         : rawDesc;
       const notes = (s.notes || "").trim();
       const head =
@@ -60,14 +60,8 @@ export function generateSMSSummary(
     .filter(Boolean);
   if (scheduleLines.length) blocks.push(`SCHEDULE\n${scheduleLines.join("\n")}`);
 
-  // ── Locations — actual names + postcodes, no numbering ──
-  const locationLines = locations
-    .map((l) => {
-      const name = (l.name || l.address || "").trim();
-      const postcode = (l.postcode || "").trim();
-      return name ? `${name}${postcode ? `, ${postcode}` : ""}` : "";
-    })
-    .filter(Boolean);
+  // ── Locations — the real address, never the "Location N" placeholder ──
+  const locationLines = locations.map(locationFull).filter(Boolean);
   if (locationLines.length) blocks.push(`LOCATIONS\n${locationLines.join("\n")}`);
 
   // ── Contact — the producer, plus a separate agency contact if it's a
@@ -104,24 +98,68 @@ export function generateSMSSummary(
   return blocks.join("\n\n");
 }
 
-// Resolve a schedule's location reference to the real location name. Matches by
-// name first, then handles a bare "Location N" pointer by index. Returns the
-// original ref (or "") when nothing better is found.
-function resolveLocationName(ref: string | undefined, locations: CallSheetLocation[]): string {
+// ── Location helpers ──────────────────────────────────────────────────────────
+// The stored `name` is often just a generic "Location 1" / "Location 2" label,
+// with the real address in `address` (and `postcode`). These helpers prefer the
+// real address whenever the name is generic (or empty).
+
+// True for empty names and the auto-generated "Location N" placeholders.
+function isGenericLocationLabel(name: string | undefined): boolean {
+  const n = (name || "").trim();
+  return !n || /^location\s*\d+$/i.test(n);
+}
+
+// Full location label for the LOCATIONS list: the real address including the
+// postcode, or "name, address" when the name is a genuine place name.
+function locationFull(l: CallSheetLocation): string {
+  const name = (l.name || "").trim();
+  const address = (l.address || "").trim();
+  const postcode = (l.postcode || "").trim();
+  const generic = isGenericLocationLabel(name);
+  // Main text: address when the name is a placeholder, else the place name
+  // (with its address appended if we have one).
+  let main = generic ? address : address ? `${name}, ${address}` : name;
+  if (!main) main = address || postcode || name; // last resort
+  // Make sure the postcode is present.
+  if (postcode && !main.toLowerCase().includes(postcode.toLowerCase())) {
+    main = main ? `${main}, ${postcode}` : postcode;
+  }
+  return main.trim();
+}
+
+// Concise location label for inline use in the schedule: the place name when
+// it's real, otherwise the street address with any trailing postcode trimmed
+// off (the postcode already appears in the LOCATIONS list).
+function locationShort(l: CallSheetLocation): string {
+  const name = (l.name || "").trim();
+  const address = (l.address || "").trim();
+  const postcode = (l.postcode || "").trim();
+  if (!isGenericLocationLabel(name)) return name;
+  if (address) {
+    if (postcode && address.toLowerCase().endsWith(postcode.toLowerCase())) {
+      const stripped = address.slice(0, address.length - postcode.length).replace(/[,\s]+$/, "").trim();
+      return stripped || address;
+    }
+    return address;
+  }
+  return postcode || name;
+}
+
+// Resolve a schedule row's location reference (stored as the location's name,
+// or a bare "Location N" pointer) to a concise, human location label.
+function resolveScheduleLocation(ref: string | undefined, locations: CallSheetLocation[]): string {
   const r = (ref || "").trim();
   if (!r) return "";
-  const byName = locations.find((l) => (l.name || "").trim().toLowerCase() === r.toLowerCase());
-  if (byName && (byName.name || "").trim()) return byName.name.trim();
-  const m = r.match(/^location\s+(\d+)$/i);
-  if (m) {
-    const loc = locations[parseInt(m[1], 10) - 1];
-    if (loc) {
-      const name = (loc.name || loc.address || "").trim();
-      if (name) return name;
-    }
+  let loc = locations.find((l) => (l.name || "").trim().toLowerCase() === r.toLowerCase());
+  if (!loc) {
+    const m = r.match(/^location\s*(\d+)$/i);
+    if (m) loc = locations[parseInt(m[1], 10) - 1];
   }
-  return r;
+  if (loc) return locationShort(loc);
+  return r; // not a location pointer — keep the literal text
 }
+
+// ── Contact helpers ───────────────────────────────────────────────────────────
 
 // Look up a phone number for a named person across production mobiles, crew and
 // the agency team. Returns "" when not found.
