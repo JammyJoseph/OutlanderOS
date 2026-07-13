@@ -26,7 +26,8 @@ export const PUT = withAuth(async (
     }
 
     const body = await request.json().catch(() => ({}));
-    const { status, feedback, deadline, deckUrl, brief, title } = body ?? {};
+    const { status, feedback, deadline, deckUrl, brief, title, objectives, targetAudience, toneDirection, references } =
+      body ?? {};
 
     if (status !== undefined && !isCreativeRoundStatus(status)) {
       return NextResponse.json({ error: `Invalid round status: ${status}` }, { status: 400 });
@@ -47,6 +48,24 @@ export const PUT = withAuth(async (
           : {}),
         ...(brief !== undefined ? { brief: brief ? sanitizeString(String(brief), 20000) : null } : {}),
         ...(title !== undefined ? { title: title ? sanitizeString(String(title), 200) : null } : {}),
+        ...(objectives !== undefined
+          ? { objectives: objectives ? sanitizeString(String(objectives), 20000) : null }
+          : {}),
+        ...(targetAudience !== undefined
+          ? { targetAudience: targetAudience ? sanitizeString(String(targetAudience), 2000) : null }
+          : {}),
+        ...(toneDirection !== undefined
+          ? { toneDirection: toneDirection ? sanitizeString(String(toneDirection), 20000) : null }
+          : {}),
+        ...(references !== undefined
+          ? {
+              references: Array.isArray(references)
+                ? references
+                    .filter((r): r is string => typeof r === "string" && r.trim().length > 0)
+                    .map((r) => r.trim())
+                : [],
+            }
+          : {}),
         // Stamp the lifecycle timestamps when the status crosses them.
         ...(statusChanged && status === "SUBMITTED" && !existing.submittedAt
           ? { submittedAt: new Date() }

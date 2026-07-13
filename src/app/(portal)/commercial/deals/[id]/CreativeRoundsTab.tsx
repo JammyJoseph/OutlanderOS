@@ -21,6 +21,9 @@ import {
   CalendarDays,
   RotateCcw,
   Circle,
+  FileText,
+  Target,
+  X,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -28,11 +31,16 @@ export interface CreativeRound {
   id: string;
   campaignId: string;
   roundNumber: number;
-  type: "INTERNAL" | "CLIENT";
+  type: "KICK_OFF" | "INTERNAL" | "CLIENT";
   status: "IN_PROGRESS" | "SUBMITTED" | "REVIEWED" | "APPROVED" | "REVISION_NEEDED";
   title: string | null;
   brief: string | null;
   feedback: string | null;
+  // Kick-off brief fields — only populated on KICK_OFF rounds.
+  objectives: string | null;
+  targetAudience: string | null;
+  toneDirection: string | null;
+  references: string[];
   deadline: string | null;
   submittedAt: string | null;
   reviewedAt: string | null;
@@ -53,6 +61,7 @@ const STATUS_STYLES: Record<
 };
 
 const TYPE_STYLES: Record<CreativeRound["type"], { label: string; bg: string; text: string; icon: typeof Palette }> = {
+  KICK_OFF: { label: "Kick-off", bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300", icon: FileText },
   INTERNAL: { label: "Internal", bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-600 dark:text-slate-300", icon: Palette },
   CLIENT: { label: "Client", bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-700 dark:text-purple-300", icon: Users },
 };
@@ -131,30 +140,30 @@ export default function CreativeRoundsTab({
     });
   }
 
-  // Empty state — kick off the first internal round.
+  // Empty state — start with the kick-off brief (Commercial → Creative handoff).
   if (sorted.length === 0) {
     return (
       <div className="max-w-3xl">
         <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-10 text-center">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center mb-4">
-            <Palette size={24} className="text-purple-500" />
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+            <FileText size={24} className="text-amber-500" />
           </div>
           <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
-            No creative rounds yet
+            No creative brief yet
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">
-            Send the brief to start Round 1 — an internal round where the team develops the first
-            set of ideas before anything goes to the client.
+            Start with the kick-off brief — the objectives, audience, tone and references the
+            commercial team hands to creative. Completing it unlocks Round 1 (V1 ideas).
           </p>
           <button
             onClick={() =>
-              createRound({ type: "INTERNAL", title: "V1 Ideas", status: "IN_PROGRESS" })
+              createRound({ type: "KICK_OFF", title: "Kick-off Brief", status: "IN_PROGRESS" })
             }
             disabled={busy}
-            className="mt-5 inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50"
+            className="mt-5 inline-flex items-center gap-2 bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50"
           >
             {busy ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-            Send Brief — Start Round 1
+            Send Brief — Start Kick-off
           </button>
         </div>
       </div>
@@ -211,22 +220,38 @@ export default function CreativeRoundsTab({
         />
       ))}
 
-      {/* Start next round */}
+      {/* Start next round — what unlocks depends on the last approved round. */}
       {canStartNext && latest && (
         <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/40 p-5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                Round {latest.roundNumber} approved
+                {latest.type === "KICK_OFF"
+                  ? "Kick-off brief complete"
+                  : `Round ${latest.roundNumber} approved`}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {latest.type === "INTERNAL"
-                  ? "Internal ideas signed off — pitch them to the client next."
-                  : "Client sign-off logged — this deal is ready to clear for production."}
+                {latest.type === "KICK_OFF"
+                  ? "Brief handed to creative — start Round 1 for the V1 ideas."
+                  : latest.type === "INTERNAL"
+                    ? "Internal ideas signed off — pitch them to the client next."
+                    : "Client sign-off logged — this deal is ready to clear for production."}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {latest.type === "INTERNAL" ? (
+              {latest.type === "KICK_OFF" && (
+                <button
+                  onClick={() =>
+                    createRound({ type: "INTERNAL", title: "V1 Ideas", status: "IN_PROGRESS" })
+                  }
+                  disabled={busy}
+                  className="inline-flex items-center gap-2 bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-700 dark:hover:bg-slate-100 transition-colors disabled:opacity-50"
+                >
+                  {busy ? <Loader2 size={14} className="animate-spin" /> : <Palette size={14} />}
+                  Start Round 1 (V1)
+                </button>
+              )}
+              {latest.type === "INTERNAL" && (
                 <button
                   onClick={() =>
                     createRound({ type: "CLIENT", title: "Client Pitch 1", status: "IN_PROGRESS" })
@@ -237,7 +262,8 @@ export default function CreativeRoundsTab({
                   {busy ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
                   Start Client Round
                 </button>
-              ) : (
+              )}
+              {latest.type === "CLIENT" && (
                 <button
                   onClick={() =>
                     createRound({
@@ -273,22 +299,37 @@ function RoundCard({
   onToggle: () => void;
   onUpdate: (body: Record<string, unknown>) => Promise<void>;
 }) {
-  const s = STATUS_STYLES[round.status];
   const t = TYPE_STYLES[round.type];
   const TypeIcon = t.icon;
+  const isKickoff = round.type === "KICK_OFF";
+  const s = STATUS_STYLES[round.status];
+  // Kick-off rounds use plainer language than the review lifecycle.
+  const statusLabel = isKickoff ? (round.status === "APPROVED" ? "Complete" : "In progress") : s.label;
 
   const [brief, setBrief] = useState(round.brief ?? "");
   const [deckUrl, setDeckUrl] = useState(round.deckUrl ?? "");
   const [feedback, setFeedback] = useState(round.feedback ?? "");
+  const [objectives, setObjectives] = useState(round.objectives ?? "");
+  const [audience, setAudience] = useState(round.targetAudience ?? "");
+  const [tone, setTone] = useState(round.toneDirection ?? "");
 
   useEffect(() => setBrief(round.brief ?? ""), [round.brief]);
   useEffect(() => setDeckUrl(round.deckUrl ?? ""), [round.deckUrl]);
   useEffect(() => setFeedback(round.feedback ?? ""), [round.feedback]);
+  useEffect(() => setObjectives(round.objectives ?? ""), [round.objectives]);
+  useEffect(() => setAudience(round.targetAudience ?? ""), [round.targetAudience]);
+  useEffect(() => setTone(round.toneDirection ?? ""), [round.toneDirection]);
 
   const stepIdx = STATUS_STEPS.indexOf(round.status);
 
   return (
-    <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+    <div
+      className={`rounded-2xl border shadow-sm overflow-hidden ${
+        isKickoff
+          ? "border-amber-200 dark:border-amber-900/50 bg-white dark:bg-gray-900"
+          : "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900"
+      }`}
+    >
       {/* Header row */}
       <button
         onClick={onToggle}
@@ -299,9 +340,9 @@ function RoundCard({
             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </span>
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">
-            Round {round.roundNumber}
+            {isKickoff ? "Kick-off" : `Round ${round.roundNumber}`}
           </span>
-          {round.title && (
+          {round.title && !isKickoff && (
             <span className="text-sm text-gray-500 dark:text-gray-400 truncate">{round.title}</span>
           )}
         </div>
@@ -315,12 +356,98 @@ function RoundCard({
             <TypeIcon size={11} /> {t.label}
           </span>
           <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} /> {s.label}
+            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} /> {statusLabel}
           </span>
         </div>
       </button>
 
-      {open && (
+      {open && isKickoff && (
+        <div className="px-5 pb-5 pt-3 border-t border-gray-50 dark:border-gray-800 space-y-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
+            The commercial brief handed to the creative team — completing it unlocks Round 1.
+          </p>
+
+          {/* Creative brief */}
+          <KickField label="Creative brief" icon={<FileText size={11} />}>
+            <textarea
+              value={brief}
+              onChange={(e) => setBrief(e.target.value)}
+              onBlur={() => brief !== (round.brief ?? "") && onUpdate({ brief })}
+              rows={4}
+              placeholder="The brief — what the client wants, the ask, mandatories, budget signals…"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+            />
+          </KickField>
+
+          {/* Objectives */}
+          <KickField label="Key objectives" icon={<Target size={11} />}>
+            <textarea
+              value={objectives}
+              onChange={(e) => setObjectives(e.target.value)}
+              onBlur={() => objectives !== (round.objectives ?? "") && onUpdate({ objectives })}
+              rows={2}
+              placeholder="What this creative needs to achieve — the goals to hit."
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+            />
+          </KickField>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Target audience */}
+            <KickField label="Target audience" icon={<Users size={11} />}>
+              <input
+                type="text"
+                value={audience}
+                onChange={(e) => setAudience(e.target.value)}
+                onBlur={() => audience !== (round.targetAudience ?? "") && onUpdate({ targetAudience: audience || null })}
+                placeholder="Who the work is aimed at"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+              />
+            </KickField>
+            {/* Deadline for V1 response */}
+            <KickField label="Deadline for V1 response" icon={<CalendarDays size={11} />}>
+              <input
+                type="date"
+                value={round.deadline ? round.deadline.slice(0, 10) : ""}
+                onChange={(e) => onUpdate({ deadline: e.target.value || null })}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+              />
+            </KickField>
+          </div>
+
+          {/* Tone / direction */}
+          <KickField label="Tone / creative direction" icon={<Palette size={11} />}>
+            <textarea
+              value={tone}
+              onChange={(e) => setTone(e.target.value)}
+              onBlur={() => tone !== (round.toneDirection ?? "") && onUpdate({ toneDirection: tone || null })}
+              rows={2}
+              placeholder="Look, feel and tone — the creative direction to steer by."
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+            />
+          </KickField>
+
+          {/* Reference links */}
+          <RefLinks
+            links={round.references ?? []}
+            onChange={(references) => onUpdate({ references })}
+          />
+
+          {/* Action */}
+          <div className="flex items-center justify-end pt-3 border-t border-gray-50 dark:border-gray-800">
+            {round.status === "APPROVED" ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 size={14} /> Brief complete — Round 1 unlocked
+              </span>
+            ) : (
+              <ActionBtn busy={busy} onClick={() => onUpdate({ status: "APPROVED" })} tone="emerald">
+                <CheckCircle2 size={13} /> Mark brief complete
+              </ActionBtn>
+            )}
+          </div>
+        </div>
+      )}
+
+      {open && !isKickoff && (
         <div className="px-5 pb-5 pt-1 border-t border-gray-50 dark:border-gray-800 space-y-4">
           {/* Status stepper */}
           {round.status !== "REVISION_NEEDED" && (
@@ -476,6 +603,93 @@ function RoundCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Labelled field wrapper for the kick-off brief.
+function KickField({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+        {icon} {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+// Reference-link editor for the kick-off brief.
+function RefLinks({ links, onChange }: { links: string[]; onChange: (links: string[]) => void }) {
+  const [draft, setDraft] = useState("");
+  function add() {
+    const url = draft.trim();
+    if (!url) return;
+    onChange([...links, url]);
+    setDraft("");
+  }
+  return (
+    <div>
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+        <LinkIcon size={11} /> Reference links
+      </p>
+      {links.length > 0 && (
+        <div className="space-y-1.5 mb-2">
+          {links.map((url, i) => (
+            <div
+              key={`${url}-${i}`}
+              className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-1.5"
+            >
+              <LinkIcon size={12} className="text-gray-400 shrink-0" />
+              <a
+                href={normUrl(url)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 text-xs text-amber-700 dark:text-amber-300 hover:underline truncate"
+              >
+                {url}
+              </a>
+              <button
+                onClick={() => onChange(links.filter((_, j) => j !== i))}
+                className="p-1 rounded text-gray-300 hover:text-red-500 transition-colors"
+                title="Remove link"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <input
+          type="url"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="https:// — decks, examples, brand refs"
+          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+        />
+        <button
+          onClick={add}
+          disabled={!draft.trim()}
+          className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-300 px-2.5 py-2 rounded-lg border border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors disabled:opacity-40"
+        >
+          <Plus size={12} /> Add
+        </button>
+      </div>
     </div>
   );
 }

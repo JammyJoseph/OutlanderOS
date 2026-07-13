@@ -291,7 +291,7 @@ export function isCreativeStatus(value: string): value is CreativeStatusValue {
 }
 
 // ── Creative Rounds — the iterative brief → submit → review → approve loop ────
-export const CREATIVE_ROUND_TYPES = ["INTERNAL", "CLIENT"] as const;
+export const CREATIVE_ROUND_TYPES = ["KICK_OFF", "INTERNAL", "CLIENT"] as const;
 export type CreativeRoundType = (typeof CREATIVE_ROUND_TYPES)[number];
 
 export function isCreativeRoundType(value: string): value is CreativeRoundType {

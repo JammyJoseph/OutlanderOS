@@ -275,11 +275,17 @@ model CreativeRound {
   campaignId   String
   campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   roundNumber  Int
-  type         String   // INTERNAL or CLIENT
+  type         String   // KICK_OFF, INTERNAL or CLIENT
   status       String   @default("IN_PROGRESS") // IN_PROGRESS, SUBMITTED, REVIEWED, APPROVED, REVISION_NEEDED
-  title        String?  // e.g. "V1 Ideas", "Client Pitch 1"
+  title        String?  // e.g. "Kick-off Brief", "V1 Ideas", "Client Pitch 1"
   brief        String?  @db.Text // Brief/notes for this round
   feedback     String?  @db.Text // Review feedback
+  // Kick-off brief fields (Commercial → Creative handoff). Only populated on
+  // KICK_OFF rounds; the creative brief housed on the platform.
+  objectives     String?  @db.Text // key objectives for the creative
+  targetAudience String?           // who the work is aimed at
+  toneDirection  String?  @db.Text // tone / creative direction
+  references     String[] @default([]) // reference links
   deadline     DateTime?
   submittedAt  DateTime?
   reviewedAt   DateTime?

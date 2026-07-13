@@ -43,7 +43,8 @@ export const POST = withAuth(async (
     if (!campaign) return NextResponse.json({ error: "Deal not found" }, { status: 404 });
 
     const body = await request.json().catch(() => ({}));
-    const { type, title, brief, deadline, deckUrl, status } = body ?? {};
+    const { type, title, brief, deadline, deckUrl, status, objectives, targetAudience, toneDirection, references } =
+      body ?? {};
 
     if (type !== undefined && !isCreativeRoundType(type)) {
       return NextResponse.json({ error: `Invalid round type: ${type}` }, { status: 400 });
@@ -51,6 +52,9 @@ export const POST = withAuth(async (
     if (status !== undefined && !isCreativeRoundStatus(status)) {
       return NextResponse.json({ error: `Invalid round status: ${status}` }, { status: 400 });
     }
+    const cleanRefs = Array.isArray(references)
+      ? references.filter((r): r is string => typeof r === "string" && r.trim().length > 0).map((r) => r.trim())
+      : [];
 
     const last = await prisma.creativeRound.findFirst({
       where: { campaignId: id },
@@ -67,6 +71,10 @@ export const POST = withAuth(async (
         status: isCreativeRoundStatus(status) ? status : "IN_PROGRESS",
         title: title ? sanitizeString(String(title), 200) : null,
         brief: brief ? sanitizeString(String(brief), 20000) : null,
+        objectives: objectives ? sanitizeString(String(objectives), 20000) : null,
+        targetAudience: targetAudience ? sanitizeString(String(targetAudience), 2000) : null,
+        toneDirection: toneDirection ? sanitizeString(String(toneDirection), 20000) : null,
+        references: cleanRefs,
         deadline: deadline ? new Date(deadline) : null,
         deckUrl: deckUrl ? sanitizeString(String(deckUrl), 2000) : null,
       },

@@ -36,9 +36,8 @@ import {
   ChevronDown,
   ChevronRight,
   ListChecks,
-  ClipboardList,
 } from "lucide-react";
-import { format, parseISO, formatDistanceToNow, differenceInCalendarDays } from "date-fns";
+import { format, parseISO, formatDistanceToNow } from "date-fns";
 import {
   STAGE_ORDER,
   STAGE_STYLES,
@@ -54,10 +53,8 @@ import {
   TYPE_STYLES,
   type DealStage,
 } from "../../_components/deal-ui";
-import { ActionTrackPanel } from "@/components/tasks/ActionTrackPanel";
 import MediaPlanTab from "../../_components/MediaPlanTab";
 import DeliverablesTab, { type Deliverable } from "./DeliverablesTab";
-import CampaignTrackerTab from "./CampaignTrackerTab";
 import CreativeRoundsTab, { type CreativeRound } from "./CreativeRoundsTab";
 
 interface ActivityEntry {
@@ -130,6 +127,8 @@ interface DealDetail {
   marginPercent?: number | null;
   mediaPlanLink?: string | null;
   mediaPlanFile?: string | null;
+  timelineStart?: string | null;
+  timelineEnd?: string | null;
   ioUrl?: string | null;
   client: { id: string; name: string; industry: string | null; brandColor: string | null };
   assignedTo: { id: string; name: string } | null;
@@ -714,7 +713,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {tab === "overview" && (
-          <OverviewTab deal={deal} onPatch={patchDeal} onReload={reload} onGoToTab={setTab} />
+          <OverviewTab deal={deal} onPatch={patchDeal} onGoToTab={setTab} />
         )}
         {tab === "creative" && creativeUnlocked && (
           <CreativeRoundsTab dealId={deal.id} initial={deal.rounds} onChanged={reload} />
@@ -1039,18 +1038,21 @@ function currentPhaseInfo(deal: DealDetail): PhaseInfo {
     if (["IN_PRODUCTION", "LIVE", "COMPLETED", "PAID"].includes(st)) index = 2;
     return { label: steps[index], index, steps };
   }
-  const steps = ["Brief", "Internal Creative", "Client Pitch", "Approval", "Production"];
+  const steps = ["Kick-off", "V1 Ideas", "Client Pitch", "Approval", "Production"];
   const rounds = deal.rounds ?? [];
+  const internal = rounds.filter((r) => r.type === "INTERNAL");
   const client = rounds.filter((r) => r.type === "CLIENT");
   const lastClient = client.length
     ? client.reduce((a, b) => (b.roundNumber >= a.roundNumber ? b : a))
     : null;
+  // Kick-off (0) until a V1/internal round starts (1); client pitch (2); once
+  // the last client round is approved (3); production once cleared (4).
   let index = 0;
-  if (rounds.length === 0) index = 0;
-  else if (client.length === 0) index = 1;
-  else if (lastClient && lastClient.status !== "APPROVED") index = 2;
-  else index = 3;
   if (deal.production) index = 4;
+  else if (lastClient && lastClient.status === "APPROVED") index = 3;
+  else if (client.length > 0) index = 2;
+  else if (internal.length > 0) index = 1;
+  else index = 0;
   return { label: steps[index], index, steps };
 }
 
@@ -1078,13 +1080,15 @@ function deriveAutoTasks(deal: DealDetail): AutoTask[] {
     Boolean(deal.ioUrl) ||
     STAGE_ORDER.indexOf(normalizeStage(deal.stage)) >= STAGE_ORDER.indexOf("IO_SIGNED_KICK_OFF");
 
+  const kickoff = rounds.find((r) => r.type === "KICK_OFF") ?? null;
+
   switch (currentPhaseInfo(deal).label) {
-    case "Brief":
+    case "Kick-off":
       return [
-        { label: "Send creative brief", done: rounds.length > 0 || Boolean(deal.clientBrief?.sentToCreativeAt) },
-        { label: "Schedule kick-off call", done: false },
+        { label: "Prepare kick-off brief", done: Boolean(kickoff) },
+        { label: "Complete brief & unlock V1", done: kickoff?.status === "APPROVED" },
       ];
-    case "Internal Creative":
+    case "V1 Ideas":
       return [
         {
           label: lastInternal?.deadline
@@ -1116,45 +1120,55 @@ function deriveAutoTasks(deal: DealDetail): AutoTask[] {
 function OverviewTab({
   deal,
   onPatch,
-  onReload,
   onGoToTab,
 }: {
   deal: DealDetail;
   onPatch: (data: Record<string, unknown>) => Promise<void>;
-  onReload: () => Promise<void>;
   onGoToTab: (t: Tab) => void;
 }) {
-  const [notes, setNotes] = useState(deal.notes ?? "");
-  const [description, setDescription] = useState(deal.description ?? "");
-  const [saving, setSaving] = useState(false);
-  const [showTracker, setShowTracker] = useState(false);
-
-  const stageHistory = deal.activities.filter((a) => a.type === "stage_change").slice(0, 8);
-  const recent = deal.activities.slice(0, 12);
+  const recent = deal.activities.slice(0, 8);
   const types = dealTypesOf(deal);
   const phase = currentPhaseInfo(deal);
   const autoTasks = deriveAutoTasks(deal);
   const tasksDone = autoTasks.filter((t) => t.done).length;
-  const allocations = Array.isArray(deal.allocations) ? deal.allocations : [];
-
-  async function saveNotes() {
-    if (notes === (deal.notes ?? "")) return;
-    setSaving(true);
-    await onPatch({ notes });
-    setSaving(false);
-  }
-
-  async function saveDescription() {
-    if (description === (deal.description ?? "")) return;
-    setSaving(true);
-    await onPatch({ description: description || null });
-    setSaving(false);
-  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div className="lg:col-span-2 space-y-5">
-        {/* Auto-populated deal summary + current phase */}
+        {/* Total budget — hero number + current phase */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+              Total budget
+            </p>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#9C7C2E]/10 dark:bg-[#C9A44A]/10 text-[var(--portal-commercial)]">
+              {phase.label}
+            </span>
+          </div>
+          <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 tabular-nums mt-1">
+            {formatMoney(deal.value)}
+          </p>
+          <div className="mt-4 flex items-center gap-1">
+            {phase.steps.map((step, i) => (
+              <div key={step} className="flex-1">
+                <div
+                  className={`h-1.5 rounded-full ${
+                    i <= phase.index ? "bg-[#9C7C2E] dark:bg-[#C9A44A]" : "bg-gray-100 dark:bg-gray-800"
+                  }`}
+                />
+                <p
+                  className={`mt-1 text-[9px] font-medium truncate ${
+                    i <= phase.index ? "text-gray-600 dark:text-gray-300" : "text-gray-300 dark:text-gray-600"
+                  }`}
+                >
+                  {step}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Deal summary */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">Deal summary</h3>
           <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
@@ -1182,12 +1196,7 @@ function OverviewTab({
                 {deal.assignedTo?.name ?? "Unassigned"}
               </span>
             </SummaryCell>
-            <SummaryCell label="Workflow">
-              <span className="font-medium text-gray-800 dark:text-gray-200">
-                {deal.workflowType === "SUPPLIED_ASSETS" ? "Supplied assets" : "Creative brief"}
-              </span>
-            </SummaryCell>
-            <SummaryCell label="Types">
+            <SummaryCell label="Type">
               <span className="flex flex-wrap gap-1">
                 {types.slice(0, 3).map((t) => {
                   const st = typeStyle(t);
@@ -1203,37 +1212,9 @@ function OverviewTab({
               </span>
             </SummaryCell>
           </dl>
-
-          {/* Current phase progress */}
-          <div className="mt-5 pt-4 border-t border-gray-50 dark:border-gray-800">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                Current phase
-              </p>
-              <p className="text-xs font-semibold text-[var(--portal-commercial)]">{phase.label}</p>
-            </div>
-            <div className="flex items-center gap-1">
-              {phase.steps.map((step, i) => (
-                <div key={step} className="flex-1">
-                  <div
-                    className={`h-1.5 rounded-full ${
-                      i <= phase.index ? "bg-[#9C7C2E] dark:bg-[#C9A44A]" : "bg-gray-100 dark:bg-gray-800"
-                    }`}
-                  />
-                  <p
-                    className={`mt-1 text-[9px] font-medium truncate ${
-                      i <= phase.index ? "text-gray-600 dark:text-gray-300" : "text-gray-300 dark:text-gray-600"
-                    }`}
-                  >
-                    {step}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* Auto tasks (Phase 3) */}
+        {/* What needs doing — auto tasks for the current phase */}
         {autoTasks.length > 0 && (
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
             <div className="flex items-center justify-between mb-3">
@@ -1278,48 +1259,7 @@ function OverviewTab({
           </div>
         )}
 
-        {/* Description */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Description</h3>
-            {saving && <Loader2 size={13} className="animate-spin text-gray-400" />}
-          </div>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={saveDescription}
-            rows={4}
-            placeholder="What's the deal? Scope, deliverables, context — saved automatically when you click away…"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 dark:focus:ring-[#C9A44A]/30 focus:border-[#9C7C2E] dark:focus:border-[#C9A44A]"
-          />
-        </div>
-
-        {/* Notes */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Notes</h3>
-            {saving && <Loader2 size={13} className="animate-spin text-gray-400" />}
-          </div>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            onBlur={saveNotes}
-            rows={6}
-            placeholder="Internal notes — saved automatically when you click away…"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 dark:focus:ring-[#C9A44A]/30 focus:border-[#9C7C2E] dark:focus:border-[#C9A44A]"
-          />
-        </div>
-
-        {/* Action items — real tasks (Tasks tab folded into overview) */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
-            <ClipboardList size={15} className="text-[var(--portal-commercial)]" />
-            Action items
-          </h3>
-          <ActionTrackPanel projectId={deal.id} />
-        </div>
-
-        {/* Activity feed — merged inline (Activity tab folded into overview) */}
+        {/* Recent activity — compact timeline */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
             <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
@@ -1352,58 +1292,7 @@ function OverviewTab({
       </div>
 
       <div className="space-y-5">
-        {/* Budget summary (Phase 3) */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <Banknote size={15} className="text-[var(--portal-commercial)]" />
-              Budget
-            </h3>
-            <button
-              onClick={() => onGoToTab("budget")}
-              className="text-[11px] font-medium text-[var(--portal-commercial)] hover:underline"
-            >
-              Edit
-            </button>
-          </div>
-          <dl className="space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <dt className="text-gray-400">Total value</dt>
-              <dd className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
-                {formatMoney(deal.value)}
-              </dd>
-            </div>
-            {deal.marginAmount != null && (
-              <div className="flex items-center justify-between">
-                <dt className="text-gray-400">Margin</dt>
-                <dd className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
-                  {formatMoney(deal.marginAmount)}
-                  {deal.marginPercent != null ? ` · ${deal.marginPercent}%` : ""}
-                </dd>
-              </div>
-            )}
-          </dl>
-          {allocations.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-50 dark:border-gray-800 space-y-1.5">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                Allocation
-              </p>
-              {allocations.map((a, i) => (
-                <div key={`${a.name}-${i}`} className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                    {a.isProductionBudget && <Film size={11} className="text-red-500" />}
-                    {a.name}
-                  </span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
-                    {formatMoney(a.amount)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Media plan status (Phase 3) */}
+        {/* Media plan overview */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Media plan</h3>
@@ -1414,109 +1303,35 @@ function OverviewTab({
               Open
             </button>
           </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                deal.budgetLocked
-                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
-                  : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
-              }`}
+          <span
+            className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+              deal.budgetLocked
+                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+            }`}
+          >
+            {deal.budgetLocked ? <LockIcon size={11} /> : null}
+            {deal.budgetLocked ? "Locked" : "Not locked"}
+          </span>
+          {deal.mediaPlanLink ? (
+            <a
+              href={deal.mediaPlanLink.startsWith("http") ? deal.mediaPlanLink : `https://${deal.mediaPlanLink}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[var(--portal-commercial)] hover:underline"
             >
-              {deal.budgetLocked ? <LockIcon size={11} /> : null}
-              {deal.budgetLocked ? "Locked" : "Not locked"}
-            </span>
-            {(deal.mediaPlanLink || deal.mediaPlanFile) && (
-              <span className="text-[11px] text-gray-400">Plan attached</span>
-            )}
-          </div>
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="text-gray-400">Deliverables</span>
-            <button
-              onClick={() => onGoToTab("budget")}
-              className="font-semibold text-gray-800 dark:text-gray-200 hover:text-[var(--portal-commercial)]"
-            >
-              {deal.deliverables.length}
-            </button>
-          </div>
+              <LinkIcon size={12} /> View media plan <ArrowUpRight size={11} />
+            </a>
+          ) : deal.mediaPlanFile ? (
+            <p className="mt-3 text-xs text-gray-400">Media plan PDF attached.</p>
+          ) : (
+            <p className="mt-3 text-xs text-gray-400">No media plan uploaded yet.</p>
+          )}
         </div>
 
-        {/* Production status — live cross-portal view once the deal is cleared */}
-        {deal.production && (() => {
-          const prod = deal.production;
-          const utilisation =
-            prod.budgetTotal && prod.budgetTotal > 0
-              ? Math.round(((prod.budgetActual ?? 0) / prod.budgetTotal) * 100)
-              : null;
-          const nextShoot = prod.shootDates
-            .map((d) => parseISO(d))
-            .filter((d) => differenceInCalendarDays(d, new Date()) >= 0)
-            .sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
-          return (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                <Film size={15} className="text-red-600" />
-                Production Status
-              </h3>
-              <Link
-                href={`/production/${prod.id}`}
-                className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-red-600 transition-colors"
-              >
-                {prod.title}
-              </Link>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-[11px] font-medium text-red-600">
-                  {PRODUCTION_STATUS_LABELS[prod.status] ?? prod.status}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {prod._count?.teamMembers ?? 0} crew
-                </span>
-              </div>
-              <dl className="mt-3 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <dt className="text-gray-400 flex items-center gap-1.5">
-                    <CalendarDays size={12} /> Next shoot
-                  </dt>
-                  <dd className="font-medium text-gray-700 dark:text-gray-300">
-                    {nextShoot ? format(nextShoot, "EEE d MMM") : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <dt className="text-gray-400">Budget used</dt>
-                    <dd className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
-                      {formatMoney(prod.budgetActual ?? 0)} / {formatMoney(prod.budgetTotal ?? 0)}
-                      {utilisation !== null ? ` · ${utilisation}%` : ""}
-                    </dd>
-                  </div>
-                  {utilisation !== null && (
-                    <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${utilisation > 100 ? "bg-red-500" : "bg-emerald-400"}`}
-                        style={{ width: `${Math.min(100, utilisation)}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-gray-400">Last update</dt>
-                  <dd className="font-medium text-gray-700 dark:text-gray-300">
-                    {formatDistanceToNow(parseISO(prod.updatedAt), { addSuffix: true })}
-                  </dd>
-                </div>
-              </dl>
-              <Link
-                href={`/production/${prod.id}`}
-                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-600 transition-colors"
-              >
-                Open in Production <ArrowUpRight size={12} />
-              </Link>
-            </div>
-          );
-        })()}
-
-        {/* Dates */}
+        {/* Key dates */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Dates</h3>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Key dates</h3>
           <dl className="space-y-2.5 text-sm">
             <div className="flex items-center justify-between">
               <dt className="text-gray-400 flex items-center gap-1.5">
@@ -1524,6 +1339,22 @@ function OverviewTab({
               </dt>
               <dd className="font-medium text-gray-700 dark:text-gray-300">
                 {format(parseISO(deal.createdAt), "d MMM yyyy")}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-gray-400 flex items-center gap-1.5">
+                <CalendarDays size={13} /> Timeline start
+              </dt>
+              <dd className="font-medium text-gray-700 dark:text-gray-300">
+                {deal.timelineStart ? format(parseISO(deal.timelineStart), "d MMM yyyy") : "—"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-gray-400 flex items-center gap-1.5">
+                <CalendarDays size={13} /> Timeline end
+              </dt>
+              <dd className="font-medium text-gray-700 dark:text-gray-300">
+                {deal.timelineEnd ? format(parseISO(deal.timelineEnd), "d MMM yyyy") : "—"}
               </dd>
             </div>
             <div className="flex items-center justify-between">
@@ -1539,45 +1370,7 @@ function OverviewTab({
                 />
               </dd>
             </div>
-            <div className="flex items-center justify-between">
-              <dt className="text-gray-400 flex items-center gap-1.5">
-                <ArrowRightLeft size={13} /> In stage since
-              </dt>
-              <dd className="font-medium text-gray-700 dark:text-gray-300">
-                {format(parseISO(deal.stageUpdatedAt ?? deal.createdAt), "d MMM yyyy")}
-              </dd>
-            </div>
           </dl>
-
-          {stageHistory.length > 0 && (
-            <>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-4 mb-2">
-                Stage history
-              </p>
-              <div className="space-y-1.5">
-                {stageHistory.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {a.meta?.from && a.meta?.to ? (
-                        <>
-                          {STAGE_STYLES[a.meta.from as DealStage]?.label ?? a.meta.from}
-                          {" → "}
-                          <span className="font-semibold">
-                            {STAGE_STYLES[a.meta.to as DealStage]?.label ?? a.meta.to}
-                          </span>
-                        </>
-                      ) : (
-                        a.message
-                      )}
-                    </span>
-                    <span className="text-gray-400 shrink-0 ml-2">
-                      {format(parseISO(a.createdAt), "d MMM")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
         </div>
 
         {/* Client */}
@@ -1609,43 +1402,6 @@ function OverviewTab({
             <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-50">
               No billing contact linked.
             </p>
-          )}
-        </div>
-
-        {/* Campaign tracker — merged inline (its own tab was removed) */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-          <button
-            onClick={() => setShowTracker((s) => !s)}
-            className="w-full flex items-center justify-between gap-2 px-6 py-4 text-left hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
-          >
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
-              Campaign Tracker
-            </h3>
-            <span className="text-gray-400">
-              {showTracker ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </span>
-          </button>
-          {showTracker && (
-            <div className="px-4 pb-4">
-              <CampaignTrackerTab
-                dealId={deal.id}
-                initial={deal.deliverables}
-                workflowType={deal.workflowType}
-                dueDate={deal.dueDate}
-                production={
-                  deal.production
-                    ? {
-                        id: deal.production.id,
-                        title: deal.production.title,
-                        status: deal.production.status,
-                        shootDates: deal.production.shootDates,
-                      }
-                    : null
-                }
-                onChanged={onReload}
-              />
-            </div>
           )}
         </div>
       </div>
