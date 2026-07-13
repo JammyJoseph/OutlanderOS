@@ -314,6 +314,13 @@ function Directory() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
+  // Undo affordance for the last archive — holds the removed contact, the index
+  // it was at (so undo can splice it back), and the auto-dismiss timer.
+  const [undoItem, setUndoItem] = useState<{
+    contact: ContactRecord;
+    index: number;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
 
   const [editing, setEditing] = useState<ContactRecord | null | undefined>(undefined);
   const [addingRadar, setAddingRadar] = useState<ContactRecord | null | undefined>(undefined);
@@ -497,10 +504,19 @@ function Directory() {
     });
   }
 
-  // Soft-archive a contact — drop it from the list optimistically, then persist.
+  // Soft-archive a contact — drop it from the list optimistically (no confirm),
+  // persist, and offer a 5-second Undo instead of a confirmation dialog. Scroll
+  // position is preserved because we only filter local state (SplitPanel keeps
+  // the highlight on the neighbouring row rather than re-fetching).
   async function archiveContact(contact: ContactRecord) {
+    const index = contacts.findIndex((c) => c.id === contact.id);
     setContacts((prev) => prev.filter((c) => c.id !== contact.id));
-    showToast(`Archived ${contact.name}`);
+
+    // Replace any in-flight undo toast — the previous archive just finalises.
+    if (undoItem) clearTimeout(undoItem.timer);
+    const timer = setTimeout(() => setUndoItem(null), 5000);
+    setUndoItem({ contact, index: index < 0 ? 0 : index, timer });
+
     const res = await fetch(`/api/contacts/${contact.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -508,10 +524,41 @@ function Directory() {
     });
     if (res.ok) await loadCategories();
     else {
+      clearTimeout(timer);
+      setUndoItem(null);
       showToast("Could not archive — refreshing");
       await loadContacts();
     }
   }
+
+  // Undo the last archive within the 5s window: unarchive on the server and
+  // splice the contact back into the list at the position it was removed from.
+  async function undoArchive() {
+    if (!undoItem) return;
+    clearTimeout(undoItem.timer);
+    const { contact, index } = undoItem;
+    setUndoItem(null);
+    setContacts((prev) => {
+      if (prev.some((c) => c.id === contact.id)) return prev;
+      const next = [...prev];
+      next.splice(Math.min(index, next.length), 0, contact);
+      return next;
+    });
+    const res = await fetch(`/api/contacts/${contact.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archived: false }),
+    });
+    if (res.ok) await loadCategories();
+  }
+
+  // Clear any pending undo timer when the page unmounts.
+  useEffect(() => {
+    return () => {
+      if (undoItem) clearTimeout(undoItem.timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // File a contact into a Print Directory tier (1/2/3), or unfile when the same
   // tier is pressed again. Optimistic — updates the row, toasts, then persists.
@@ -966,6 +1013,21 @@ function Directory() {
         </div>
       )}
 
+      {/* Undo-archive toast — auto-dismisses after 5s, Undo restores the contact. */}
+      {undoItem && (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 px-4">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg">
+            <span className="text-sm text-foreground">{undoItem.contact.name} archived</span>
+            <button
+              onClick={undoArchive}
+              className="text-sm font-semibold text-[#9C7C2E] dark:text-[#C9A44A] hover:underline"
+            >
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
+
       {editing !== undefined && (
         <ContactModal
           contact={editing}
@@ -1022,8 +1084,6 @@ function SplitPanel({
 }) {
   // The highlighted contact, tracked by id so it survives list re-sorts/filters.
   const [activeId, setActiveId] = useState<string | null>(contacts[0]?.id ?? null);
-  // Contact awaiting an archive confirmation (from the ← key), null when idle.
-  const [confirmArchive, setConfirmArchive] = useState<ContactRecord | null>(null);
   // True for a beat after a → favourite so the detail-panel star pops.
   const [favPulse, setFavPulse] = useState(false);
   // Tier flashed on the active row for a beat after a 1/2/3 filing (0 = none).
@@ -1042,7 +1102,7 @@ function SplitPanel({
   const active = contacts.find((c) => c.id === activeId) ?? contacts[0] ?? null;
 
   // Keyboard shortcuts (ignored while typing in a field):
-  //   ↑ ↓  move the highlight   →  favourite (instant)   ←  archive (confirm)
+  //   ↑ ↓  move the highlight   →  favourite (instant)   ←  archive (instant, undoable)
   //   1 2 3  file the highlighted contact into a Print Directory tier
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -1050,19 +1110,6 @@ function SplitPanel({
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       // Don't hijack browser/OS shortcuts (⌘1 to switch tabs, etc.).
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-
-      // While an archive confirmation is up, Enter confirms, anything else cancels.
-      if (confirmArchive) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          onArchive(confirmArchive);
-          setConfirmArchive(null);
-        } else if (e.key === "Escape" || e.key === "ArrowLeft") {
-          e.preventDefault();
-          setConfirmArchive(null);
-        }
-        return;
-      }
 
       const idx = contacts.findIndex((c) => c.id === activeId);
       const cur = idx < 0 ? 0 : idx;
@@ -1084,7 +1131,13 @@ function SplitPanel({
         }
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
-        if (current) setConfirmArchive(current);
+        if (current) {
+          // Move the highlight to the neighbouring row *before* removing this one
+          // so the list keeps its scroll position instead of jumping to the top.
+          const nextActive = contacts[cur + 1]?.id ?? contacts[cur - 1]?.id ?? null;
+          setActiveId(nextActive);
+          onArchive(current);
+        }
       } else if (e.key === "1" || e.key === "2" || e.key === "3") {
         e.preventDefault();
         if (current) {
@@ -1097,14 +1150,7 @@ function SplitPanel({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [contacts, activeId, confirmArchive, onArchive, onToggleFavourite, onFile]);
-
-  // Auto-dismiss the archive confirmation if it's left unanswered.
-  useEffect(() => {
-    if (!confirmArchive) return;
-    const t = setTimeout(() => setConfirmArchive(null), 4000);
-    return () => clearTimeout(t);
-  }, [confirmArchive]);
+  }, [contacts, activeId, onArchive, onToggleFavourite, onFile]);
 
   // Keep the highlighted row visible as the selection moves.
   useEffect(() => {
@@ -1161,37 +1207,6 @@ function SplitPanel({
           <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
           <span className="text-gray-500 dark:text-gray-400">1·2·3</span> File to Print
         </div>
-
-        {/* Archive confirmation — brief overlay, Enter to confirm / Esc to cancel. */}
-        {confirmArchive && (
-          <div className="absolute inset-x-3 bottom-12 z-20 rounded-xl border border-border bg-popover px-4 py-3 shadow-2xl">
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              Archive {confirmArchive.name}?
-            </p>
-            <div className="mt-2 flex items-center gap-2">
-              <button
-                onClick={() => {
-                  onArchive(confirmArchive);
-                  setConfirmArchive(null);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-black"
-                style={{ backgroundColor: ACCENT }}
-              >
-                Archive
-              </button>
-              <button
-                onClick={() => setConfirmArchive(null)}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-              >
-                Cancel
-              </button>
-              <span className="ml-auto text-[10px] text-gray-400 dark:text-gray-500">
-                <span className="font-semibold text-gray-500 dark:text-gray-400">Enter</span> confirm ·{" "}
-                <span className="font-semibold text-gray-500 dark:text-gray-400">Esc</span> cancel
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Right — contact detail */}
