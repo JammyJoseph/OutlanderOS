@@ -326,11 +326,9 @@ function Directory() {
   const [addingRadar, setAddingRadar] = useState<ContactRecord | null | undefined>(undefined);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
-  // Server-side pagination for the contact list (Load more).
+  // The directory loads the whole (small) contact set at once via `?fields=list`,
+  // so there's no pagination. `contactsTotal` is kept for the dashboard stat.
   const [contactsTotal, setContactsTotal] = useState(0);
-  const [contactsPage, setContactsPage] = useState(1);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const CONTACTS_LIMIT = 50;
 
   const setView = useCallback(
     (v: View) => router.push(v === "dashboard" ? "/directory" : `/directory?view=${v}`),
@@ -348,33 +346,19 @@ function Directory() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const loadContacts = useCallback(
-    async (page = 1) => {
-      const params = new URLSearchParams({
-        radar: "false",
-        page: String(page),
-        limit: String(CONTACTS_LIMIT),
-      });
-      if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
-      if (category) params.set("category", category);
-      const res = await fetch(`/api/contacts?${params.toString()}`);
-      const data = await res.json();
-      const list: ContactRecord[] = Array.isArray(data) ? data : data?.data ?? [];
-      setContacts((prev) => (page === 1 ? list : [...prev, ...list]));
-      setContactsTotal(typeof data?.total === "number" ? data.total : list.length);
-      setContactsPage(page);
-    },
-    [debouncedSearch, category]
-  );
-
-  async function loadMoreContacts() {
-    setLoadingMore(true);
-    try {
-      await loadContacts(contactsPage + 1);
-    } finally {
-      setLoadingMore(false);
-    }
-  }
+  // Load the full contact set in one lean request. `?fields=list` returns only
+  // the fields the list needs (no heavy JSON/notes); the detail panel fetches the
+  // full record on click.
+  const loadContacts = useCallback(async () => {
+    const params = new URLSearchParams({ radar: "false", fields: "list" });
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+    if (category) params.set("category", category);
+    const res = await fetch(`/api/contacts?${params.toString()}`);
+    const data = await res.json();
+    const list: ContactRecord[] = Array.isArray(data) ? data : data?.data ?? [];
+    setContacts(list);
+    setContactsTotal(typeof data?.total === "number" ? data.total : list.length);
+  }, [debouncedSearch, category]);
 
   const loadRadar = useCallback(async () => {
     const params = new URLSearchParams();
@@ -959,24 +943,6 @@ function Directory() {
           />
         )}
 
-        {/* Load more — server-side pagination for the contact list */}
-        {(view === "contacts" || view === "recent") &&
-          !loading &&
-          contacts.length < contactsTotal && (
-            <div className="mt-6 flex flex-col items-center gap-2">
-              <button
-                onClick={loadMoreContacts}
-                disabled={loadingMore}
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-secondary disabled:opacity-50"
-              >
-                {loadingMore ? <Loader2 size={15} className="animate-spin" /> : null}
-                Load more
-              </button>
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">
-                Showing {contacts.length} of {contactsTotal}
-              </span>
-            </div>
-          )}
       </div>
 
       {/* Floating share bar */}

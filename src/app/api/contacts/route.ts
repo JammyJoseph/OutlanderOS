@@ -4,6 +4,29 @@ import { withAuth } from '@/lib/auth'
 import { validateRequired, sanitizeString, validateEmail } from '@/lib/validate'
 import { parsePagination, paginate } from '@/lib/pagination'
 
+// Lean field projection for the directory list view (`?fields=list`). The 10
+// fields the task calls for, plus a few cheap scalar columns the list/dashboard
+// already depend on (createdAt for "Recently Added", location for the country
+// filter, source/scannedAt for the "recently scanned" strip). Heavy JSON
+// (recentPosts, collaborations, portfolioLinks) and long text (notes) are left
+// to the per-contact detail fetch.
+const LIST_SELECT = {
+  id: true,
+  name: true,
+  instagram: true,
+  category: true,
+  profilePic: true,
+  followers: true,
+  printTier: true,
+  isFavourite: true,
+  archived: true,
+  updatedAt: true,
+  createdAt: true,
+  location: true,
+  source: true,
+  scannedAt: true,
+} as const
+
 export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search') || ''
@@ -47,21 +70,34 @@ export const GET = withAuth(async (request: NextRequest) => {
     ],
   }
 
+  // `?fields=list` returns a lean projection for the directory's list view: just
+  // enough to render + sort + filter rows, without the heavy JSON columns
+  // (recentPosts, collaborations, portfolioLinks) or long text (notes). The
+  // detail panel fetches the full record on click via /api/contacts/[id]. List
+  // mode always returns every matching row — pagination is ignored — because the
+  // directory loads the whole (small) contact set at once.
+  const listMode = searchParams.get('fields') === 'list'
+
   // Pagination is opt-in: callers that pass `page`/`limit` get a page, everyone
-  // else (pickers, dashboards) still gets the full list. Either way the response
-  // uses the standard { data, total, page, pages } envelope.
-  const isPaginated = searchParams.has('page') || searchParams.has('limit')
+  // else (pickers, dashboards) still gets the full list. List mode never
+  // paginates. Either way the response uses the { data, total, page, pages } envelope.
+  const isPaginated = !listMode && (searchParams.has('page') || searchParams.has('limit'))
   const { page, limit, skip } = parsePagination(searchParams, { defaultLimit: 50, maxLimit: 200 })
 
-  const [contacts, total] = await Promise.all([
-    prisma.contact.findMany({
-      where,
-      include: { creator: { select: { id: true, name: true } } },
-      orderBy: { updatedAt: 'desc' },
-      ...(isPaginated ? { skip, take: limit } : {}),
-    }),
-    prisma.contact.count({ where }),
-  ])
+  const contactsQuery = listMode
+    ? prisma.contact.findMany({
+        where,
+        select: LIST_SELECT,
+        orderBy: { updatedAt: 'desc' },
+      })
+    : prisma.contact.findMany({
+        where,
+        include: { creator: { select: { id: true, name: true } } },
+        orderBy: { updatedAt: 'desc' },
+        ...(isPaginated ? { skip, take: limit } : {}),
+      })
+
+  const [contacts, total] = await Promise.all([contactsQuery, prisma.contact.count({ where })])
 
   return NextResponse.json(paginate(contacts, total, isPaginated ? page : 1, isPaginated ? limit : total || 1))
 })
