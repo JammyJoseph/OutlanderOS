@@ -239,6 +239,7 @@ model Campaign {
   creativeResponse Json? // { treatment, moodBoardLinks: string[], sentDate, revisions: [{ treatment, moodBoardLinks, sentDate }] }
   clientFeedback   Json? // [{ date, from, text, type: 'note'|'revision'|'approval' }]
   creativeStatus   String? // AWAITING_RESPONSE | RESPONSE_SENT | IN_REVIEW | REVISIONS_REQUESTED | APPROVED
+  isWhiteLabel     Boolean        @default(false) // deal delivered under the client's own brand, not Outlander's
   lastSyncedToProduction DateTime? // last time deal changes were pushed to the linked Production
   paymentTerms     String?
   notes            String?
@@ -262,6 +263,31 @@ model Campaign {
   intelligenceLogs IntelligenceLog[]
   activities       DealActivity[]
   tasks            Task[]            @relation("campaignTasks")
+  rounds           CreativeRound[]
+}
+
+// Creative Rounds — the iterative brief → submit → review → approve loop for a
+// deal. Each round is either INTERNAL (Outlander team ideation) or CLIENT
+// (pitched to the client). Replaces the older single clientBrief/creativeResponse
+// blobs; those stay on Campaign for backwards compatibility.
+model CreativeRound {
+  id           String   @id @default(cuid())
+  campaignId   String
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  roundNumber  Int
+  type         String   // INTERNAL or CLIENT
+  status       String   @default("IN_PROGRESS") // IN_PROGRESS, SUBMITTED, REVIEWED, APPROVED, REVISION_NEEDED
+  title        String?  // e.g. "V1 Ideas", "Client Pitch 1"
+  brief        String?  @db.Text // Brief/notes for this round
+  feedback     String?  @db.Text // Review feedback
+  deadline     DateTime?
+  submittedAt  DateTime?
+  reviewedAt   DateTime?
+  deckUrl      String?  // Figma link or deck URL
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([campaignId])
 }
 
 enum DealStage {

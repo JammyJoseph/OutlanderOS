@@ -290,6 +290,52 @@ export function isCreativeStatus(value: string): value is CreativeStatusValue {
   return (CREATIVE_STATUSES as readonly string[]).includes(value);
 }
 
+// ── Creative Rounds — the iterative brief → submit → review → approve loop ────
+export const CREATIVE_ROUND_TYPES = ["INTERNAL", "CLIENT"] as const;
+export type CreativeRoundType = (typeof CREATIVE_ROUND_TYPES)[number];
+
+export function isCreativeRoundType(value: string): value is CreativeRoundType {
+  return (CREATIVE_ROUND_TYPES as readonly string[]).includes(value);
+}
+
+export const CREATIVE_ROUND_STATUSES = [
+  "IN_PROGRESS",
+  "SUBMITTED",
+  "REVIEWED",
+  "APPROVED",
+  "REVISION_NEEDED",
+] as const;
+export type CreativeRoundStatus = (typeof CREATIVE_ROUND_STATUSES)[number];
+
+export function isCreativeRoundStatus(value: string): value is CreativeRoundStatus {
+  return (CREATIVE_ROUND_STATUSES as readonly string[]).includes(value);
+}
+
+// Minimal shape of a round used by the handover gate below.
+export type RoundLike = { type: string; status: string; deckUrl?: string | null; roundNumber?: number };
+
+// The final CLIENT-type round, if any (highest roundNumber wins).
+export function lastClientRound<T extends RoundLike>(rounds: T[]): T | null {
+  const client = rounds.filter((r) => r.type === "CLIENT");
+  if (!client.length) return null;
+  return client.reduce((latest, r) =>
+    (r.roundNumber ?? 0) >= (latest.roundNumber ?? 0) ? r : latest
+  );
+}
+
+// Creative is "approved for handover" when the last CLIENT round is APPROVED.
+// Falls back to the legacy creativeStatus for deals with no rounds yet.
+export function creativeApprovedForHandover(deal: {
+  creativeStatus?: string | null;
+  rounds?: RoundLike[] | null;
+}): boolean {
+  const rounds = deal.rounds ?? [];
+  const finalClient = lastClientRound(rounds);
+  if (finalClient) return finalClient.status === "APPROVED";
+  // No client round logged yet — fall back to the legacy single-status flow.
+  return deal.creativeStatus === "APPROVED";
+}
+
 // ── Creative workflow JSON shapes stored on Campaign ────────────────────────
 export type ClientBrief = {
   content: string;
@@ -389,6 +435,7 @@ export function clearForProductionChecklist(deal: {
   clientBrief: unknown;
   briefContent: string | null;
   description?: string | null;
+  rounds?: RoundLike[] | null;
 }): { items: ChecklistItem[]; ready: boolean } {
   const creative = deal.workflowType !== "SUPPLIED_ASSETS";
   const stage = normalizeStage(deal.stage);
@@ -402,13 +449,17 @@ export function clearForProductionChecklist(deal: {
   const brief = parseClientBrief(deal.clientBrief);
   const briefOk = Boolean(brief?.content?.trim() || deal.briefContent?.trim());
 
+  // Creative is approved when the last CLIENT-type round is APPROVED (falls back
+  // to the legacy creativeStatus for deals with no rounds yet).
+  const creativeOk = creativeApprovedForHandover(deal);
+
   const items: ChecklistItem[] = [
     {
       key: "creative",
       label: creative ? "Creative approved by client" : "Creative approval (N/A — supplied assets)",
-      ok: creative ? deal.creativeStatus === "APPROVED" : true,
-      detail: creative && deal.creativeStatus !== "APPROVED"
-        ? "Log an approval in Client Feedback on the Brief & Creative tab"
+      ok: creative ? creativeOk : true,
+      detail: creative && !creativeOk
+        ? "Get the final client round approved on the Creative tab"
         : undefined,
     },
     {

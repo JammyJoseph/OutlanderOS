@@ -35,6 +35,8 @@ import {
   Circle,
   ChevronDown,
   ChevronRight,
+  ListChecks,
+  ClipboardList,
 } from "lucide-react";
 import { format, parseISO, formatDistanceToNow, differenceInCalendarDays } from "date-fns";
 import {
@@ -56,6 +58,7 @@ import { ActionTrackPanel } from "@/components/tasks/ActionTrackPanel";
 import MediaPlanTab from "../../_components/MediaPlanTab";
 import DeliverablesTab, { type Deliverable } from "./DeliverablesTab";
 import CampaignTrackerTab from "./CampaignTrackerTab";
+import CreativeRoundsTab, { type CreativeRound } from "./CreativeRoundsTab";
 
 interface ActivityEntry {
   id: string;
@@ -106,6 +109,8 @@ interface DealDetail {
   creativeResponse: CreativeResponseData | null;
   clientFeedback: FeedbackEntryData[] | null;
   creativeStatus: string | null;
+  isWhiteLabel: boolean;
+  rounds: CreativeRound[];
   budgetLocked: boolean;
   lastSyncedToProduction: string | null;
   archived: boolean;
@@ -120,6 +125,12 @@ interface DealDetail {
   createdAt: string;
   updatedAt: string;
   budgetBreakdown: { category: string; amount: number }[] | null;
+  allocations?: { name: string; amount: number; isProductionBudget?: boolean }[] | null;
+  marginAmount?: number | null;
+  marginPercent?: number | null;
+  mediaPlanLink?: string | null;
+  mediaPlanFile?: string | null;
+  ioUrl?: string | null;
   client: { id: string; name: string; industry: string | null; brandColor: string | null };
   assignedTo: { id: string; name: string } | null;
   billingContact: { id: string; name: string; email: string | null; phone: string | null } | null;
@@ -151,6 +162,7 @@ const PRODUCTION_STATUS_LABELS: Record<string, string> = {
 interface TeamMember {
   id: string;
   name: string;
+  teams?: unknown;
 }
 
 interface ClientOption {
@@ -158,7 +170,14 @@ interface ClientOption {
   name: string;
 }
 
-type Tab = "overview" | "brief" | "mediaplan" | "deliverables" | "tracker" | "tasks" | "activity";
+// Simplified tab set (Phase 4): Overview absorbs activity + tracker + auto-tasks;
+// Creative is the rounds system; Budget & Deliverables are merged; Documents is new.
+type Tab = "overview" | "creative" | "budget" | "mediaplan" | "documents";
+
+// Does a user sit on the Commercial team? teams is a JSON array on the user.
+function isCommercial(u: TeamMember): boolean {
+  return Array.isArray(u.teams) && u.teams.some((t) => String(t).toUpperCase() === "COMMERCIAL");
+}
 
 // Sign-off / approval onward counts as "won".
 const WON_STAGES: DealStage[] = [
@@ -188,14 +207,25 @@ function buildLaunchChecklist(deal: DealDetail): { items: ChecklistItem[]; ready
   const stageOk = stageIdx >= gateIdx;
   const briefOk = Boolean(deal.clientBrief?.content?.trim() || deal.briefContent?.trim());
 
+  // Creative is approved when the last CLIENT-type round is APPROVED. Falls back
+  // to the legacy creativeStatus for deals that predate the rounds system.
+  const clientRounds = (deal.rounds ?? []).filter((r) => r.type === "CLIENT");
+  const finalClientRound =
+    clientRounds.length > 0
+      ? clientRounds.reduce((a, b) => (b.roundNumber >= a.roundNumber ? b : a))
+      : null;
+  const creativeOk = finalClientRound
+    ? finalClientRound.status === "APPROVED"
+    : deal.creativeStatus === "APPROVED";
+
   const items: ChecklistItem[] = [
     {
       key: "creative",
       label: creative ? "Creative approved by client" : "Creative approval — N/A for supplied assets",
-      ok: creative ? deal.creativeStatus === "APPROVED" : true,
+      ok: creative ? creativeOk : true,
       detail:
-        creative && deal.creativeStatus !== "APPROVED"
-          ? "Log an approval in Client Feedback on the Brief & Creative tab"
+        creative && !creativeOk
+          ? "Get the final client round approved on the Creative tab"
           : undefined,
     },
     {
@@ -404,16 +434,20 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const contractedLocked =
     STAGE_ORDER.indexOf(normalizedStage) >= STAGE_ORDER.indexOf("IO_SIGNED_KICK_OFF");
 
-  // Every deal gets a Campaign Tracker — supplied/print see the media calendar
-  // + link banking, bespoke see their production milestones.
+  // Assignee picker is limited to Commercial officers (1B). The current
+  // assignee is always kept in the list even if they've moved teams.
+  const assignableUsers = users.filter(
+    (u) => isCommercial(u) || u.id === deal.assignedTo?.id
+  );
+
+  // Simplified tab set (Phase 4). Overview absorbs activity + tracker + auto
+  // tasks; Creative is the rounds system; Budget & Deliverables are merged.
   const TABS: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
-    ...(creativeUnlocked ? [{ key: "brief" as Tab, label: "Brief & Creative" }] : []),
+    ...(creativeUnlocked ? [{ key: "creative" as Tab, label: "Creative" }] : []),
+    { key: "budget", label: `Budget & Deliverables (${deal.deliverables.length})` },
     { key: "mediaplan", label: "Media Plan" },
-    { key: "deliverables", label: `Deliverables (${deal.deliverables.length})` },
-    { key: "tracker", label: "Campaign Tracker" },
-    { key: "tasks", label: "Tasks" },
-    { key: "activity", label: "Activity" },
+    { key: "documents", label: "Documents" },
   ];
 
   return (
@@ -527,10 +561,14 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               </div>
               <EditableTitle title={deal.title} onSave={(t) => patchDeal({ title: t })} />
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{deal.client.name}</p>
-              <div className="mt-3">
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
                 <TypePills
                   types={types}
                   onChange={(next) => patchDeal({ dealTypes: next })}
+                />
+                <WhiteLabelToggle
+                  value={deal.isWhiteLabel}
+                  onChange={(v) => patchDeal({ isWhiteLabel: v })}
                 />
               </div>
             </div>
@@ -569,7 +607,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Inline editable controls */}
-          <div className="mt-5 pt-5 border-t border-gray-50 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="mt-5 pt-5 border-t border-gray-50 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <HeaderField label="Stage">
               <select
                 value={deal.stage}
@@ -609,20 +647,14 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 className="w-full text-sm font-medium text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none cursor-pointer"
               >
                 <option value="">Unassigned</option>
-                {users.map((u) => (
+                {/* Commercial officers only. Keep the current assignee listed even
+                    if they've since moved off the Commercial team. */}
+                {assignableUsers.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name}
                   </option>
                 ))}
               </select>
-            </HeaderField>
-            <HeaderField label="Due Date">
-              <input
-                type="date"
-                value={deal.dueDate ? deal.dueDate.slice(0, 10) : ""}
-                onChange={(e) => patchDeal({ dueDate: e.target.value || null })}
-                className="w-full text-sm font-medium text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none cursor-pointer"
-              />
             </HeaderField>
           </div>
         </div>
@@ -681,55 +713,37 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           ))}
         </div>
 
-        {tab === "overview" && <OverviewTab deal={deal} onPatch={patchDeal} />}
-        {tab === "brief" && creativeUnlocked && (
-          <BriefCreativeTab deal={deal} onPatch={patchDeal} />
+        {tab === "overview" && (
+          <OverviewTab deal={deal} onPatch={patchDeal} onReload={reload} onGoToTab={setTab} />
         )}
-        {/* Brief tab requested but the deal isn't signed yet — show why it's locked. */}
-        {tab === "brief" && !creativeUnlocked && (
+        {tab === "creative" && creativeUnlocked && (
+          <CreativeRoundsTab dealId={deal.id} initial={deal.rounds} onChanged={reload} />
+        )}
+        {/* Creative requested but this is a supplied-assets deal — no creative loop. */}
+        {tab === "creative" && !creativeUnlocked && (
           <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-8 text-center max-w-2xl">
             <LockIcon className="mx-auto mb-3 text-gray-300" size={28} />
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Creative is locked until the deal is signed</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              No creative rounds for supplied-assets deals
+            </p>
             <p className="text-xs text-gray-400 mt-1">
-              Move the deal to <span className="font-medium text-gray-600 dark:text-gray-400">Deal Signed</span> to unlock the brief &amp; creative workflow.
+              The client supplies the content on this workflow — there&apos;s no creative round loop.
             </p>
           </div>
         )}
-        {tab === "mediaplan" && (
-          <MediaPlanTab dealId={deal.id} workflowType={deal.workflowType} onSaved={reload} />
-        )}
-        {tab === "deliverables" && (
-          <DeliverablesTab
-            dealId={deal.id}
-            initial={deal.deliverables}
-            dealValue={deal.value}
+        {tab === "budget" && (
+          <BudgetDeliverablesTab
+            deal={deal}
             contractedLocked={contractedLocked}
             dealSigned={dealSigned}
             isAdmin={isAdmin}
             onChanged={reload}
           />
         )}
-        {tab === "tracker" && (
-          <CampaignTrackerTab
-            dealId={deal.id}
-            initial={deal.deliverables}
-            workflowType={deal.workflowType}
-            dueDate={deal.dueDate}
-            production={
-              deal.production
-                ? {
-                    id: deal.production.id,
-                    title: deal.production.title,
-                    status: deal.production.status,
-                    shootDates: deal.production.shootDates,
-                  }
-                : null
-            }
-            onChanged={reload}
-          />
+        {tab === "mediaplan" && (
+          <MediaPlanTab dealId={deal.id} workflowType={deal.workflowType} onSaved={reload} />
         )}
-        {tab === "tasks" && <ActionTrackPanel projectId={deal.id} />}
-        {tab === "activity" && <ActivityTab activities={deal.activities} />}
+        {tab === "documents" && <DocumentsTab deal={deal} onPatch={patchDeal} />}
 
         {/* Archive — quiet, at the bottom. Replaces delete platform-wide. */}
         {!deal.archived && (
@@ -1004,18 +1018,124 @@ function TypePills({
 
 // ─── Overview tab ─────────────────────────────────────────────────────────────
 
+// ── Phase + auto-task derivation (Phase 3) ───────────────────────────────────
+
+interface PhaseInfo {
+  label: string;
+  index: number;
+  steps: string[];
+}
+
+// Where the deal is in its lifecycle, derived from the rounds + stage. Creative
+// deals run Brief → Internal → Client Pitch → Approval → Production; supplied
+// assets run the shorter Brief → Approval → Live.
+function currentPhaseInfo(deal: DealDetail): PhaseInfo {
+  const creative = deal.workflowType !== "SUPPLIED_ASSETS";
+  if (!creative) {
+    const steps = ["Brief", "Approval", "Live"];
+    const st = normalizeStage(deal.stage);
+    let index = 0;
+    if (["APPROVAL", "SIGN_OFF"].includes(st)) index = 1;
+    if (["IN_PRODUCTION", "LIVE", "COMPLETED", "PAID"].includes(st)) index = 2;
+    return { label: steps[index], index, steps };
+  }
+  const steps = ["Brief", "Internal Creative", "Client Pitch", "Approval", "Production"];
+  const rounds = deal.rounds ?? [];
+  const client = rounds.filter((r) => r.type === "CLIENT");
+  const lastClient = client.length
+    ? client.reduce((a, b) => (b.roundNumber >= a.roundNumber ? b : a))
+    : null;
+  let index = 0;
+  if (rounds.length === 0) index = 0;
+  else if (client.length === 0) index = 1;
+  else if (lastClient && lastClient.status !== "APPROVED") index = 2;
+  else index = 3;
+  if (deal.production) index = 4;
+  return { label: steps[index], index, steps };
+}
+
+interface AutoTask {
+  label: string;
+  done: boolean;
+}
+
+// Auto-generated tasks for the current phase, with statuses derived from whether
+// the matching action has already happened on the deal.
+function deriveAutoTasks(deal: DealDetail): AutoTask[] {
+  const rounds = deal.rounds ?? [];
+  const internal = rounds.filter((r) => r.type === "INTERNAL");
+  const client = rounds.filter((r) => r.type === "CLIENT");
+  const lastInternal = internal.length
+    ? internal.reduce((a, b) => (b.roundNumber >= a.roundNumber ? b : a))
+    : null;
+  const lastClient = client.length
+    ? client.reduce((a, b) => (b.roundNumber >= a.roundNumber ? b : a))
+    : null;
+  const isSubmitted = (r: CreativeRound | null) =>
+    !!r && ["SUBMITTED", "REVIEWED", "APPROVED", "REVISION_NEEDED"].includes(r.status);
+  const isReviewed = (r: CreativeRound | null) => !!r && ["REVIEWED", "APPROVED"].includes(r.status);
+  const ioDone =
+    Boolean(deal.ioUrl) ||
+    STAGE_ORDER.indexOf(normalizeStage(deal.stage)) >= STAGE_ORDER.indexOf("IO_SIGNED_KICK_OFF");
+
+  switch (currentPhaseInfo(deal).label) {
+    case "Brief":
+      return [
+        { label: "Send creative brief", done: rounds.length > 0 || Boolean(deal.clientBrief?.sentToCreativeAt) },
+        { label: "Schedule kick-off call", done: false },
+      ];
+    case "Internal Creative":
+      return [
+        {
+          label: lastInternal?.deadline
+            ? `Submit V1 ideas by ${format(parseISO(lastInternal.deadline), "d MMM")}`
+            : "Submit V1 ideas",
+          done: isSubmitted(lastInternal),
+        },
+        { label: "Schedule creative review", done: isReviewed(lastInternal) },
+      ];
+    case "Client Pitch":
+      return [
+        { label: "Prepare pitch deck", done: Boolean(lastClient?.deckUrl) },
+        { label: "Schedule client call", done: false },
+        { label: "Get client sign-off", done: lastClient?.status === "APPROVED" },
+      ];
+    case "Approval":
+      return [
+        { label: "Finalise budget", done: deal.budgetLocked },
+        { label: "Get IO signed", done: ioDone },
+        { label: "Lock media plan", done: deal.budgetLocked },
+      ];
+    case "Production":
+      return [{ label: "Clear for production", done: Boolean(deal.production) }];
+    default:
+      return [];
+  }
+}
+
 function OverviewTab({
   deal,
   onPatch,
+  onReload,
+  onGoToTab,
 }: {
   deal: DealDetail;
   onPatch: (data: Record<string, unknown>) => Promise<void>;
+  onReload: () => Promise<void>;
+  onGoToTab: (t: Tab) => void;
 }) {
   const [notes, setNotes] = useState(deal.notes ?? "");
   const [description, setDescription] = useState(deal.description ?? "");
   const [saving, setSaving] = useState(false);
+  const [showTracker, setShowTracker] = useState(false);
 
   const stageHistory = deal.activities.filter((a) => a.type === "stage_change").slice(0, 8);
+  const recent = deal.activities.slice(0, 12);
+  const types = dealTypesOf(deal);
+  const phase = currentPhaseInfo(deal);
+  const autoTasks = deriveAutoTasks(deal);
+  const tasksDone = autoTasks.filter((t) => t.done).length;
+  const allocations = Array.isArray(deal.allocations) ? deal.allocations : [];
 
   async function saveNotes() {
     if (notes === (deal.notes ?? "")) return;
@@ -1034,6 +1154,130 @@ function OverviewTab({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div className="lg:col-span-2 space-y-5">
+        {/* Auto-populated deal summary + current phase */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">Deal summary</h3>
+          <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
+            <SummaryCell label="Client">
+              <span className="font-medium text-gray-800 dark:text-gray-200">{deal.client.name}</span>
+            </SummaryCell>
+            <SummaryCell label="Value">
+              <span className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
+                {formatMoney(deal.value)}
+              </span>
+            </SummaryCell>
+            <SummaryCell label="White label">
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                  deal.isWhiteLabel
+                    ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                }`}
+              >
+                {deal.isWhiteLabel ? "Yes" : "No"}
+              </span>
+            </SummaryCell>
+            <SummaryCell label="Assigned to">
+              <span className="font-medium text-gray-800 dark:text-gray-200">
+                {deal.assignedTo?.name ?? "Unassigned"}
+              </span>
+            </SummaryCell>
+            <SummaryCell label="Workflow">
+              <span className="font-medium text-gray-800 dark:text-gray-200">
+                {deal.workflowType === "SUPPLIED_ASSETS" ? "Supplied assets" : "Creative brief"}
+              </span>
+            </SummaryCell>
+            <SummaryCell label="Types">
+              <span className="flex flex-wrap gap-1">
+                {types.slice(0, 3).map((t) => {
+                  const st = typeStyle(t);
+                  return (
+                    <span
+                      key={t}
+                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${st.bg} ${st.text}`}
+                    >
+                      {st.label}
+                    </span>
+                  );
+                })}
+              </span>
+            </SummaryCell>
+          </dl>
+
+          {/* Current phase progress */}
+          <div className="mt-5 pt-4 border-t border-gray-50 dark:border-gray-800">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                Current phase
+              </p>
+              <p className="text-xs font-semibold text-[var(--portal-commercial)]">{phase.label}</p>
+            </div>
+            <div className="flex items-center gap-1">
+              {phase.steps.map((step, i) => (
+                <div key={step} className="flex-1">
+                  <div
+                    className={`h-1.5 rounded-full ${
+                      i <= phase.index ? "bg-[#9C7C2E] dark:bg-[#C9A44A]" : "bg-gray-100 dark:bg-gray-800"
+                    }`}
+                  />
+                  <p
+                    className={`mt-1 text-[9px] font-medium truncate ${
+                      i <= phase.index ? "text-gray-600 dark:text-gray-300" : "text-gray-300 dark:text-gray-600"
+                    }`}
+                  >
+                    {step}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Auto tasks (Phase 3) */}
+        {autoTasks.length > 0 && (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <ListChecks size={15} className="text-[var(--portal-commercial)]" />
+                What needs doing
+              </h3>
+              <span className="text-xs font-semibold text-gray-400">
+                {tasksDone}/{autoTasks.length}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {autoTasks.map((t) => (
+                <div
+                  key={t.label}
+                  className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 ${
+                    t.done
+                      ? "border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-900/10"
+                      : "border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40"
+                  }`}
+                >
+                  {t.done ? (
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                  ) : (
+                    <Circle size={16} className="text-gray-300 dark:text-gray-600 shrink-0" />
+                  )}
+                  <span
+                    className={`text-[13px] ${
+                      t.done
+                        ? "text-emerald-800 dark:text-emerald-300 line-through decoration-emerald-300"
+                        : "text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    {t.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-3">
+              Auto-generated from the deal&apos;s current phase — statuses update as you work.
+            </p>
+          </div>
+        )}
+
         {/* Description */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
           <div className="flex items-center justify-between mb-3">
@@ -1065,9 +1309,137 @@ function OverviewTab({
             className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 dark:focus:ring-[#C9A44A]/30 focus:border-[#9C7C2E] dark:focus:border-[#C9A44A]"
           />
         </div>
+
+        {/* Action items — real tasks (Tasks tab folded into overview) */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
+            <ClipboardList size={15} className="text-[var(--portal-commercial)]" />
+            Action items
+          </h3>
+          <ActionTrackPanel projectId={deal.id} />
+        </div>
+
+        {/* Activity feed — merged inline (Activity tab folded into overview) */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
+            <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
+            Recent activity
+          </h3>
+          {recent.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">No activity yet.</p>
+          ) : (
+            <div className="relative pl-5">
+              <div className="absolute left-[6px] top-1.5 bottom-1.5 w-px bg-gray-100 dark:bg-gray-800" />
+              <div className="space-y-3">
+                {recent.map((a) => (
+                  <div key={a.id} className="relative">
+                    <span className="absolute -left-5 top-1 w-3 h-3 rounded-full bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center" />
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-[13px] text-gray-700 dark:text-gray-300 leading-snug">
+                        {a.message}
+                      </p>
+                      <span className="text-[11px] text-gray-400 shrink-0">
+                        {formatDistanceToNow(parseISO(a.createdAt), { addSuffix: true })}
+                      </span>
+                    </div>
+                    {a.userName && <p className="text-[11px] text-gray-400 mt-0.5">{a.userName}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-5">
+        {/* Budget summary (Phase 3) */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <Banknote size={15} className="text-[var(--portal-commercial)]" />
+              Budget
+            </h3>
+            <button
+              onClick={() => onGoToTab("budget")}
+              className="text-[11px] font-medium text-[var(--portal-commercial)] hover:underline"
+            >
+              Edit
+            </button>
+          </div>
+          <dl className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <dt className="text-gray-400">Total value</dt>
+              <dd className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
+                {formatMoney(deal.value)}
+              </dd>
+            </div>
+            {deal.marginAmount != null && (
+              <div className="flex items-center justify-between">
+                <dt className="text-gray-400">Margin</dt>
+                <dd className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
+                  {formatMoney(deal.marginAmount)}
+                  {deal.marginPercent != null ? ` · ${deal.marginPercent}%` : ""}
+                </dd>
+              </div>
+            )}
+          </dl>
+          {allocations.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-50 dark:border-gray-800 space-y-1.5">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                Allocation
+              </p>
+              {allocations.map((a, i) => (
+                <div key={`${a.name}-${i}`} className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                    {a.isProductionBudget && <Film size={11} className="text-red-500" />}
+                    {a.name}
+                  </span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
+                    {formatMoney(a.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Media plan status (Phase 3) */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Media plan</h3>
+            <button
+              onClick={() => onGoToTab("mediaplan")}
+              className="text-[11px] font-medium text-[var(--portal-commercial)] hover:underline"
+            >
+              Open
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                deal.budgetLocked
+                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                  : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+              }`}
+            >
+              {deal.budgetLocked ? <LockIcon size={11} /> : null}
+              {deal.budgetLocked ? "Locked" : "Not locked"}
+            </span>
+            {(deal.mediaPlanLink || deal.mediaPlanFile) && (
+              <span className="text-[11px] text-gray-400">Plan attached</span>
+            )}
+          </div>
+          <div className="mt-2 flex items-center justify-between text-sm">
+            <span className="text-gray-400">Deliverables</span>
+            <button
+              onClick={() => onGoToTab("budget")}
+              className="font-semibold text-gray-800 dark:text-gray-200 hover:text-[var(--portal-commercial)]"
+            >
+              {deal.deliverables.length}
+            </button>
+          </div>
+        </div>
+
         {/* Production status — live cross-portal view once the deal is cleared */}
         {deal.production && (() => {
           const prod = deal.production;
@@ -1158,8 +1530,13 @@ function OverviewTab({
               <dt className="text-gray-400 flex items-center gap-1.5">
                 <CalendarDays size={13} /> Due
               </dt>
-              <dd className="font-medium text-gray-700 dark:text-gray-300">
-                {deal.dueDate ? format(parseISO(deal.dueDate), "d MMM yyyy") : "—"}
+              <dd>
+                <input
+                  type="date"
+                  value={deal.dueDate ? deal.dueDate.slice(0, 10) : ""}
+                  onChange={(e) => onPatch({ dueDate: e.target.value || null })}
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-transparent text-right focus:outline-none cursor-pointer"
+                />
               </dd>
             </div>
             <div className="flex items-center justify-between">
@@ -1234,6 +1611,305 @@ function OverviewTab({
             </p>
           )}
         </div>
+
+        {/* Campaign tracker — merged inline (its own tab was removed) */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowTracker((s) => !s)}
+            className="w-full flex items-center justify-between gap-2 px-6 py-4 text-left hover:bg-gray-50/60 dark:hover:bg-gray-800/60 transition-colors"
+          >
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
+              Campaign Tracker
+            </h3>
+            <span className="text-gray-400">
+              {showTracker ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </span>
+          </button>
+          {showTracker && (
+            <div className="px-4 pb-4">
+              <CampaignTrackerTab
+                dealId={deal.id}
+                initial={deal.deliverables}
+                workflowType={deal.workflowType}
+                dueDate={deal.dueDate}
+                production={
+                  deal.production
+                    ? {
+                        id: deal.production.id,
+                        title: deal.production.title,
+                        status: deal.production.status,
+                        shootDates: deal.production.shootDates,
+                      }
+                    : null
+                }
+                onChanged={onReload}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Small labelled cell for the deal-summary grid.
+function SummaryCell({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
+        {label}
+      </dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
+// ── White label toggle (Phase 1A) ────────────────────────────────────────────
+
+function WhiteLabelToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={value}
+      onClick={() => onChange(!value)}
+      title="Toggle whether this deal is delivered under the client's own brand"
+      className={`inline-flex items-center gap-1.5 text-[11px] font-semibold pl-2 pr-2.5 py-1 rounded-full border transition-colors ${
+        value
+          ? "bg-slate-800 text-white border-slate-800 dark:bg-slate-200 dark:text-slate-900 dark:border-slate-200"
+          : "bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+      }`}
+    >
+      <span
+        className={`w-2 h-2 rounded-full ${
+          value ? "bg-emerald-300" : "bg-gray-300 dark:bg-gray-600"
+        }`}
+      />
+      White label
+    </button>
+  );
+}
+
+// ── Budget & Deliverables tab (Phase 4 merge) ────────────────────────────────
+
+function BudgetDeliverablesTab({
+  deal,
+  contractedLocked,
+  dealSigned,
+  isAdmin,
+  onChanged,
+}: {
+  deal: DealDetail;
+  contractedLocked: boolean;
+  dealSigned: boolean;
+  isAdmin: boolean;
+  onChanged: () => Promise<void>;
+}) {
+  const allocations = Array.isArray(deal.allocations) ? deal.allocations : [];
+  const allocated = allocations.reduce((sum, a) => sum + (a.amount || 0), 0);
+
+  return (
+    <div className="space-y-5">
+      {/* Budget summary — the deal economics alongside deliverables */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-4">
+          <Banknote size={15} className="text-[var(--portal-commercial)]" />
+          Budget
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <BudgetStat label="Deal value" value={formatMoney(deal.value)} />
+          <BudgetStat
+            label="Margin"
+            value={deal.marginAmount != null ? formatMoney(deal.marginAmount) : "—"}
+            sub={deal.marginPercent != null ? `${deal.marginPercent}%` : undefined}
+          />
+          <BudgetStat label="Allocated" value={formatMoney(allocated)} />
+          <BudgetStat
+            label="Media plan"
+            value={deal.budgetLocked ? "Locked" : "Open"}
+          />
+        </div>
+        {allocations.length > 0 ? (
+          <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-800 space-y-1.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+              Allocation breakdown
+            </p>
+            {allocations.map((a, i) => (
+              <div
+                key={`${a.name}-${i}`}
+                className="flex items-center justify-between text-sm rounded-lg px-3 py-1.5 bg-gray-50/60 dark:bg-gray-800/40"
+              >
+                <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                  {a.isProductionBudget && <Film size={12} className="text-red-500" />}
+                  {a.name}
+                  {a.isProductionBudget && (
+                    <span className="text-[10px] font-semibold text-red-500">Production</span>
+                  )}
+                </span>
+                <span className="font-medium text-gray-800 dark:text-gray-200 tabular-nums">
+                  {formatMoney(a.amount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 mt-3">
+            No budget allocations set yet — the deal value drives everything downstream. Add
+            allocations on the Media Plan tab.
+          </p>
+        )}
+      </div>
+
+      {/* Deliverables */}
+      <DeliverablesTab
+        dealId={deal.id}
+        initial={deal.deliverables}
+        dealValue={deal.value}
+        contractedLocked={contractedLocked}
+        dealSigned={dealSigned}
+        isAdmin={isAdmin}
+        onChanged={onChanged}
+      />
+    </div>
+  );
+}
+
+function BudgetStat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 px-3 py-2.5">
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
+      <p className="text-base font-bold text-gray-900 dark:text-gray-100 tabular-nums mt-0.5">
+        {value}
+        {sub && <span className="text-[11px] font-medium text-gray-400 ml-1">{sub}</span>}
+      </p>
+    </div>
+  );
+}
+
+// ── Documents tab (Phase 4) — IO links, contracts, decks ─────────────────────
+
+function DocumentsTab({
+  deal,
+  onPatch,
+}: {
+  deal: DealDetail;
+  onPatch: (data: Record<string, unknown>) => Promise<void>;
+}) {
+  const [ioUrl, setIoUrl] = useState(deal.ioUrl ?? "");
+  useEffect(() => setIoUrl(deal.ioUrl ?? ""), [deal.ioUrl]);
+
+  // Decks gathered from the creative rounds — the client-facing pitch links.
+  const decks = (deal.rounds ?? [])
+    .filter((r) => r.deckUrl)
+    .map((r) => ({
+      roundNumber: r.roundNumber,
+      type: r.type,
+      url: r.deckUrl as string,
+      approved: r.status === "APPROVED",
+    }));
+
+  const docLink = (url: string) => (url.startsWith("http") ? url : `https://${url}`);
+
+  return (
+    <div className="max-w-3xl space-y-5">
+      {/* IO / contract */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-1">
+          <FileText size={15} className="text-[var(--portal-commercial)]" />
+          Insertion order / contract
+        </h3>
+        <p className="text-xs text-gray-400 mb-3">Link the signed IO or contract for this deal.</p>
+        <div className="flex items-center gap-2">
+          <input
+            type="url"
+            value={ioUrl}
+            onChange={(e) => setIoUrl(e.target.value)}
+            onBlur={() => ioUrl.trim() !== (deal.ioUrl ?? "") && onPatch({ ioUrl: ioUrl.trim() || null })}
+            placeholder="https:// — the signed IO or contract"
+            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+          />
+          {deal.ioUrl && (
+            <a
+              href={docLink(deal.ioUrl)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-medium text-[var(--portal-commercial)] px-2.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
+            >
+              Open <ArrowUpRight size={12} />
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* Media plan documents */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
+          <Newspaper size={15} className="text-[var(--portal-commercial)]" />
+          Media plan
+        </h3>
+        {deal.mediaPlanLink || deal.mediaPlanFile ? (
+          <div className="space-y-2">
+            {deal.mediaPlanLink && (
+              <a
+                href={docLink(deal.mediaPlanLink)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 text-sm text-[var(--portal-commercial)] hover:underline"
+              >
+                <LinkIcon size={13} /> Media plan (Google Sheet) <ArrowUpRight size={12} />
+              </a>
+            )}
+            {deal.mediaPlanFile && (
+              <a
+                href={docLink(deal.mediaPlanFile)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 text-sm text-[var(--portal-commercial)] hover:underline"
+              >
+                <FileText size={13} /> Media plan (PDF) <ArrowUpRight size={12} />
+              </a>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400">No media plan attached — add one on the Media Plan tab.</p>
+        )}
+      </div>
+
+      {/* Creative decks — pulled from the rounds */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
+          <Palette size={15} className="text-[var(--portal-commercial)]" />
+          Creative decks
+        </h3>
+        {decks.length === 0 ? (
+          <p className="text-xs text-gray-400">
+            No decks linked yet — add a deck link to a round on the Creative tab.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {decks.map((d, i) => (
+              <a
+                key={i}
+                href={docLink(d.url)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 text-sm hover:border-[#9C7C2E]/40 transition-colors"
+              >
+                <span className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                  <LinkIcon size={13} className="text-gray-400" />
+                  Round {d.roundNumber} · {d.type === "CLIENT" ? "Client" : "Internal"} deck
+                  {d.approved && (
+                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      Approved
+                    </span>
+                  )}
+                </span>
+                <ArrowUpRight size={13} className="text-gray-400" />
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

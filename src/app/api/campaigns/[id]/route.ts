@@ -44,6 +44,7 @@ export const GET = withAuth(async (
           },
         },
         activities: { orderBy: { createdAt: "desc" }, take: 50 },
+        rounds: { orderBy: { roundNumber: "asc" } },
       },
     });
 
@@ -77,7 +78,7 @@ async function updateCampaign(
     const {
       status, stage, title, value, currency, type, notes, ioSigned, description,
       dueDate, assignedToId, clientId, dealTypes, briefContent, briefDueDate, briefStatus,
-      workflowType, clientBrief, creativeResponse, clientFeedback, creativeStatus,
+      workflowType, clientBrief, creativeResponse, clientFeedback, creativeStatus, isWhiteLabel,
     } = body;
 
     const existing = await prisma.campaign.findUnique({
@@ -182,6 +183,7 @@ async function updateCampaign(
         ...(nextCreativeResponse !== undefined ? { creativeResponse: nextCreativeResponse ?? undefined } : {}),
         ...(nextClientFeedback !== undefined ? { clientFeedback: nextClientFeedback } : {}),
         ...(creativeStatus !== undefined ? { creativeStatus } : {}),
+        ...(isWhiteLabel !== undefined ? { isWhiteLabel: Boolean(isWhiteLabel) } : {}),
         ...(briefDueDate !== undefined
           ? { briefDueDate: briefDueDate ? new Date(briefDueDate) : null }
           : {}),

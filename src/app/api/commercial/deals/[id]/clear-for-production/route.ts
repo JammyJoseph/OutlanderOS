@@ -9,6 +9,7 @@ import {
   mapSplitsToCampaignBudget,
   mapSplitToProductionCategory,
   clearForProductionChecklist,
+  lastClientRound,
 } from "@/lib/deal-stages";
 
 // POST /api/commercial/deals/[id]/clear-for-production
@@ -35,6 +36,7 @@ export const POST = withAuth(async (
         deliverables: {
           orderBy: [{ isAdditional: "asc" }, { dueDate: { sort: "asc", nulls: "last" } }],
         },
+        rounds: { orderBy: { roundNumber: "asc" } },
       },
     });
     if (!deal) return NextResponse.json({ error: "Deal not found" }, { status: 404 });
@@ -109,6 +111,8 @@ export const POST = withAuth(async (
             : null,
       creativeDirection:
         clientBrief?.content?.trim() || deal.briefContent?.trim() || deal.description || null,
+      // The approved deck from the final client round travels with the handover.
+      approvedDeckUrl: lastClientRound(deal.rounds ?? [])?.deckUrl ?? null,
       // No dedicated audience field on the deal — left for the producer to fill.
       targetAudience: null,
       generatedAt: new Date().toISOString(),
