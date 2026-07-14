@@ -73,6 +73,13 @@
   font-display: swap;
 }
 @font-face {
+  font-family: "Acumin Pro Wide";
+  src: url("/fonts/AcuminProWideBold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
   font-family: "Acumin Pro ExtraCond";
   src: url("/fonts/AcuminProExtraCond-Semibold.otf") format("opentype");
   font-weight: 600;
@@ -95,6 +102,8 @@
   --font-mono: var(--font-mono), 'Courier New', monospace;
   /* Editorial serif for headings (was: var(--font-sans)) */
   --font-heading: "AtGambit", "Times New Roman", Georgia, serif;
+  /* Wide bold cut for subheadings (h3–h6) */
+  --font-subheading: "Acumin Pro Wide", "Acumin Pro", sans-serif;
   /* Condensed cut for big stat numerals — use via font-[family-name:var(--font-stat)] */
   --font-stat: "Acumin Pro ExtraCond", "Acumin Pro", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -272,6 +281,13 @@
   h1, h2 {
     font-family: var(--font-heading);
     letter-spacing: -0.015em;
+  }
+  /* Subheadings take the wide bold sans at 0% tracking. Sits in @layer base so
+     component-level font-* / tracking-* utilities still win. */
+  h3, h4, h5, h6 {
+    font-family: var(--font-subheading);
+    font-weight: 700;
+    letter-spacing: 0;
   }
 }
 

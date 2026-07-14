@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { portalAccent } from "@/lib/design";
 import { PortalSwitcher } from "@/components/portal/PortalSwitcher";
+import { BrandLogo } from "@/components/portal/BrandLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 // Maps the parent path segment of a detail route to a human singular label,
@@ -58,12 +59,7 @@ export function PortalHeader() {
     >
       {/* Left: Logo + breadcrumb */}
       <div className="flex items-center gap-3">
-        <Link
-          href="/me"
-          className="text-sm font-bold tracking-[0.14em] uppercase text-gray-900 dark:text-gray-100 hover:opacity-70 transition-opacity"
-        >
-          Outlander<span className="text-[#9C7C2E] dark:text-[#C9A44A]">OS</span>
-        </Link>
+        <BrandLogo />
         <span className="text-gray-300">/</span>
         <Link
           href="/me"

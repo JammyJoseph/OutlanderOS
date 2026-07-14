@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { User as UserIcon } from "lucide-react";
 import { PortalSwitcher } from "@/components/portal/PortalSwitcher";
+import { BrandLogo } from "@/components/portal/BrandLogo";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useUser } from "@/components/user-context";
@@ -43,12 +43,7 @@ export function PersonalHeader() {
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/80 backdrop-blur-md px-5 sticky top-0 z-30">
       {/* Left: Logo + dashboard label */}
       <div className="flex items-center gap-3">
-        <Link
-          href="/me"
-          className="text-sm font-bold text-gray-900 dark:text-gray-100 hover:text-[#9C7C2E] transition-colors"
-        >
-          Outlander<span className="text-[#9C7C2E]">OS</span>
-        </Link>
+        <BrandLogo />
         <span className="text-gray-300">/</span>
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">My Dashboard</span>
       </div>
