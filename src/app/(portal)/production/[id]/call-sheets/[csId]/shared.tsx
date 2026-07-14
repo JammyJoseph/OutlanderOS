@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import type { CrewMember, TalentMember } from "./types";
-import { effectiveCallTime, hasCallOverride, sortRoster } from "./types";
+import { effectiveCallTime, sortRoster } from "./types";
 
 export const ACCENT = "#A93B2E";
 export const ACCENT_HOVER = "#A93B2E";
@@ -125,11 +125,9 @@ export function DeleteButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-// Roster table. Each row's call time defaults to the sheet's unit call: the
-// input is pre-filled with it, but the row only stores a `callTime` when the
-// producer sets a *different* time (an override). Setting the input back to the
-// unit call — or hitting the reset arrow — clears the override so the person
-// tracks the unit call again if it later moves.
+// Roster table. One call time per person, pre-filled with the unit call and
+// edited like any other field — a person called at a different time is not a
+// special case, it is just their call time. Rows sort into call order.
 export function PeopleTable({
   people,
   setPeople,
@@ -148,9 +146,7 @@ export function PeopleTable({
   const listId = rolePresets ? "crew-role-presets" : undefined;
 
   function setCallTime(i: number, value: string) {
-    // Same as the unit call ⇒ not an override; store "" so they keep inheriting.
-    const next = value === unitCallTime ? "" : value;
-    setPeople(people.map((m, j) => (j === i ? { ...m, callTime: next } : m)));
+    setPeople(people.map((m, j) => (j === i ? { ...m, callTime: value } : m)));
   }
 
   if (readOnly) {
@@ -165,33 +161,22 @@ export function PeopleTable({
           <span>Email</span>
           <span>Phone</span>
         </div>
-        {ordered.map((p, i) => {
-          const custom = hasCallOverride(p, unitCallTime);
-          return (
-            <div
-              key={i}
-              className={`grid grid-cols-[1fr_1fr_90px_1.2fr_1fr] gap-0 px-4 py-2.5 text-sm ${
-                i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/40"
-              }`}
-            >
-              <span className="text-gray-600 dark:text-gray-400 font-medium">{p.role}</span>
-              <span className="text-gray-800 dark:text-gray-200">{p.name}</span>
-              <span
-                className={`font-mono text-xs ${
-                  custom
-                    ? "font-bold text-[#A93B2E]"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}
-                title={custom ? "Custom call time" : "Unit call"}
-              >
-                {effectiveCallTime(p, unitCallTime) || "—"}
-                {custom ? " *" : ""}
-              </span>
-              <span className="text-gray-500 dark:text-gray-400 text-xs truncate">{p.email}</span>
-              <span className="text-gray-500 dark:text-gray-400 text-xs">{p.phone}</span>
-            </div>
-          );
-        })}
+        {ordered.map((p, i) => (
+          <div
+            key={i}
+            className={`grid grid-cols-[1fr_1fr_90px_1.2fr_1fr] gap-0 px-4 py-2.5 text-sm ${
+              i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/40"
+            }`}
+          >
+            <span className="text-gray-600 dark:text-gray-400 font-medium">{p.role}</span>
+            <span className="text-gray-800 dark:text-gray-200">{p.name}</span>
+            <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
+              {effectiveCallTime(p, unitCallTime) || "—"}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-xs truncate">{p.email}</span>
+            <span className="text-gray-500 dark:text-gray-400 text-xs">{p.phone}</span>
+          </div>
+        ))}
       </div>
     );
   }
@@ -205,76 +190,50 @@ export function PeopleTable({
           ))}
         </datalist>
       )}
-      {people.map((p, i) => {
-        const custom = hasCallOverride(p, unitCallTime);
-        return (
-          <div key={i} className="grid grid-cols-[1fr_1fr_142px_1fr_1fr_32px] gap-2 items-center">
-            <input
-              type="text"
-              list={listId}
-              value={p.role}
-              onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, role: e.target.value } : m)))}
-              placeholder="Role"
-              className={smallInputCls}
-            />
-            <input
-              type="text"
-              value={p.name}
-              onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, name: e.target.value } : m)))}
-              placeholder="Name"
-              className={smallInputCls}
-            />
-            <div className="flex items-center gap-1">
-              <input
-                type="time"
-                value={effectiveCallTime(p, unitCallTime)}
-                onChange={(e) => setCallTime(i, e.target.value)}
-                // The roster re-sorts into call order once the row is left —
-                // sorting on change would move the input out from under you.
-                onBlur={() => setPeople(sortRoster(people, unitCallTime))}
-                title={custom ? "Custom call time — overrides the unit call" : "Inheriting the unit call"}
-                className={`${smallInputCls} flex-1 min-w-0 ${
-                  custom
-                    ? "font-bold text-[#A93B2E] border-[#A93B2E]/50 bg-[#A93B2E]/[0.04] dark:bg-[#A93B2E]/10"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}
-              />
-              {custom ? (
-                <button
-                  type="button"
-                  onClick={() => setCallTime(i, "")}
-                  title="Reset to the unit call"
-                  className="shrink-0 p-1 rounded text-[#A93B2E] hover:bg-[#A93B2E]/10"
-                >
-                  <RotateCcw size={12} />
-                </button>
-              ) : (
-                <span
-                  className="shrink-0 w-[22px] text-center text-[9px] font-semibold uppercase tracking-wide text-gray-300 dark:text-gray-600"
-                  title="Inheriting the unit call"
-                >
-                  Unit
-                </span>
-              )}
-            </div>
-            <input
-              type="email"
-              value={p.email}
-              onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, email: e.target.value } : m)))}
-              placeholder="Email"
-              className={smallInputCls}
-            />
-            <input
-              type="tel"
-              value={p.phone}
-              onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, phone: e.target.value } : m)))}
-              placeholder="Phone"
-              className={smallInputCls}
-            />
-            <DeleteButton onClick={() => setPeople(people.filter((_, j) => j !== i))} />
-          </div>
-        );
-      })}
+      {people.map((p, i) => (
+        <div key={i} className="grid grid-cols-[1fr_1fr_110px_1fr_1fr_32px] gap-2 items-center">
+          <input
+            type="text"
+            list={listId}
+            value={p.role}
+            onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, role: e.target.value } : m)))}
+            placeholder="Role"
+            className={smallInputCls}
+          />
+          <input
+            type="text"
+            value={p.name}
+            onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, name: e.target.value } : m)))}
+            placeholder="Name"
+            className={smallInputCls}
+          />
+          <input
+            type="time"
+            value={effectiveCallTime(p, unitCallTime)}
+            onChange={(e) => setCallTime(i, e.target.value)}
+            // The roster re-sorts into call order once the row is left —
+            // sorting on change would move the input out from under you.
+            onBlur={() => setPeople(sortRoster(people, unitCallTime))}
+            title="Call time"
+            className={smallInputCls}
+          />
+          <input
+            type="email"
+            value={p.email}
+            onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, email: e.target.value } : m)))}
+            placeholder="Email"
+            className={smallInputCls}
+          />
+          <input
+            type="tel"
+            value={p.phone}
+            onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, phone: e.target.value } : m)))}
+            placeholder="Phone"
+            className={smallInputCls}
+          />
+          <DeleteButton onClick={() => setPeople(people.filter((_, j) => j !== i))} />
+        </div>
+      ))}
       <AddButton
         label={addLabel}
         onClick={() => setPeople([...people, { role: "", name: "", callTime: "", email: "", phone: "" }])}

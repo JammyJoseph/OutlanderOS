@@ -9,8 +9,8 @@ import type {
   SectionKey, Shot, ShotStyle, TalentMember, WeatherData,
 } from "./types";
 import {
-  callTimeVariations, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
-  emptyCallSheetLocation, hasCallOverride, resolveUnitCall, sortByTime,
+  CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
+  emptyCallSheetLocation, resolveUnitCall, sortByTime,
   sortRoster, sortSchedule,
 } from "./types";
 import {
@@ -258,15 +258,14 @@ export function CallSheetDocument({
     "";
 
   // ── Call times ──
-  // One master Unit Call heads the section; everyone on the sheet is on it
-  // unless their own row carries an override, which is then listed underneath
-  // as an individual variation ("Talent call — D Double E: 10:00").
+  // The shape of the day, top to bottom: unit call, any department calls, wrap.
+  // Individual people are NOT listed here — each person's call time appears
+  // exactly once, against them, in the crew / talent lists further down.
   const unitCall = resolveUnitCall(unitCallTime, callTime) || earliestTime(crew);
   const t0 = talent.find((t) => (t.name || "").trim() || t.callTime);
-  const variations = callTimeVariations(crew, talent, unitCall);
 
-  const callTimeRows: { time: string; label: string; note?: string }[] = [
-    { time: unitCall || "TBC", label: "Unit Call", note: "Everyone unless listed below" },
+  const callTimeRows: { time: string; label: string }[] = [
+    { time: unitCall || "TBC", label: "Unit Call" },
   ];
 
   // Department rows from the explicit call-times table, when it's populated and
@@ -281,18 +280,9 @@ export function CallSheetDocument({
           .map((c) => ({ time: c.time || "TBC", label: c.department }))
       : [];
 
-  // Departments and individual variations (the whole point of the system) are
-  // one chronological block between the unit call and the wrap, so the section
-  // reads down the day. "TBC" rows have no time and land at the bottom of it.
-  callTimeRows.push(
-    ...sortByTime(
-      [
-        ...departmentRows,
-        ...variations.map((v) => ({ ...v, note: "Custom call" })),
-      ] as { time: string; label: string; note?: string }[],
-      (r) => r.time
-    )
-  );
+  // Department calls sit chronologically between the unit call and the wrap, so
+  // the section reads down the day. Untimed rows sink to the bottom of the block.
+  callTimeRows.push(...sortByTime(departmentRows, (r) => r.time));
 
   callTimeRows.push({ time: wrapTime || "TBC", label: "Wrap" });
 
@@ -538,22 +528,11 @@ export function CallSheetDocument({
                   >
                     {r.time}
                   </td>
-                  <td style={{ ...cellStyle, fontWeight: 600 }}>
-                    {r.label}
-                    {r.note ? (
-                      <span style={{ fontWeight: 400, color: MUTED }}> — {r.note}</span>
-                    ) : null}
-                  </td>
+                  <td style={{ ...cellStyle, fontWeight: 600 }}>{r.label}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {variations.length > 0 && (
-            <p style={{ margin: "10px 0 0", fontSize: "9px", color: MUTED, lineHeight: 1.5 }}>
-              Everyone works to the unit call unless listed above. Custom calls are
-              shown in bold against the person in the crew and talent lists.
-            </p>
-          )}
         </Section>
 
         {/* ── Run of the day (schedule) ── */}
@@ -1105,9 +1084,9 @@ function Bold({ children }: { children: React.ReactNode }) {
   return <span style={{ fontWeight: 700, color: TEXT }}>{children}</span>;
 }
 
-// A person's call time in the crew / talent grids. Someone on the unit call gets
-// the plain time; a custom call is set in bold and flagged, so an eye running
-// down the column catches the exceptions.
+// A person's call time in the crew / talent grids — the single place it appears.
+// One time, no flags: a person called earlier than the unit simply has an
+// earlier time, and the list being in call order already makes that read.
 function CallCell({
   person,
   unitCall,
@@ -1117,15 +1096,7 @@ function CallCell({
 }) {
   const time = effectiveCallTime(person, unitCall);
   if (!time) return <>{"—"}</>;
-  if (!hasCallOverride(person, unitCall)) {
-    return <span style={{ color: TEXT }}>{time}</span>;
-  }
-  return (
-    <span style={{ fontWeight: 700, color: TEXT, whiteSpace: "nowrap" }}>
-      {time}
-      <span style={{ fontWeight: 400, fontSize: "9px", color: MUTED }}> (custom)</span>
-    </span>
-  );
+  return <span style={{ color: TEXT, whiteSpace: "nowrap" }}>{time}</span>;
 }
 
 // A single label/value line in the two-column Shoot Details grid.

@@ -15,7 +15,7 @@ import type {
 } from "./types";
 import {
   AGENCY_TEAM_ROLES, CLIENT_TEAM_ROLES, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE,
-  CREW_ROLE_PRESETS, defaultCallTimes, EQUIPMENT_CATEGORIES, hasCallOverride,
+  CREW_ROLE_PRESETS, defaultCallTimes, EQUIPMENT_CATEGORIES,
   KIT_TEMPLATES, parseSchedule, sortCallTimes, sortSchedule,
 } from "./types";
 import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls } from "./shared";
@@ -65,9 +65,6 @@ const iconCls = "text-gray-400 dark:text-gray-500";
 
 export function CallSheetEditor(p: EditorProps) {
   const rosterCount = p.crew.length + p.talent.length;
-  const overrideCount = [...p.crew, ...p.talent].filter((m) =>
-    hasCallOverride(m, p.unitCallTime)
-  ).length;
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -459,15 +456,9 @@ export function CallSheetEditor(p: EditorProps) {
                 />
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-[220px] leading-snug">
-                The default call time for everyone on the unit. Crew and talent
-                inherit it unless you set a custom time on their row below —{" "}
-                {overrideCount > 0 ? (
-                  <span className="font-semibold text-[#A93B2E]">
-                    {overrideCount} {overrideCount === 1 ? "person has" : "people have"} a custom call.
-                  </span>
-                ) : (
-                  <span>everyone is on the unit call right now.</span>
-                )}
+                The call time crew and talent rows start on. Change any row&rsquo;s
+                time to call that person earlier or later — the lists stay in
+                call order.
               </p>
             </div>
           </div>

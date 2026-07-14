@@ -12,8 +12,8 @@ export interface ScheduleItem {
 export interface CrewMember {
   role: string;
   name: string;
-  // Per-person OVERRIDE of the sheet's unit call. Empty means "inherit the
-  // unit call" — never read this directly for display, use effectiveCallTime().
+  // The one time this person is called. Blank means they're on the unit call —
+  // read it through effectiveCallTime(), which resolves that fallback.
   callTime: string;
   email: string;
   phone: string;
@@ -21,10 +21,12 @@ export interface CrewMember {
 
 export type TalentMember = CrewMember;
 
-// ── Variable call times ──────────────────────────────────────────────────────
-// One master "unit call" applies to everyone on the sheet. Any crew or talent
-// row may carry its own `callTime`, which overrides the unit call for that
-// person only. Older sheets have no unitCallTime, so it falls back to the
+// ── Call times ───────────────────────────────────────────────────────────────
+// Every person on the sheet has exactly ONE call time, shown once, in the crew
+// or talent list. The sheet's unit call is the default a blank row falls back
+// to — nothing more. A person called at a different time is not a special case
+// and is never labelled, flagged, or listed a second time anywhere; it is just
+// their call time. Older sheets have no unitCallTime, so it falls back to the
 // legacy `callTime` column (kept mirrored on save).
 
 export function resolveUnitCall(
@@ -40,40 +42,6 @@ export function effectiveCallTime(
   unitCall: string
 ): string {
   return (person.callTime || "").trim() || unitCall;
-}
-
-// True when the person has a call time of their own that differs from the unit
-// call — the only case worth flagging on the sheet.
-export function hasCallOverride(
-  person: { callTime?: string },
-  unitCall: string
-): boolean {
-  const own = (person.callTime || "").trim();
-  return !!own && own !== unitCall;
-}
-
-// The people whose call time differs from the unit call, in sheet order.
-export function callTimeVariations(
-  crew: CrewMember[],
-  talent: TalentMember[],
-  unitCall: string
-): { time: string; label: string }[] {
-  const rows: { time: string; label: string }[] = [];
-  const add = (people: CrewMember[], fallbackRole: string) => {
-    for (const person of people) {
-      if (!hasCallOverride(person, unitCall)) continue;
-      const name = (person.name || "").trim();
-      const role = (person.role || "").trim() || fallbackRole;
-      if (!name && !role) continue;
-      rows.push({
-        time: (person.callTime || "").trim(),
-        label: name ? `${role} call — ${name}` : `${role} call`,
-      });
-    }
-  };
-  add(talent, "Talent");
-  add(crew, "Crew");
-  return rows;
 }
 
 // ── Chronological ordering ───────────────────────────────────────────────────

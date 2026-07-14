@@ -1,6 +1,6 @@
 import type { CallSheetViewData } from "./CallSheetDocument";
 import type { CallSheetLocation } from "./types";
-import { callTimeVariations, resolveUnitCall, sortSchedule } from "./types";
+import { resolveUnitCall, sortSchedule } from "./types";
 
 // A short, SMS/WhatsApp-friendly roundup of the call sheet. Kept deliberately
 // terse: header, call times, schedule, locations, the key contact(s) and the
@@ -18,11 +18,10 @@ export function generateSMSSummary(
   const dateLabel = formatShootDate(data.shootDate);
   blocks.push([company, title, dateLabel].filter(Boolean).join("\n"));
 
-  // ── Call times — the unit call, then anyone who differs from it ──
-  // Sources (the unit call, the call-times table, per-person overrides, wrap)
-  // often land on the same time, so we key by time. The first label wins, and
-  // later labels for a slot already taken are appended rather than dropped —
-  // two people on a 10:00 custom call both need naming.
+  // ── Call times — the shape of the day: unit call, departments, wrap ──
+  // Individual people are not listed here; their call time lives against them
+  // on the sheet. Sources often land on the same time, so we key by time and
+  // the first label for a slot wins.
   const unitCall = resolveUnitCall(data.unitCallTime, data.callTime);
   const byTime = new Map<string, string>();
   const addTime = (time: string | undefined, label: string) => {
@@ -31,20 +30,8 @@ export function generateSMSSummary(
     if (!t || !l) return;
     if (!byTime.has(t)) byTime.set(t, l);
   };
-  const mergeTime = (time: string | undefined, label: string) => {
-    const t = (time || "").trim();
-    const l = label.trim();
-    if (!t || !l) return;
-    const existing = byTime.get(t);
-    if (!existing) byTime.set(t, l);
-    else if (!existing.includes(l)) byTime.set(t, `${existing}, ${l}`);
-  };
   addTime(unitCall, "Unit call");
   for (const row of data.callTimes || []) addTime(row.time, row.department);
-  // Individual variations — named, so crew know whose time is different.
-  for (const v of callTimeVariations(data.crew || [], data.talent || [], unitCall)) {
-    mergeTime(v.time, v.label);
-  }
   addTime(data.wrapTime, "Wrap");
   if (byTime.size) {
     const lines = [...byTime.entries()]
