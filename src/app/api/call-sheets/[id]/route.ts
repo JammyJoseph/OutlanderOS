@@ -66,6 +66,7 @@ export const PUT = withAuth(async (
     if (body.shootTitle !== undefined) updateData.shootTitle = body.shootTitle;
     if (body.shootDate !== undefined) updateData.shootDate = new Date(body.shootDate);
     if (body.callTime !== undefined) updateData.callTime = body.callTime;
+    if (body.unitCallTime !== undefined) updateData.unitCallTime = body.unitCallTime;
     if (body.wrapTime !== undefined) updateData.wrapTime = body.wrapTime;
     if (body.location !== undefined) updateData.location = body.location;
     if (body.locationLat !== undefined) updateData.locationLat = body.locationLat;

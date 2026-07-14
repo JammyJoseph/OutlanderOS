@@ -117,7 +117,8 @@ export default function CallSheetWizard({ production, onClose }: Props) {
     return members.map((m) => ({
       role: m.role || "",
       name: m.name,
-      callTime,
+      // No per-person override — the whole unit starts on the unit call.
+      callTime: "",
       email: m.email || "",
       phone: m.phone || "",
     }));
@@ -160,6 +161,7 @@ export default function CallSheetWizard({ production, onClose }: Props) {
           shootTitle,
           shootDate: new Date(shootDate + "T08:00:00").toISOString(),
           callTime,
+          unitCallTime: callTime,
           location: address ? { address } : {},
           locations,
           schedule: template.rows,
@@ -353,7 +355,7 @@ export default function CallSheetWizard({ production, onClose }: Props) {
                 <ReviewRow label="Title" value={shootTitle} />
                 <ReviewRow label="Type" value={typeLabel} />
                 <ReviewRow label="Date" value={shootDate || "—"} />
-                <ReviewRow label="Call time" value={callTime} />
+                <ReviewRow label="Unit call" value={callTime} />
                 <ReviewRow label="Crew" value={`${chosenCrew.length} selected`} />
                 <ReviewRow label="Location" value={address || "—"} />
                 <ReviewRow label="Schedule" value={`${template.label} (${template.rows.length} rows)`} />

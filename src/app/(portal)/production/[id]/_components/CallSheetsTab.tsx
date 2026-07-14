@@ -16,7 +16,7 @@ interface Props {
 
 // Fields copied when cloning a previous call sheet (Phase 4G).
 const CLONE_FIELDS = [
-  "callTime", "wrapTime", "location", "locationLat", "locationLng", "locations",
+  "callTime", "unitCallTime", "wrapTime", "location", "locationLat", "locationLng", "locations",
   "shotStyle", "schedule", "shotlist", "crew", "talent", "cateringDetails",
   "documents", "header", "clientTeam", "agencyTeam", "productionCompany",
   "callTimes", "productionMobiles", "movementOrder", "equipment",

@@ -23,6 +23,7 @@ interface RawSheet {
   shootTitle: string | null;
   shootDate: Date;
   callTime: string | null;
+  unitCallTime: string | null;
   wrapTime: string | null;
   location: unknown;
   locationLat: number | null;
@@ -77,6 +78,7 @@ export function buildPublicViewData(sheet: RawSheet): CallSheetViewData {
     productionTitle: sheet.production.title,
     shootDate: sheet.shootDate.toISOString().split("T")[0],
     callTime: sheet.callTime || "",
+    unitCallTime: sheet.unitCallTime || "",
     wrapTime: sheet.wrapTime || "",
     location,
     locationLat: sheet.locationLat,

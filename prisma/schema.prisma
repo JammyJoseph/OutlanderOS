@@ -665,6 +665,10 @@ model CallSheet {
   shootTitle      String?
   shootDate       DateTime
   callTime        String          @default("08:00")
+  // Master call time for the whole unit — the default every crew/talent member
+  // inherits unless their own row carries a `callTime` override. Empty falls
+  // back to `callTime` (which is kept mirrored to this for legacy readers).
+  unitCallTime    String          @default("")
   wrapTime        String?
   location        Json
   locationLat     Float?

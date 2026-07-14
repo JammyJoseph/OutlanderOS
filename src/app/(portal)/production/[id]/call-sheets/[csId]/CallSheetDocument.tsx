@@ -8,7 +8,10 @@ import type {
   MovementOrder, ProductionCompanyInfo, ProductionMobile, ScheduleItem,
   SectionKey, Shot, ShotStyle, TalentMember, WeatherData,
 } from "./types";
-import { CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, emptyCallSheetLocation } from "./types";
+import {
+  callTimeVariations, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
+  emptyCallSheetLocation, hasCallOverride, resolveUnitCall,
+} from "./types";
 import {
   journeyStats, formatJourneySummary,
   parseTime, googleMapsSearchUrl, wazeUrl, buildGoogleMapsRouteUrl, buildGpx,
@@ -41,6 +44,8 @@ export interface CallSheetViewData {
   productionTitle?: string;
   shootDate: string;
   callTime: string;
+  // Master call time for the unit. Falls back to `callTime` on older sheets.
+  unitCallTime?: string;
   wrapTime: string;
   location: LocationData;
   locationLat: number | null;
@@ -177,7 +182,7 @@ export function CallSheetDocument({
   sections?: Record<SectionKey, boolean>;
 }) {
   const {
-    shootTitle, clientName, shootDate, callTime, wrapTime, location, locationLat,
+    shootTitle, clientName, shootDate, callTime, unitCallTime, wrapTime, location, locationLat,
     locationLng, locations, shotStyle, deliverables, figmaUrl, weatherData, schedule,
     shotlist, crew, talent, catering, documents,
     notesGeneral, notesSafety, notesParking, header, clientTeam, agencyTeam,
@@ -251,28 +256,35 @@ export function CallSheetDocument({
     location.nearestHospital ||
     "";
 
-  // ── Derived call times (Crew Call / Talent Call / Wrap) ──
-  const crewCall = callTime || earliestTime(crew);
+  // ── Call times ──
+  // One master Unit Call heads the section; everyone on the sheet is on it
+  // unless their own row carries an override, which is then listed underneath
+  // as an individual variation ("Talent call — D Double E: 10:00").
+  const unitCall = resolveUnitCall(unitCallTime, callTime) || earliestTime(crew);
   const t0 = talent.find((t) => (t.name || "").trim() || t.callTime);
-  const talentCall = earliestTime(talent);
-  const derivedTimes: { time: string; label: string; note?: string }[] = [];
-  derivedTimes.push({ time: crewCall || "TBC", label: "Crew call" });
-  if (talentCall || t0)
-    derivedTimes.push({
-      time: talentCall || "TBC",
-      label: t0?.name ? `Talent call — ${t0.name}` : "Talent call",
-    });
-  derivedTimes.push({ time: wrapTime || "TBC", label: "Wrap" });
+  const variations = callTimeVariations(crew, talent, unitCall);
 
-  // Prefer the explicit department call-times table when present + toggled on;
-  // otherwise fall back to the derived crew/talent/wrap rows.
-  const hasCallTimeData = callTimes.some((c) => c.time || c.department);
-  const callTimeRows: { time: string; label: string; note?: string }[] =
-    hasCallTimeData && show("callTimes")
+  const callTimeRows: { time: string; label: string; note?: string }[] = [
+    { time: unitCall || "TBC", label: "Unit Call", note: "Everyone unless listed below" },
+  ];
+
+  // Department rows from the explicit call-times table, when it's populated and
+  // toggled on. The sheet's own Unit Call / Wrap rows supersede any table row
+  // saying the same thing, so those are dropped to avoid a duplicate line.
+  const isUnitRow = (d: string) => /^\s*(main\s+)?unit\s+call\s*$/i.test(d || "");
+  const isWrapRow = (d: string) => /\bwrap\b/i.test(d || "");
+  const departmentRows =
+    show("callTimes")
       ? callTimes
-          .filter((c) => c.time || c.department)
+          .filter((c) => (c.time || c.department) && !isUnitRow(c.department) && !isWrapRow(c.department))
           .map((c) => ({ time: c.time || "TBC", label: c.department }))
-      : derivedTimes;
+      : [];
+  callTimeRows.push(...departmentRows);
+
+  // Individual variations — the whole point of the system.
+  callTimeRows.push(...variations.map((v) => ({ ...v, note: "Custom call" })));
+
+  callTimeRows.push({ time: wrapTime || "TBC", label: "Wrap" });
 
   // Hero subtitle: date · job number only (location deliberately omitted).
   const heroBits = [formattedDate, jobNumber ? `Job ${jobNumber}` : ""]
@@ -293,13 +305,15 @@ export function CallSheetDocument({
       phone: creative.phone,
       email: creative.email,
     });
-  if (t0?.name)
+  if (t0?.name) {
+    const t0Call = effectiveCallTime(t0, unitCall);
     people.push({
       label: "Talent",
-      name: t0.callTime ? `${t0.name} · call ${t0.callTime}` : t0.name,
+      name: t0Call ? `${t0.name} · call ${t0Call}` : t0.name,
       phone: t0.phone,
       email: t0.email,
     });
+  }
 
   // People already surfaced in Shoot Details (Exec Producer / Producer /
   // Creative / Talent) must not repeat in the Contacts — Crew / Talent table.
@@ -506,7 +520,8 @@ export function CallSheetDocument({
                       ...cellStyle,
                       whiteSpace: "nowrap",
                       fontWeight: 700,
-                      fontSize: "14px",
+                      // The unit call is the headline time on the sheet.
+                      fontSize: i === 0 ? "16px" : "14px",
                     }}
                   >
                     {r.time}
@@ -521,6 +536,12 @@ export function CallSheetDocument({
               ))}
             </tbody>
           </table>
+          {variations.length > 0 && (
+            <p style={{ margin: "10px 0 0", fontSize: "9px", color: MUTED, lineHeight: 1.5 }}>
+              Everyone works to the unit call unless listed above. Custom calls are
+              shown in bold against the person in the crew and talent lists.
+            </p>
+          )}
         </Section>
 
         {/* ── Run of the day (schedule) ── */}
@@ -616,15 +637,17 @@ export function CallSheetDocument({
           <Section title="Contacts — Crew / Talent">
             <GridTable
               columns={[
-                { label: "Role", width: "28%" },
-                { label: "Name", width: "24%" },
-                { label: "Phone", width: "24%" },
-                { label: "Email", width: "24%" },
+                { label: "Role", width: "24%" },
+                { label: "Name", width: "21%" },
+                { label: "Call", width: "13%", nowrap: true },
+                { label: "Phone", width: "21%" },
+                { label: "Email", width: "21%" },
               ]}
               rows={contactCrew
                 .map((c) => [
                   c.role,
                   <Bold key="n">{c.name}</Bold>,
+                  <CallCell key="c" person={c} unitCall={unitCall} />,
                   redacted ? REDACTED : <PhoneLink phone={c.phone} />,
                   redacted ? "" : <EmailLink email={c.email} />,
                 ])}
@@ -652,7 +675,7 @@ export function CallSheetDocument({
                 .map((t) => [
                   <Bold key="n">{t.name}</Bold>,
                   t.role,
-                  t.callTime,
+                  <CallCell key="c" person={t} unitCall={unitCall} />,
                   redacted ? REDACTED : <ContactCell phone={t.phone} email={t.email} />,
                 ])}
             />
@@ -1069,6 +1092,29 @@ function SubSection({ title, children }: { title: string; children: React.ReactN
 
 function Bold({ children }: { children: React.ReactNode }) {
   return <span style={{ fontWeight: 700, color: TEXT }}>{children}</span>;
+}
+
+// A person's call time in the crew / talent grids. Someone on the unit call gets
+// the plain time; a custom call is set in bold and flagged, so an eye running
+// down the column catches the exceptions.
+function CallCell({
+  person,
+  unitCall,
+}: {
+  person: { callTime?: string };
+  unitCall: string;
+}) {
+  const time = effectiveCallTime(person, unitCall);
+  if (!time) return <>{"—"}</>;
+  if (!hasCallOverride(person, unitCall)) {
+    return <span style={{ color: TEXT }}>{time}</span>;
+  }
+  return (
+    <span style={{ fontWeight: 700, color: TEXT, whiteSpace: "nowrap" }}>
+      {time}
+      <span style={{ fontWeight: 400, fontSize: "9px", color: MUTED }}> (custom)</span>
+    </span>
+  );
 }
 
 // A single label/value line in the two-column Shoot Details grid.

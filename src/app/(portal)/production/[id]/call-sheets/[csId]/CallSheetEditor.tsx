@@ -15,8 +15,8 @@ import type {
 } from "./types";
 import {
   AGENCY_TEAM_ROLES, CLIENT_TEAM_ROLES, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE,
-  CREW_ROLE_PRESETS, defaultCallTimes, EQUIPMENT_CATEGORIES, KIT_TEMPLATES,
-  parseSchedule,
+  CREW_ROLE_PRESETS, defaultCallTimes, EQUIPMENT_CATEGORIES, hasCallOverride,
+  KIT_TEMPLATES, parseSchedule,
 } from "./types";
 import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls } from "./shared";
 import { PeopleTable } from "./shared";
@@ -30,7 +30,9 @@ import { DirectoryPicker } from "./DirectoryPicker";
 
 export interface EditorProps {
   shootDate: string; setShootDate: (v: string) => void;
-  callTime: string; setCallTime: (v: string) => void;
+  // The master call time for the whole unit — every crew/talent row inherits it
+  // unless that row carries its own override.
+  unitCallTime: string; setUnitCallTime: (v: string) => void;
   wrapTime: string; setWrapTime: (v: string) => void;
   schedule: ScheduleItem[]; setSchedule: (v: ScheduleItem[]) => void;
   locations: CallSheetLocation[]; setLocations: (v: CallSheetLocation[]) => void;
@@ -63,6 +65,9 @@ const iconCls = "text-gray-400 dark:text-gray-500";
 
 export function CallSheetEditor(p: EditorProps) {
   const rosterCount = p.crew.length + p.talent.length;
+  const overrideCount = [...p.crew, ...p.talent].filter((m) =>
+    hasCallOverride(m, p.unitCallTime)
+  ).length;
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -99,7 +104,8 @@ export function CallSheetEditor(p: EditorProps) {
       .map((m) => ({
         role: m.role || "",
         name: m.name,
-        callTime: p.callTime || "",
+        // No override — imported crew inherit the unit call.
+        callTime: "",
         email: m.email || "",
         phone: m.phone || "",
       }));
@@ -227,11 +233,11 @@ export function CallSheetEditor(p: EditorProps) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Main Call</label>
+              <label className={labelCls}>Unit Call</label>
               <input
                 type="time"
-                value={p.callTime}
-                onChange={(e) => p.setCallTime(e.target.value)}
+                value={p.unitCallTime}
+                onChange={(e) => p.setUnitCallTime(e.target.value)}
                 className={inputCls}
               />
             </div>
@@ -431,6 +437,41 @@ export function CallSheetEditor(p: EditorProps) {
       {/* 10. Schedule & Call Times — merged input, split output */}
       <Section title="Schedule & Call Times" icon={<Clock size={15} className={iconCls} />}>
         <div className="space-y-4">
+          {/* Unit Call — the master time everyone on the sheet inherits. */}
+          <div className="rounded-xl border border-[#A93B2E]/20 bg-[#A93B2E]/[0.03] dark:bg-[#A93B2E]/10 px-4 py-3">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div>
+                <label className={labelCls}>Unit Call</label>
+                <input
+                  type="time"
+                  value={p.unitCallTime}
+                  onChange={(e) => p.setUnitCallTime(e.target.value)}
+                  className={`${inputCls} w-[130px] font-semibold`}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Wrap</label>
+                <input
+                  type="time"
+                  value={p.wrapTime}
+                  onChange={(e) => p.setWrapTime(e.target.value)}
+                  className={`${inputCls} w-[130px]`}
+                />
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-[220px] leading-snug">
+                The default call time for everyone on the unit. Crew and talent
+                inherit it unless you set a custom time on their row below —{" "}
+                {overrideCount > 0 ? (
+                  <span className="font-semibold text-[#A93B2E]">
+                    {overrideCount} {overrideCount === 1 ? "person has" : "people have"} a custom call.
+                  </span>
+                ) : (
+                  <span>everyone is on the unit call right now.</span>
+                )}
+              </p>
+            </div>
+          </div>
+
           <p className="text-xs text-gray-400 dark:text-gray-500">
             Enter the whole day in one place. Call-time entries (crew call, talent
             call, wrap, unit call, cast call…) are auto-detected and shown separately
@@ -677,6 +718,7 @@ export function CallSheetEditor(p: EditorProps) {
         <PeopleTable
           people={p.crew}
           setPeople={(v) => p.setCrew(v as CrewMember[])}
+          unitCallTime={p.unitCallTime}
           addLabel="Add Crew"
           rolePresets={CREW_ROLE_PRESETS}
         />
@@ -700,6 +742,7 @@ export function CallSheetEditor(p: EditorProps) {
         <PeopleTable
           people={p.talent}
           setPeople={(v) => p.setTalent(v as TalentMember[])}
+          unitCallTime={p.unitCallTime}
           addLabel="Add Talent"
         />
       </Section>
@@ -745,7 +788,8 @@ export function CallSheetEditor(p: EditorProps) {
         <DirectoryPicker
           onClose={() => setPickerOpen(false)}
           onAdd={addFromPicker}
-          defaultCallTime={p.callTime}
+          // Blank = no override; people added from the directory inherit the unit call.
+          defaultCallTime=""
         />
       )}
     </div>

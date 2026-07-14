@@ -17,6 +17,7 @@ import type {
 import {
   deriveLocations, emptyCatering, emptyEquipment, emptyHeader, emptyLocation,
   emptyMovementOrder, emptyProductionCompany, emptyShotStyle, migrateCatering,
+  resolveUnitCall,
 } from "./types";
 import { CallSheetEditor } from "./CallSheetEditor";
 import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
@@ -55,7 +56,10 @@ export default function CallSheetPage() {
 
   const [shootTitle, setShootTitle] = useState("");
   const [shootDate, setShootDate] = useState("");
-  const [callTime, setCallTime] = useState("08:00");
+  // The unit call — the master time everyone inherits. Mirrored into the legacy
+  // `callTime` column on save so older readers (call-sheet list, confirmations)
+  // keep working.
+  const [unitCallTime, setUnitCallTime] = useState("08:00");
   const [wrapTime, setWrapTime] = useState("");
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [location, setLocation] = useState<LocationData>(emptyLocation());
@@ -104,7 +108,8 @@ export default function CallSheetPage() {
     return {
       shootTitle: s.shootTitle,
       shootDate: new Date(s.shootDate as string).toISOString(),
-      callTime: s.callTime,
+      callTime: s.unitCallTime,
+      unitCallTime: s.unitCallTime,
       wrapTime: s.wrapTime,
       location: legacyLocation,
       locationLat: first ? first.lat : s.locationLat,
@@ -133,7 +138,7 @@ export default function CallSheetPage() {
   }
 
   stateRef.current = {
-    shootTitle, shootDate, callTime, wrapTime, schedule, location, locationLat,
+    shootTitle, shootDate, unitCallTime, wrapTime, schedule, location, locationLat,
     locationLng, locations, shotStyle, weatherData, shotlist, crew, talent,
     catering, documents, notesGeneral, notesSafety, notesParking, header,
     clientTeam, agencyTeam, productionCompany, callTimes, productionMobiles,
@@ -152,7 +157,7 @@ export default function CallSheetPage() {
         setMode(s.status === "PUBLISHED" ? "preview" : "editor");
         setShootTitle(s.shootTitle || s.production.title);
         setShootDate(s.shootDate.split("T")[0]);
-        setCallTime(s.callTime || "08:00");
+        setUnitCallTime(resolveUnitCall(s.unitCallTime, s.callTime) || "08:00");
         setWrapTime(s.wrapTime || "");
         setSchedule(Array.isArray(s.schedule) ? s.schedule : []);
         setLocation(
@@ -336,7 +341,7 @@ export default function CallSheetPage() {
   }
 
   const viewData: CallSheetViewData = {
-    shootTitle, shootDate, callTime, wrapTime, location, locationLat, locationLng,
+    shootTitle, shootDate, callTime: unitCallTime, unitCallTime, wrapTime, location, locationLat, locationLng,
     locations, shotStyle, deliverables, weatherData, schedule, shotlist, crew, talent, catering, documents,
     notesGeneral, notesSafety, notesParking,
     header, clientTeam, agencyTeam, productionCompany, callTimes, productionMobiles,
@@ -452,7 +457,7 @@ export default function CallSheetPage() {
             <div className="print:hidden">
               <CallSheetEditor
                 shootDate={shootDate} setShootDate={setShootDate}
-                callTime={callTime} setCallTime={setCallTime}
+                unitCallTime={unitCallTime} setUnitCallTime={setUnitCallTime}
                 wrapTime={wrapTime} setWrapTime={setWrapTime}
                 schedule={schedule} setSchedule={setSchedule}
                 locations={locations} setLocations={setLocations}

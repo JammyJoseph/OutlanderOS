@@ -45,6 +45,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     // 4G) to create a fully-populated sheet in a single call. All are JSON
     // columns with sensible defaults, so unset values just fall back.
     const opt: Record<string, unknown> = {};
+    if (body.unitCallTime !== undefined) opt.unitCallTime = body.unitCallTime;
     if (body.wrapTime !== undefined) opt.wrapTime = body.wrapTime;
     if (body.locationLat !== undefined) opt.locationLat = body.locationLat;
     if (body.locationLng !== undefined) opt.locationLng = body.locationLng;
