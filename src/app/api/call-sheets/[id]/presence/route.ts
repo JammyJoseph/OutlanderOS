@@ -1,48 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 
-// Presence is deliberately in-memory, not a Prisma model.
-//
-// It's ephemeral by nature (a 60s TTL — nothing here is worth surviving a
-// restart), the team is small enough that the whole thing fits in a Map, and
-// prod runs a single pm2 process, so one module-level store is the one store.
-// Adding a table would also mean a migration, and the deploy pipeline runs
-// `prisma generate` only — no `db push` — so a new table would 500 in prod.
-//
-// If OutlanderOS ever runs more than one node, this needs to move to Redis or
-// a DB table (and the deploy needs a migration step to match).
-
-type Presence = { userId: string; name: string; email: string; lastSeen: number };
-
-// callSheetId → (userId → presence)
-const rooms = new Map<string, Map<string, Presence>>();
-
-// A user counts as present if they've beaten within this window.
+// A user counts as present if they've beaten within this window. The editor
+// heartbeats every 30s, so 60s tolerates exactly one dropped beat.
 const TTL_MS = 60_000;
 
-// Drop stale entries so an abandoned tab's row doesn't linger, and so `rooms`
-// doesn't grow without bound across sheets that nobody has open any more.
-function sweep(): void {
-  const cutoff = Date.now() - TTL_MS;
-  for (const [sheetId, room] of rooms) {
-    for (const [userId, p] of room) {
-      if (p.lastSeen < cutoff) room.delete(userId);
-    }
-    if (room.size === 0) rooms.delete(sheetId);
-  }
+function cutoff(): Date {
+  return new Date(Date.now() - TTL_MS);
 }
 
-function activeIn(sheetId: string): Presence[] {
-  const cutoff = Date.now() - TTL_MS;
-  const room = rooms.get(sheetId);
-  if (!room) return [];
-  return [...room.values()]
-    .filter((p) => p.lastSeen >= cutoff)
-    .sort((a, b) => a.name.localeCompare(b.name));
+async function activeIn(callSheetId: string) {
+  const rows = await prisma.callSheetPresence.findMany({
+    where: { callSheetId, lastSeen: { gte: cutoff() } },
+    select: { userId: true, name: true, email: true, lastSeen: true },
+    orderBy: { name: "asc" },
+  });
+  return rows.map((r) => ({ ...r, lastSeen: r.lastSeen.getTime() }));
 }
 
 // POST — heartbeat. The editor calls this on mount and every 30s after.
-// The identity comes from the auth_token JWT, never from the request body: a
+//
+// Identity comes from the auth_token JWT, never from the request body: a
 // client-supplied userId would let anyone appear in the room as anyone.
 export const POST = withAuth(async (
   _request: NextRequest,
@@ -50,24 +29,31 @@ export const POST = withAuth(async (
   user
 ) => {
   const { id } = await params;
-  sweep();
+  const now = new Date();
+  const name = user.name || user.email || "Someone";
 
-  let room = rooms.get(id);
-  if (!room) {
-    room = new Map();
-    rooms.set(id, room);
+  try {
+    await prisma.callSheetPresence.upsert({
+      where: { callSheetId_userId: { callSheetId: id, userId: user.userId } },
+      create: { callSheetId: id, userId: user.userId, name, email: user.email, lastSeen: now },
+      update: { name, email: user.email, lastSeen: now },
+    });
+
+    // Sweep on the write path — presence rows are disposable, and this keeps the
+    // table from growing a row per person per sheet forever. Stale rows are
+    // already ignored on read, so a failed sweep is cosmetic, not correctness.
+    await prisma.callSheetPresence.deleteMany({
+      where: { callSheetId: id, lastSeen: { lt: cutoff() } },
+    });
+
+    // `self` tells the client which of the active users is itself (there's no
+    // /api/auth/me) — it can only learn that from the token, which is read here.
+    return NextResponse.json({ self: user.userId, active: await activeIn(id) });
+  } catch {
+    // Presence is decoration. If the sheet is gone (FK violation) or the write
+    // fails, say so quietly rather than breaking the editor around it.
+    return NextResponse.json({ self: user.userId, active: [] });
   }
-  room.set(user.userId, {
-    userId: user.userId,
-    name: user.name || user.email || "Someone",
-    email: user.email,
-    lastSeen: Date.now(),
-  });
-
-  // `self` saves the client a round trip to work out which of the active users
-  // is itself (there's no /api/auth/me) — it can only learn that from the token,
-  // and the token is already being read here.
-  return NextResponse.json({ self: user.userId, active: activeIn(id) });
 });
 
 // GET — everyone who has beaten in the last 60s, the caller included. The editor
@@ -77,6 +63,9 @@ export const GET = withAuth(async (
   { params }: { params: Promise<{ id: string }> }
 ) => {
   const { id } = await params;
-  sweep();
-  return NextResponse.json({ active: activeIn(id) });
+  try {
+    return NextResponse.json({ active: await activeIn(id) });
+  } catch {
+    return NextResponse.json({ active: [] });
+  }
 });

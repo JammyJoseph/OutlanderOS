@@ -704,6 +704,30 @@ model CallSheet {
   distributions   Json            @default("[]") // [{ name, role, email, sentAt, confirmedAt? }]
   distributedAt   DateTime?
   createdAt       DateTime        @default(now())
+  presence        CallSheetPresence[]
+}
+
+// Who currently has a call sheet open, for the collaborative editor's "Olive is
+// editing" pills. One row per (sheet, user); the editor heartbeats every 30s and
+// anyone whose lastSeen is older than 60s is treated as gone.
+//
+// This lives in the DB rather than a module-level Map so it stays correct if
+// OutlanderOS is ever run as more than one process — with an in-memory store,
+// each node would see a different room and quietly show the wrong people.
+// Rows are disposable: a stale one is ignored on read and swept on write.
+model CallSheetPresence {
+  id          String    @id @default(cuid())
+  callSheetId String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  // Plain column, not a User relation — presence outlives nothing, and a hard FK
+  // here would just add a delete-time constraint for no benefit.
+  userId      String
+  name        String
+  email       String
+  lastSeen    DateTime  @default(now())
+
+  @@unique([callSheetId, userId])
+  @@index([callSheetId, lastSeen])
 }
 
 model ProductionExpense {
