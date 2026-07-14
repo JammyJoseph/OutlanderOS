@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
+import { getJson, isSessionExpired } from "@/lib/session-fetch";
 import { BusinessPulse } from "./_components/BusinessPulse";
 import { WeatherHeadlines } from "./_components/WeatherHeadlines";
 import { CultureFeed } from "./_components/CultureFeed";
@@ -53,27 +54,26 @@ export default function MePage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    try {
-      const res = await fetch("/api/dashboard/me");
-      if (!res.ok) throw new Error(`Dashboard failed (${res.status})`);
-      setData(await res.json());
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load dashboard");
-    }
-  }, []);
-
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    getJson<DashboardData>("/api/dashboard/me")
+      .then((next) => {
+        setData(next);
+        setError(null);
+      })
+      .catch((e) => {
+        // Expired session: already navigating to /login, so keep the skeleton up
+        // instead of flashing "Failed to load" on the way out.
+        if (isSessionExpired(e)) return;
+        setError(e instanceof Error ? e.message : "Failed to load dashboard");
+      });
+  }, []);
 
   if (error && !data) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 bg-background">
         <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
         <button
-          onClick={loadData}
+          onClick={() => window.location.reload()}
           className="flex items-center gap-1.5 rounded-md bg-[#111111] px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
         >
           <RefreshCw className="h-4 w-4" /> Retry

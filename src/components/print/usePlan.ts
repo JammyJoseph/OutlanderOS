@@ -10,6 +10,8 @@ import {
   type IssueState,
 } from "@/lib/magazine-plan";
 
+import { getJson, isSessionExpired } from "@/lib/session-fetch";
+
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
 interface SavedShape {
@@ -40,8 +42,8 @@ export interface IssueSummary {
 // behind the current blueprint — so blueprint edits reach environments that were
 // seeded with an older version. User-created issues are never re-seeded.
 async function ensureSeeded(): Promise<IssueSummary[]> {
-  let res = await fetch(`/api/magazine-plan`, { cache: "no-store" });
-  let data = await res.json();
+  type IssuesResponse = { issues?: IssueSummary[] };
+  let data = await getJson<IssuesResponse>(`/api/magazine-plan`, { cache: "no-store" });
   let issues: IssueSummary[] = data.issues ?? [];
   const byNumber = new Map(issues.map((i) => [i.issueNumber, i]));
   const needsSeed = SEED_ISSUES.some((s) => {
@@ -49,13 +51,12 @@ async function ensureSeeded(): Promise<IssueSummary[]> {
     return !found || (found.seedVersion ?? 0) < SEED_VERSION;
   });
   if (needsSeed) {
-    await fetch(`/api/magazine-plan`, {
+    await getJson(`/api/magazine-plan`, {
       method: "POST",
       headers: JSON_HEADERS,
       body: JSON.stringify({ seedAll: true }),
     });
-    res = await fetch(`/api/magazine-plan`, { cache: "no-store" });
-    data = await res.json();
+    data = await getJson<IssuesResponse>(`/api/magazine-plan`, { cache: "no-store" });
     issues = data.issues ?? [];
   }
   return issues;
@@ -147,13 +148,18 @@ export function useIssues() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       setIssues(await ensureSeeded());
     } catch (e) {
-      setError(String(e));
-    } finally {
+      // Expired session: the browser is already leaving for /login, so hold the
+      // spinner rather than flashing an error on the way out.
+      if (isSessionExpired(e)) return;
+      setError(e instanceof Error ? e.message : String(e));
       setLoading(false);
+      return;
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => {

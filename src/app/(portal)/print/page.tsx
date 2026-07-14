@@ -37,7 +37,7 @@ const STATE_STYLE: Record<IssueState, { text: string; accent: string; icon: Reac
 
 export default function PrintDashboard() {
   const router = useRouter();
-  const { issues, loading, creating, createNextIssue } = useIssues();
+  const { issues, loading, creating, error, reload, createNextIssue } = useIssues();
 
   async function handleNewIssue() {
     const plan = await createNextIssue();
@@ -48,6 +48,24 @@ export default function PrintDashboard() {
     return (
       <div className="flex h-full items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-[#2E5E44]" />
+      </div>
+    );
+  }
+
+  // A failed load must never fall through to the empty state below — "no issues
+  // yet" for what is really a 500 makes the whole magazine look deleted.
+  if (error) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-background">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Couldn&apos;t load the print issues.
+        </p>
+        <button
+          onClick={reload}
+          className="rounded-lg bg-[#2E5E44] px-4 py-2 text-xs font-semibold text-black hover:bg-[#2E5E44]/90"
+        >
+          Retry
+        </button>
       </div>
     );
   }

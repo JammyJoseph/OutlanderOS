@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { getJson } from '@/lib/session-fetch'
 import {
   TrendingUp,
   Film,
@@ -88,12 +89,16 @@ export default function HubPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
+        // Stats are decorative — a single failure just hides that tile. But a 401
+        // means the session lapsed while this tab sat open, and getJson bounces to
+        // /login rather than leaving the hub showing blank counts.
         const [campaigns, productions, printIssues, dashboard, contacts] = await Promise.allSettled([
-          fetch('/api/campaigns').then(r => r.json()),
-          fetch('/api/productions').then(r => r.json()),
-          fetch('/api/print-issues').then(r => r.json()),
-          fetch('/api/dashboard').then(r => r.json()),
-          fetch('/api/contacts?radar=false').then(r => r.json()),
+          getJson<unknown>('/api/campaigns'),
+          getJson<unknown>('/api/productions'),
+          getJson<unknown>('/api/print-issues'),
+          // bookedRevenue arrives preformatted for display ('£1,234' or '—').
+          getJson<{ billingTracker?: { bookedRevenue?: string } }>('/api/dashboard'),
+          getJson<unknown>('/api/contacts?radar=false'),
         ])
 
         const next: PortalStats = {}
@@ -110,8 +115,12 @@ export default function HubPage() {
           next.finance = dashboard.value.billingTracker.bookedRevenue
         }
         if (contacts.status === 'fulfilled') {
-          const v = contacts.value
-          next.directory = typeof v?.total === 'number' ? v.total : Array.isArray(v) ? v.length : Array.isArray(v?.data) ? v.data.length : undefined
+          // /api/contacts answers with a bare array, a {data:[]} envelope, or a
+          // {total} count depending on the query — accept all three.
+          const v = contacts.value as { total?: number; data?: unknown[] } | unknown[]
+          if (Array.isArray(v)) next.directory = v.length
+          else if (typeof v?.total === 'number') next.directory = v.total
+          else if (Array.isArray(v?.data)) next.directory = v.data.length
         }
         setStats(next)
       } catch {

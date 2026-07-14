@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getJson, isSessionExpired } from "@/lib/session-fetch";
 import {
   Plus,
   Loader2,
@@ -134,18 +135,31 @@ type SortMode = "stage" | "days";
 export default function CommercialDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showNewDeal, setShowNewDeal] = useState(false);
   const [stageFilter, setStageFilter] = useState<DealStage | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>("stage");
   const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/commercial/dashboard")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d && !d.error) setData(d);
+    // A failed load must never fall through to `data = null` → "0 deals": an
+    // empty pipeline for what is really an expired session or a 500 makes live
+    // deals look deleted.
+    let leaving = false;
+    getJson<DashboardData>("/api/commercial/dashboard")
+      .then((d) => setData(d))
+      .catch((e) => {
+        // Expired session: already navigating to /login, so hold the spinner
+        // rather than flashing an error on the way out.
+        if (isSessionExpired(e)) {
+          leaving = true;
+          return;
+        }
+        setLoadFailed(true);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!leaving) setLoading(false);
+      });
   }, []);
 
   const deals = data?.activeDeals ?? [];
@@ -202,6 +216,24 @@ export default function CommercialDashboard() {
         {loading && (
           <div className="flex items-center justify-center py-24">
             <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
+          </div>
+        )}
+
+        {/* Load failure — explicitly *not* an empty state. */}
+        {!loading && loadFailed && (
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-6 text-center">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              Couldn&apos;t load the dashboard
+            </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Your deals are safe — this is a loading problem, not missing data.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-xl bg-[#111111] dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:opacity-90"
+            >
+              Retry
+            </button>
           </div>
         )}
 

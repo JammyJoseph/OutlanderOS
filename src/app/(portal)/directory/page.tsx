@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getJson, isSessionExpired } from "@/lib/session-fetch";
 import {
   Search,
   Plus,
@@ -300,6 +301,9 @@ function Directory() {
   const [radar, setRadar] = useState<ContactRecord[]>([]);
   const [categories, setCategories] = useState<{ category: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Bumped by the error state's Retry button to re-run the load effect.
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   const [search, setSearch] = useState("");
   // Debounced copy of `search` — the fetches key off this so we don't re-query
@@ -349,37 +353,38 @@ function Directory() {
   // Load the full contact set in one lean request. `?fields=list` returns only
   // the fields the list needs (no heavy JSON/notes); the detail panel fetches the
   // full record on click.
+  // /api/contacts answers with a bare array or a {data,total} envelope.
+  type ContactsResponse = ContactRecord[] | { data?: ContactRecord[]; total?: number };
+
   const loadContacts = useCallback(async () => {
     const params = new URLSearchParams({ radar: "false", fields: "list" });
     if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
     if (category) params.set("category", category);
-    const res = await fetch(`/api/contacts?${params.toString()}`);
-    const data = await res.json();
+    const data = await getJson<ContactsResponse>(`/api/contacts?${params.toString()}`);
     const list: ContactRecord[] = Array.isArray(data) ? data : data?.data ?? [];
     setContacts(list);
-    setContactsTotal(typeof data?.total === "number" ? data.total : list.length);
+    setContactsTotal(!Array.isArray(data) && typeof data?.total === "number" ? data.total : list.length);
   }, [debouncedSearch, category]);
 
   const loadRadar = useCallback(async () => {
     const params = new URLSearchParams();
     if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
     if (radarStatusFilter) params.set("status", radarStatusFilter);
-    const res = await fetch(`/api/directory/radar?${params.toString()}`);
-    const data = await res.json();
+    const data = await getJson<unknown>(`/api/directory/radar?${params.toString()}`);
     setRadar(Array.isArray(data) ? data : []);
   }, [debouncedSearch, radarStatusFilter]);
 
   const loadCategories = useCallback(async () => {
-    const res = await fetch("/api/directory/categories");
-    const data = await res.json();
+    const data = await getJson<{ categories?: { category: string; count: number }[] }>(
+      "/api/directory/categories"
+    );
     setCategories(Array.isArray(data?.categories) ? data.categories : []);
   }, []);
 
   // Print Directory — every contact filed into a tier (across all pages).
   const [printContacts, setPrintContacts] = useState<ContactRecord[]>([]);
   const loadPrint = useCallback(async () => {
-    const res = await fetch("/api/contacts?hasPrintTier=true&limit=200");
-    const data = await res.json();
+    const data = await getJson<ContactsResponse>("/api/contacts?hasPrintTier=true&limit=200");
     const list: ContactRecord[] = Array.isArray(data) ? data : data?.data ?? [];
     setPrintContacts(list);
   }, []);
@@ -388,18 +393,29 @@ function Directory() {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setLoadFailed(false);
     const jobs: Promise<unknown>[] = [];
     if (view === "radar") jobs.push(loadRadar());
     else if (view === "print") jobs.push(loadPrint());
     else jobs.push(loadContacts());
     if (view !== "radar" && view !== "print") jobs.push(loadCategories());
-    Promise.all(jobs).finally(() => {
-      if (active) setLoading(false);
-    });
+    Promise.all(jobs)
+      .then(() => {
+        if (active) setLoading(false);
+      })
+      .catch((e) => {
+        if (!active) return;
+        // An expired session is already navigating to /login — hold the spinner.
+        // Any other failure gets an explicit error state: rendering "0 contacts"
+        // for a 500 makes the whole directory look wiped.
+        if (isSessionExpired(e)) return;
+        setLoadFailed(true);
+        setLoading(false);
+      });
     return () => {
       active = false;
     };
-  }, [view, loadContacts, loadRadar, loadCategories, loadPrint]);
+  }, [view, reloadNonce, loadContacts, loadRadar, loadCategories, loadPrint]);
 
   async function saveContact(payload: Partial<ContactRecord>, id?: string) {
     const res = await fetch(id ? `/api/contacts/${id}` : "/api/contacts", {
@@ -899,6 +915,18 @@ function Directory() {
         ) : loading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="animate-spin text-gray-600 dark:text-gray-400" size={24} />
+          </div>
+        ) : loadFailed ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-24">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Couldn&apos;t load the directory.
+            </p>
+            <button
+              onClick={() => setReloadNonce((n) => n + 1)}
+              className="rounded-md bg-[#111111] px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
+            >
+              Retry
+            </button>
           </div>
         ) : view === "dashboard" ? (
           <Dashboard

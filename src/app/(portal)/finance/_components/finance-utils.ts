@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { getJson, isSessionExpired } from '@/lib/session-fetch'
 
 // ===== Formatting =====
 
@@ -116,12 +117,12 @@ export function useFinanceFetch<T>(url: string): FetchState<T> {
 
   useEffect(() => {
     let cancelled = false
+    // Set once the session turns out to be expired: the browser is already
+    // navigating to /login, so we hold the skeleton up instead of flashing an
+    // error state the user will never get to read.
+    let leaving = false
     setLoading(true)
-    fetch(url)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
+    getJson<T>(url)
       .then((json) => {
         if (cancelled) return
         setData(json)
@@ -129,10 +130,14 @@ export function useFinanceFetch<T>(url: string): FetchState<T> {
       })
       .catch((e) => {
         if (cancelled) return
+        if (isSessionExpired(e)) {
+          leaving = true
+          return
+        }
         setError(String(e))
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled && !leaving) setLoading(false)
       })
     return () => {
       cancelled = true
