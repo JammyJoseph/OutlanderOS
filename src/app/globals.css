@@ -291,6 +291,13 @@
   }
 }
 
+/* Wide bold on all uppercase UI labels */
+.uppercase {
+  font-family: var(--font-subheading) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
 /* Monospace numerals */
 .font-mono-nums {
   font-variant-numeric: tabular-nums;
