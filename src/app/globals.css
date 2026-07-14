@@ -291,6 +291,17 @@
   }
 }
 
+/* Every uppercase label, pill, stat title and section header takes the wide bold
+   cut at 0% tracking. Unlayered + !important so it outranks the tracking-* and
+   font-* utilities already on those elements; that also means an element cannot
+   opt out with a utility — drop the class to exempt one. Only reaches the
+   `uppercase` class, not inline textTransform (print/PDF keep their own type). */
+.uppercase {
+  font-family: var(--font-subheading) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
 /* Wide bold on all uppercase UI labels */
 .uppercase {
   font-family: var(--font-subheading) !important;

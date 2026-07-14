@@ -1,6 +1,7 @@
 "use client";
 
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { BrandLogo } from "@/components/portal/BrandLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,11 +20,7 @@ export default function DashboardLayout({
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {!hideHeader && (
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/80 px-6 backdrop-blur-md">
-          <Link href="/me" className="flex items-center gap-2">
-            <span className="text-lg font-bold tracking-[0.14em] uppercase text-gray-900 dark:text-gray-100">
-              Outlander<span className="text-[#9C7C2E] dark:text-[#C9A44A]">OS</span>
-            </span>
-          </Link>
+          <BrandLogo />
           <div className="flex items-center gap-1">
             <Link
               href="/me"
