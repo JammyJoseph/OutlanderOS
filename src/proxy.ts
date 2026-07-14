@@ -28,6 +28,17 @@ export function proxy(request: NextRequest) {
     const payload = JSON.parse(atob(token.split('.')[1]))
     if (!payload.userId) throw new Error('Invalid token')
 
+    // Expired sessions must bounce here. The signature is verified server-side by
+    // the pages themselves, but an expired token still decodes and carries a
+    // userId — without this check it reaches the page, fails jwt.verify there,
+    // and the user sees an empty portal instead of the login screen.
+    if (typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now()) {
+      const expired = NextResponse.redirect(new URL('/login', request.url))
+      expired.cookies.delete('auth_token')
+      expired.cookies.delete('must_change_pw')
+      return expired
+    }
+
     // First-login lock. Staff created by an admin carry a temporary password and
     // a `must_change_pw` cookie (set at login). Until they set a real password —
     // which clears the cookie in /api/me/password — every page bounces to the
