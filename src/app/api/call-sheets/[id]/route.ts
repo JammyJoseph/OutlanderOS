@@ -52,19 +52,15 @@ export const GET = withAuth(async (
   }
 });
 
-export const PUT = withAuth(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) => {
-  const { id } = await params;
-  const body = await request.json();
-  if (body.shootDate !== undefined && !validateDate(body.shootDate)) {
-    return NextResponse.json({ error: "Invalid shootDate" }, { status: 400 });
-  }
-  try {
+// Translate a request body into a Prisma update payload. Only the keys actually
+// present are copied across, so this serves both the wholesale PUT (the editor's
+// "Finish") and the per-field PATCH the collaborative editor fires on every
+// change — a PATCH carrying just `{ crew: [...] }` writes only `crew`, which is
+// what makes last-write-wins land per field rather than per sheet.
+function buildUpdateData(body: Record<string, unknown>): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
     if (body.shootTitle !== undefined) updateData.shootTitle = body.shootTitle;
-    if (body.shootDate !== undefined) updateData.shootDate = new Date(body.shootDate);
+    if (body.shootDate !== undefined) updateData.shootDate = new Date(body.shootDate as string);
     if (body.callTime !== undefined) updateData.callTime = body.callTime;
     if (body.unitCallTime !== undefined) updateData.unitCallTime = body.unitCallTime;
     if (body.wrapTime !== undefined) updateData.wrapTime = body.wrapTime;
@@ -95,8 +91,21 @@ export const PUT = withAuth(async (
     if (body.distributions !== undefined) updateData.distributions = body.distributions;
     if (body.status !== undefined) updateData.status = body.status;
     if (body.distributedAt !== undefined) {
-      updateData.distributedAt = body.distributedAt ? new Date(body.distributedAt) : null;
+      updateData.distributedAt = body.distributedAt
+        ? new Date(body.distributedAt as string)
+        : null;
     }
+  return updateData;
+}
+
+// Shared write path for PUT (wholesale save) and PATCH (single-field auto-save).
+async function writeSheet(request: NextRequest, id: string) {
+  const body = (await request.json()) as Record<string, unknown>;
+  if (body.shootDate !== undefined && !validateDate(body.shootDate as string)) {
+    return NextResponse.json({ error: "Invalid shootDate" }, { status: 400 });
+  }
+  try {
+    const updateData = buildUpdateData(body);
 
     // Publishing (or an explicit mintTokens request from the export panel) mints
     // the public share tokens — once each, so the links stay stable across
@@ -121,6 +130,25 @@ export const PUT = withAuth(async (
   } catch (e) {
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
+}
+
+export const PUT = withAuth(async (
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params;
+  return writeSheet(request, id);
+});
+
+// PATCH — partial update. The collaborative editor sends only the fields that
+// actually changed, so two people editing different fields never clobber each
+// other, and two people editing the same field resolve last-write-wins.
+export const PATCH = withAuth(async (
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params;
+  return writeSheet(request, id);
 });
 
 export const DELETE = withAuth(async (

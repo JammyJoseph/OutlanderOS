@@ -15,13 +15,17 @@ import type {
   TalentMember, WeatherData,
 } from "./types";
 import {
-  deriveLocations, emptyCatering, emptyEquipment, emptyHeader, emptyLocation,
-  emptyMovementOrder, emptyProductionCompany, emptyShotStyle, migrateCatering,
-  resolveUnitCall, sortCallTimes, sortRoster, sortSchedule,
+  emptyCatering, emptyEquipment, emptyHeader, emptyLocation,
+  emptyMovementOrder, emptyProductionCompany, emptyShotStyle,
 } from "./types";
 import { CallSheetEditor } from "./CallSheetEditor";
 import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
 import { generateSMSSummary } from "./smsSummary";
+import { PresenceBar } from "./PresenceBar";
+import {
+  fullPayload, sheetToState, useCollab,
+  type FieldKey, type SheetState,
+} from "./collab";
 import { EmailSharePanel } from "./EmailSharePanel";
 import { clientRecipients, crewRecipients, type EmailAudience } from "./emailShare";
 
@@ -46,7 +50,6 @@ export default function CallSheetPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [autoSavedAt, setAutoSavedAt] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("editor");
   const [showShare, setShowShare] = useState(false);
   // Snapshot of the production deliverables so they render on the preview /
@@ -89,65 +92,73 @@ export default function CallSheetPage() {
   const [movementOrder, setMovementOrder] = useState<MovementOrder>(emptyMovementOrder());
   const [equipment, setEquipment] = useState<EquipmentInfo>(emptyEquipment());
 
-  // Snapshot of the last persisted payload — auto-save only fires on diff.
-  const lastSavedRef = useRef<string>("");
-  const stateRef = useRef<Record<string, unknown>>({});
-
-  function buildPayload(s: typeof stateRef.current) {
-    const locs = (s.locations as CallSheetLocation[]) ?? [];
-    const first = locs[0];
-    // Mirror the first stop into the legacy single-location columns so older
-    // readers (e.g. the call-sheet list) still show a location.
-    const legacyLocation = first
-      ? {
-          ...emptyLocation(),
-          address: first.address,
-          parkingNotes: first.parkingNotes,
-          nearestHospital: first.nearestAE,
-          whatThreeWords: first.whatThreeWords,
-        }
-      : (s.location as LocationData);
-    return {
-      shootTitle: s.shootTitle,
-      shootDate: new Date(s.shootDate as string).toISOString(),
-      callTime: s.unitCallTime,
-      unitCallTime: s.unitCallTime,
-      wrapTime: s.wrapTime,
-      location: legacyLocation,
-      locationLat: first ? first.lat : s.locationLat,
-      locationLng: first ? first.lng : s.locationLng,
-      locations: s.locations,
-      shotStyle: s.shotStyle,
-      // Persisted in clock order, so every reader of the row — the SMS summary,
-      // the confirmation page, the share links — gets a chronological sheet.
-      schedule: sortSchedule((s.schedule as ScheduleItem[]) ?? []),
-      shotlist: s.shotlist,
-      crew: sortRoster((s.crew as CrewMember[]) ?? [], (s.unitCallTime as string) || ""),
-      talent: sortRoster((s.talent as TalentMember[]) ?? [], (s.unitCallTime as string) || ""),
-      cateringDetails: s.catering,
-      documents: s.documents,
-      weatherData: s.weatherData,
-      productionNotes: s.notesGeneral,
-      safetyNotes: s.notesSafety,
-      parkingNotes: s.notesParking,
-      header: s.header,
-      clientTeam: s.clientTeam,
-      agencyTeam: s.agencyTeam,
-      productionCompany: s.productionCompany,
-      callTimes: sortCallTimes((s.callTimes as CallTimeRow[]) ?? []),
-      productionMobiles: s.productionMobiles,
-      movementOrder: s.movementOrder,
-      equipment: s.equipment,
-    };
-  }
-
-  stateRef.current = {
+  // Live editor state, as one object. The collab layer reads it through a ref so
+  // a timer never sees a stale copy, and diffs it field by field against what the
+  // server holds — see ./collab.
+  const state: SheetState = {
     shootTitle, shootDate, unitCallTime, wrapTime, schedule, location, locationLat,
     locationLng, locations, shotStyle, weatherData, shotlist, crew, talent,
     catering, documents, notesGeneral, notesSafety, notesParking, header,
     clientTeam, agencyTeam, productionCompany, callTimes, productionMobiles,
     movementOrder, equipment,
   };
+  const stateRef = useRef<SheetState>(state);
+  stateRef.current = state;
+
+  // Push one field of a remote (someone else's) change into local state. Which
+  // fields get here is the collab layer's call — it never routes a field the
+  // user is currently editing.
+  const applyRemote = useCallback((key: FieldKey, value: SheetState[FieldKey]) => {
+    switch (key) {
+      case "shootTitle": setShootTitle(value as string); break;
+      case "shootDate": setShootDate(value as string); break;
+      case "unitCallTime": setUnitCallTime(value as string); break;
+      case "wrapTime": setWrapTime(value as string); break;
+      case "schedule": setSchedule(value as ScheduleItem[]); break;
+      case "location": setLocation(value as LocationData); break;
+      case "locationLat": setLocationLat(value as number | null); break;
+      case "locationLng": setLocationLng(value as number | null); break;
+      case "locations": setLocations(value as CallSheetLocation[]); break;
+      case "shotStyle": setShotStyle(value as ShotStyle); break;
+      case "weatherData": setWeatherData(value as WeatherData | null); break;
+      case "shotlist": setShotlist(value as Shot[]); break;
+      case "crew": setCrew(value as CrewMember[]); break;
+      case "talent": setTalent(value as TalentMember[]); break;
+      case "catering": setCatering(value as CateringDetails); break;
+      case "documents": setDocuments(value as Attachment[]); break;
+      case "notesGeneral": setNotesGeneral(value as string); break;
+      case "notesSafety": setNotesSafety(value as string); break;
+      case "notesParking": setNotesParking(value as string); break;
+      case "header": setHeader(value as CallSheetHeader); break;
+      case "clientTeam": setClientTeam(value as ClientTeamMember[]); break;
+      case "agencyTeam": setAgencyTeam(value as AgencyTeamMember[]); break;
+      case "productionCompany": setProductionCompany(value as ProductionCompanyInfo); break;
+      case "callTimes": setCallTimes(value as CallTimeRow[]); break;
+      case "productionMobiles": setProductionMobiles(value as ProductionMobile[]); break;
+      case "movementOrder": setMovementOrder(value as MovementOrder); break;
+      case "equipment": setEquipment(value as EquipmentInfo); break;
+    }
+  }, []);
+
+  const handleSheet = useCallback((s: CallSheet) => {
+    setSheet((prev) => (prev ? { ...prev, ...s } : s));
+  }, []);
+
+  // Auto-save (300ms debounce, per field), the 4s merge poll, and presence. Only
+  // runs in the editor: a published sheet sitting in preview is read-only, and
+  // "Finish" owns that write.
+  const collab = useCollab({
+    csId,
+    enabled: mode === "editor" && !!sheet && sheet.status !== "PUBLISHED",
+    state: sheet ? state : null,
+    applyRemote,
+    onSheet: handleSheet,
+  });
+  // The wholesale save (Finish / Back to Editor) needs to re-baseline the collab
+  // layer afterwards, without taking `collab` as a dependency and re-creating
+  // itself every render.
+  const collabRef = useRef(collab);
+  collabRef.current = collab;
 
   const loadSheet = useCallback(() => {
     fetch(`/api/call-sheets/${csId}`)
@@ -159,58 +170,45 @@ export default function CallSheetPage() {
         // A sheet that's already published loads straight into the preview;
         // everything else opens in the editor.
         setMode(s.status === "PUBLISHED" ? "preview" : "editor");
-        setShootTitle(s.shootTitle || s.production.title);
-        setShootDate(s.shootDate.split("T")[0]);
-        const unitCall = resolveUnitCall(s.unitCallTime, s.callTime) || "08:00";
-        setUnitCallTime(unitCall);
-        setWrapTime(s.wrapTime || "");
-        // Every time-based list opens in clock order, whatever order it was
-        // entered (or saved) in — see sortSchedule / sortRoster in ./types.
-        setSchedule(sortSchedule(Array.isArray(s.schedule) ? s.schedule : []));
-        setLocation(
-          s.location && typeof s.location === "object" && !Array.isArray(s.location)
-            ? { ...emptyLocation(), ...s.location }
-            : emptyLocation()
-        );
-        setLocationLat(s.locationLat ?? null);
-        setLocationLng(s.locationLng ?? null);
-        setLocations(
-          deriveLocations(s.locations, s.location, s.locationLat ?? null, s.locationLng ?? null)
-        );
-        setShotStyle(
-          s.shotStyle && typeof s.shotStyle === "object" && !Array.isArray(s.shotStyle)
-            ? { ...emptyShotStyle(), ...s.shotStyle }
-            : emptyShotStyle()
-        );
-        setWeatherData(s.weatherData ?? null);
-        setShotlist(Array.isArray(s.shotlist) ? s.shotlist : []);
-        setCrew(sortRoster(Array.isArray(s.crew) ? s.crew : [], unitCall));
-        setTalent(sortRoster(Array.isArray(s.talent) ? s.talent : [], unitCall));
-        setDocuments(Array.isArray(s.documents) ? s.documents : []);
-        setCatering(migrateCatering(s.cateringDetails, s.notes));
-        setNotesGeneral(s.productionNotes || "");
-        setNotesSafety(s.safetyNotes || "");
-        setNotesParking(s.parkingNotes || "");
-        const isObj = (v: unknown) => v && typeof v === "object" && !Array.isArray(v);
-        setHeader(isObj(s.header) ? { ...emptyHeader(), ...s.header } : emptyHeader());
-        setClientTeam(Array.isArray(s.clientTeam) ? s.clientTeam : []);
-        setAgencyTeam(Array.isArray(s.agencyTeam) ? s.agencyTeam : []);
-        setProductionCompany(
-          isObj(s.productionCompany)
-            ? { ...emptyProductionCompany(), ...s.productionCompany }
-            : emptyProductionCompany()
-        );
-        setCallTimes(sortCallTimes(Array.isArray(s.callTimes) ? s.callTimes : []));
-        setProductionMobiles(Array.isArray(s.productionMobiles) ? s.productionMobiles : []);
-        setMovementOrder(
-          isObj(s.movementOrder)
-            ? { ...emptyMovementOrder(), ...s.movementOrder }
-            : emptyMovementOrder()
-        );
-        setEquipment(isObj(s.equipment) ? { ...emptyEquipment(), ...s.equipment } : emptyEquipment());
+        // One normalisation path for the initial load and for every poll (see
+        // sheetToState in ./collab), so local and remote state are always
+        // compared after exactly the same massaging.
+        const next = sheetToState(s);
+        applyRemote("shootTitle", next.shootTitle);
+        applyRemote("shootDate", next.shootDate);
+        applyRemote("unitCallTime", next.unitCallTime);
+        applyRemote("wrapTime", next.wrapTime);
+        applyRemote("schedule", next.schedule);
+        applyRemote("location", next.location);
+        applyRemote("locationLat", next.locationLat);
+        applyRemote("locationLng", next.locationLng);
+        applyRemote("locations", next.locations);
+        applyRemote("shotStyle", next.shotStyle);
+        applyRemote("weatherData", next.weatherData);
+        applyRemote("shotlist", next.shotlist);
+        applyRemote("crew", next.crew);
+        applyRemote("talent", next.talent);
+        applyRemote("catering", next.catering);
+        applyRemote("documents", next.documents);
+        applyRemote("notesGeneral", next.notesGeneral);
+        applyRemote("notesSafety", next.notesSafety);
+        applyRemote("notesParking", next.notesParking);
+        applyRemote("header", next.header);
+        applyRemote("clientTeam", next.clientTeam);
+        applyRemote("agencyTeam", next.agencyTeam);
+        applyRemote("productionCompany", next.productionCompany);
+        applyRemote("callTimes", next.callTimes);
+        applyRemote("productionMobiles", next.productionMobiles);
+        applyRemote("movementOrder", next.movementOrder);
+        applyRemote("equipment", next.equipment);
+        // Nothing is dirty at rest — this row is the baseline auto-save diffs against.
+        collab.seed(s);
       })
       .finally(() => setLoading(false));
-  }, [csId]);
+    // `collab.seed` and `applyRemote` are both stable (useCallback with no deps),
+    // so this only ever re-runs for a different sheet.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [csId, applyRemote, collab.seed]);
 
   useEffect(() => {
     loadSheet();
@@ -236,47 +234,36 @@ export default function CallSheetPage() {
       .catch(() => {});
   }, [id, mode]);
 
-  // Capture the loaded state as the saved baseline once everything settles.
-  useEffect(() => {
-    if (sheet && !lastSavedRef.current && shootDate) {
-      lastSavedRef.current = JSON.stringify(buildPayload(stateRef.current));
-    }
-  }, [sheet, shootDate]);
-
   function setCoords(lat: number | null, lng: number | null) {
     setLocationLat(lat);
     setLocationLng(lng);
   }
 
+  // Wholesale save. Auto-save no longer needs this — it PATCHes single fields —
+  // but a status transition does: "Finish" publishes, "Back to Editor" demotes,
+  // and both want the whole sheet written in one shot alongside the new status.
   const saveSheet = useCallback(
-    async (newStatus?: CallSheetStatus, opts?: { auto?: boolean }) => {
+    async (newStatus?: CallSheetStatus) => {
       const current = stateRef.current;
-      if (!current.shootDate) return;
+      if (!current.shootDate) return null;
       setSaving(true);
-      const payload = buildPayload(current);
       try {
         const res = await fetch(`/api/call-sheets/${csId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...payload,
-            // Auto-save keeps the current lifecycle stage; an explicit status
-            // (Finish → PUBLISHED, Back to Editor → SAVED) promotes it.
+            ...fullPayload(current),
             ...(newStatus ? { status: newStatus } : {}),
           }),
         });
         const data = await res.json();
         if (data.sheet) {
           setSheet((prev) => (prev ? { ...prev, ...data.sheet } : data.sheet));
-          lastSavedRef.current = JSON.stringify(payload);
-          if (opts?.auto) {
-            setAutoSavedAt(
-              new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-            );
-          } else {
-            setSaved(true);
-            setTimeout(() => setSaved(false), 2000);
-          }
+          // Re-baseline: this write is now what the server holds, so auto-save
+          // doesn't immediately consider every field dirty again.
+          collabRef.current.seed(data.sheet as CallSheet);
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
           return data.sheet as CallSheet;
         }
       } finally {
@@ -302,18 +289,6 @@ export default function CallSheetPage() {
     }
     setMode("editor");
   }
-
-  // Auto-save: every 30s, persist quietly if the payload changed.
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!sheet || sheet.status === "PUBLISHED" || saving) return;
-      const currentPayload = JSON.stringify(buildPayload(stateRef.current));
-      if (lastSavedRef.current && currentPayload !== lastSavedRef.current) {
-        saveSheet(undefined, { auto: true });
-      }
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [sheet, saving, saveSheet]);
 
   // Entering the preview, make sure both share tokens exist. Finish mints them
   // via publish, but a sheet published before the client token existed can
@@ -405,9 +380,6 @@ export default function CallSheetPage() {
                     <Check size={13} /> Saved
                   </span>
                 )}
-                {!saved && autoSavedAt && (
-                  <span className="text-xs text-gray-400 dark:text-gray-500">Auto-saved {autoSavedAt}</span>
-                )}
                 <button
                   onClick={finish}
                   disabled={saving}
@@ -440,6 +412,9 @@ export default function CallSheetPage() {
 
         {mode === "editor" && (
           <>
+            {/* Who else is in here, and whether the last change landed. */}
+            <PresenceBar others={collab.others} status={collab.status} />
+
             {/* Title / status */}
             <div className="mb-6 print:hidden">
               <input
