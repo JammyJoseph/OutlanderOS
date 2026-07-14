@@ -5,11 +5,11 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Loader2, Check, Edit2, Share2, X,
-  FileDown, MessageSquareText, Users, Briefcase,
+  FileDown, MessageSquareText, Users, Briefcase, Mail,
 } from "lucide-react";
 import type {
   AgencyTeamMember, Attachment, CallSheet, CallSheetHeader, CallSheetLocation,
-  CallSheetStatus, CallTimeRow, CateringDetails, ClientTeamMember, CrewMember,
+  CallSheetStatus, CallTimeRow, CateringDetails, ClientContactRef, ClientTeamMember, CrewMember,
   EquipmentInfo, LocationData, MovementOrder,
   ProductionCompanyInfo, ProductionMobile, ScheduleItem, Shot, ShotStyle,
   TalentMember, WeatherData,
@@ -22,6 +22,8 @@ import {
 import { CallSheetEditor } from "./CallSheetEditor";
 import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
 import { generateSMSSummary } from "./smsSummary";
+import { EmailSharePanel } from "./EmailSharePanel";
+import { clientRecipients, crewRecipients, type EmailAudience } from "./emailShare";
 
 const STATUS_BADGES: Record<CallSheetStatus, { cls: string; label: string }> = {
   DRAFT: { cls: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400", label: "Draft" },
@@ -502,6 +504,7 @@ export default function CallSheetPage() {
           data={viewData}
           shareToken={sheet.shareToken}
           clientShareToken={sheet.clientShareToken}
+          clientContact={sheet.production.campaign?.billingContact ?? null}
           onClose={() => setShowShare(false)}
         />
       )}
@@ -551,18 +554,25 @@ function ShareModal({
   data,
   shareToken,
   clientShareToken,
+  clientContact,
   onClose,
 }: {
   data: CallSheetViewData;
   shareToken: string | null;
   clientShareToken: string | null;
+  clientContact: ClientContactRef | null;
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState<CopyKey | null>(null);
+  // Non-null once an "Email …" row is picked — the popup swaps the options list
+  // for the compose panel (recipients + the mailto hand-off) in place.
+  const [emailAudience, setEmailAudience] = useState<EmailAudience | null>(null);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const teamUrl = shareToken ? `${origin}/call-sheet/${shareToken}` : "";
   const clientUrl = clientShareToken ? `${origin}/call-sheet/client/${clientShareToken}` : "";
+  const crewCount = crewRecipients(data).length;
+  const clientCount = clientRecipients(data, clientContact).length;
 
   function copyText(text: string, key: CopyKey) {
     if (!text) return;
@@ -592,7 +602,9 @@ function ShareModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Share call sheet</h2>
+          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+            {emailAudience ? "Share by email" : "Share call sheet"}
+          </h2>
           <button
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500"
@@ -601,58 +613,96 @@ function ShareModal({
           </button>
         </div>
 
-        <div className="p-5 space-y-2.5">
-          <ShareRow
-            icon={<FileDown size={16} />}
-            title="Download PDF"
-            subtitle="Print the call sheet exactly as previewed"
-            onClick={downloadPdf}
+        {emailAudience ? (
+          <EmailSharePanel
+            data={data}
+            audience={emailAudience}
+            setAudience={setEmailAudience}
+            teamUrl={teamUrl}
+            clientUrl={clientUrl}
+            clientContact={clientContact}
+            onBack={() => setEmailAudience(null)}
           />
-          <ShareRow
-            icon={<MessageSquareText size={16} />}
-            title="Copy SMS summary"
-            subtitle={copied === "sms" ? "Copied to clipboard" : "Short text roundup with the team link"}
-            active={copied === "sms"}
-            onClick={() => copyText(generateSMSSummary(data, teamUrl || null), "sms")}
-          />
-          <ShareRow
-            icon={<Users size={16} />}
-            title="Team link"
-            subtitle={
-              copied === "team"
-                ? "Copied to clipboard"
-                : teamUrl
-                ? "Full details — crew contacts, talent, deliverables"
-                : "Publish the sheet to generate this link"
-            }
-            active={copied === "team"}
-            disabled={!teamUrl}
-            onClick={() => copyText(teamUrl, "team")}
-          />
-          <ShareRow
-            icon={<Briefcase size={16} />}
-            title="Client link"
-            subtitle={
-              copied === "client"
-                ? "Copied to clipboard"
-                : clientUrl
-                ? "Contact numbers hidden (agency contacts stay visible)"
-                : "Publish the sheet to generate this link"
-            }
-            active={copied === "client"}
-            disabled={!clientUrl}
-            onClick={() => copyText(clientUrl, "client")}
-          />
-        </div>
+        ) : (
+          <>
+            <div className="p-5 space-y-2.5">
+              <ShareRow
+                icon={<FileDown size={16} />}
+                title="Download PDF"
+                subtitle="Print the call sheet exactly as previewed"
+                onClick={downloadPdf}
+              />
+              <ShareRow
+                icon={<MessageSquareText size={16} />}
+                title="Copy SMS summary"
+                subtitle={copied === "sms" ? "Copied to clipboard" : "Short text roundup with the team link"}
+                active={copied === "sms"}
+                onClick={() => copyText(generateSMSSummary(data, teamUrl || null), "sms")}
+              />
+              <ShareRow
+                icon={<Mail size={16} />}
+                title="Email Crew"
+                subtitle={
+                  crewCount
+                    ? `Draft an email to ${crewCount} crew / talent ${
+                        crewCount === 1 ? "address" : "addresses"
+                      } (BCC)`
+                    : "No crew emails on the sheet yet — add them by hand"
+                }
+                onClick={() => setEmailAudience("crew")}
+              />
+              <ShareRow
+                icon={<Mail size={16} />}
+                title="Email Client"
+                subtitle={
+                  clientCount
+                    ? `Draft an email to ${clientCount} client / agency ${
+                        clientCount === 1 ? "address" : "addresses"
+                      } (BCC)`
+                    : "No client emails on the deal yet — add them by hand"
+                }
+                onClick={() => setEmailAudience("client")}
+              />
+              <ShareRow
+                icon={<Users size={16} />}
+                title="Team link"
+                subtitle={
+                  copied === "team"
+                    ? "Copied to clipboard"
+                    : teamUrl
+                    ? "Full details — crew contacts, talent, deliverables"
+                    : "Publish the sheet to generate this link"
+                }
+                active={copied === "team"}
+                disabled={!teamUrl}
+                onClick={() => copyText(teamUrl, "team")}
+              />
+              <ShareRow
+                icon={<Briefcase size={16} />}
+                title="Client link"
+                subtitle={
+                  copied === "client"
+                    ? "Copied to clipboard"
+                    : clientUrl
+                    ? "Contact numbers hidden (agency contacts stay visible)"
+                    : "Publish the sheet to generate this link"
+                }
+                active={copied === "client"}
+                disabled={!clientUrl}
+                onClick={() => copyText(clientUrl, "client")}
+              />
+            </div>
 
-        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            Close
-          </button>
-        </div>
+            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
