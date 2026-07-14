@@ -98,7 +98,7 @@ function SectionRows({
         <tr key={r.role} className="border-t border-gray-50 hover:bg-amber-50/30">
           <td className="py-1.5 pr-3 text-gray-700 dark:text-gray-300 font-medium">{r.role}</td>
           <td className="py-1.5 px-3 text-right tabular-nums text-gray-900 dark:text-gray-100 font-semibold">
-            {gbp(r.maxDailyRate)}
+            {r.maxDailyRate > 0 ? gbp(r.maxDailyRate) : "—"}
           </td>
           <td className="py-1.5 px-3 text-right tabular-nums text-gray-500 dark:text-gray-400">
             {r.basicHourlyRate > 0 ? gbp(r.basicHourlyRate) : "—"}

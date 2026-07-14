@@ -77,10 +77,16 @@ export default function ProjectDetail() {
     setLoading(false);
   }, [id]);
 
-  // Light refresh — pulls relations without resetting the editable form fields
+  // Light refresh — pulls relations without resetting the editable form fields.
+  // Refreshes are fired per edit and can overlap, so responses are sequenced: a
+  // slow earlier fetch resolving last would otherwise overwrite the production
+  // with a pre-edit snapshot, making a saved change look like it never landed.
+  const refreshSeq = useRef(0);
   const refresh = useCallback(async () => {
+    const seq = ++refreshSeq.current;
     const r = await fetch(`/api/productions/${id}`);
     const d = await r.json();
+    if (seq !== refreshSeq.current) return; // a newer refresh already landed
     if (d.production) setProduction(d.production);
   }, [id]);
 

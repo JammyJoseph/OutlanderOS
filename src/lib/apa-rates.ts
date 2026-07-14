@@ -51,6 +51,12 @@ export const APA_CREW_RATES: APARate[] = [
   { role: 'Construction Manager', section: 'ART_DEPARTMENT', minDailyRate: 427, maxDailyRate: 532, overtimeGrade: 'II', overtimeCoefficient: 1.25, basicHourlyRate: 53, doubleHourlyRate: 106, tripleHourlyRate: 160, standardOvertimeRate: 67 },
   { role: 'Carpenter', section: 'ART_DEPARTMENT', minDailyRate: 331, maxDailyRate: 386, overtimeGrade: 'I', overtimeCoefficient: 1.5, basicHourlyRate: 39, doubleHourlyRate: 77, tripleHourlyRate: 116, standardOvertimeRate: 58 },
   { role: 'Scenic Artist', section: 'ART_DEPARTMENT', minDailyRate: 537, maxDailyRate: 714, overtimeGrade: 'III', overtimeCoefficient: 1.0, basicHourlyRate: 71, doubleHourlyRate: 143, tripleHourlyRate: 214, standardOvertimeRate: 71 },
+  // Digi Tech is the same grade as the camera-department DIT — same published
+  // APA rate, listed here too so it can be picked from the Art Department.
+  { role: 'Digi Tech / DIT', section: 'ART_DEPARTMENT', minDailyRate: 0, maxDailyRate: 512, overtimeGrade: 'II', overtimeCoefficient: 1.25, basicHourlyRate: 51, doubleHourlyRate: 102, tripleHourlyRate: 154, standardOvertimeRate: 64 },
+  // The APA card publishes no rate for Set Designer — 0 means "no reference
+  // rate", so the UI shows none and picking the role leaves the unit cost alone.
+  { role: 'Set Designer', section: 'ART_DEPARTMENT', minDailyRate: 0, maxDailyRate: 0, overtimeGrade: 'N/A', overtimeCoefficient: 0, basicHourlyRate: 0, doubleHourlyRate: 0, tripleHourlyRate: 0, standardOvertimeRate: 0 },
 
   // SOUND
   { role: 'Sound Mixer', section: 'CREW', minDailyRate: 525, maxDailyRate: 649, overtimeGrade: 'II', overtimeCoefficient: 1.25, basicHourlyRate: 65, doubleHourlyRate: 130, tripleHourlyRate: 195, standardOvertimeRate: 81 },
@@ -106,5 +112,7 @@ export const TEMPLATE_ROLE_ALIASES: Record<string, string> = {
 export function getReferenceRate(role: string | null | undefined): number | undefined {
   if (!role) return undefined;
   const rate = getAPARate(role) ?? getAPARate(TEMPLATE_ROLE_ALIASES[role] ?? "");
-  return rate?.maxDailyRate;
+  // A maxDailyRate of 0 means the APA card publishes no rate for the role (e.g.
+  // Set Designer) — show no reference rather than a misleading "APA £0".
+  return rate?.maxDailyRate || undefined;
 }

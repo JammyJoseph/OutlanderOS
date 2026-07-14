@@ -38,6 +38,7 @@ import {
   invoiceStatusMeta,
 } from "./types";
 import { getAPARate, getAPARatesForSection, getReferenceRate } from "@/lib/apa-rates";
+import { money } from "@/lib/money";
 import ApaRateCard from "./ApaRateCard";
 import { useUser } from "@/components/user-context";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -155,6 +156,8 @@ export default function BudgetTab({
   const canEditActual = budgetStatus !== "FINAL";
   const isFinal = budgetStatus === "FINAL";
 
+  // Always recomputed from the live line-item array — never cached, so a total
+  // can't drift from the rows it's summing. Every figure is rounded to the penny.
   const totals = useMemo(() => {
     const t = (items ?? []).reduce(
       (acc, it) => {
@@ -166,7 +169,13 @@ export default function BudgetTab({
       },
       { budgeted: 0, vat: 0, incVat: 0, actual: 0 }
     );
-    return { ...t, variance: t.budgeted - t.actual };
+    return {
+      budgeted: money(t.budgeted),
+      vat: money(t.vat),
+      incVat: money(t.incVat),
+      actual: money(t.actual),
+      variance: money(t.budgeted - t.actual),
+    };
   }, [items]);
 
   // Group items by section (explicit section, else mapped from legacy category).
@@ -191,7 +200,11 @@ export default function BudgetTab({
     return [...BUDGET_SECTIONS, ...extras];
   }, [grouped]);
 
-  async function handleResponse(res: Response) {
+  // Every write goes through here: surface the error if the API refused, then
+  // re-read the production. `refresh` is awaited so callers know the table is
+  // showing server truth by the time the promise settles — a rejected edit is
+  // pulled back to the persisted value rather than left on screen.
+  async function handleResponse(res: Response): Promise<boolean> {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setApiError(data.error || "That change was not allowed.");
@@ -199,7 +212,39 @@ export default function BudgetTab({
     } else {
       setApiError(null);
     }
-    refresh();
+    await refresh();
+    return res.ok;
+  }
+
+  // Saves for a single line are chained, so two PUTs for the same row are never
+  // in flight at once. The API resolves `budgeted` by merging the patch with the
+  // row it reads; overlapping writes for one line could therefore compute the
+  // total from a stale quantity or rate and persist a figure that doesn't match
+  // the one on screen.
+  const saveChain = useRef(new Map<string, Promise<boolean>>());
+
+  function updateLine(itemId: string, patch: Partial<BudgetLineItem>): Promise<boolean> {
+    const prev = saveChain.current.get(itemId) ?? Promise.resolve(true);
+    const next = prev.catch(() => false).then(async () => {
+      const res = await fetch(`/api/productions/${production.id}/budget?itemId=${itemId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      return handleResponse(res);
+    });
+    saveChain.current.set(itemId, next);
+    void next.finally(() => {
+      if (saveChain.current.get(itemId) === next) saveChain.current.delete(itemId);
+    });
+    return next;
+  }
+
+  // Wait for in-flight line saves to settle. Called before a status change: the
+  // click that locks the budget also blurs whichever cell was being edited, so
+  // without this the edit and the lock race — and the edit loses, silently.
+  async function flushSaves() {
+    await Promise.allSettled([...saveChain.current.values()]);
   }
 
   async function addLine(section: string, opts?: { focus?: boolean }) {
@@ -238,15 +283,6 @@ export default function BudgetTab({
     }
   }
 
-  async function updateLine(itemId: string, patch: Partial<BudgetLineItem>) {
-    const res = await fetch(`/api/productions/${production.id}/budget?itemId=${itemId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
-    await handleResponse(res);
-  }
-
   async function deleteLine(itemId: string) {
     const res = await fetch(`/api/productions/${production.id}/budget?itemId=${itemId}`, {
       method: "DELETE",
@@ -264,6 +300,8 @@ export default function BudgetTab({
   async function setBudgetStatus(next: ProductionBudgetStatus) {
     setStatusBusy(true);
     try {
+      // Land any edit still in flight before the lock closes the door on it.
+      await flushSaves();
       const res = await fetch(`/api/productions/${production.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -299,7 +337,7 @@ export default function BudgetTab({
   // Budget Remaining = headroom on PLANNED costs (campaign budget − budgeted
   // costs exc. VAT). Positive = headroom, negative = over. This is distinct
   // from actuals below.
-  const budgetRemaining = campaignBudget != null ? campaignBudget - subtotalExcVat : null;
+  const budgetRemaining = campaignBudget != null ? money(campaignBudget - subtotalExcVat) : null;
 
   // Actuals lens — what's actually been invoiced/paid, separate from the plan.
   // Actual costs = sum of every line's actual; paid = lines marked PAID;
@@ -308,14 +346,16 @@ export default function BudgetTab({
   const actualCosts = totals.actual;
   const paidCost = useMemo(
     () =>
-      (items ?? []).reduce(
-        (sum, it) => (it.invoiceStatus === "PAID" ? sum + (it.actual || 0) : sum),
-        0
+      money(
+        (items ?? []).reduce(
+          (sum, it) => (it.invoiceStatus === "PAID" ? sum + (it.actual || 0) : sum),
+          0
+        )
       ),
     [items]
   );
-  const outstanding = actualCosts - paidCost;
-  const actualsVsBudget = campaignBudget != null ? campaignBudget - actualCosts : null;
+  const outstanding = money(actualCosts - paidCost);
+  const actualsVsBudget = campaignBudget != null ? money(campaignBudget - actualCosts) : null;
 
   // Deal context + margin impact (commercial productions only).
   const deal = production.campaign;
@@ -693,11 +733,11 @@ export default function BudgetTab({
         {sections.map((sec) => {
           const lines = grouped[sec.key] ?? [];
           if (!canEditBudgeted && lines.length === 0) return null;
-          const secBudgeted = lines.reduce((s, l) => s + lineTotal(l), 0);
-          const secIncVat = lines.reduce((s, l) => s + lineTotalIncVat(l), 0);
-          const secVat = secIncVat - secBudgeted;
-          const secActual = lines.reduce((s, l) => s + (l.actual || 0), 0);
-          const secVariance = secBudgeted - secActual;
+          const secBudgeted = money(lines.reduce((s, l) => s + lineTotal(l), 0));
+          const secIncVat = money(lines.reduce((s, l) => s + lineTotalIncVat(l), 0));
+          const secVat = money(secIncVat - secBudgeted);
+          const secActual = money(lines.reduce((s, l) => s + (l.actual || 0), 0));
+          const secVariance = money(secBudgeted - secActual);
           const isCollapsed = !!collapsed[sec.key];
           return (
             <div key={sec.key} className={`border-b border-gray-50 dark:border-gray-800 last:border-b-0 border-l-2 ${sec.accent}`}>
@@ -1157,7 +1197,7 @@ function RolePicker({
                 >
                   <span className="text-gray-700">{r.role}</span>
                   <span className="shrink-0 tabular-nums text-gray-400">
-                    {gbp(r.maxDailyRate)}/day
+                    {r.maxDailyRate > 0 ? `${gbp(r.maxDailyRate)}/day` : "No APA rate"}
                   </span>
                 </button>
               ))}
@@ -1188,7 +1228,7 @@ function BudgetRow({
   canEditBudgeted: boolean;
   canEditActual: boolean;
   editorialDiscount: number | null;
-  onUpdate: (patch: Partial<BudgetLineItem>) => void;
+  onUpdate: (patch: Partial<BudgetLineItem>) => Promise<boolean>;
   onDelete: () => void;
   onEnterAtEnd: () => void;
   autoFocusFirst: boolean;
@@ -1212,16 +1252,48 @@ function BudgetRow({
 
   const rowRef = useRef<HTMLDivElement>(null);
 
+  // Pull the inputs back in line with the persisted row whenever it changes —
+  // after a save, a refresh, or another user's edit. This is what reverts a
+  // rejected save: the API refused it, the refreshed row still holds the old
+  // value, and the cell snaps back to it instead of showing a figure that was
+  // never stored. Cells inside the row the user is currently in are left alone
+  // so a background refresh can't yank the value out from under the caret.
+  useEffect(() => {
+    if (rowRef.current?.contains(document.activeElement)) return;
+    setRole(line.role ?? "");
+    setDescription(line.description);
+    setQuantity(line.quantity != null ? String(line.quantity) : "");
+    setRate(line.rate != null ? String(line.rate) : "");
+    setVat(line.vatPercent != null ? String(line.vatPercent) : "");
+    setActual(String(line.actual ?? 0));
+    setPoNumber(line.poNumber ?? "");
+    setInvoicedAmount(line.invoicedAmount != null ? String(line.invoicedAmount) : "");
+    setInvoiceUrl(line.invoiceUrl ?? "");
+  }, [line]);
+
   const total = lineTotal(line);
   const vatAmt = lineVatAmount(line);
-  const variance = total - (line.actual || 0);
+  const variance = money(total - (line.actual || 0));
   const editAny = canEditActual || canEditBudgeted;
 
   // APA default for this line's role (if it maps to a rate-card role). Used to
-  // pre-fill the rate when a role is picked and to flag manual overrides.
+  // pre-fill the rate when a role is picked and to flag manual overrides. Roles
+  // with no published APA rate (maxDailyRate 0) can't be "overridden".
   const apa = getAPARate(line.role ?? "");
   const isOverridden =
-    apa != null && line.rate != null && line.rate !== apa.maxDailyRate;
+    apa != null && apa.maxDailyRate > 0 && line.rate != null && line.rate !== apa.maxDailyRate;
+
+  // Quantity and unit cost are always saved together. The API derives `budgeted`
+  // by merging the patch with the row it re-reads, so sending one without the
+  // other lets it pair a new quantity with a stale rate (or vice versa) and
+  // store a total that doesn't match the line on screen.
+  function commitAmounts() {
+    if (isNeg(quantity) || isNeg(rate)) return;
+    const q = quantity === "" ? null : Number(quantity);
+    const r = rate === "" ? null : Number(rate);
+    if (q === (line.quantity ?? null) && r === (line.rate ?? null)) return;
+    onUpdate({ quantity: q, rate: r });
+  }
 
   // APA standard day rate shown as a greyed-out *reference* under the Unit Cost
   // input. Alias-aware so friendly template roles (e.g. "DOP / Videographer")
@@ -1237,11 +1309,18 @@ function BudgetRow({
   // rate (qty defaults to 1). When editorial rates are on, the discounted rate
   // is filled instead of the full APA day rate.
   function pickRole(apaRole: string, apaRate: number) {
-    const filled = discountActive ? Math.round(apaRate * discountFactor) : apaRate;
     setRole(apaRole);
+    // Roles the APA card publishes no rate for (e.g. Set Designer) just set the
+    // name — never wipe a unit cost the user has already entered.
+    if (!apaRate) {
+      onUpdate({ role: apaRole });
+      return;
+    }
+    const filled = money(discountActive ? apaRate * discountFactor : apaRate);
     setRate(String(filled));
     onUpdate({
       role: apaRole,
+      quantity: quantity === "" ? null : Number(quantity),
       rate: filled,
     });
   }
@@ -1403,8 +1482,7 @@ function BudgetRow({
         onBlur={() => {
           if (isNeg(quantity)) { setRowError("Quantity can't be negative."); return; }
           setRowError(null);
-          const v = quantity === "" ? null : Number(quantity);
-          if (v !== line.quantity) onUpdate({ quantity: v });
+          commitAmounts();
         }}
         onKeyDown={handleKey}
         disabled={!canEditBudgeted}
@@ -1421,8 +1499,7 @@ function BudgetRow({
             onBlur={() => {
               if (isNeg(rate)) { setRowError("Unit cost can't be negative."); return; }
               setRowError(null);
-              const v = rate === "" ? null : Number(rate);
-              if (v !== line.rate) onUpdate({ rate: v });
+              commitAmounts();
             }}
             onKeyDown={handleKey}
             disabled={!canEditBudgeted}
@@ -1524,13 +1601,13 @@ function InvoiceSubRow({
   setInvoicedAmount: (v: string) => void;
   invoiceUrl: string;
   setInvoiceUrl: (v: string) => void;
-  onUpdate: (patch: Partial<BudgetLineItem>) => void;
+  onUpdate: (patch: Partial<BudgetLineItem>) => Promise<boolean>;
 }) {
   const status: InvoiceStatus = line.invoiceStatus ?? "NOT_INVOICED";
   const meta = invoiceStatusMeta(status);
   const budgeted = lineTotal(line);
   const invNum = line.invoicedAmount ?? null;
-  const overage = invNum != null ? invNum - budgeted : null;
+  const overage = invNum != null ? money(invNum - budgeted) : null;
   const cellCls =
     "text-[11px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1.5 py-0.5 outline-none focus:border-[#9C7C2E] disabled:bg-transparent disabled:border-transparent disabled:text-gray-400";
 

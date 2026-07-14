@@ -1,3 +1,5 @@
+import { money } from "@/lib/money";
+
 export type ProductionStatus =
   | "DRAFT"
   | "BRIEFED"
@@ -604,6 +606,8 @@ export const BUDGET_SECTIONS: BudgetSectionDef[] = [
     template: [
       "Art Director",
       "Asst. Art Director",
+      "Set Designer",
+      "Digi Tech / DIT",
       "Props Buyer",
       "Master Props",
       "Props",
@@ -647,14 +651,14 @@ export function sectionOf(item: { section: string | null; category: string }): s
 }
 
 // Total for a line: quantity × rate when both are set, otherwise the manual
-// budgeted figure.
+// budgeted figure. Rounded to 2dp — see `money`.
 export function lineTotal(item: {
   quantity: number | null;
   rate: number | null;
   budgeted: number;
 }): number {
-  if (item.quantity != null && item.rate != null) return item.quantity * item.rate;
-  return item.budgeted || 0;
+  if (item.quantity != null && item.rate != null) return money(item.quantity * item.rate);
+  return money(item.budgeted || 0);
 }
 
 // Default per-line VAT rate when none is set on the item.
@@ -672,7 +676,7 @@ export function lineVatAmount(item: {
   vatPercent: number | null;
   budgeted: number;
 }): number {
-  return lineTotal(item) * (lineVatPercent(item) / 100);
+  return money(lineTotal(item) * (lineVatPercent(item) / 100));
 }
 
 // Line total including VAT: (qty × unit cost) + VAT amount.
@@ -682,7 +686,7 @@ export function lineTotalIncVat(item: {
   vatPercent: number | null;
   budgeted: number;
 }): number {
-  return lineTotal(item) + lineVatAmount(item);
+  return money(lineTotal(item) + lineVatAmount(item));
 }
 
 export const CREATIVE_TYPES: { key: string; label: string; color: string }[] = [
