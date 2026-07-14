@@ -17,7 +17,7 @@ import type {
 import {
   deriveLocations, emptyCatering, emptyEquipment, emptyHeader, emptyLocation,
   emptyMovementOrder, emptyProductionCompany, emptyShotStyle, migrateCatering,
-  resolveUnitCall,
+  resolveUnitCall, sortCallTimes, sortRoster, sortSchedule,
 } from "./types";
 import { CallSheetEditor } from "./CallSheetEditor";
 import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
@@ -116,10 +116,12 @@ export default function CallSheetPage() {
       locationLng: first ? first.lng : s.locationLng,
       locations: s.locations,
       shotStyle: s.shotStyle,
-      schedule: s.schedule,
+      // Persisted in clock order, so every reader of the row — the SMS summary,
+      // the confirmation page, the share links — gets a chronological sheet.
+      schedule: sortSchedule((s.schedule as ScheduleItem[]) ?? []),
       shotlist: s.shotlist,
-      crew: s.crew,
-      talent: s.talent,
+      crew: sortRoster((s.crew as CrewMember[]) ?? [], (s.unitCallTime as string) || ""),
+      talent: sortRoster((s.talent as TalentMember[]) ?? [], (s.unitCallTime as string) || ""),
       cateringDetails: s.catering,
       documents: s.documents,
       weatherData: s.weatherData,
@@ -130,7 +132,7 @@ export default function CallSheetPage() {
       clientTeam: s.clientTeam,
       agencyTeam: s.agencyTeam,
       productionCompany: s.productionCompany,
-      callTimes: s.callTimes,
+      callTimes: sortCallTimes((s.callTimes as CallTimeRow[]) ?? []),
       productionMobiles: s.productionMobiles,
       movementOrder: s.movementOrder,
       equipment: s.equipment,
@@ -157,9 +159,12 @@ export default function CallSheetPage() {
         setMode(s.status === "PUBLISHED" ? "preview" : "editor");
         setShootTitle(s.shootTitle || s.production.title);
         setShootDate(s.shootDate.split("T")[0]);
-        setUnitCallTime(resolveUnitCall(s.unitCallTime, s.callTime) || "08:00");
+        const unitCall = resolveUnitCall(s.unitCallTime, s.callTime) || "08:00";
+        setUnitCallTime(unitCall);
         setWrapTime(s.wrapTime || "");
-        setSchedule(Array.isArray(s.schedule) ? s.schedule : []);
+        // Every time-based list opens in clock order, whatever order it was
+        // entered (or saved) in — see sortSchedule / sortRoster in ./types.
+        setSchedule(sortSchedule(Array.isArray(s.schedule) ? s.schedule : []));
         setLocation(
           s.location && typeof s.location === "object" && !Array.isArray(s.location)
             ? { ...emptyLocation(), ...s.location }
@@ -177,8 +182,8 @@ export default function CallSheetPage() {
         );
         setWeatherData(s.weatherData ?? null);
         setShotlist(Array.isArray(s.shotlist) ? s.shotlist : []);
-        setCrew(Array.isArray(s.crew) ? s.crew : []);
-        setTalent(Array.isArray(s.talent) ? s.talent : []);
+        setCrew(sortRoster(Array.isArray(s.crew) ? s.crew : [], unitCall));
+        setTalent(sortRoster(Array.isArray(s.talent) ? s.talent : [], unitCall));
         setDocuments(Array.isArray(s.documents) ? s.documents : []);
         setCatering(migrateCatering(s.cateringDetails, s.notes));
         setNotesGeneral(s.productionNotes || "");
@@ -193,7 +198,7 @@ export default function CallSheetPage() {
             ? { ...emptyProductionCompany(), ...s.productionCompany }
             : emptyProductionCompany()
         );
-        setCallTimes(Array.isArray(s.callTimes) ? s.callTimes : []);
+        setCallTimes(sortCallTimes(Array.isArray(s.callTimes) ? s.callTimes : []));
         setProductionMobiles(Array.isArray(s.productionMobiles) ? s.productionMobiles : []);
         setMovementOrder(
           isObj(s.movementOrder)

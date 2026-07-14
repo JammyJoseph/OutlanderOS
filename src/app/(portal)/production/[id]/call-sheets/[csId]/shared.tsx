@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Plus, RotateCcw, Trash2 } from "lucide-react";
 import type { CrewMember, TalentMember } from "./types";
-import { effectiveCallTime, hasCallOverride } from "./types";
+import { effectiveCallTime, hasCallOverride, sortRoster } from "./types";
 
 export const ACCENT = "#A93B2E";
 export const ACCENT_HOVER = "#A93B2E";
@@ -155,6 +155,7 @@ export function PeopleTable({
 
   if (readOnly) {
     if (people.length === 0) return null;
+    const ordered = sortRoster(people, unitCallTime);
     return (
       <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
         <div className="grid grid-cols-[1fr_1fr_90px_1.2fr_1fr] gap-0 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide bg-gray-50 dark:bg-gray-800 px-4 py-2">
@@ -164,7 +165,7 @@ export function PeopleTable({
           <span>Email</span>
           <span>Phone</span>
         </div>
-        {people.map((p, i) => {
+        {ordered.map((p, i) => {
           const custom = hasCallOverride(p, unitCallTime);
           return (
             <div
@@ -228,6 +229,9 @@ export function PeopleTable({
                 type="time"
                 value={effectiveCallTime(p, unitCallTime)}
                 onChange={(e) => setCallTime(i, e.target.value)}
+                // The roster re-sorts into call order once the row is left —
+                // sorting on change would move the input out from under you.
+                onBlur={() => setPeople(sortRoster(people, unitCallTime))}
                 title={custom ? "Custom call time — overrides the unit call" : "Inheriting the unit call"}
                 className={`${smallInputCls} flex-1 min-w-0 ${
                   custom

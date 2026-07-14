@@ -1,6 +1,6 @@
 import type { CallSheetViewData } from "./CallSheetDocument";
 import type { CallSheetLocation } from "./types";
-import { callTimeVariations, resolveUnitCall } from "./types";
+import { callTimeVariations, resolveUnitCall, sortSchedule } from "./types";
 
 // A short, SMS/WhatsApp-friendly roundup of the call sheet. Kept deliberately
 // terse: header, call times, schedule, locations, the key contact(s) and the
@@ -54,7 +54,7 @@ export function generateSMSSummary(
   }
 
   // ── Schedule — real location names (never "Location 1"), no call-time dupes ──
-  const scheduleLines = (data.schedule || [])
+  const scheduleLines = sortSchedule(data.schedule || [])
     .filter((s) => s.time || s.description || s.locationRef)
     .map((s) => {
       const time = (s.time || "").trim();

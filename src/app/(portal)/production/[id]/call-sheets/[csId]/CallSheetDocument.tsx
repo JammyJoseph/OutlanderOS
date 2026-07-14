@@ -10,7 +10,8 @@ import type {
 } from "./types";
 import {
   callTimeVariations, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
-  emptyCallSheetLocation, hasCallOverride, resolveUnitCall,
+  emptyCallSheetLocation, hasCallOverride, resolveUnitCall, sortByTime,
+  sortRoster, sortSchedule,
 } from "./types";
 import {
   journeyStats, formatJourneySummary,
@@ -279,10 +280,19 @@ export function CallSheetDocument({
           .filter((c) => (c.time || c.department) && !isUnitRow(c.department) && !isWrapRow(c.department))
           .map((c) => ({ time: c.time || "TBC", label: c.department }))
       : [];
-  callTimeRows.push(...departmentRows);
 
-  // Individual variations — the whole point of the system.
-  callTimeRows.push(...variations.map((v) => ({ ...v, note: "Custom call" })));
+  // Departments and individual variations (the whole point of the system) are
+  // one chronological block between the unit call and the wrap, so the section
+  // reads down the day. "TBC" rows have no time and land at the bottom of it.
+  callTimeRows.push(
+    ...sortByTime(
+      [
+        ...departmentRows,
+        ...variations.map((v) => ({ ...v, note: "Custom call" })),
+      ] as { time: string; label: string; note?: string }[],
+      (r) => r.time
+    )
+  );
 
   callTimeRows.push({ time: wrapTime || "TBC", label: "Wrap" });
 
@@ -327,12 +337,14 @@ export function CallSheetDocument({
   const shownEmails = new Set(
     [creative?.email, t0?.email].map(norm).filter(Boolean)
   );
-  const contactCrew = crew.filter(
+  // In call order — earliest on set at the top, so the list reads like the day.
+  const contactCrew = sortRoster(crew, unitCall).filter(
     (c) =>
       (c.role || c.name) &&
       !shownNames.has(norm(c.name)) &&
       !(c.email && shownEmails.has(norm(c.email)))
   );
+  const talentRows = sortRoster(talent, unitCall).filter((t) => t.role || t.name);
 
   const facts: [string, string][] = [];
   if (clientName) facts.push(["Client", clientName]);
@@ -553,7 +565,7 @@ export function CallSheetDocument({
                 { label: "Activity — Location", width: "48%" },
                 { label: "Notes", width: "38%" },
               ]}
-              rows={schedule
+              rows={sortSchedule(schedule)
                 .filter((s) => s.time || s.description)
                 .map((s) => [<Bold key="t">{s.time}</Bold>, <Bold key="a">{s.description}</Bold>, s.notes])}
             />
@@ -661,7 +673,7 @@ export function CallSheetDocument({
         )}
 
         {/* ── Talent (dedicated list, if present) ── */}
-        {show("talent") && talent.some((t) => t.role || t.name) && (
+        {show("talent") && talentRows.length > 0 && (
           <Section title="Talent">
             <GridTable
               columns={[
@@ -670,8 +682,7 @@ export function CallSheetDocument({
                 { label: "Call", width: "14%", nowrap: true },
                 { label: "Contact", width: "30%" },
               ]}
-              rows={talent
-                .filter((t) => t.role || t.name)
+              rows={talentRows
                 .map((t) => [
                   <Bold key="n">{t.name}</Bold>,
                   t.role,

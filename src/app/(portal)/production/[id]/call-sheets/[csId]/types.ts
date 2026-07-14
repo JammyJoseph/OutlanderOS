@@ -76,6 +76,46 @@ export function callTimeVariations(
   return rows;
 }
 
+// ── Chronological ordering ───────────────────────────────────────────────────
+// Every time-based list on a call sheet — the run of the day, the call-time
+// table, the crew and talent rosters — reads in clock order. Rows with no time
+// yet sink to the bottom instead of sorting as though they were midnight, and
+// the sort is stable, so rows sharing a time keep the order they were entered
+// in (which is how a dragged-into-place run of the day survives).
+
+// "HH:mm" → minutes since midnight. Untimed / unparseable rows rank last.
+export function timeRank(time: string | null | undefined): number {
+  const m = String(time ?? "").trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return Number.POSITIVE_INFINITY;
+  const h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  if (h > 23 || min > 59) return Number.POSITIVE_INFINITY;
+  return h * 60 + min;
+}
+
+export function sortByTime<T>(rows: T[], time: (row: T) => string | null | undefined): T[] {
+  return [...rows].sort((a, b) => {
+    const ra = timeRank(time(a));
+    const rb = timeRank(time(b));
+    if (ra === rb) return 0; // includes two untimed rows (Infinity === Infinity)
+    return ra < rb ? -1 : 1;
+  });
+}
+
+export function sortSchedule(items: ScheduleItem[]): ScheduleItem[] {
+  return sortByTime(items, (s) => s.time);
+}
+
+export function sortCallTimes(rows: CallTimeRow[]): CallTimeRow[] {
+  return sortByTime(rows, (r) => r.time);
+}
+
+// Crew / talent by the time they actually turn up: someone with no override
+// sorts on the unit call, so the roster stays in call order end to end.
+export function sortRoster<T extends { callTime?: string }>(people: T[], unitCall: string): T[] {
+  return sortByTime(people, (p) => effectiveCallTime(p, unitCall));
+}
+
 export interface LocationData {
   address: string;
   parkingNotes: string;

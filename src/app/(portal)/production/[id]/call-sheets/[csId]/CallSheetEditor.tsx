@@ -16,7 +16,7 @@ import type {
 import {
   AGENCY_TEAM_ROLES, CLIENT_TEAM_ROLES, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE,
   CREW_ROLE_PRESETS, defaultCallTimes, EQUIPMENT_CATEGORIES, hasCallOverride,
-  KIT_TEMPLATES, parseSchedule,
+  KIT_TEMPLATES, parseSchedule, sortCallTimes, sortSchedule,
 } from "./types";
 import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls } from "./shared";
 import { PeopleTable } from "./shared";
@@ -481,8 +481,8 @@ export function CallSheetEditor(p: EditorProps) {
 
           <ScheduleImporter
             onParsed={({ callTimes, schedule }) => {
-              if (callTimes.length) p.setCallTimes([...p.callTimes, ...callTimes]);
-              if (schedule.length) p.setSchedule([...p.schedule, ...schedule]);
+              if (callTimes.length) p.setCallTimes(sortCallTimes([...p.callTimes, ...callTimes]));
+              if (schedule.length) p.setSchedule(sortSchedule([...p.schedule, ...schedule]));
             }}
           />
 
@@ -510,6 +510,9 @@ export function CallSheetEditor(p: EditorProps) {
                     onChange={(e) =>
                       p.setCallTimes(p.callTimes.map((r, j) => (j === i ? { ...r, time: e.target.value } : r)))
                     }
+                    // Rows re-sort on blur, not on change: a row that jumped as
+                    // you typed would take the focused input with it.
+                    onBlur={() => p.setCallTimes(sortCallTimes(p.callTimes))}
                     className={smallInputCls}
                   />
                   <input
@@ -586,6 +589,7 @@ export function CallSheetEditor(p: EditorProps) {
                 onChange={(e) =>
                   p.setSchedule(p.schedule.map((s, j) => (j === i ? { ...s, time: e.target.value } : s)))
                 }
+                onBlur={() => p.setSchedule(sortSchedule(p.schedule))}
                 className={smallInputCls}
               />
               <input
