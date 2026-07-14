@@ -244,23 +244,39 @@ function PageLoading() {
 
 function ProductionInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const view = searchParams.get("view"); // null → overview | "projects"
   const isOverview = view !== "projects";
 
   const [allProductions, setAllProductions] = useState<Production[]>([]);
   const [creativeDeals, setCreativeDeals] = useState<CreativeDeal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     // Always pull archived rows: the Projects list has its own Archived filter
     // tab, and the Overview reveals them behind a toggle — no refetch needed.
+    //
+    // A failed load must never fall through to an empty array: rendering "0
+    // projects" for what is really an expired session or a 500 makes healthy
+    // data look permanently deleted.
     fetch("/api/productions?includeArchived=true")
-      .then((r) => r.json())
-      .then((d) => setAllProductions(d.productions ?? []))
+      .then(async (r) => {
+        if (r.status === 401) {
+          router.push("/login");
+          return null;
+        }
+        if (!r.ok) throw new Error(`GET /api/productions → ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        if (d) setAllProductions(d.productions ?? []);
+      })
+      .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     fetch("/api/production/creative-pipeline")
@@ -362,11 +378,29 @@ function ProductionInner() {
           </div>
         )}
 
-        {!loading && view === "projects" && (
+        {/* Load failure — explicitly *not* an empty state. */}
+        {!loading && loadFailed && (
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-6 text-center">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              Couldn&apos;t load projects
+            </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Your projects are safe — this is a loading problem, not missing data.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-xl bg-[#111111] dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:opacity-90"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!loading && !loadFailed && view === "projects" && (
           <ProjectsListView productions={allProductions} />
         )}
 
-        {!loading && isOverview && (
+        {!loading && !loadFailed && isOverview && (
           <OverviewView
             productions={productions}
             archivedProjects={archivedProjects}

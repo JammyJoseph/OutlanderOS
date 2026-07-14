@@ -36,7 +36,11 @@ export const GET = withAuth(async (request: NextRequest) => {
     });
     return NextResponse.json({ productions });
   } catch (e) {
-    return NextResponse.json({ productions: [], error: "An error occurred" });
+    // Never answer 200 + [] here. An empty list is indistinguishable from
+    // "every project was deleted", so a transient DB error would read to the
+    // user as data loss. Fail loudly and let the client show an error state.
+    console.error("GET /api/productions failed:", e);
+    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
 
