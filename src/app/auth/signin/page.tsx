@@ -8,8 +8,13 @@ export default function SignInPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A]">
       <div className="flex flex-col items-center gap-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white">
-            Outlander<span className="text-[#9C7C2E]">OS</span>
+          <h1>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/OutlanderOS_Logo_Dark.svg"
+              alt="OutlanderOS"
+              className="mx-auto h-8 w-auto"
+            />
           </h1>
           <p className="mt-2 text-sm text-neutral-400">
             Internal operating system for Outlander Magazine

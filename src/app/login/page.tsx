@@ -125,7 +125,16 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm px-4">
         <div className="text-center mb-8">
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-400 mb-2">Outlander Magazine</p>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Outlander<span className="text-[#9C7C2E]">OS</span></h1>
+          {/* Always the white-fill cut: this page sits on the space backdrop in
+              both themes, so it can't follow the dark: variant. */}
+          <h1>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/OutlanderOS_Logo_Dark.svg"
+              alt="OutlanderOS"
+              className="mx-auto h-8 w-auto"
+            />
+          </h1>
           <p className="text-sm text-gray-400 mt-2">Sign in to your workspace</p>
         </div>
         <form onSubmit={handleSubmit} className="rounded-2xl border border-[#2a2a2a] bg-[#0e1018]/80 p-6 shadow-2xl shadow-black/50 backdrop-blur-md space-y-4">
