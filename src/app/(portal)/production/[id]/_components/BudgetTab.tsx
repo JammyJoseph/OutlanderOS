@@ -1500,6 +1500,11 @@ function BudgetRow({
   const [description, setDescription] = useState(line.description);
   const [quantity, setQuantity] = useState(line.quantity != null ? String(line.quantity) : "");
   const [rate, setRate] = useState(line.rate != null ? String(line.rate) : "");
+  // Editorial discount chip (Phase 3E follow-up): APA picks arrive
+  // pre-discounted, but manually typed rates don't. Remembers the last chip
+  // application so the cell can show "£500 → £375"; cleared the moment the
+  // user types in the rate cell again.
+  const [discountApplied, setDiscountApplied] = useState<{ from: number; to: number } | null>(null);
   const [vat, setVat] = useState(line.vatPercent != null ? String(line.vatPercent) : "");
   const [actual, setActual] = useState(String(line.actual ?? 0));
   // Invoice tracking (Phase 4D).
@@ -1606,6 +1611,15 @@ function BudgetRow({
   const isOverridden =
     rateRef != null && line.rate != null && line.rate > 0 && money(line.rate) !== rateRef.effective;
 
+  // −N% chip state. Disabled when there's nothing to discount yet, or the
+  // entered rate already sits at the role's editorial rate (APA picks arrive
+  // pre-discounted — clicking again would double-dip). The struck-through
+  // "was £X" readout only survives while the cell still holds the figure the
+  // chip produced; a rejected save snaps the rate back and the chip returns.
+  const rateNum = rate === "" ? 0 : Number(rate);
+  const atEditorialRate = rateRef != null && money(rateNum) === rateRef.effective;
+  const showDiscountApplied = discountApplied != null && money(rateNum) === discountApplied.to;
+
   // Quantity and unit cost are always saved together. The API derives `budgeted`
   // by merging the patch with the row it re-reads, so sending one without the
   // other lets it pair a new quantity with a stale rate (or vice versa) and
@@ -1616,6 +1630,22 @@ function BudgetRow({
     const r = rate === "" ? null : Number(rate);
     if (q === (line.quantity ?? null) && r === (line.rate ?? null)) return;
     update({ quantity: q, rate: r });
+  }
+
+  // Apply the editorial discount to whatever rate is currently entered — the
+  // "−N%" chip next to the unit cost. Explicit and user-driven: works the same
+  // for manual rates and APA picks, and never fires on its own.
+  function applyEditorialDiscount() {
+    if (editorialDiscount == null || editorialDiscount <= 0) return;
+    const from = rate === "" ? 0 : Number(rate);
+    if (from <= 0) return;
+    const to = money(from * (1 - editorialDiscount / 100));
+    if (to === money(from)) return;
+    setDiscountApplied({ from, to });
+    setRate(String(to));
+    const q = quantity === "" ? 1 : Number(quantity);
+    if (quantity === "") setQuantity("1");
+    update({ quantity: q, rate: to });
   }
 
   // Pick a role from the APA dropdown: set the role and auto-fill its default
@@ -1862,7 +1892,10 @@ function BudgetRow({
             type="number"
             min="0"
             value={rate}
-            onChange={(e) => setRate(e.target.value)}
+            onChange={(e) => {
+              setRate(e.target.value);
+              setDiscountApplied(null);
+            }}
             onBlur={() => {
               if (isNeg(rate)) { setRowError("Unit cost can't be negative."); return; }
               setRowError(null);
@@ -1888,6 +1921,43 @@ function BudgetRow({
             </span>
           )}
         </div>
+        {/* −N% editorial chip: always on show while editorial rates are on, so
+            manually typed rates can be discounted with one click. After a
+            click, the original figure is shown struck through next to the
+            discounted result until the cell is edited again. */}
+        {discountActive && canEditBudgeted && (
+          <div className="mt-0.5 flex items-center justify-end">
+            {showDiscountApplied && discountApplied ? (
+              <span
+                className="text-[10px] leading-none tabular-nums select-none"
+                title={`${editorialDiscount}% editorial discount applied`}
+              >
+                <span className="text-gray-400 dark:text-gray-500 line-through">
+                  {gbp(discountApplied.from)}
+                </span>{" "}
+                <span className="font-medium text-amber-600 dark:text-amber-400">
+                  {gbp(discountApplied.to)}
+                </span>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={applyEditorialDiscount}
+                disabled={rateNum <= 0 || atEditorialRate}
+                title={
+                  atEditorialRate
+                    ? "Already at the editorial rate"
+                    : rateNum <= 0
+                      ? "Enter a unit cost first"
+                      : `Apply the ${editorialDiscount}% editorial discount to this rate`
+                }
+                className="rounded border border-amber-300 dark:border-amber-700 px-1 py-px text-[9px] font-semibold leading-none text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 disabled:opacity-40 disabled:pointer-events-none"
+              >
+                −{editorialDiscount}%
+              </button>
+            )}
+          </div>
+        )}
         {/* APA standard rate — reference only, greyed out, never counted. When
             editorial rates are on, the full rate is struck through and the
             discounted (amber) rate shown alongside (Phase 3E). */}
