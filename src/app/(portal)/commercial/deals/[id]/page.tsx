@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef, use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Loader2,
   ArrowLeft,
@@ -1487,6 +1488,23 @@ function BudgetStat({ label, value, sub }: { label: string; value: string; sub?:
 
 // ── Documents tab (Phase 4) — IO links, contracts, decks ─────────────────────
 
+interface IOListItem {
+  id: string;
+  ioNumber: string;
+  status: string;
+  totalNet: number;
+  createdAt: string;
+  signedAt: string | null;
+  sentAt: string | null;
+}
+
+const IO_STATUS_CHIPS: Record<string, string> = {
+  DRAFT: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400",
+  SENT: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
+  SIGNED: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300",
+  VOID: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+};
+
 function DocumentsTab({
   deal,
   onPatch,
@@ -1494,8 +1512,37 @@ function DocumentsTab({
   deal: DealDetail;
   onPatch: (data: Record<string, unknown>) => Promise<void>;
 }) {
+  const router = useRouter();
   const [ioUrl, setIoUrl] = useState(deal.ioUrl ?? "");
   useEffect(() => setIoUrl(deal.ioUrl ?? ""), [deal.ioUrl]);
+
+  // ── Insertion orders built in-app ──
+  const [ios, setIos] = useState<IOListItem[]>([]);
+  const [iosLoading, setIosLoading] = useState(true);
+  const [creatingIo, setCreatingIo] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/commercial/deals/${deal.id}/insertion-orders`)
+      .then((r) => r.json())
+      .then((d) => setIos(Array.isArray(d.insertionOrders) ? d.insertionOrders : []))
+      .catch(() => {})
+      .finally(() => setIosLoading(false));
+  }, [deal.id]);
+
+  async function createIo() {
+    setCreatingIo(true);
+    try {
+      const res = await fetch(`/api/commercial/deals/${deal.id}/insertion-orders`, { method: "POST" });
+      const d = await res.json();
+      if (d.insertionOrder) {
+        router.push(`/commercial/deals/${deal.id}/io/${d.insertionOrder.id}`);
+      } else {
+        setCreatingIo(false);
+      }
+    } catch {
+      setCreatingIo(false);
+    }
+  }
 
   // Decks gathered from the creative rounds — the client-facing pitch links.
   const decks = (deal.rounds ?? [])
@@ -1511,13 +1558,67 @@ function DocumentsTab({
 
   return (
     <div className="max-w-3xl space-y-5">
-      {/* IO / contract */}
+      {/* Insertion orders — built in-app, printable, tracked by status */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+            <FileText size={15} className="text-[var(--portal-commercial)]" />
+            Insertion Orders
+          </h3>
+          <button
+            onClick={createIo}
+            disabled={creatingIo}
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:opacity-90 transition-opacity disabled:opacity-60"
+          >
+            {creatingIo ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+            Create IO
+          </button>
+        </div>
+        <p className="text-xs text-gray-400 mb-3">
+          Draft, preview and print insertion orders on the Outlander template — prefilled from this deal.
+        </p>
+        {iosLoading ? (
+          <p className="text-xs text-gray-400">Loading…</p>
+        ) : ios.length === 0 ? (
+          <p className="text-xs text-gray-400">No insertion orders yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {ios.map((io) => (
+              <Link
+                key={io.id}
+                href={`/commercial/deals/${deal.id}/io/${io.id}`}
+                className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
+              >
+                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{io.ioNumber}</span>
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    IO_STATUS_CHIPS[io.status] ?? IO_STATUS_CHIPS.DRAFT
+                  }`}
+                >
+                  {io.status}
+                </span>
+                <span className="ml-auto text-sm text-gray-600 dark:text-gray-400 tabular-nums">
+                  {formatMoney(io.totalNet)}
+                </span>
+                <span className="text-xs text-gray-400 tabular-nums">
+                  {format(parseISO(io.createdAt), "d MMM yyyy")}
+                </span>
+                <ArrowUpRight size={12} className="text-gray-300" />
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Manual IO / contract link — fallback for externally-produced IOs */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-1">
-          <FileText size={15} className="text-[var(--portal-commercial)]" />
-          Insertion order / contract
+          <LinkIcon size={15} className="text-[var(--portal-commercial)]" />
+          External IO / contract link
         </h3>
-        <p className="text-xs text-gray-400 mb-3">Link the signed IO or contract for this deal.</p>
+        <p className="text-xs text-gray-400 mb-3">
+          For IOs produced outside the portal — link the signed IO or contract for this deal.
+        </p>
         <div className="flex items-center gap-2">
           <input
             type="url"

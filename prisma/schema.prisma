@@ -258,6 +258,7 @@ model Campaign {
   deliverables     Deliverable[]
   assets           CampaignAsset[]
   reports          CampaignReport[]
+  insertionOrders  InsertionOrder[]
   production       Production?
   mediaPlans       MediaPlan[]
   intelligenceLogs IntelligenceLog[]
@@ -406,6 +407,37 @@ model CampaignReport {
   data         Json
   sentToClient Boolean   @default(false)
   sentAt       DateTime?
+}
+
+// Insertion Orders — the commercial contract document built in-app (fixed
+// Outlander template + variable deal fields), previewed and printed like a
+// call sheet. Line items live as JSON: [{ startDate, endDate, description,
+// quantity, rate, subtotal }].
+model InsertionOrder {
+  id             String    @id @default(cuid())
+  campaignId     String
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  ioNumber       String    @unique // OM-{YEAR}-{SEQ}, e.g. OM-2026-001
+  status         String    @default("DRAFT") // DRAFT | SENT | SIGNED | VOID
+  advertiserName String
+  campaignName   String
+  clientOrAgency String    @default("CLIENT") // CLIENT | AGENCY
+  poNumber       String?
+  contactName    String?
+  contactEmail   String?
+  lineItems      Json      @default("[]")
+  totalNet       Float     @default(0)
+  notes          String?
+  signedName     String? // client-side signatory
+  signedTitle    String?
+  signedAt       DateTime?
+  signedFileUrl  String? // link to the countersigned copy, if uploaded elsewhere
+  sentAt         DateTime?
+  createdById    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([campaignId])
 }
 
 // ===== PRODUCTION =====
