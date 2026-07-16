@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Lock,
   Plus,
+  Receipt,
   Sparkles,
   Trash2,
   TrendingDown,
@@ -27,6 +28,7 @@ import {
   BudgetLineItem,
   BUDGET_SECTIONS,
   gbp,
+  gbp2,
   lineTotal,
   lineVatPercent,
   lineVatAmount,
@@ -40,6 +42,7 @@ import {
 } from "./types";
 import { APA_CREW_RATES, TEMPLATE_ROLE_ALIASES, effectiveRate } from "@/lib/apa-rates";
 import { money } from "@/lib/money";
+import { panelClass } from "@/lib/design";
 import ApaRateCard from "./ApaRateCard";
 import { useUser } from "@/components/user-context";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -57,11 +60,13 @@ interface Props {
 
 const STATUS_FLOW: ProductionBudgetStatus[] = ["BUDGETING", "LOCKED", "IN_PROGRESS", "FINAL"];
 
+// Monochrome lifecycle pills; colour only where it means something — amber for
+// the pending LOCKED state, green for FINAL (done). Active working states are ink.
 const STATUS_STYLES: Record<ProductionBudgetStatus, { bg: string; text: string; label: string }> = {
-  BUDGETING: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300", label: "Budgeting" },
-  LOCKED: { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300", label: "Locked" },
-  IN_PROGRESS: { bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-700 dark:text-purple-300", label: "In Progress" },
-  FINAL: { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", label: "Final" },
+  BUDGETING: { bg: "bg-foreground", text: "text-background", label: "Budgeting" },
+  LOCKED: { bg: "bg-amber-100 dark:bg-amber-900/40", text: "text-amber-800 dark:text-amber-300", label: "Locked" },
+  IN_PROGRESS: { bg: "bg-foreground", text: "text-background", label: "In Progress" },
+  FINAL: { bg: "bg-emerald-100 dark:bg-emerald-900/40", text: "text-emerald-800 dark:text-emerald-300", label: "Final" },
 };
 
 export default function BudgetTab({
@@ -84,6 +89,8 @@ export default function BudgetTab({
   const [showRateCard, setShowRateCard] = useState(false);
   const [reopenTarget, setReopenTarget] = useState<ProductionBudgetStatus | null>(null);
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
+  // Detailed figures below the budget-health strip, collapsed by default.
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   // ── Phase 3E: editorial discount rates ──
   // Only meaningful for editorial productions. `editorialRateDiscount` (null =
@@ -244,7 +251,7 @@ export default function BudgetTab({
     const known = new Set(BUDGET_SECTIONS.map((s) => s.key));
     const extras = Object.keys(grouped)
       .filter((k) => !known.has(k) && (grouped[k] ?? []).length > 0)
-      .map((k) => ({ key: k, label: k.replace(/_/g, " "), accent: "border-l-gray-300", costCategory: "other", template: [] }));
+      .map((k) => ({ key: k, label: k.replace(/_/g, " "), costCategory: "other", template: [] }));
     return [...BUDGET_SECTIONS, ...extras];
   }, [grouped]);
 
@@ -370,7 +377,6 @@ export default function BudgetTab({
   }
 
   const allocation = campaignBudget ?? 0;
-  const overall = campaignBudget != null ? campaignBudget - totals.actual : null;
   const spentPct = allocation > 0 ? Math.min((totals.actual / allocation) * 100, 100) : 0;
   const overSpent = allocation > 0 && totals.actual > allocation;
 
@@ -386,6 +392,7 @@ export default function BudgetTab({
   // costs exc. VAT). Positive = headroom, negative = over. This is distinct
   // from actuals below.
   const budgetRemaining = campaignBudget != null ? money(campaignBudget - subtotalExcVat) : null;
+  const budgetedPct = allocation > 0 ? Math.min((subtotalExcVat / allocation) * 100, 100) : 0;
 
   // Actuals lens — what's actually been invoiced/paid, separate from the plan.
   // Actual costs = sum of every line's actual; paid = lines marked PAID;
@@ -444,9 +451,9 @@ export default function BudgetTab({
     <div className="space-y-5">
       {/* Lifecycle status bar — commercial productions only */}
       {budgetStatus && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div className={`${panelClass} px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap`}>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mr-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mr-1">
               Budget Status
             </p>
             {STATUS_FLOW.map((s, i) => {
@@ -456,18 +463,20 @@ export default function BudgetTab({
               return (
                 <span key={s} className="flex items-center gap-2">
                   <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded ${
                       active
                         ? `${style.bg} ${style.text}`
                         : passed
-                          ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
-                          : "bg-gray-50 dark:bg-gray-800 text-gray-300 dark:text-gray-600"
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-muted/50 text-muted-foreground/60 dark:bg-white/[0.04]"
                     }`}
                   >
                     {passed && <CheckCircle2 size={11} />}
                     {style.label}
                   </span>
-                  {i < STATUS_FLOW.length - 1 && <span className="text-gray-200 dark:text-gray-700 text-xs">→</span>}
+                  {i < STATUS_FLOW.length - 1 && (
+                    <span className="text-border dark:text-gray-700 text-xs">→</span>
+                  )}
                 </span>
               );
             })}
@@ -476,7 +485,7 @@ export default function BudgetTab({
             {nextAction && (
               <button
                 onClick={() => setConfirmStatus(nextAction.next)}
-                className="flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-colors"
               >
                 <Lock size={13} />
                 {nextAction.label}
@@ -495,7 +504,7 @@ export default function BudgetTab({
         </div>
       )}
       {budgetStatus && (budgetStatus === "LOCKED" || budgetStatus === "FINAL") && production.productionLockedAt && (
-        <p className="text-[11px] text-gray-400 dark:text-gray-500 -mt-3 px-1">
+        <p className="text-[11px] text-muted-foreground -mt-3 px-1">
           Budget {budgetStatus === "FINAL" ? "finalised" : "locked"} on{" "}
           {new Date(production.productionLockedAt).toLocaleDateString("en-GB", {
             day: "numeric",
@@ -507,83 +516,50 @@ export default function BudgetTab({
       )}
 
       {apiError && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-600 dark:text-red-400">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md px-4 py-3 text-sm text-red-600 dark:text-red-400">
           {apiError}
         </div>
       )}
 
-      {/* Top: allocation + totals */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div
-          className={`rounded-2xl border shadow-sm p-5 md:col-span-1 ${
-            locked ? "bg-amber-50/40 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800" : "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800"
-          }`}
-        >
-          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
-            {locked ? "Allocated Budget" : "Total Campaign Budget"}
-            {locked && <Lock size={11} className="text-[#9C7C2E]" />}
-          </p>
-          {locked ? (
-            <>
-              <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {gbp(campaignBudget ?? 0)}
-              </span>
-              {deal && production.campaignId && (
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2 leading-snug">
-                  From deal:{" "}
-                  <Link
-                    href={`/commercial/deals/${production.campaignId}`}
-                    className="font-medium text-[#9C7C2E] hover:text-[#9C7C2E] inline-flex items-center gap-0.5"
-                  >
-                    <Briefcase size={10} /> {deal.title} <ArrowUpRight size={10} />
-                  </Link>
-                  {dealTotal != null && (
-                    <>
-                      {" — "}Total deal: {gbp(dealTotal)}
-                      {targetMarginPct != null ? `, Margin: ${targetMarginPct}%` : ""}
-                    </>
-                  )}
+      {/* Budget-health strip: allocation · budgeted-vs-actuals bar · actuals stack.
+          The full figure breakdown lives in the expandable section below it. */}
+      <div className={`${panelClass} overflow-hidden`}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-5 px-5 py-4 items-start">
+          {/* Left: campaign budget — editable, or locked with a deal link */}
+          <div className="lg:col-span-3 min-w-0">
+            <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+              {locked ? "Allocated Budget" : "Total Campaign Budget"}
+              {locked && <Lock size={11} />}
+            </p>
+            {locked ? (
+              <>
+                <span className="text-2xl font-semibold tabular-nums text-foreground">
+                  {gbp(campaignBudget ?? 0)}
+                </span>
+                {deal && production.campaignId && (
+                  <p className="text-[11px] text-muted-foreground mt-2 leading-snug">
+                    From deal:{" "}
+                    <Link
+                      href={`/commercial/deals/${production.campaignId}`}
+                      className="font-medium text-foreground underline decoration-border underline-offset-2 hover:decoration-foreground inline-flex items-center gap-0.5"
+                    >
+                      <Briefcase size={10} /> {deal.title} <ArrowUpRight size={10} />
+                    </Link>
+                    {dealTotal != null && (
+                      <>
+                        {" — "}Total deal: {gbp(dealTotal)}
+                        {targetMarginPct != null ? `, Margin: ${targetMarginPct}%` : ""}
+                      </>
+                    )}
+                  </p>
+                )}
+                <p className="text-[11px] text-muted-foreground/70 mt-1 leading-snug">
+                  Set by Commercial — read-only here.
                 </p>
-              )}
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 leading-snug">
-                Set by Commercial — read-only here.
-              </p>
-              {allocation > 0 && (
-                <div className="mt-3">
-                  <div className="flex items-center justify-between text-[11px] mb-1">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      {gbp(totals.actual)} / {gbp(allocation)} spent
-                    </span>
-                    <span className={`font-semibold ${overSpent ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"}`}>
-                      {Math.round((totals.actual / allocation) * 100)}%
-                    </span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        overSpent ? "bg-red-500" : "bg-[#9C7C2E]"
-                      }`}
-                      style={{ width: `${spentPct}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-              {campaignBudget != null && (
-                <p
-                  className={`text-xs font-medium mt-2 ${
-                    overall! >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {overall! >= 0
-                    ? `${gbp(overall!)} remaining`
-                    : `${gbp(Math.abs(overall!))} over`}
-                </p>
-              )}
-            </>
-          ) : (
-            <>
+              </>
+            ) : (
               <div className="flex items-center gap-1">
-                <span className="text-2xl font-semibold text-gray-400 dark:text-gray-500">£</span>
+                <span className="text-2xl font-semibold text-muted-foreground">£</span>
                 <input
                   type="number"
                   min="0"
@@ -593,55 +569,238 @@ export default function BudgetTab({
                     onCampaignBudgetChange(budgetInput === "" ? null : Number(budgetInput))
                   }
                   placeholder="0"
-                  className="text-2xl font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none w-full focus:bg-amber-50/40 dark:focus:bg-amber-900/30 rounded-md px-1"
+                  className="text-2xl font-semibold tabular-nums text-foreground bg-transparent border-none outline-none w-full rounded px-1 focus:bg-muted/60 dark:focus:bg-white/[0.06]"
                 />
               </div>
-              {campaignBudget != null && (
-                <p
-                  className={`text-xs font-medium mt-2 ${
-                    overall! >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {overall! >= 0
-                    ? `${gbp(overall!)} remaining`
-                    : `${gbp(Math.abs(overall!))} over`}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-        <SummaryCard label="Total Budget (exc. VAT)" value={gbp(totals.budgeted)} accent={
-          <span className="text-gray-500 dark:text-gray-400">+ VAT {gbp(totals.vat)} · inc. VAT <span className="text-gray-700 dark:text-gray-300 font-semibold">{gbp(totals.incVat)}</span></span>
-        } />
-        <SummaryCard
-          label="Total Actual"
-          value={gbp(totals.actual)}
-          accent={
-            totals.variance >= 0 ? (
-              <span className="text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
-                <TrendingDown size={12} /> {gbp(totals.variance)} under
-              </span>
+            )}
+          </div>
+
+          {/* Middle: allocation bar — budgeted vs actuals against the budget */}
+          <div className="lg:col-span-5 min-w-0 lg:pt-0.5">
+            {campaignBudget != null && allocation > 0 ? (
+              <>
+                <div className="mb-1.5 flex items-center gap-4 text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-[2px] bg-foreground/25" />
+                    Budgeted <span className="tabular-nums text-foreground">{gbp(subtotalExcVat)}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={`h-2 w-2 rounded-[2px] ${
+                        overSpent ? "bg-red-600 dark:bg-red-500" : "bg-foreground"
+                      }`}
+                    />
+                    Actuals <span className="tabular-nums text-foreground">{gbp(actualCosts)}</span>
+                  </span>
+                </div>
+                <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted dark:bg-gray-800">
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full bg-foreground/25"
+                    style={{ width: `${budgetedPct}%` }}
+                  />
+                  <div
+                    className={`absolute inset-y-0 left-0 rounded-full ${
+                      overSpent ? "bg-red-600 dark:bg-red-500" : "bg-foreground"
+                    }`}
+                    style={{ width: `${spentPct}%` }}
+                  />
+                </div>
+                <div className="mt-1.5 flex items-center justify-between gap-4 text-[11px]">
+                  <span className="tabular-nums text-muted-foreground">
+                    {Math.round((totals.actual / allocation) * 100)}% of {gbp(allocation)} spent
+                  </span>
+                  {budgetRemaining != null && (
+                    <span
+                      className={`font-semibold tabular-nums ${
+                        budgetRemaining >= 0
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-red-600 dark:text-red-400"
+                      }`}
+                    >
+                      {budgetRemaining >= 0
+                        ? `${gbp(budgetRemaining)} headroom`
+                        : `${gbp(Math.abs(budgetRemaining))} over budget`}
+                    </span>
+                  )}
+                </div>
+              </>
             ) : (
-              <span className="text-red-600 dark:text-red-400 inline-flex items-center gap-1">
-                <TrendingUp size={12} /> {gbp(Math.abs(totals.variance))} over
-              </span>
-            )
-          }
-        />
+              <p className="text-[11px] text-muted-foreground lg:pt-6">
+                Set a campaign budget to see allocation and headroom.
+              </p>
+            )}
+          </div>
+
+          {/* Right: actuals mini-stack + margin impact for commercial */}
+          <div className="lg:col-span-4 min-w-0 lg:max-w-[240px] lg:justify-self-end w-full">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+              Actuals
+            </p>
+            <div className="space-y-1 text-[12px]">
+              <div className="flex items-center justify-between gap-6">
+                <span className="text-muted-foreground">Actual costs</span>
+                <span className="tabular-nums font-semibold text-foreground">{gbp(actualCosts)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-6">
+                <span className="text-muted-foreground">Paid</span>
+                <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                  {gbp(paidCost)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-6">
+                <span className="text-muted-foreground">Outstanding</span>
+                <span className="tabular-nums font-semibold text-foreground">{gbp(outstanding)}</span>
+              </div>
+            </div>
+            {locked && savings != null && allocation > 0 && (
+              <p
+                className={`mt-2 border-t border-border pt-2 text-[11px] font-semibold tabular-nums ${
+                  savings >= 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+              >
+                {savings >= 0
+                  ? `${gbp(savings)} savings to margin`
+                  : `${gbp(Math.abs(savings))} overspend`}
+                {targetMarginPct != null && newMarginPct != null && (
+                  <span className="block text-[10px] font-normal text-muted-foreground mt-0.5">
+                    deal margin {Math.round(targetMarginPct * 10) / 10}% →{" "}
+                    {Math.round(newMarginPct * 10) / 10}%
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Expandable detailed breakdown — replaces the old stack of cards */}
+        <button
+          onClick={() => setBreakdownOpen((o) => !o)}
+          className="w-full flex items-center gap-1.5 border-t border-border px-5 py-2 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 dark:hover:bg-white/[0.03] transition-colors"
+        >
+          {breakdownOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          Detailed breakdown
+        </button>
+        {breakdownOpen && (
+          <div className="border-t border-border px-5 py-4">
+            <div className="ml-auto max-w-xl space-y-2.5">
+              {/* Planned costs */}
+              <SummaryRow label="Budgeted Costs (exc. VAT)" value={gbp2(subtotalExcVat)} strong />
+              <SummaryRow label="Total VAT Amount" value={gbp2(totalVat)} />
+              <SummaryRow label="Total Incl. VAT" value={gbp2(totalIncVat)} muted />
+              <div className="border-t border-border pt-2.5 space-y-2.5">
+                <SummaryRow
+                  label={locked ? "Total Campaign Budget (Commercial)" : "Total Campaign Budget"}
+                  value={gbp(allocation)}
+                  muted
+                />
+                {budgetRemaining != null && (
+                  <div
+                    className={`flex items-center justify-between rounded-md px-3 py-2.5 border ${
+                      budgetRemaining >= 0
+                        ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800"
+                        : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
+                    }`}
+                  >
+                    <span
+                      className={`text-xs font-semibold inline-flex items-center gap-1.5 ${
+                        budgetRemaining >= 0
+                          ? "text-emerald-700 dark:text-emerald-300"
+                          : "text-red-700 dark:text-red-300"
+                      }`}
+                    >
+                      {budgetRemaining >= 0 ? (
+                        <>
+                          <CheckCircle2 size={14} /> Budget Remaining
+                        </>
+                      ) : (
+                        <>
+                          <TrendingUp size={14} /> Over Budget
+                        </>
+                      )}
+                    </span>
+                    <span
+                      className={`text-sm font-bold tabular-nums ${
+                        budgetRemaining >= 0
+                          ? "text-emerald-700 dark:text-emerald-300"
+                          : "text-red-700 dark:text-red-300"
+                      }`}
+                    >
+                      {budgetRemaining >= 0
+                        ? `+${gbp2(budgetRemaining)} headroom`
+                        : `−${gbp2(Math.abs(budgetRemaining))} over`}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {/* Actuals — separate from the plan */}
+              <div className="border-t border-border pt-2.5 space-y-2.5">
+                <SummaryRow label="Total Actuals" value={gbp2(actualCosts)} />
+                <SummaryRow label="Total Paid" value={gbp2(paidCost)} />
+                <SummaryRow label="Outstanding" value={gbp2(outstanding)} strong />
+                {actualsVsBudget != null && (
+                  <div className="flex justify-end">
+                    <span
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+                        actualsVsBudget >= 0
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-red-600 dark:text-red-400"
+                      }`}
+                    >
+                      {actualsVsBudget >= 0 ? <TrendingDown size={13} /> : <TrendingUp size={13} />}
+                      Actuals vs Budget:{" "}
+                      {actualsVsBudget >= 0
+                        ? `${gbp2(actualsVsBudget)} under`
+                        : `${gbp2(Math.abs(actualsVsBudget))} over`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Margin impact — commercial productions with a deal margin */}
+            {locked && savings != null && allocation > 0 && (
+              <p
+                className={`mt-4 border-t border-border pt-3 text-xs ${
+                  savings >= 0
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+              >
+                <span className="font-semibold">
+                  {savings >= 0
+                    ? `Production Savings: ${gbp(savings)}`
+                    : `Production Overspend: ${gbp(Math.abs(savings))}`}
+                </span>
+                {targetMarginPct != null && newMarginPct != null && (
+                  <>
+                    {" "}
+                    — this {savings >= 0 ? "increases" : "reduces"} the deal margin from{" "}
+                    {Math.round(targetMarginPct * 10) / 10}% to {Math.round(newMarginPct * 10) / 10}%.
+                  </>
+                )}{" "}
+                <span className="text-muted-foreground">
+                  Allocation {gbp(allocation)} − actuals {gbp(totals.actual)}. Savings flow straight
+                  into the company margin{!isFinal ? " — final once actuals are submitted" : ""}.
+                </span>
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Empty-state template CTA */}
       {!hasItems && canEditBudgeted && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 shadow-sm px-6 py-8 text-center">
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Start your production budget</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">
+        <div className="bg-card rounded-lg border border-dashed border-border px-6 py-8 text-center">
+          <p className="text-sm font-semibold text-foreground mb-1">Start your production budget</p>
+          <p className="text-xs text-muted-foreground mb-4 max-w-md mx-auto">
             Populate the standard industry sections (Pre-Production, Crew, Talent, Equipment, Post…)
             with common line items, ready to fill in. You can add or remove lines from any section.
           </p>
           <button
             onClick={seedTemplate}
             disabled={seeding}
-            className="inline-flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors shadow-sm disabled:opacity-50"
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-md text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
           >
             {seeding ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
             Set up from template
@@ -650,24 +809,24 @@ export default function BudgetTab({
       )}
 
       {/* Line items grouped by section — this is the live P&L */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <div className={`${panelClass} overflow-hidden`}>
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between bg-muted/40 dark:bg-white/[0.03]">
           <div className="flex items-center gap-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">
+            <p className="text-xs font-bold uppercase tracking-widest text-foreground">
               Production Budget
             </p>
             {/* Budget entry ⇄ post-wrap cost tracking. Budget entry is the
                 default; actuals vs budget is a review tool for after the shoot
                 once invoices are in — so it's clearly labelled, not inline. */}
-            <div className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
+            <div className="flex items-center rounded-md border border-border bg-card p-0.5">
               {(["budget", "actuals"] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
-                  className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  className={`rounded px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                     view === v
-                      ? "bg-[#111111] dark:bg-white text-white dark:text-black"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   title={
                     v === "budget"
@@ -690,17 +849,17 @@ export default function BudgetTab({
                 <button
                   onClick={toggleEditorialRates}
                   disabled={savingDiscount}
-                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full transition-colors disabled:opacity-50 ${
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded transition-colors disabled:opacity-50 ${
                     editorialDiscount != null
-                      ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                      ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <Percent size={11} />
                   Editorial rates {editorialDiscount != null ? "on" : "off"}
                 </button>
                 {editorialDiscount != null && (
-                  <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                  <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
                     <input
                       type="number"
                       min="0"
@@ -711,7 +870,7 @@ export default function BudgetTab({
                         const pct = discountInput === "" ? 0 : Number(discountInput);
                         if (pct !== editorialDiscount) changeEditorialDiscount(pct);
                       }}
-                      className="w-11 text-right bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1 py-0.5 text-[11px] tabular-nums outline-none focus:border-[#9C7C2E]"
+                      className="w-11 text-right bg-card border border-border rounded px-1 py-0.5 text-[11px] tabular-nums outline-none focus:border-ring"
                     />
                     % off
                   </span>
@@ -720,7 +879,7 @@ export default function BudgetTab({
             )}
             <button
               onClick={() => setShowRateCard(true)}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
               title="View the full APA standard crew rate card"
             >
               <BookOpen size={11} />
@@ -730,7 +889,7 @@ export default function BudgetTab({
               <button
                 onClick={seedTemplate}
                 disabled={seeding}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
                 title="Add any missing standard sections"
               >
                 {seeding ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
@@ -747,19 +906,19 @@ export default function BudgetTab({
         </div>
         {/* Cost-tracking context — this view is for after the shoot wraps */}
         {view === "actuals" && (
-          <div className="px-5 py-2 bg-amber-50/50 dark:bg-amber-900/30 border-b border-amber-100 dark:border-amber-800 text-[11px] text-amber-700 dark:text-amber-300">
+          <div className="px-5 py-2 border-b border-border bg-muted/30 dark:bg-white/[0.02] text-[11px] text-muted-foreground">
             Cost tracking compares actual invoiced spend against the budget. Fill this in after the
             shoot wraps, once invoices are submitted — it isn&apos;t part of building the budget.
           </div>
         )}
         {view === "budget" && (
-          <div className="px-5 py-2 bg-blue-50/40 border-b border-blue-100 text-[11px] text-gray-600 dark:bg-blue-950/20 dark:border-blue-900 dark:text-gray-300">
-            All budget figures <span className="font-semibold text-gray-800 dark:text-gray-100">exclude VAT</span>. Per-line VAT is shown for information only and is never added to the budget total.
+          <div className="px-5 py-2 border-b border-border bg-muted/30 dark:bg-white/[0.02] text-[11px] text-muted-foreground">
+            All budget figures <span className="font-semibold text-foreground">exclude VAT</span>. Per-line VAT is shown for information only and is never added to the budget total.
           </div>
         )}
         {/* Sticky column headers */}
         {view === "budget" ? (
-          <div className="grid grid-cols-12 px-5 py-2.5 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 sticky top-0 z-10">
+          <div className="grid grid-cols-12 px-4 py-2 bg-card border-b border-border text-[10px] font-bold uppercase tracking-widest text-muted-foreground sticky top-0 z-10">
             <div className="col-span-2">Role / Item</div>
             <div className="col-span-3">Description</div>
             <div className="col-span-1 text-right">Qty</div>
@@ -769,7 +928,7 @@ export default function BudgetTab({
             <div className="col-span-2 text-right pr-6">Total (exc. VAT)</div>
           </div>
         ) : (
-          <div className="grid grid-cols-12 px-5 py-2.5 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 sticky top-0 z-10">
+          <div className="grid grid-cols-12 px-4 py-2 bg-card border-b border-border text-[10px] font-bold uppercase tracking-widest text-muted-foreground sticky top-0 z-10">
             <div className="col-span-3">Role / Item</div>
             <div className="col-span-3">Description</div>
             <div className="col-span-2 text-right">Budgeted</div>
@@ -788,44 +947,44 @@ export default function BudgetTab({
           const secVariance = money(secBudgeted - secActual);
           const isCollapsed = !!collapsed[sec.key];
           return (
-            <div key={sec.key} className={`border-b border-gray-50 dark:border-gray-800 last:border-b-0 border-l-2 ${sec.accent}`}>
+            <div key={sec.key} className="border-b border-border last:border-b-0 border-l-2">
               <button
                 onClick={() => toggleSection(sec.key)}
-                className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50/40 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/80 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-2 bg-muted/40 dark:bg-white/[0.03] hover:bg-muted/70 dark:hover:bg-white/[0.06] transition-colors text-left"
               >
                 <div className="flex items-center gap-2">
                   {isCollapsed ? (
-                    <ChevronRight size={14} className="text-gray-400 dark:text-gray-500" />
+                    <ChevronRight size={14} className="text-muted-foreground" />
                   ) : (
-                    <ChevronDown size={14} className="text-gray-400 dark:text-gray-500" />
+                    <ChevronDown size={14} className="text-muted-foreground" />
                   )}
-                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300">
+                  <span className="text-xs font-bold uppercase tracking-widest text-foreground">
                     {sec.label}
                   </span>
                   {lines.length > 0 && (
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">({lines.length})</span>
+                    <span className="text-[10px] text-muted-foreground">({lines.length})</span>
                   )}
                 </div>
                 <div className="flex items-center gap-5 text-xs tabular-nums">
                   {view === "budget" ? (
                     <>
-                      <span className="text-gray-400 dark:text-gray-500" title="VAT (informational only — not in the budget total)">VAT {gbp(secVat)}</span>
-                      <span className="text-gray-700 dark:text-gray-300 font-medium w-20 text-right" title="Subtotal (exc. VAT)">
-                        {gbp(secBudgeted)}
+                      <span className="text-muted-foreground" title="VAT (informational only — not in the budget total)">VAT {gbp2(secVat)}</span>
+                      <span className="text-foreground font-medium w-24 text-right" title="Subtotal (exc. VAT)">
+                        {gbp2(secBudgeted)}
                       </span>
                     </>
                   ) : (
                     <>
-                      <span className="text-gray-500 dark:text-gray-400" title="Budgeted">{gbp(secBudgeted)}</span>
-                      <span className="text-gray-400 dark:text-gray-500" title="Actuals">{gbp(secActual)}</span>
+                      <span className="text-muted-foreground" title="Budgeted">{gbp2(secBudgeted)}</span>
+                      <span className="text-muted-foreground/70" title="Actuals">{gbp2(secActual)}</span>
                       <span
-                        className={`font-medium w-20 text-right ${
+                        className={`font-medium w-24 text-right ${
                           secVariance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
                         }`}
                         title="Variance"
                       >
                         {secVariance >= 0 ? "" : "−"}
-                        {gbp(Math.abs(secVariance))}
+                        {gbp2(Math.abs(secVariance))}
                       </span>
                     </>
                   )}
@@ -850,10 +1009,10 @@ export default function BudgetTab({
                     />
                   ))}
                   {canEditBudgeted && (
-                    <div className="px-5 py-1.5">
+                    <div className="px-4 py-1 border-t border-border/60">
                       <button
                         onClick={() => addLine(sec.key)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
                       >
                         <Plus size={12} /> Add line
                       </button>
@@ -867,225 +1026,32 @@ export default function BudgetTab({
 
         {/* Grand total row */}
         {view === "budget" ? (
-          <div className="grid grid-cols-12 px-5 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-800 text-sm font-semibold tabular-nums">
-            <div className="col-span-9 text-gray-700 dark:text-gray-300">
+          <div className="grid grid-cols-12 px-4 py-2.5 bg-muted/50 dark:bg-white/[0.04] border-t border-border text-sm font-semibold tabular-nums">
+            <div className="col-span-9 text-foreground">
               Total{" "}
-              <span className="text-xs font-normal text-gray-400 dark:text-gray-500">
-                (exc. VAT — inc. VAT {gbp(totals.incVat)})
+              <span className="text-xs font-normal text-muted-foreground">
+                (exc. VAT — inc. VAT {gbp2(totals.incVat)})
               </span>
             </div>
-            <div className="col-span-1 text-right text-gray-400 dark:text-gray-500">{gbp(totals.vat)}</div>
-            <div className="col-span-2 text-right pr-6 text-gray-900 dark:text-gray-100">{gbp(totals.budgeted)}</div>
+            <div className="col-span-1 text-right text-muted-foreground">{gbp2(totals.vat)}</div>
+            <div className="col-span-2 text-right pr-6 text-foreground">{gbp2(totals.budgeted)}</div>
           </div>
         ) : (
-          <div className="grid grid-cols-12 px-5 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-800 text-sm font-semibold tabular-nums">
-            <div className="col-span-6 text-gray-700 dark:text-gray-300">Total</div>
-            <div className="col-span-2 text-right">{gbp(totals.budgeted)}</div>
-            <div className="col-span-2 text-right">{gbp(totals.actual)}</div>
+          <div className="grid grid-cols-12 px-4 py-2.5 bg-muted/50 dark:bg-white/[0.04] border-t border-border text-sm font-semibold tabular-nums">
+            <div className="col-span-6 text-foreground">Total</div>
+            <div className="col-span-2 text-right">{gbp2(totals.budgeted)}</div>
+            <div className="col-span-2 text-right">{gbp2(totals.actual)}</div>
             <div
               className={`col-span-2 text-right pr-6 ${
                 totals.variance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
               }`}
             >
               {totals.variance >= 0 ? "+" : "−"}
-              {gbp(Math.abs(totals.variance))}
+              {gbp2(Math.abs(totals.variance))}
             </div>
           </div>
         )}
       </div>
-
-      {/* Budget summary — two distinct lenses, kept apart on purpose:
-          1. BUDGET REMAINING — headroom on the PLANNED budget (campaign budget
-             − budgeted costs exc. VAT). Nothing to do with what's been spent.
-          2. ACTUAL COSTS — what's actually been invoiced / paid so far.
-          A breakdown at the bottom lays both out side by side. */}
-
-      {/* 1 — Budget Remaining (planned-cost headroom) */}
-      <div
-        className={`rounded-2xl border shadow-sm px-5 py-4 flex items-center justify-between gap-4 ${
-          budgetRemaining == null
-            ? "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800"
-            : budgetRemaining >= 0
-              ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800"
-              : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
-        }`}
-      >
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
-            Budget Remaining
-          </p>
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-            Total campaign budget − budgeted costs (exc. VAT)
-          </p>
-        </div>
-        <div className="text-right shrink-0">
-          {budgetRemaining == null ? (
-            <span className="text-sm text-gray-400 dark:text-gray-500">
-              Set a campaign budget to see headroom
-            </span>
-          ) : (
-            <>
-              <span
-                className={`text-2xl font-bold tabular-nums inline-flex items-center gap-1.5 ${
-                  budgetRemaining >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
-                }`}
-              >
-                {budgetRemaining >= 0 ? <CheckCircle2 size={18} /> : <TrendingUp size={18} />}
-                {budgetRemaining >= 0
-                  ? gbp(budgetRemaining)
-                  : `−${gbp(Math.abs(budgetRemaining))}`}
-              </span>
-              <p
-                className={`text-[11px] font-medium ${
-                  budgetRemaining >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-                }`}
-              >
-                {budgetRemaining >= 0 ? "under budget" : "over budget"}
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* 2 — Actual costs (invoiced / paid) */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">
-            Actual Costs
-          </p>
-        </div>
-        <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
-              Actual Costs
-            </p>
-            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
-              {gbp(actualCosts)}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
-              Paid
-            </p>
-            <p className="text-xl font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-              {gbp(paidCost)}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
-              Outstanding
-            </p>
-            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
-              {gbp(outstanding)}
-            </p>
-          </div>
-        </div>
-        {actualsVsBudget != null && (
-          <div className="px-5 pb-4">
-            <span
-              className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-                actualsVsBudget >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-              }`}
-            >
-              {actualsVsBudget >= 0 ? <TrendingDown size={13} /> : <TrendingUp size={13} />}
-              Actuals vs Budget:{" "}
-              {actualsVsBudget >= 0
-                ? `${gbp(actualsVsBudget)} under`
-                : `${gbp(Math.abs(actualsVsBudget))} over`}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* 3 — Breakdown: planned costs vs budget, then actuals separately */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 bg-gray-50/60 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">Budget Summary</p>
-        </div>
-        <div className="px-5 py-4 space-y-2.5 max-w-xl ml-auto">
-          {/* Planned costs */}
-          <SummaryRow label="Budgeted Costs (exc. VAT)" value={gbp(subtotalExcVat)} strong />
-          <SummaryRow label="Total VAT Amount" value={gbp(totalVat)} />
-          <SummaryRow label="Total Incl. VAT" value={gbp(totalIncVat)} muted />
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-2.5 space-y-2.5">
-            <SummaryRow
-              label={locked ? "Total Campaign Budget (Commercial)" : "Total Campaign Budget"}
-              value={gbp(allocation)}
-              muted
-            />
-            {budgetRemaining != null && (
-              <div
-                className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${
-                  budgetRemaining >= 0
-                    ? "bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800"
-                    : "bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800"
-                }`}
-              >
-                <span
-                  className={`text-xs font-semibold inline-flex items-center gap-1.5 ${
-                    budgetRemaining >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
-                  }`}
-                >
-                  {budgetRemaining >= 0 ? (
-                    <>
-                      <CheckCircle2 size={14} /> Budget Remaining
-                    </>
-                  ) : (
-                    <>
-                      <TrendingUp size={14} /> Over Budget
-                    </>
-                  )}
-                </span>
-                <span
-                  className={`text-sm font-bold tabular-nums ${
-                    budgetRemaining >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
-                  }`}
-                >
-                  {budgetRemaining >= 0
-                    ? `+${gbp(budgetRemaining)} headroom`
-                    : `−${gbp(Math.abs(budgetRemaining))} over`}
-                </span>
-              </div>
-            )}
-          </div>
-          {/* Actuals — separate from the plan */}
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-2.5 space-y-2.5">
-            <SummaryRow label="Total Actuals" value={gbp(actualCosts)} />
-            <SummaryRow label="Total Paid" value={gbp(paidCost)} />
-            <SummaryRow label="Outstanding" value={gbp(outstanding)} strong />
-          </div>
-        </div>
-      </div>
-
-      {/* Margin impact — commercial productions with a deal margin */}
-      {locked && savings != null && allocation > 0 && (
-        <div
-          className={`rounded-2xl border px-5 py-4 ${
-            savings >= 0 ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800" : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
-          }`}
-        >
-          <p
-            className={`text-sm font-semibold ${
-              savings >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
-            }`}
-          >
-            {savings >= 0
-              ? `Production Savings: ${gbp(savings)}`
-              : `Production Overspend: ${gbp(Math.abs(savings))}`}
-            {targetMarginPct != null && newMarginPct != null && (
-              <span className="font-normal">
-                {" "}
-                — this {savings >= 0 ? "increases" : "reduces"} the deal margin from{" "}
-                {Math.round(targetMarginPct * 10) / 10}% to {Math.round(newMarginPct * 10) / 10}%
-              </span>
-            )}
-          </p>
-          <p className={`text-xs mt-1 ${savings >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
-            Allocation {gbp(allocation)} − actuals {gbp(totals.actual)}. Savings flow straight into
-            the company margin{!isFinal ? " — final once actuals are submitted" : ""}.
-          </p>
-        </div>
-      )}
 
       {/* APA rate card reference */}
       {showRateCard && <ApaRateCard onClose={() => setShowRateCard(false)} />}
@@ -1138,31 +1104,31 @@ export default function BudgetTab({
       {/* Status-change confirmation */}
       {confirmStatus && nextAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="border-b border-gray-50 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <Lock size={16} className="text-[#9C7C2E]" /> {nextAction.label}
+          <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="border-b border-border px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Lock size={16} className="text-muted-foreground" /> {nextAction.label}
               </h2>
               <button
                 onClick={() => setConfirmStatus(null)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
             <div className="px-6 py-5">
-              <p className="text-sm text-gray-600 dark:text-gray-400">{nextAction.confirm}</p>
+              <p className="text-sm text-muted-foreground">{nextAction.confirm}</p>
               <div className="flex gap-3 mt-5">
                 <button
                   onClick={() => setConfirmStatus(null)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-md border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => setBudgetStatus(confirmStatus)}
                   disabled={statusBusy}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-md text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
                 >
                   {statusBusy ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
                   Confirm
@@ -1176,11 +1142,12 @@ export default function BudgetTab({
   );
 }
 
-// Shared cell classes. Editable inputs sit a shade lighter than the (grey) row
-// with a subtle inset border; auto-calculated cells are visually locked.
+// Shared cell classes. Editable inputs sit a shade lighter than the row with a
+// subtle inset border; auto-calculated cells are visually locked.
 const EDIT_CELL =
-  "text-[12px] bg-white border border-gray-200 rounded-md px-2 py-1 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus:border-[#9C7C2E] focus:ring-1 focus:ring-[#9C7C2E]/30 disabled:bg-transparent disabled:border-transparent disabled:shadow-none disabled:text-gray-500";
-const AUTO_CELL = "text-[12px] tabular-nums text-gray-400 cursor-default select-none px-1";
+  "text-[12px] bg-white dark:bg-gray-900 border border-border rounded px-2 py-[3px] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none focus:border-ring focus:ring-1 focus:ring-ring/25 disabled:bg-transparent disabled:border-transparent disabled:shadow-none disabled:text-gray-500 dark:disabled:text-gray-400";
+const AUTO_CELL =
+  "text-[12px] tabular-nums text-gray-400 dark:text-gray-500 cursor-default select-none px-1";
 
 // ── Dropdown positioning ──
 // The budget card wraps everything in `overflow-hidden`, so a dropdown menu
@@ -1436,7 +1403,7 @@ function RoleCombobox({
           tabIndex={-1}
           onMouseDown={(e) => e.preventDefault()} // don't steal focus from the input
           onClick={() => (open ? closeMenu() : openMenu())}
-          className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-gray-300 hover:text-gray-600"
+          className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-gray-300 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-300"
           title="Search APA roles"
         >
           <ChevronDown size={13} />
@@ -1447,7 +1414,7 @@ function RoleCombobox({
           ref={menuRef}
           id={menuId}
           style={{ position: "fixed", zIndex: 60, left: pos.left, top: pos.top, bottom: pos.bottom, width: pos.width }}
-          className="max-h-72 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+          className="max-h-72 overflow-y-auto rounded-md border border-border bg-white py-1 shadow-xl dark:bg-gray-900"
         >
           {groups.map((g) => (
             <div key={g.label}>
@@ -1466,7 +1433,7 @@ function RoleCombobox({
                     onClick={() => select(i)}
                     onMouseEnter={() => setHighlight(i)}
                     className={`flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-[12px] ${
-                      i === highlighted ? "bg-amber-50 dark:bg-amber-900/30" : ""
+                      i === highlighted ? "bg-muted dark:bg-gray-800" : ""
                     }`}
                   >
                     <span className="min-w-0 truncate">
@@ -1491,10 +1458,10 @@ function RoleCombobox({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => select(flat.length)}
               className={`flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-gray-600 dark:text-gray-400 ${
-                highlighted === flat.length ? "bg-amber-50 dark:bg-amber-900/30" : ""
+                highlighted === flat.length ? "bg-muted dark:bg-gray-800" : ""
               }`}
             >
-              <Plus size={12} className="shrink-0 text-gray-400" />
+              <Plus size={12} className="shrink-0 text-gray-400 dark:text-gray-500" />
               Use &ldquo;{custom}&rdquo; as a custom role
             </button>
           )}
@@ -1541,11 +1508,58 @@ function BudgetRow({
     line.invoicedAmount != null ? String(line.invoicedAmount) : ""
   );
   const [invoiceUrl, setInvoiceUrl] = useState(line.invoiceUrl ?? "");
+  // Invoice details are collapsed by default — a compact chip summarises them.
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
   // Inline validation — rate / quantity / VAT / actual can never be negative.
   const [rowError, setRowError] = useState<string | null>(null);
   const isNeg = (v: string) => v.trim() !== "" && Number(v) < 0;
 
   const rowRef = useRef<HTMLDivElement>(null);
+
+  // Per-row save indicator, driven off the promises the saveChain returns:
+  // spinner while any save for this line is in flight, a brief check once the
+  // last one lands successfully.
+  const pendingRef = useRef(0);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  useEffect(
+    () => () => {
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+    },
+    []
+  );
+  function update(patch: Partial<BudgetLineItem>): Promise<boolean> {
+    pendingRef.current += 1;
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    setSaveState("saving");
+    const p = onUpdate(patch);
+    p.then(
+      (ok) => {
+        pendingRef.current -= 1;
+        if (pendingRef.current > 0) return;
+        if (ok) {
+          setSaveState("saved");
+          savedTimer.current = setTimeout(() => setSaveState("idle"), 1200);
+        } else {
+          setSaveState("idle");
+        }
+      },
+      () => {
+        pendingRef.current -= 1;
+        if (pendingRef.current === 0) setSaveState("idle");
+      }
+    );
+    return p;
+  }
+  const saveDot = (
+    <span className="inline-flex w-3.5 shrink-0 justify-center">
+      {saveState === "saving" ? (
+        <Loader2 size={11} className="animate-spin text-gray-400 dark:text-gray-500" />
+      ) : saveState === "saved" ? (
+        <Check size={11} className="text-emerald-600 dark:text-emerald-400" />
+      ) : null}
+    </span>
+  );
 
   // Pull the inputs back in line with the persisted row whenever it changes —
   // after a save, a refresh, or another user's edit. This is what reverts a
@@ -1571,6 +1585,15 @@ function BudgetRow({
   const variance = money(total - (line.actual || 0));
   const editAny = canEditActual || canEditBudgeted;
 
+  // Invoice summary for the collapsed chip.
+  const invoiceMeta = invoiceStatusMeta(line.invoiceStatus);
+  const hasInvoiceData =
+    (line.invoiceStatus != null && line.invoiceStatus !== "NOT_INVOICED") ||
+    !!line.poNumber ||
+    line.invoicedAmount != null ||
+    !!line.invoiceUrl;
+  const invoiceOverage = line.invoicedAmount != null ? money(line.invoicedAmount - total) : null;
+
   // Editorial discount factor (Phase 3E). Applied via effectiveRate() — the
   // shared helper used everywhere a rate is resolved, so client and server
   // agree on the figure. Roles with no published APA rate resolve to undefined.
@@ -1592,7 +1615,7 @@ function BudgetRow({
     const q = quantity === "" ? null : Number(quantity);
     const r = rate === "" ? null : Number(rate);
     if (q === (line.quantity ?? null) && r === (line.rate ?? null)) return;
-    onUpdate({ quantity: q, rate: r });
+    update({ quantity: q, rate: r });
   }
 
   // Pick a role from the APA dropdown: set the role and auto-fill its default
@@ -1604,14 +1627,14 @@ function BudgetRow({
     // Roles the APA card publishes no rate for (e.g. Set Designer) just set the
     // name — never wipe a unit cost the user has already entered.
     if (!apaRate) {
-      onUpdate({ role: apaRole });
+      update({ role: apaRole });
       return;
     }
     const filled = effectiveRate(apaRole, editorialDiscount)?.effective ?? money(apaRate);
     const q = quantity === "" ? 1 : Number(quantity);
     setRate(String(filled));
     if (quantity === "") setQuantity("1");
-    onUpdate({ role: apaRole, quantity: q, rate: filled });
+    update({ role: apaRole, quantity: q, rate: filled });
   }
 
   // Commit a typed (or custom-selected) role. If it resolves to an APA role and
@@ -1628,9 +1651,9 @@ function BudgetRow({
       const q = quantity === "" ? 1 : Number(quantity);
       setRate(String(er.effective));
       if (quantity === "") setQuantity("1");
-      onUpdate({ role, quantity: q, rate: er.effective });
+      update({ role, quantity: q, rate: er.effective });
     } else {
-      onUpdate({ role });
+      update({ role });
     }
   }
 
@@ -1664,10 +1687,10 @@ function BudgetRow({
 
   if (view === "actuals") {
     return (
-      <div>
+      <div className="border-t border-border/60">
       <div
         ref={rowRef}
-        className="grid grid-cols-12 gap-1.5 px-5 py-1 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[28px]"
+        className="grid grid-cols-12 gap-1.5 px-4 py-[3px] items-center hover:bg-muted/50 dark:hover:bg-white/[0.04] group min-h-[26px]"
       >
         <RoleCombobox
           section={section}
@@ -1686,15 +1709,15 @@ function BudgetRow({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           onBlur={() => {
-            if (description !== line.description) onUpdate({ description });
+            if (description !== line.description) update({ description });
           }}
           onKeyDown={handleKey}
           disabled={!editAny}
           placeholder="Description"
-          className={`col-span-3 text-gray-600 truncate ${EDIT_CELL}`}
+          className={`col-span-3 text-gray-600 dark:text-gray-400 truncate ${EDIT_CELL}`}
         />
         <div className={`col-span-2 text-right ${AUTO_CELL}`} title="Budgeted (exc. VAT)">
-          {gbp(total)}
+          {gbp2(total)}
         </div>
         <input
           type="number"
@@ -1704,7 +1727,7 @@ function BudgetRow({
           onBlur={() => {
             if (isNeg(actual)) { setRowError("Actual cost can't be negative."); return; }
             setRowError(null);
-            onUpdate({ actual: actual === "" ? 0 : Number(actual) });
+            update({ actual: actual === "" ? 0 : Number(actual) });
           }}
           onKeyDown={handleKey}
           disabled={!canEditActual}
@@ -1715,16 +1738,30 @@ function BudgetRow({
         <div className="col-span-2 flex items-center justify-end gap-1 pr-1">
           <span
             className={`text-[12px] font-medium tabular-nums ${
-              variance >= 0 ? "text-emerald-600" : "text-red-600"
+              variance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
             }`}
           >
             {variance >= 0 ? "" : "−"}
-            {gbp(Math.abs(variance))}
+            {gbp2(Math.abs(variance))}
           </span>
+          {saveDot}
+          <button
+            onClick={() => setInvoiceOpen((o) => !o)}
+            className={`p-1 transition-colors ${
+              invoiceOpen
+                ? "text-foreground"
+                : hasInvoiceData
+                  ? "text-gray-400 dark:text-gray-500 hover:text-foreground"
+                  : "opacity-0 group-hover:opacity-100 text-gray-300 dark:text-gray-600 hover:text-foreground"
+            }`}
+            title={invoiceOpen ? "Hide invoice details" : "Invoice details (PO, status, amount)"}
+          >
+            <Receipt size={12} />
+          </button>
           {canEditBudgeted ? (
             <button
               onClick={onDelete}
-              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 p-1"
+              className="opacity-0 group-hover:opacity-100 text-gray-300 dark:text-gray-600 hover:text-red-500 p-1"
             >
               <Trash2 size={12} />
             </button>
@@ -1733,29 +1770,52 @@ function BudgetRow({
           )}
         </div>
       </div>
-      {/* Phase 4D — invoice tracking sub-row */}
-      <InvoiceSubRow
-        line={line}
-        canEdit={canEditActual}
-        poNumber={poNumber}
-        setPoNumber={setPoNumber}
-        invoicedAmount={invoicedAmount}
-        setInvoicedAmount={setInvoicedAmount}
-        invoiceUrl={invoiceUrl}
-        setInvoiceUrl={setInvoiceUrl}
-        onUpdate={onUpdate}
-      />
-      {rowError && <p className="px-5 pb-1 text-[11px] font-medium text-red-600 dark:text-red-400">{rowError}</p>}
+      {/* Phase 4D — invoice tracking: compact chip when collapsed, full sub-row
+          (PO / status / amount / URL) when expanded. */}
+      {!invoiceOpen && hasInvoiceData && (
+        <div className="px-4 pb-1">
+          <button
+            type="button"
+            onClick={() => setInvoiceOpen(true)}
+            className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-semibold ${invoiceMeta.bg} ${invoiceMeta.text}`}
+            title="Show full invoice details"
+          >
+            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${invoiceMeta.dot}`} />
+            {invoiceMeta.label}
+            {line.invoicedAmount != null && (
+              <span className="tabular-nums">{gbp2(line.invoicedAmount)}</span>
+            )}
+            {invoiceOverage != null && invoiceOverage > 0.5 && (
+              <span className="text-red-600 dark:text-red-400">+{gbp2(invoiceOverage)} over</span>
+            )}
+            <ChevronDown size={10} className="opacity-60" />
+          </button>
+        </div>
+      )}
+      {invoiceOpen && (
+        <InvoiceSubRow
+          line={line}
+          canEdit={canEditActual}
+          poNumber={poNumber}
+          setPoNumber={setPoNumber}
+          invoicedAmount={invoicedAmount}
+          setInvoicedAmount={setInvoicedAmount}
+          invoiceUrl={invoiceUrl}
+          setInvoiceUrl={setInvoiceUrl}
+          onUpdate={update}
+        />
+      )}
+      {rowError && <p className="px-4 pb-1 text-[11px] font-medium text-red-600 dark:text-red-400">{rowError}</p>}
       </div>
     );
   }
 
   // Budget entry view — Qty / Unit Cost / VAT% editable, VAT £ + Total auto.
   return (
-    <div>
+    <div className="border-t border-border/60">
     <div
       ref={rowRef}
-      className="grid grid-cols-12 gap-1.5 px-5 py-1.5 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[30px]"
+      className="grid grid-cols-12 gap-1.5 px-4 py-1 items-center hover:bg-muted/50 dark:hover:bg-white/[0.04] group min-h-[28px]"
     >
       <RoleCombobox
         section={section}
@@ -1774,12 +1834,12 @@ function BudgetRow({
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         onBlur={() => {
-          if (description !== line.description) onUpdate({ description });
+          if (description !== line.description) update({ description });
         }}
         onKeyDown={handleKey}
         disabled={!canEditBudgeted}
         placeholder="Description"
-        className={`col-span-3 text-gray-600 truncate ${EDIT_CELL}`}
+        className={`col-span-3 text-gray-600 dark:text-gray-400 truncate ${EDIT_CELL}`}
       />
       <input
         type="number"
@@ -1812,12 +1872,12 @@ function BudgetRow({
             disabled={!canEditBudgeted}
             placeholder="0"
             className={`w-full text-right tabular-nums ${EDIT_CELL} ${
-              isNeg(rate) ? "border-red-400 focus:border-red-400 focus:ring-red-300/40" : isOverridden ? "pl-5 text-amber-700" : ""
+              isNeg(rate) ? "border-red-400 focus:border-red-400 focus:ring-red-300/40" : isOverridden ? "pl-5 text-amber-700 dark:text-amber-400" : ""
             }`}
           />
           {isOverridden && rateRef && (
             <span
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 text-amber-500"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 text-amber-500 dark:text-amber-400"
               title={
                 discountActive
                   ? `Manually overridden — APA ${gbp(rateRef.full)}/day, ${gbp(rateRef.effective)}/day at ${editorialDiscount}% editorial discount`
@@ -1830,7 +1890,7 @@ function BudgetRow({
         </div>
         {/* APA standard rate — reference only, greyed out, never counted. When
             editorial rates are on, the full rate is struck through and the
-            discounted rate shown alongside (Phase 3E). */}
+            discounted (amber) rate shown alongside (Phase 3E). */}
         {rateRef != null && (
           <span
             className="mt-0.5 pr-1 text-right text-[10px] leading-none text-gray-400 dark:text-gray-500 select-none"
@@ -1839,7 +1899,7 @@ function BudgetRow({
             {discountActive ? (
               <>
                 APA <span className="line-through">{gbp(rateRef.full)}</span>{" "}
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">{gbp(rateRef.effective)}</span>
+                <span className="text-amber-600 dark:text-amber-400 font-medium">{gbp(rateRef.effective)}</span>
               </>
             ) : (
               <>APA {gbp(rateRef.full)}</>
@@ -1856,7 +1916,7 @@ function BudgetRow({
           if (isNeg(vat)) { setRowError("VAT % can't be negative."); return; }
           setRowError(null);
           const v = vat === "" ? null : Number(vat);
-          if (v !== line.vatPercent) onUpdate({ vatPercent: v });
+          if (v !== line.vatPercent) update({ vatPercent: v });
         }}
         onKeyDown={handleKey}
         disabled={!canEditBudgeted}
@@ -1864,19 +1924,20 @@ function BudgetRow({
         className={`col-span-1 text-right tabular-nums ${EDIT_CELL} ${isNeg(vat) ? "border-red-400 focus:border-red-400 focus:ring-red-300/40" : ""}`}
       />
       <div className={`col-span-1 text-right ${AUTO_CELL}`} title="(Qty × Unit Cost) × VAT%">
-        {gbp(vatAmt)}
+        {gbp2(vatAmt)}
       </div>
       <div className="col-span-2 flex items-center justify-end gap-1 pr-1">
         <span
-          className="text-[12px] font-semibold tabular-nums text-gray-700 cursor-default select-none"
+          className="text-[12px] font-semibold tabular-nums text-gray-700 dark:text-gray-300 cursor-default select-none"
           title="Qty × Unit Cost (excludes VAT)"
         >
-          {gbp(total)}
+          {gbp2(total)}
         </span>
+        {saveDot}
         {canEditBudgeted ? (
           <button
             onClick={onDelete}
-            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 p-1"
+            className="opacity-0 group-hover:opacity-100 text-gray-300 dark:text-gray-600 hover:text-red-500 p-1"
           >
             <Trash2 size={12} />
           </button>
@@ -1885,7 +1946,7 @@ function BudgetRow({
         )}
       </div>
     </div>
-    {rowError && <p className="px-5 pb-1 text-[11px] font-medium text-red-600 dark:text-red-400">{rowError}</p>}
+    {rowError && <p className="px-4 pb-1 text-[11px] font-medium text-red-600 dark:text-red-400">{rowError}</p>}
     </div>
   );
 }
@@ -1965,7 +2026,7 @@ function InvoiceStatusSelect({
         aria-expanded={open}
         onClick={() => (open ? closeMenu() : openMenu())}
         onKeyDown={handleKeyDown}
-        className={`flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold focus:outline-none focus:ring-1 focus:ring-[#9C7C2E] disabled:cursor-default ${meta.bg} ${meta.text}`}
+        className={`flex w-full items-center justify-between gap-1 rounded px-2.5 py-1 text-[11px] font-semibold focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-default ${meta.bg} ${meta.text}`}
       >
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`} />
@@ -1979,7 +2040,7 @@ function InvoiceStatusSelect({
           role="listbox"
           aria-label="Invoice status"
           style={{ position: "fixed", zIndex: 60, left: pos.left, top: pos.top, bottom: pos.bottom, width: pos.width }}
-          className="rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+          className="rounded-md border border-border bg-white py-1 shadow-xl dark:bg-gray-900"
         >
           {INVOICE_STATUSES.map((s, i) => (
             <button
@@ -1992,7 +2053,7 @@ function InvoiceStatusSelect({
               onClick={() => pick(s.key)}
               onMouseEnter={() => setHighlight(i)}
               className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-[11px] font-medium ${s.text} ${
-                i === highlight ? "bg-gray-50 dark:bg-gray-800" : ""
+                i === highlight ? "bg-muted dark:bg-gray-800" : ""
               }`}
             >
               <span className="inline-flex items-center gap-2">
@@ -2037,12 +2098,12 @@ function InvoiceSubRow({
   const invNum = line.invoicedAmount ?? null;
   const overage = invNum != null ? money(invNum - budgeted) : null;
   const cellCls =
-    "text-[11px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1.5 py-0.5 outline-none focus:border-[#9C7C2E] disabled:bg-transparent disabled:border-transparent disabled:text-gray-400";
+    "text-[11px] bg-white dark:bg-gray-900 border border-border rounded px-1.5 py-0.5 outline-none focus:border-ring disabled:bg-transparent disabled:border-transparent disabled:text-gray-400 dark:disabled:text-gray-500";
 
   return (
-    <div className="grid grid-cols-12 gap-1.5 px-5 pb-1.5 items-center">
+    <div className="grid grid-cols-12 gap-1.5 px-4 pb-1.5 pt-0.5 items-center bg-muted/30 dark:bg-white/[0.02]">
       <div className="col-span-3 flex items-center gap-1 pl-1">
-        <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">PO</span>
+        <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">PO</span>
         <input
           type="text"
           value={poNumber}
@@ -2063,7 +2124,7 @@ function InvoiceSubRow({
         />
       </div>
       <div className="col-span-2 flex items-center gap-1">
-        <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">Inv £</span>
+        <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Inv £</span>
         <input
           type="number"
           value={invoicedAmount}
@@ -2079,12 +2140,12 @@ function InvoiceSubRow({
       </div>
       <div className="col-span-2 text-right">
         {overage != null && overage > 0.5 ? (
-          <span className="text-[10px] font-semibold text-red-600 dark:text-red-400" title="Invoiced over budget">
-            +{gbp(overage)} over
+          <span className="text-[10px] font-semibold tabular-nums text-red-600 dark:text-red-400" title="Invoiced over budget">
+            +{gbp2(overage)} over
           </span>
         ) : overage != null && overage < -0.5 ? (
-          <span className="text-[10px] text-emerald-600 dark:text-emerald-400" title="Invoiced under budget">
-            {gbp(Math.abs(overage))} under
+          <span className="text-[10px] tabular-nums text-emerald-600 dark:text-emerald-400" title="Invoiced under budget">
+            {gbp2(Math.abs(overage))} under
           </span>
         ) : null}
       </div>
@@ -2105,7 +2166,7 @@ function InvoiceSubRow({
             href={line.invoiceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-[#9C7C2E] shrink-0"
+            className="text-gray-400 dark:text-gray-500 hover:text-foreground shrink-0"
             title="Open invoice"
           >
             <ExternalLink size={12} />
@@ -2113,30 +2174,12 @@ function InvoiceSubRow({
         )}
         <Link
           href="/finance"
-          className="text-gray-400 hover:text-[#9C7C2E] shrink-0"
+          className="text-gray-400 dark:text-gray-500 hover:text-foreground shrink-0"
           title="Open Finance for Quinn's approval"
         >
           <Link2 size={12} />
         </Link>
       </div>
-    </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">{label}</p>
-      <p className="text-2xl font-semibold text-gray-900">{value}</p>
-      {accent && <p className="text-xs mt-1.5 font-medium">{accent}</p>}
     </div>
   );
 }
@@ -2166,26 +2209,26 @@ function SummaryRow({
     <div className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-2">
         <span
-          className={`${grand ? "text-base font-bold text-gray-900" : strong ? "text-sm font-semibold text-gray-800" : muted ? "text-xs text-gray-400 uppercase tracking-wide font-semibold" : "text-sm text-gray-600"}`}
+          className={`${grand ? "text-base font-bold text-foreground" : strong ? "text-sm font-semibold text-gray-800 dark:text-gray-200" : muted ? "text-xs text-muted-foreground uppercase tracking-wide font-semibold" : "text-sm text-gray-600 dark:text-gray-400"}`}
         >
           {label}
         </span>
         {percentValue !== undefined && (
-          <span className="inline-flex items-center gap-0.5 text-xs text-gray-500">
+          <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
             <input
               type="number"
               value={percentValue}
               onChange={(e) => onPercentChange?.(e.target.value)}
               onBlur={onPercentBlur}
               disabled={!editable}
-              className="w-14 text-right bg-gray-50 border border-gray-200 rounded-md px-1.5 py-0.5 text-xs tabular-nums outline-none focus:border-[#9C7C2E] disabled:opacity-60"
+              className="w-14 text-right bg-muted/50 border border-border rounded px-1.5 py-0.5 text-xs tabular-nums outline-none focus:border-ring disabled:opacity-60"
             />
             %
           </span>
         )}
       </div>
       <span
-        className={`tabular-nums ${grand ? "text-lg font-bold text-gray-900" : strong ? "text-sm font-semibold text-gray-800" : muted ? "text-sm font-medium text-gray-500" : "text-sm text-gray-700"}`}
+        className={`tabular-nums ${grand ? "text-lg font-bold text-foreground" : strong ? "text-sm font-semibold text-gray-800 dark:text-gray-200" : muted ? "text-sm font-medium text-muted-foreground" : "text-sm text-gray-700 dark:text-gray-300"}`}
       >
         {value}
       </span>

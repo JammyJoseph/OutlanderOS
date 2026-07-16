@@ -36,20 +36,20 @@ export default function ApaRateCard({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden"
+        className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-gray-50 px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="border-b border-border px-6 py-4 flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">APA Rate Card</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">
+            <h2 className="text-lg font-semibold text-foreground">APA Rate Card</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               Advertising Producers Association — standard commercial crew rates (2025). The max
               daily rate is used as the default when adding crew.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors shrink-0"
+            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors shrink-0"
           >
             <X size={18} />
           </button>
@@ -57,7 +57,7 @@ export default function ApaRateCard({ onClose }: { onClose: () => void }) {
         <div className="overflow-y-auto px-6 py-4">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-[10px] font-bold uppercase tracking-widest text-gray-400 text-left">
+              <tr className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-left">
                 <th className="pb-2 pr-3">Role</th>
                 <th className="pb-2 px-3 text-right">Daily Rate</th>
                 <th className="pb-2 px-3 text-right">Hourly</th>
@@ -89,24 +89,27 @@ function SectionRows({
       <tr>
         <td
           colSpan={5}
-          className="pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400"
+          className="pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-foreground"
         >
           {label}
         </td>
       </tr>
       {rates.map((r) => (
-        <tr key={r.role} className="border-t border-gray-50 hover:bg-amber-50/30">
+        <tr
+          key={r.role}
+          className="border-t border-border/60 hover:bg-muted/50 dark:hover:bg-white/[0.04]"
+        >
           <td className="py-1.5 pr-3 text-gray-700 dark:text-gray-300 font-medium">{r.role}</td>
-          <td className="py-1.5 px-3 text-right tabular-nums text-gray-900 dark:text-gray-100 font-semibold">
+          <td className="py-1.5 px-3 text-right tabular-nums text-foreground font-semibold">
             {r.maxDailyRate > 0 ? gbp(r.maxDailyRate) : "—"}
           </td>
-          <td className="py-1.5 px-3 text-right tabular-nums text-gray-500 dark:text-gray-400">
+          <td className="py-1.5 px-3 text-right tabular-nums text-muted-foreground">
             {r.basicHourlyRate > 0 ? gbp(r.basicHourlyRate) : "—"}
           </td>
-          <td className="py-1.5 px-3 text-center text-gray-500 dark:text-gray-400">
+          <td className="py-1.5 px-3 text-center text-muted-foreground">
             {r.overtimeGrade === "N/A" ? "—" : r.overtimeGrade}
           </td>
-          <td className="py-1.5 pl-3 text-right tabular-nums text-gray-500 dark:text-gray-400">
+          <td className="py-1.5 pl-3 text-right tabular-nums text-muted-foreground">
             {r.standardOvertimeRate > 0 ? gbp(r.standardOvertimeRate) : "—"}
           </td>
         </tr>

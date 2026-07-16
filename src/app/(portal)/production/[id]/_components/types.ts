@@ -534,13 +534,12 @@ export const BUDGET_CATEGORIES: { key: string; label: string }[] = [
 // ── Industry-standard production budget sections ──
 // Each section groups line items; `template` lists the common roles seeded
 // when a budget is first set up; `costCategory` maps to the Finance CostEntry
-// category so production actuals land in the right Finance bucket. `accent`
-// is a Tailwind class applied to the left border / header tint of the section.
+// category so production actuals land in the right Finance bucket. Sections
+// render monochrome — no per-section accent colour (Paper Standard).
 export interface BudgetSectionDef {
   key: string;
   label: string;
   costCategory: string;
-  accent: string; // left-border accent colour (Tailwind border-l-* — 400 shade, theme-stable)
   template: string[]; // default role/item names seeded by the template
 }
 
@@ -549,7 +548,6 @@ export const BUDGET_SECTIONS: BudgetSectionDef[] = [
     key: "PRE_PRODUCTION",
     label: "Pre-Production",
     costCategory: "production",
-    accent: "border-l-blue-400",
     template: [
       "Producer",
       "Production Manager",
@@ -565,14 +563,12 @@ export const BUDGET_SECTIONS: BudgetSectionDef[] = [
     key: "CAST_TALENT",
     label: "Cast / Talent",
     costCategory: "talent",
-    accent: "border-l-pink-400",
     template: ["Lead Talent", "Supporting Talent", "Extras / Background"],
   },
   {
     key: "CREW",
     label: "Crew",
     costCategory: "production",
-    accent: "border-l-purple-400",
     template: [
       "1st Assistant Director",
       "2nd Assistant Director",
@@ -602,7 +598,6 @@ export const BUDGET_SECTIONS: BudgetSectionDef[] = [
     key: "STYLING_GLAM",
     label: "Styling / Glam",
     costCategory: "production",
-    accent: "border-l-rose-400",
     template: [
       "Stylist",
       "Costume Designer",
@@ -618,35 +613,30 @@ export const BUDGET_SECTIONS: BudgetSectionDef[] = [
     key: "LOCATIONS",
     label: "Locations",
     costCategory: "location",
-    accent: "border-l-emerald-400",
     template: ["Location Manager", "Location Fee", "Green Room / Base"],
   },
   {
     key: "EQUIPMENT",
     label: "Equipment",
     costCategory: "equipment",
-    accent: "border-l-amber-400",
     template: ["Lighting Kit", "Camera Kit", "Grip Kit"],
   },
   {
     key: "TRANSPORT",
     label: "Transport",
     costCategory: "travel",
-    accent: "border-l-cyan-400",
     template: ["Driver", "Production Van", "Taxi / Mileage"],
   },
   {
     key: "CATERING",
     label: "Catering",
     costCategory: "catering",
-    accent: "border-l-orange-400",
     template: ["Crew Catering"],
   },
   {
     key: "ART_DEPARTMENT",
     label: "Art Department",
     costCategory: "production",
-    accent: "border-l-teal-400",
     template: [
       "Art Director",
       "Asst. Art Director",
@@ -666,7 +656,6 @@ export const BUDGET_SECTIONS: BudgetSectionDef[] = [
     key: "POST_PRODUCTION",
     label: "Post-Production",
     costCategory: "production",
-    accent: "border-l-indigo-400",
     template: ["Editor", "Colourist", "Retouching"],
   },
 ];
@@ -756,6 +745,17 @@ export function gbp(n: number | null | undefined): string {
     style: "currency",
     currency: "GBP",
     maximumFractionDigits: 0,
+  });
+}
+
+// Penny-precise variant for the budget table — headline figures stay whole-£.
+export function gbp2(n: number | null | undefined): string {
+  const v = n ?? 0;
+  return v.toLocaleString("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
 }
 
