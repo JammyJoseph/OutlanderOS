@@ -14,6 +14,7 @@ import {
   parseClientFeedback,
   stagesForDeal,
   normalizeStage,
+  maybeAdvanceStage,
 } from "@/lib/deal-stages";
 import { archiveCampaign } from "@/lib/archive";
 
@@ -86,6 +87,7 @@ async function updateCampaign(
       select: {
         id: true, stage: true, value: true, title: true, briefStatus: true,
         workflowType: true, jobType: true, creativeStatus: true, clientFeedback: true,
+        ioSigned: true,
       },
     });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -288,6 +290,13 @@ async function updateCampaign(
           userName: user.name,
         })),
       });
+    }
+
+    // Auto stage tracking: signing the IO nudges the deal to IO Signed & Kick
+    // Off. Skipped when this same request set the stage explicitly (manual
+    // wins), and forward-only — the deal is never regressed.
+    if (ioSigned === true && !existing.ioSigned && stage === undefined) {
+      await maybeAdvanceStage(prisma, id, "IO_SIGNED_KICK_OFF", "IO signed");
     }
 
     return NextResponse.json(campaign);

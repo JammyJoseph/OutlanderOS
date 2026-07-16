@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, type AuthUser } from "@/lib/auth";
 import { sanitizeString } from "@/lib/validate";
-import { isCreativeRoundStatus } from "@/lib/deal-stages";
+import {
+  isCreativeRoundStatus,
+  deriveStageFromSignals,
+  maybeAdvanceStage,
+  AUTO_STAGE_REASONS,
+} from "@/lib/deal-stages";
 
 // PUT /api/campaigns/[id]/rounds/[roundId] — update a round's status,
 // feedback, deadline, deck link, brief or title.
@@ -113,6 +118,29 @@ export const PUT = withAuth(async (
           userName: user.name,
         },
       });
+    }
+
+    // Auto stage tracking: an approval is a pipeline signal — kick-off
+    // approved → Pitching & Feedback; final client round approved → Sign Off.
+    // Forward-only: the deal is never regressed, and manual stage changes win.
+    if (statusChanged && status === "APPROVED") {
+      const dealState = await prisma.campaign.findUnique({
+        where: { id },
+        select: { ioSigned: true, workflowType: true },
+      });
+      const allRounds = await prisma.creativeRound.findMany({
+        where: { campaignId: id },
+        select: { type: true, status: true, roundNumber: true },
+      });
+      const derived = dealState ? deriveStageFromSignals(dealState, allRounds) : null;
+      if (derived) {
+        await maybeAdvanceStage(
+          prisma,
+          id,
+          derived,
+          AUTO_STAGE_REASONS[derived] ?? `creative round ${existing.roundNumber} approved`
+        );
+      }
     }
 
     return NextResponse.json({ round, nextRound });

@@ -1,5 +1,7 @@
 // Shared constants + helpers for the Commercial deal pipeline.
 
+import type { PrismaClient } from "@prisma/client";
+
 // The DealStage enum holds BOTH the current (simplified) stages and the legacy
 // ones still present in the database. normalizeStage() maps the legacy values
 // onto the current set so the UI only ever deals with the new pipeline.
@@ -312,7 +314,14 @@ export function isCreativeRoundStatus(value: string): value is CreativeRoundStat
 }
 
 // Minimal shape of a round used by the handover gate below.
-export type RoundLike = { type: string; status: string; deckUrl?: string | null; roundNumber?: number };
+export type RoundLike = {
+  type: string;
+  status: string;
+  deckUrl?: string | null;
+  roundNumber?: number;
+  brief?: string | null;
+  objectives?: string | null;
+};
 
 // The final CLIENT-type round, if any (highest roundNumber wins).
 export function lastClientRound<T extends RoundLike>(rounds: T[]): T | null {
@@ -446,8 +455,18 @@ export function clearForProductionChecklist(deal: {
   const gateIdx = PIPELINE_STAGES.indexOf(creative ? "IO_SIGNED_KICK_OFF" : "APPROVAL");
   const stageOk = stageIdx >= gateIdx;
 
+  // Kick-off brief: the Creative tab's kick-off round holds the brief now that
+  // the Brief & Creative tab is gone. Ready when the kick-off round has content
+  // (brief or objectives) or has been approved. Legacy deals that predate the
+  // rounds system still pass on clientBrief/briefContent.
+  const kickOff = (deal.rounds ?? []).find((r) => r.type === "KICK_OFF");
+  const kickOffBriefOk = Boolean(
+    kickOff &&
+      (kickOff.brief?.trim() || kickOff.objectives?.trim() || kickOff.status === "APPROVED")
+  );
   const brief = parseClientBrief(deal.clientBrief);
-  const briefOk = Boolean(brief?.content?.trim() || deal.briefContent?.trim());
+  const legacyBriefOk = Boolean(brief?.content?.trim() || deal.briefContent?.trim());
+  const briefOk = kickOffBriefOk || legacyBriefOk;
 
   // Creative is approved when the last CLIENT-type round is APPROVED (falls back
   // to the legacy creativeStatus for deals with no rounds yet).
@@ -470,9 +489,9 @@ export function clearForProductionChecklist(deal: {
     },
     {
       key: "brief",
-      label: "Brief attached",
+      label: "Kick-off brief prepared",
       ok: briefOk,
-      detail: !briefOk ? "Add the client brief content on the Brief & Creative tab" : undefined,
+      detail: !briefOk ? "Fill in the kick-off brief on the Creative tab" : undefined,
     },
     {
       key: "stage",
@@ -483,6 +502,83 @@ export function clearForProductionChecklist(deal: {
   ];
 
   return { items, ready: items.every((i) => i.ok) };
+}
+
+// ── Automatic stage tracking ─────────────────────────────────────────────────
+// Signals from the creative rounds + IO flag drive the deal forward through
+// the pipeline automatically. Auto-advance only — a deal is never regressed;
+// the manual stage dropdown always wins (it can set any valid stage).
+
+// Pure derivation: given the deal's signals, the furthest stage they support,
+// or null when no signal applies. Only bespoke deals travel the creative
+// pipeline — supplied-assets/print deals are driven manually.
+export function deriveStageFromSignals(
+  deal: { ioSigned?: boolean | null; workflowType?: string | null },
+  rounds: RoundLike[]
+): DealStageValue | null {
+  if (deal.workflowType === "SUPPLIED_ASSETS") return null;
+
+  // IO signed → paperwork done.
+  if (deal.ioSigned) return "IO_SIGNED_KICK_OFF";
+
+  // Final client round approved → creative signed off.
+  if (lastClientRound(rounds)?.status === "APPROVED") return "SIGN_OFF";
+
+  // Kick-off approved, or the creative back-and-forth has started.
+  const kickOff = rounds.find((r) => r.type === "KICK_OFF");
+  const hasPitchRounds = rounds.some((r) => r.type !== "KICK_OFF");
+  if (kickOff?.status === "APPROVED" || hasPitchRounds) return "PITCHING_FEEDBACK";
+
+  return null;
+}
+
+// Human-readable reason for landing on an auto-derived stage — goes in the
+// activity feed message.
+export const AUTO_STAGE_REASONS: Partial<Record<DealStageValue, string>> = {
+  PITCHING_FEEDBACK: "creative rounds under way",
+  SIGN_OFF: "final client round approved",
+  IO_SIGNED_KICK_OFF: "IO signed",
+};
+
+// Nudge a deal forward to `newStage` if that's a forward move within the
+// deal's own pipeline. Never regresses, never moves to a stage the deal's
+// workflow doesn't use. Writes a DealActivity (source: "auto") when it moves.
+// (PrismaClient is imported type-only — erased at build, so this module stays
+// safe to share with client components.)
+export async function maybeAdvanceStage(
+  prisma: PrismaClient,
+  campaignId: string,
+  newStage: DealStageValue,
+  reason: string
+): Promise<boolean> {
+  const deal = await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: { id: true, stage: true, title: true, workflowType: true, jobType: true },
+  });
+  if (!deal) return false;
+
+  // Target must be a legal stage for this deal's workflow.
+  if (!(stagesForDeal(deal) as string[]).includes(newStage)) return false;
+
+  // Order via the full pipeline (it contains every normalized stage) — the
+  // per-workflow lists are subsets and would misorder stages outside them.
+  const currentIdx = PIPELINE_STAGES.indexOf(normalizeStage(deal.stage));
+  const nextIdx = PIPELINE_STAGES.indexOf(newStage);
+  if (nextIdx === -1 || nextIdx <= currentIdx) return false;
+
+  await prisma.campaign.update({
+    where: { id: campaignId },
+    data: { stage: newStage, stageUpdatedAt: new Date() },
+  });
+  await prisma.dealActivity.create({
+    data: {
+      campaignId,
+      type: "stage_change",
+      message: `"${deal.title}" moved from ${deal.stage} to ${newStage} — ${reason}`,
+      meta: { from: deal.stage, to: newStage, source: "auto", reason },
+    },
+  });
+  return true;
 }
 
 // Multi-select deal types stored in Campaign.dealTypes (string array).

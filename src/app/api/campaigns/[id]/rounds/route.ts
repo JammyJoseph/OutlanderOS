@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, type AuthUser } from "@/lib/auth";
 import { sanitizeString } from "@/lib/validate";
-import { isCreativeRoundType, isCreativeRoundStatus } from "@/lib/deal-stages";
+import {
+  isCreativeRoundType,
+  isCreativeRoundStatus,
+  deriveStageFromSignals,
+  maybeAdvanceStage,
+  AUTO_STAGE_REASONS,
+} from "@/lib/deal-stages";
 
 // GET /api/campaigns/[id]/rounds — list a deal's creative rounds in order.
 export const GET = withAuth(async (
@@ -90,6 +96,29 @@ export const POST = withAuth(async (
         userName: user.name,
       },
     });
+
+    // Auto stage tracking: a pitching round starting nudges the deal into
+    // Pitching & Feedback (forward-only — no-op if the deal is already there
+    // or further; manual stage changes always win).
+    if (round.type !== "KICK_OFF") {
+      const dealState = await prisma.campaign.findUnique({
+        where: { id },
+        select: { ioSigned: true, workflowType: true },
+      });
+      const allRounds = await prisma.creativeRound.findMany({
+        where: { campaignId: id },
+        select: { type: true, status: true, roundNumber: true },
+      });
+      const derived = dealState ? deriveStageFromSignals(dealState, allRounds) : null;
+      if (derived) {
+        await maybeAdvanceStage(
+          prisma,
+          id,
+          derived,
+          AUTO_STAGE_REASONS[derived] ?? "creative rounds under way"
+        );
+      }
+    }
 
     return NextResponse.json(round, { status: 201 });
   } catch (err) {

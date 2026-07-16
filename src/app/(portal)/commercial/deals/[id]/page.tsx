@@ -53,6 +53,7 @@ import {
   TYPE_STYLES,
   type DealStage,
 } from "../../_components/deal-ui";
+import { clearForProductionChecklist, type ChecklistItem } from "@/lib/deal-stages";
 import MediaPlanTab from "../../_components/MediaPlanTab";
 import DeliverablesTab, { type Deliverable } from "./DeliverablesTab";
 import CreativeRoundsTab, { type CreativeRound } from "./CreativeRoundsTab";
@@ -188,66 +189,6 @@ const WON_STAGES: DealStage[] = [
   "COMPLETED",
   "PAID",
 ];
-
-// Launch checklist for "Clear for Production" — mirrors the server-side gate
-// in /api/commercial/deals/[id]/clear-for-production.
-interface ChecklistItem {
-  key: string;
-  label: string;
-  ok: boolean;
-  detail?: string;
-}
-
-function buildLaunchChecklist(deal: DealDetail): { items: ChecklistItem[]; ready: boolean } {
-  const creative = deal.workflowType !== "SUPPLIED_ASSETS";
-  const stageIdx = STAGE_ORDER.indexOf(normalizeStage(deal.stage));
-  // Bespoke needs IO signed & kicked off; supplied/print just need sign-off.
-  const gateIdx = STAGE_ORDER.indexOf(creative ? "IO_SIGNED_KICK_OFF" : "APPROVAL");
-  const stageOk = stageIdx >= gateIdx;
-  const briefOk = Boolean(deal.clientBrief?.content?.trim() || deal.briefContent?.trim());
-
-  // Creative is approved when the last CLIENT-type round is APPROVED. Falls back
-  // to the legacy creativeStatus for deals that predate the rounds system.
-  const clientRounds = (deal.rounds ?? []).filter((r) => r.type === "CLIENT");
-  const finalClientRound =
-    clientRounds.length > 0
-      ? clientRounds.reduce((a, b) => (b.roundNumber >= a.roundNumber ? b : a))
-      : null;
-  const creativeOk = finalClientRound
-    ? finalClientRound.status === "APPROVED"
-    : deal.creativeStatus === "APPROVED";
-
-  const items: ChecklistItem[] = [
-    {
-      key: "creative",
-      label: creative ? "Creative approved by client" : "Creative approval — N/A for supplied assets",
-      ok: creative ? creativeOk : true,
-      detail:
-        creative && !creativeOk
-          ? "Get the final client round approved on the Creative tab"
-          : undefined,
-    },
-    {
-      key: "budget",
-      label: "Media plan locked",
-      ok: deal.budgetLocked,
-      detail: !deal.budgetLocked ? "Lock the media plan on the Media Plan tab" : undefined,
-    },
-    {
-      key: "brief",
-      label: "Brief attached",
-      ok: briefOk,
-      detail: !briefOk ? "Add the client brief on the Brief & Creative tab" : undefined,
-    },
-    {
-      key: "stage",
-      label: creative ? "IO signed & kicked off (deal at IO Signed & Kick Off)" : "Signed off (Approval or later)",
-      ok: stageOk,
-      detail: !stageOk ? "Move the deal to IO Signed & Kick Off first" : undefined,
-    },
-  ];
-  return { items, ready: items.every((i) => i.ok) };
-}
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   created: <Sparkles size={13} />,
@@ -409,7 +350,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   // prepared from New Brief and the back-and-forth happens during pitching.
   const creativeUnlocked = creativeWorkflow;
   const projectStarted = Boolean(deal.production);
-  const checklist = buildLaunchChecklist(deal);
+  // Shared with the server-side gate in /api/commercial/deals/[id]/clear-for-production.
+  const checklist = clearForProductionChecklist(deal);
   const showClearButton = creativeWorkflow && !projectStarted;
   // Supplied assets: no production — "Mark as Live" once the budget is locked.
   const canMarkLive =

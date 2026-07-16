@@ -84,11 +84,25 @@ export const POST = withAuth(async (
         : deal.value ?? 0;
 
     // The brief travels with the production — description for the overview,
-    // brief for the "Brief from Commercial" panel. The client brief (case
-    // builder) wins; legacy briefContent and the description are fallbacks.
+    // brief for the "Brief from Commercial" panel. Legacy fields (client brief
+    // case builder, briefContent) win for old deals; new deals hold the brief
+    // on the kick-off creative round, with the description as a last resort.
     const clientBrief = parseClientBrief(deal.clientBrief);
+    const kickOff = (deal.rounds ?? []).find((r) => r.type === "KICK_OFF") ?? null;
+    const kickOffBriefText =
+      [
+        kickOff?.brief?.trim(),
+        kickOff?.objectives?.trim() && `Objectives:\n${kickOff.objectives.trim()}`,
+        kickOff?.toneDirection?.trim() && `Tone & direction:\n${kickOff.toneDirection.trim()}`,
+      ]
+        .filter(Boolean)
+        .join("\n\n") || null;
     const briefText =
-      clientBrief?.content?.trim() || deal.briefContent?.trim() || deal.description || null;
+      clientBrief?.content?.trim() ||
+      deal.briefContent?.trim() ||
+      kickOffBriefText ||
+      deal.description ||
+      null;
 
     // Structured production brief (Phase 4F) — the seed the production team
     // starts from. Assembled from the deal so nothing has to be re-keyed.
@@ -109,12 +123,11 @@ export const POST = withAuth(async (
           : deal.dueDate
             ? `Due ${new Date(deal.dueDate).toISOString().split("T")[0]}`
             : null,
-      creativeDirection:
-        clientBrief?.content?.trim() || deal.briefContent?.trim() || deal.description || null,
+      creativeDirection: briefText,
       // The approved deck from the final client round travels with the handover.
       approvedDeckUrl: lastClientRound(deal.rounds ?? [])?.deckUrl ?? null,
-      // No dedicated audience field on the deal — left for the producer to fill.
-      targetAudience: null,
+      // The kick-off brief's audience travels across; producers can refine it.
+      targetAudience: kickOff?.targetAudience?.trim() || null,
       generatedAt: new Date().toISOString(),
       dealId: deal.id,
     };
