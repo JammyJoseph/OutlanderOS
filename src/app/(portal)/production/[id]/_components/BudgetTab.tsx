@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
   Briefcase,
+  Check,
   ChevronDown,
   ChevronRight,
   Lock,
@@ -37,7 +38,7 @@ import {
   INVOICE_STATUSES,
   invoiceStatusMeta,
 } from "./types";
-import { getAPARate, getAPARatesForSection, getReferenceRate } from "@/lib/apa-rates";
+import { APA_CREW_RATES, TEMPLATE_ROLE_ALIASES, effectiveRate } from "@/lib/apa-rates";
 import { money } from "@/lib/money";
 import ApaRateCard from "./ApaRateCard";
 import { useUser } from "@/components/user-context";
@@ -94,7 +95,7 @@ export default function BudgetTab({
   );
   const [savingDiscount, setSavingDiscount] = useState(false);
 
-  async function patchProduction(patch: Record<string, unknown>) {
+  async function patchProduction(patch: Record<string, unknown>): Promise<boolean> {
     setSavingDiscount(true);
     try {
       const res = await fetch(`/api/productions/${production.id}`, {
@@ -108,17 +109,64 @@ export default function BudgetTab({
         setTimeout(() => setApiError(null), 5000);
       }
       refresh();
+      return res.ok;
     } finally {
       setSavingDiscount(false);
     }
   }
 
+  // Reprice prompt (A7): when the editorial discount is toggled or its % is
+  // changed, offer to move the lines still sitting at their previous APA /
+  // effective rate (or never priced, i.e. £0) onto the new effective rate.
+  // Lines with a manually overridden rate are never touched.
+  const [reprice, setReprice] = useState<{ lines: { id: string; rate: number; quantity: number }[] } | null>(null);
+  const [repricing, setRepricing] = useState(false);
+
+  function repriceCandidates(prevPct: number | null, nextPct: number | null) {
+    const out: { id: string; rate: number; quantity: number }[] = [];
+    for (const it of items ?? []) {
+      const next = effectiveRate(it.role, nextPct);
+      if (!next) continue; // custom role / no published APA rate
+      const prev = effectiveRate(it.role, prevPct);
+      const cur = it.rate != null ? money(it.rate) : 0;
+      // A line with no rate but a manual budgeted figure is priced by hand
+      // (legacy / deal-imported) — filling qty×rate would clobber that total.
+      if (cur === 0 && money(it.budgeted || 0) !== 0) continue;
+      // Only lines still at the previous effective rate, or never priced.
+      const untouched = cur === 0 || (prev != null && cur === prev.effective);
+      if (!untouched) continue; // manually overridden — leave alone
+      if (cur === next.effective) continue; // already at the new rate
+      out.push({ id: it.id, rate: next.effective, quantity: it.quantity ?? 1 });
+    }
+    return out;
+  }
+
+  async function changeEditorialDiscount(nextPct: number | null) {
+    const candidates = canEditBudgeted ? repriceCandidates(editorialDiscount, nextPct) : [];
+    const ok = await patchProduction({ editorialRateDiscount: nextPct });
+    if (ok && candidates.length > 0) setReprice({ lines: candidates });
+  }
+
+  async function applyReprice() {
+    if (!reprice) return;
+    setRepricing(true);
+    try {
+      // Distinct lines, so the per-line saveChain lets these run in parallel.
+      // Quantity is sent alongside the rate (defaulting to 1) so the API can't
+      // pair the new rate with a stale/absent quantity.
+      await Promise.all(reprice.lines.map((l) => updateLine(l.id, { rate: l.rate, quantity: l.quantity })));
+    } finally {
+      setRepricing(false);
+      setReprice(null);
+    }
+  }
+
   function toggleEditorialRates() {
     if (editorialDiscount != null) {
-      patchProduction({ editorialRateDiscount: null });
+      changeEditorialDiscount(null);
     } else {
       const pct = discountInput === "" ? 25 : Number(discountInput);
-      patchProduction({ editorialRateDiscount: pct });
+      changeEditorialDiscount(pct);
     }
   }
 
@@ -661,7 +709,7 @@ export default function BudgetTab({
                       onChange={(e) => setDiscountInput(e.target.value)}
                       onBlur={() => {
                         const pct = discountInput === "" ? 0 : Number(discountInput);
-                        if (pct !== editorialDiscount) patchProduction({ editorialRateDiscount: pct });
+                        if (pct !== editorialDiscount) changeEditorialDiscount(pct);
                       }}
                       className="w-11 text-right bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-1 py-0.5 text-[11px] tabular-nums outline-none focus:border-[#9C7C2E]"
                     />
@@ -1061,6 +1109,18 @@ export default function BudgetTab({
         onCancel={() => setReopenTarget(null)}
       />
 
+      {/* Reprice lines after an editorial-discount change (A7) */}
+      <ConfirmDialog
+        open={!!reprice}
+        title="Update line rates?"
+        message={`The editorial rate setting changed. Apply the new rate to ${reprice?.lines.length ?? 0} line${(reprice?.lines.length ?? 0) === 1 ? "" : "s"} still at their APA rate? Manually overridden rates won't be touched.`}
+        confirmLabel="Apply new rates"
+        cancelLabel="Keep current rates"
+        busy={repricing}
+        onConfirm={applyReprice}
+        onCancel={() => setReprice(null)}
+      />
+
       {/* Line-item delete confirmation */}
       <ConfirmDialog
         open={!!deleteLineId}
@@ -1122,11 +1182,105 @@ const EDIT_CELL =
   "text-[12px] bg-white border border-gray-200 rounded-md px-2 py-1 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus:border-[#9C7C2E] focus:ring-1 focus:ring-[#9C7C2E]/30 disabled:bg-transparent disabled:border-transparent disabled:shadow-none disabled:text-gray-500";
 const AUTO_CELL = "text-[12px] tabular-nums text-gray-400 cursor-default select-none px-1";
 
-// Role cell: a free-text input with an attached dropdown of the section's APA
-// roles. Typing keeps a custom role (rate stays as-is); picking from the list
-// auto-fills the APA rate via onPick. Falls back to a plain input for sections
-// with no APA roles (equipment, catering, post…).
-function RolePicker({
+// ── Dropdown positioning ──
+// The budget card wraps everything in `overflow-hidden`, so a dropdown menu
+// absolutely positioned inside it gets clipped at the card edge. Menus are
+// therefore rendered position:fixed at coordinates measured from their anchor
+// (flipping above it when there's no room below); any outside scroll or a
+// resize closes the menu rather than trying to track the anchor.
+type MenuPos = { left: number; top?: number; bottom?: number; width: number };
+
+function useAnchoredMenu(
+  anchorRef: React.RefObject<HTMLElement | null>,
+  menuRef: React.RefObject<HTMLElement | null>,
+  estHeight: number,
+  minWidth = 0
+) {
+  // The menu is open exactly when it has a measured position.
+  const [pos, setPos] = useState<MenuPos | null>(null);
+  const open = pos != null;
+
+  const closeMenu = useCallback(() => setPos(null), []);
+
+  // Measure the anchor and open the menu at it. Called from event handlers
+  // (never an effect), so the rect is fresh at the moment the menu opens.
+  const openMenu = useCallback(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const width = Math.max(r.width, minWidth);
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+    const openUp = window.innerHeight - r.bottom < estHeight + 12 && r.top > estHeight + 12;
+    setPos(
+      openUp
+        ? { left, bottom: window.innerHeight - r.top + 4, width }
+        : { left, top: r.bottom + 4, width }
+    );
+  }, [anchorRef, estHeight, minWidth]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onScroll(e: Event) {
+      // Scrolling inside the menu itself is fine — only outside scroll closes.
+      if (menuRef.current && e.target instanceof Node && menuRef.current.contains(e.target)) return;
+      setPos(null);
+    }
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", closeMenu);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", closeMenu);
+    };
+  }, [open, closeMenu, menuRef]);
+
+  return { open, pos, openMenu, closeMenu };
+}
+
+// Every APA rate-card role, searchable by canonical name and by the friendly
+// template aliases that point at it (e.g. "DOP / Videographer" → DoP, "MUA").
+type RoleOption = { role: string; rate: number; section: string; aliases: string[] };
+const ALL_ROLE_OPTIONS: RoleOption[] = APA_CREW_RATES.map((r) => ({
+  role: r.role,
+  rate: r.maxDailyRate,
+  section: r.section,
+  aliases: Object.entries(TEMPLATE_ROLE_ALIASES)
+    .filter(([, canonical]) => canonical === r.role)
+    .map(([alias]) => alias),
+}));
+
+const SECTION_LABELS: Record<string, string> = Object.fromEntries(
+  BUDGET_SECTIONS.map((s) => [s.key, s.label])
+);
+
+// Subsequence match: every character of the query appears in order.
+function fuzzyMatch(query: string, target: string): boolean {
+  let i = 0;
+  for (const ch of target) {
+    if (ch === query[i]) i++;
+    if (i >= query.length) return true;
+  }
+  return i >= query.length;
+}
+
+// Type-to-filter: every query token as a substring of the role name or one of
+// its aliases first, falling back to a subsequence match so near-misses like
+// "gafer" still find Gaffer.
+function matchesRole(opt: RoleOption, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const hays = [opt.role, ...opt.aliases].map((h) => h.toLowerCase());
+  const tokens = q.split(/\s+/);
+  if (tokens.every((t) => hays.some((h) => h.includes(t)))) return true;
+  const compact = q.replace(/\s+/g, "");
+  return hays.some((h) => fuzzyMatch(compact, h.replace(/\s+/g, "")));
+}
+
+// Role cell: a searchable combobox over the full APA rate card. Type-to-filter
+// (alias-aware, fuzzy), ↑↓ / Enter / Esc keyboard navigation, the current
+// section's roles grouped first, a discount-aware rate on every option and a
+// "custom role" affordance when nothing matches. Free text is always allowed —
+// committing typed text is handled by the row's onBlur.
+function RoleCombobox({
   section,
   value,
   onChange,
@@ -1134,6 +1288,7 @@ function RolePicker({
   onKeyDown,
   onPick,
   disabled,
+  editorialDiscount,
   wrapClass,
   inputClass,
 }: {
@@ -1144,66 +1299,206 @@ function RolePicker({
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onPick: (role: string, rate: number) => void;
   disabled: boolean;
+  editorialDiscount: number | null;
   wrapClass: string;
   inputClass: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const roles = useMemo(() => getAPARatesForSection(section), [section]);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { open, pos, openMenu, closeMenu } = useAnchoredMenu(wrapRef, menuRef, 288, 320);
+  const menuId = useId();
 
+  const discountActive = editorialDiscount != null && editorialDiscount > 0;
+
+  // Filtered options, this section's roles first, then everything else. Each
+  // group carries its offset into `flat` so option indices are precomputed.
+  const { flat, groups, custom } = useMemo(() => {
+    const matched = ALL_ROLE_OPTIONS.filter((o) => matchesRole(o, value));
+    const own = matched.filter((o) => o.section === section);
+    const rest = matched.filter((o) => o.section !== section);
+    const groups: { label: string; options: RoleOption[]; start: number }[] = [];
+    if (own.length > 0) groups.push({ label: SECTION_LABELS[section] ?? "This section", options: own, start: 0 });
+    if (rest.length > 0) groups.push({ label: own.length > 0 ? "Other sections" : "All sections", options: rest, start: own.length });
+    const flat = [...own, ...rest];
+    // Offer the typed text as a custom role when nothing matches it.
+    const custom = flat.length === 0 && value.trim() !== "" ? value.trim() : null;
+    return { flat, groups, custom };
+  }, [value, section]);
+
+  const itemCount = flat.length + (custom ? 1 : 0);
+  // Clamp rather than sync state — the filter can narrow between renders.
+  const highlighted = Math.min(highlight, Math.max(0, itemCount - 1));
+
+  // Keep the highlighted option visible while arrowing through the list.
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current
+      ?.querySelector<HTMLElement>(`[data-idx="${highlighted}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [open, highlighted]);
+
+  // Close when clicking outside the input and the (fixed-position) menu.
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (wrapRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      closeMenu();
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
+  }, [open, closeMenu]);
+
+  function select(idx: number) {
+    if (custom && idx === flat.length) {
+      closeMenu();
+      onBlur(); // commit the typed text as a custom role
+      return;
+    }
+    const opt = flat[idx];
+    if (!opt) return;
+    onPick(opt.role, opt.rate);
+    closeMenu();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (disabled) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!open) {
+        setHighlight(0);
+        openMenu();
+        return;
+      }
+      setHighlight(
+        e.key === "ArrowDown" ? Math.min(highlighted + 1, itemCount - 1) : Math.max(highlighted - 1, 0)
+      );
+      return;
+    }
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (e.key === "Enter" && open && itemCount > 0) {
+      e.preventDefault();
+      select(highlighted);
+      return;
+    }
+    // Everything else — including Enter with the menu closed — keeps the row's
+    // Enter-to-advance flow.
+    onKeyDown(e);
+  }
+
+  function optionRate(opt: RoleOption) {
+    if (opt.rate <= 0) {
+      return <span className="shrink-0 tabular-nums text-gray-400 dark:text-gray-500">No APA rate</span>;
+    }
+    if (!discountActive) {
+      return <span className="shrink-0 tabular-nums text-gray-400 dark:text-gray-500">{gbp(opt.rate)}/day</span>;
+    }
+    const eff = effectiveRate(opt.role, editorialDiscount)?.effective ?? opt.rate;
+    return (
+      <span className="shrink-0 tabular-nums text-[11px]">
+        <span className="text-gray-300 line-through dark:text-gray-600">{gbp(opt.rate)}</span>{" "}
+        <span className="font-medium text-amber-600 dark:text-amber-400">{gbp(eff)}/day</span>
+      </span>
+    );
+  }
 
   return (
     <div ref={wrapRef} className={`relative ${wrapClass}`}>
       <input
         type="text"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={menuId}
+        aria-autocomplete="list"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        onKeyDown={onKeyDown}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setHighlight(0);
+          openMenu();
+        }}
+        onBlur={() => {
+          closeMenu();
+          onBlur();
+        }}
+        onKeyDown={handleKeyDown}
         disabled={disabled}
         placeholder="Role / item"
-        className={`w-full ${roles.length > 0 && !disabled ? "pr-6" : ""} ${inputClass}`}
+        className={`w-full ${!disabled ? "pr-6" : ""} ${inputClass}`}
       />
-      {roles.length > 0 && !disabled && (
-        <>
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={() => setOpen((o) => !o)}
-            className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-gray-300 hover:text-gray-600"
-            title="Pick an APA role"
-          >
-            <ChevronDown size={13} />
-          </button>
-          {open && (
-            <div className="absolute left-0 top-full z-30 mt-1 max-h-60 w-72 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl">
-              {roles.map((r) => (
-                <button
-                  key={r.role}
-                  type="button"
-                  onClick={() => {
-                    onPick(r.role, r.maxDailyRate);
-                    setOpen(false);
-                  }}
-                  className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-[12px] hover:bg-amber-50"
-                >
-                  <span className="text-gray-700">{r.role}</span>
-                  <span className="shrink-0 tabular-nums text-gray-400">
-                    {r.maxDailyRate > 0 ? `${gbp(r.maxDailyRate)}/day` : "No APA rate"}
-                  </span>
-                </button>
-              ))}
+      {!disabled && (
+        <button
+          type="button"
+          tabIndex={-1}
+          onMouseDown={(e) => e.preventDefault()} // don't steal focus from the input
+          onClick={() => (open ? closeMenu() : openMenu())}
+          className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-gray-300 hover:text-gray-600"
+          title="Search APA roles"
+        >
+          <ChevronDown size={13} />
+        </button>
+      )}
+      {!disabled && pos && (
+        <div
+          ref={menuRef}
+          id={menuId}
+          style={{ position: "fixed", zIndex: 60, left: pos.left, top: pos.top, bottom: pos.bottom, width: pos.width }}
+          className="max-h-72 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+        >
+          {groups.map((g) => (
+            <div key={g.label}>
+              <div className="px-3 pb-0.5 pt-1.5 text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                {g.label}
+              </div>
+              {g.options.map((opt, j) => {
+                const i = g.start + j;
+                return (
+                  <button
+                    key={`${opt.section}:${opt.role}`}
+                    type="button"
+                    data-idx={i}
+                    tabIndex={-1}
+                    onMouseDown={(e) => e.preventDefault()} // don't blur the input
+                    onClick={() => select(i)}
+                    onMouseEnter={() => setHighlight(i)}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-[12px] ${
+                      i === highlighted ? "bg-amber-50 dark:bg-amber-900/30" : ""
+                    }`}
+                  >
+                    <span className="min-w-0 truncate">
+                      <span className="text-gray-700 dark:text-gray-300">{opt.role}</span>
+                      {opt.aliases.length > 0 && (
+                        <span className="ml-1.5 text-[10px] text-gray-400 dark:text-gray-500">
+                          aka {opt.aliases.join(", ")}
+                        </span>
+                      )}
+                    </span>
+                    {optionRate(opt)}
+                  </button>
+                );
+              })}
             </div>
+          ))}
+          {custom && (
+            <button
+              type="button"
+              data-idx={flat.length}
+              tabIndex={-1}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => select(flat.length)}
+              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-gray-600 dark:text-gray-400 ${
+                highlighted === flat.length ? "bg-amber-50 dark:bg-amber-900/30" : ""
+              }`}
+            >
+              <Plus size={12} className="shrink-0 text-gray-400" />
+              Use &ldquo;{custom}&rdquo; as a custom role
+            </button>
           )}
-        </>
+        </div>
       )}
     </div>
   );
@@ -1276,12 +1571,17 @@ function BudgetRow({
   const variance = money(total - (line.actual || 0));
   const editAny = canEditActual || canEditBudgeted;
 
-  // APA default for this line's role (if it maps to a rate-card role). Used to
-  // pre-fill the rate when a role is picked and to flag manual overrides. Roles
-  // with no published APA rate (maxDailyRate 0) can't be "overridden".
-  const apa = getAPARate(line.role ?? "");
+  // Editorial discount factor (Phase 3E). Applied via effectiveRate() — the
+  // shared helper used everywhere a rate is resolved, so client and server
+  // agree on the figure. Roles with no published APA rate resolve to undefined.
+  const discountActive = editorialDiscount != null && editorialDiscount > 0;
+  const rateRef = effectiveRate(line.role, editorialDiscount);
+
+  // A line is "manually overridden" when its rate differs from the *effective*
+  // rate for its role (the discounted rate while editorial rates are on, the
+  // full APA rate otherwise). Empty / £0 rates just haven't been priced yet.
   const isOverridden =
-    apa != null && apa.maxDailyRate > 0 && line.rate != null && line.rate !== apa.maxDailyRate;
+    rateRef != null && line.rate != null && line.rate > 0 && money(line.rate) !== rateRef.effective;
 
   // Quantity and unit cost are always saved together. The API derives `budgeted`
   // by merging the patch with the row it re-reads, so sending one without the
@@ -1295,19 +1595,10 @@ function BudgetRow({
     onUpdate({ quantity: q, rate: r });
   }
 
-  // APA standard day rate shown as a greyed-out *reference* under the Unit Cost
-  // input. Alias-aware so friendly template roles (e.g. "DOP / Videographer")
-  // resolve too. Reference only — never auto-filled, never in any calculation.
-  const refRate = getReferenceRate(line.role);
-
-  // Editorial discount factor (Phase 3E). 1 when off; e.g. 0.75 at 25% off.
-  const discountActive = editorialDiscount != null && editorialDiscount > 0;
-  const discountFactor = discountActive ? 1 - editorialDiscount / 100 : 1;
-  const discountedRef = refRate != null ? Math.round(refRate * discountFactor) : null;
-
   // Pick a role from the APA dropdown: set the role and auto-fill its default
-  // rate (qty defaults to 1). When editorial rates are on, the discounted rate
-  // is filled instead of the full APA day rate.
+  // rate; quantity defaults to 1 so the line total actually computes. When
+  // editorial rates are on, the discounted rate is filled instead of the full
+  // APA day rate.
   function pickRole(apaRole: string, apaRate: number) {
     setRole(apaRole);
     // Roles the APA card publishes no rate for (e.g. Set Designer) just set the
@@ -1316,13 +1607,31 @@ function BudgetRow({
       onUpdate({ role: apaRole });
       return;
     }
-    const filled = money(discountActive ? apaRate * discountFactor : apaRate);
+    const filled = effectiveRate(apaRole, editorialDiscount)?.effective ?? money(apaRate);
+    const q = quantity === "" ? 1 : Number(quantity);
     setRate(String(filled));
-    onUpdate({
-      role: apaRole,
-      quantity: quantity === "" ? null : Number(quantity),
-      rate: filled,
-    });
+    if (quantity === "") setQuantity("1");
+    onUpdate({ role: apaRole, quantity: q, rate: filled });
+  }
+
+  // Commit a typed (or custom-selected) role. If it resolves to an APA role and
+  // the line hasn't been priced yet (empty or £0 rate), auto-fill the effective
+  // (discounted) rate — a non-zero user-entered rate is never overwritten.
+  function commitRole() {
+    if (role === (line.role ?? "")) return;
+    const er = effectiveRate(role, editorialDiscount);
+    const currentRate = rate === "" ? 0 : Number(rate);
+    // A rate-less line with a manual budgeted figure is priced by hand — don't
+    // let the auto-fill replace that total with qty × APA rate.
+    const manuallyBudgeted = currentRate === 0 && money(line.budgeted || 0) !== 0;
+    if (er && currentRate === 0 && !manuallyBudgeted && canEditBudgeted) {
+      const q = quantity === "" ? 1 : Number(quantity);
+      setRate(String(er.effective));
+      if (quantity === "") setQuantity("1");
+      onUpdate({ role, quantity: q, rate: er.effective });
+    } else {
+      onUpdate({ role });
+    }
   }
 
   // Auto-focus the first editable cell when a new line is added via keyboard.
@@ -1360,16 +1669,15 @@ function BudgetRow({
         ref={rowRef}
         className="grid grid-cols-12 gap-1.5 px-5 py-1 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[28px]"
       >
-        <RolePicker
+        <RoleCombobox
           section={section}
           value={role}
           onChange={setRole}
-          onBlur={() => {
-            if (role !== (line.role ?? "")) onUpdate({ role });
-          }}
+          onBlur={commitRole}
           onKeyDown={handleKey}
           onPick={pickRole}
           disabled={!canEditBudgeted}
+          editorialDiscount={editorialDiscount}
           wrapClass="col-span-3"
           inputClass={`font-medium truncate ${EDIT_CELL}`}
         />
@@ -1449,16 +1757,15 @@ function BudgetRow({
       ref={rowRef}
       className="grid grid-cols-12 gap-1.5 px-5 py-1.5 items-center bg-gray-50/50 hover:bg-amber-50/30 group min-h-[30px]"
     >
-      <RolePicker
+      <RoleCombobox
         section={section}
         value={role}
         onChange={setRole}
-        onBlur={() => {
-          if (role !== (line.role ?? "")) onUpdate({ role });
-        }}
+        onBlur={commitRole}
         onKeyDown={handleKey}
         onPick={pickRole}
         disabled={!canEditBudgeted}
+        editorialDiscount={editorialDiscount}
         wrapClass="col-span-2"
         inputClass={`font-medium truncate ${EDIT_CELL}`}
       />
@@ -1508,10 +1815,14 @@ function BudgetRow({
               isNeg(rate) ? "border-red-400 focus:border-red-400 focus:ring-red-300/40" : isOverridden ? "pl-5 text-amber-700" : ""
             }`}
           />
-          {isOverridden && apa && (
+          {isOverridden && rateRef && (
             <span
               className="absolute left-1.5 top-1/2 -translate-y-1/2 text-amber-500"
-              title={`Manually overridden — APA default is ${gbp(apa.maxDailyRate)}/day`}
+              title={
+                discountActive
+                  ? `Manually overridden — APA ${gbp(rateRef.full)}/day, ${gbp(rateRef.effective)}/day at ${editorialDiscount}% editorial discount`
+                  : `Manually overridden — APA default is ${gbp(rateRef.full)}/day`
+              }
             >
               <Pencil size={10} />
             </span>
@@ -1520,18 +1831,18 @@ function BudgetRow({
         {/* APA standard rate — reference only, greyed out, never counted. When
             editorial rates are on, the full rate is struck through and the
             discounted rate shown alongside (Phase 3E). */}
-        {refRate != null && (
+        {rateRef != null && (
           <span
             className="mt-0.5 pr-1 text-right text-[10px] leading-none text-gray-400 dark:text-gray-500 select-none"
             title="APA standard day rate — reference only, not included in the budget"
           >
-            {discountActive && discountedRef != null ? (
+            {discountActive ? (
               <>
-                APA <span className="line-through">{gbp(refRate)}</span>{" "}
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">{gbp(discountedRef)}</span>
+                APA <span className="line-through">{gbp(rateRef.full)}</span>{" "}
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">{gbp(rateRef.effective)}</span>
               </>
             ) : (
-              <>APA {gbp(refRate)}</>
+              <>APA {gbp(rateRef.full)}</>
             )}
           </span>
         )}
@@ -1579,6 +1890,124 @@ function BudgetRow({
   );
 }
 
+// Styled invoice-status dropdown (Part C) — replaces the native <select>.
+// Colour-coded pill trigger + a menu with one colour-swatched option per
+// status (monochrome = not invoiced, amber = in flight, green = cleared).
+// Fully keyboard operable: Enter / Space / ↓ opens, ↑↓ moves, Enter selects,
+// Esc closes.
+function InvoiceStatusSelect({
+  value,
+  disabled,
+  onSelect,
+}: {
+  value: InvoiceStatus;
+  disabled: boolean;
+  onSelect: (s: InvoiceStatus) => void;
+}) {
+  const [highlight, setHighlight] = useState(0);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { open, pos, openMenu: openAt, closeMenu } = useAnchoredMenu(btnRef, menuRef, 190);
+  const meta = invoiceStatusMeta(value);
+
+  // Close when clicking outside the trigger and the (fixed-position) menu.
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      const t = e.target as Node;
+      if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      closeMenu();
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open, closeMenu]);
+
+  function openMenu() {
+    setHighlight(Math.max(0, INVOICE_STATUSES.findIndex((s) => s.key === value)));
+    openAt();
+  }
+
+  function pick(s: InvoiceStatus) {
+    if (s !== value) onSelect(s);
+    closeMenu();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
+    if (disabled) return;
+    if (!open) {
+      if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        openMenu();
+      }
+      return;
+    }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlight((h) =>
+        e.key === "ArrowDown" ? Math.min(h + 1, INVOICE_STATUSES.length - 1) : Math.max(h - 1, 0)
+      );
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const s = INVOICE_STATUSES[highlight];
+      if (s) pick(s.key);
+    } else if (e.key === "Escape" || e.key === "Tab") {
+      closeMenu();
+    }
+  }
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => (open ? closeMenu() : openMenu())}
+        onKeyDown={handleKeyDown}
+        className={`flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold focus:outline-none focus:ring-1 focus:ring-[#9C7C2E] disabled:cursor-default ${meta.bg} ${meta.text}`}
+      >
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`} />
+          <span className="truncate">{meta.label}</span>
+        </span>
+        {!disabled && <ChevronDown size={11} className="shrink-0 opacity-60" />}
+      </button>
+      {!disabled && pos && (
+        <div
+          ref={menuRef}
+          role="listbox"
+          aria-label="Invoice status"
+          style={{ position: "fixed", zIndex: 60, left: pos.left, top: pos.top, bottom: pos.bottom, width: pos.width }}
+          className="rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+        >
+          {INVOICE_STATUSES.map((s, i) => (
+            <button
+              key={s.key}
+              type="button"
+              role="option"
+              aria-selected={s.key === value}
+              tabIndex={-1}
+              onMouseDown={(e) => e.preventDefault()} // keep focus on the trigger
+              onClick={() => pick(s.key)}
+              onMouseEnter={() => setHighlight(i)}
+              className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-[11px] font-medium ${s.text} ${
+                i === highlight ? "bg-gray-50 dark:bg-gray-800" : ""
+              }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                {s.label}
+              </span>
+              {s.key === value && <Check size={12} className="opacity-70" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 // Invoice tracking sub-row for the Cost Tracking view (Phase 4D): PO number,
 // invoice status, invoiced amount (with a budget-variance flag), and an invoice
 // PDF link. Editable while actuals are editable.
@@ -1604,7 +2033,6 @@ function InvoiceSubRow({
   onUpdate: (patch: Partial<BudgetLineItem>) => Promise<boolean>;
 }) {
   const status: InvoiceStatus = line.invoiceStatus ?? "NOT_INVOICED";
-  const meta = invoiceStatusMeta(status);
   const budgeted = lineTotal(line);
   const invNum = line.invoicedAmount ?? null;
   const overage = invNum != null ? money(invNum - budgeted) : null;
@@ -1628,18 +2056,11 @@ function InvoiceSubRow({
         />
       </div>
       <div className="col-span-3">
-        <select
+        <InvoiceStatusSelect
           value={status}
-          onChange={(e) => onUpdate({ invoiceStatus: e.target.value as InvoiceStatus })}
           disabled={!canEdit}
-          className={`w-full text-[11px] font-semibold rounded-full px-2 py-1 cursor-pointer focus:outline-none disabled:cursor-default ${meta.bg} ${meta.text}`}
-        >
-          {INVOICE_STATUSES.map((s) => (
-            <option key={s.key} value={s.key}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+          onSelect={(s) => onUpdate({ invoiceStatus: s })}
+        />
       </div>
       <div className="col-span-2 flex items-center gap-1">
         <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">Inv £</span>

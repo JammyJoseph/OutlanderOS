@@ -1,3 +1,5 @@
+import { money } from "./money";
+
 export interface APARate {
   role: string;
   section: string; // which budget section this belongs to
@@ -115,4 +117,21 @@ export function getReferenceRate(role: string | null | undefined): number | unde
   // A maxDailyRate of 0 means the APA card publishes no rate for the role (e.g.
   // Set Designer) — show no reference rather than a misleading "APA £0".
   return rate?.maxDailyRate || undefined;
+}
+
+// The rate a line should actually be priced at: the APA standard day rate for
+// the role (alias-aware), with the production's editorial discount applied.
+// `full` is the published APA rate; `effective` is what goes in the Unit Cost
+// (equal to `full` when no discount is active). Rounded to the penny with
+// money() so client and server always agree on the figure. Returns undefined
+// for roles the APA card publishes no rate for.
+export function effectiveRate(
+  role: string | null | undefined,
+  editorialDiscount: number | null | undefined
+): { full: number; effective: number } | undefined {
+  const full = getReferenceRate(role);
+  if (full == null) return undefined;
+  const pct = editorialDiscount ?? 0;
+  const effective = pct > 0 ? money(full * (1 - pct / 100)) : money(full);
+  return { full: money(full), effective };
 }
