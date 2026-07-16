@@ -1,4 +1,11 @@
 import { money } from "@/lib/money";
+import {
+  parseFlexibleDate,
+  parseFlexibleDateRange,
+  extractDatePhrase,
+  eachDayInRange,
+  type FlexibleDateRange,
+} from "@/lib/flexible-date";
 
 export type ProductionStatus =
   | "DRAFT"
@@ -78,12 +85,15 @@ export interface BudgetLineItem {
   sortOrder: number;
 }
 
-export const INVOICE_STATUSES: { key: InvoiceStatus; label: string; bg: string; text: string }[] = [
-  { key: "NOT_INVOICED", label: "Not invoiced", bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-500 dark:text-gray-400" },
-  { key: "INVOICE_RECEIVED", label: "Received", bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300" },
-  { key: "UNDER_REVIEW", label: "Under review", bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300" },
-  { key: "APPROVED", label: "Approved", bg: "bg-purple-50 dark:bg-purple-900/30", text: "text-purple-700 dark:text-purple-300" },
-  { key: "PAID", label: "Paid", bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300" },
+// Semantic palette: monochrome = nothing to do yet, amber = invoice in flight
+// (received / being reviewed), green = cleared (approved / paid). `dot` is the
+// swatch shown in the status dropdown menu.
+export const INVOICE_STATUSES: { key: InvoiceStatus; label: string; bg: string; text: string; dot: string }[] = [
+  { key: "NOT_INVOICED", label: "Not invoiced", bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-500 dark:text-gray-400", dot: "bg-gray-400" },
+  { key: "INVOICE_RECEIVED", label: "Received", bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300", dot: "bg-amber-400" },
+  { key: "UNDER_REVIEW", label: "Under review", bg: "bg-amber-100 dark:bg-amber-900/40", text: "text-amber-800 dark:text-amber-200", dot: "bg-amber-500" },
+  { key: "APPROVED", label: "Approved", bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-400" },
+  { key: "PAID", label: "Paid", bg: "bg-emerald-100 dark:bg-emerald-900/40", text: "text-emerald-800 dark:text-emerald-200", dot: "bg-emerald-500" },
 ];
 
 export function invoiceStatusMeta(s: InvoiceStatus | null | undefined) {
@@ -266,32 +276,11 @@ export function milestoneStatus(m: {
   return d.getTime() < today.getTime() ? "OVERDUE" : "PENDING";
 }
 
-const MONTHS: Record<string, number> = {
-  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
-};
-
-// Parse a "WED 1 JUL" / "1 JUL 2026" / "3 July" style date into an ISO date
-// (YYYY-MM-DD). The weekday, if present, is ignored. Year defaults to the
-// current year; if the resulting date is far in the past it rolls to next year.
-export function parseMilestoneDate(raw: string): string | null {
-  const t = (raw || "").toLowerCase();
-  const dayMatch = t.match(/\b(\d{1,2})\b/);
-  const monMatch = t.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
-  if (!dayMatch || !monMatch) return null;
-  const day = parseInt(dayMatch[1], 10);
-  const month = MONTHS[monMatch[1]];
-  const yearMatch = t.match(/\b(20\d{2})\b/);
-  let year = yearMatch ? parseInt(yearMatch[1], 10) : new Date().getFullYear();
-  if (!yearMatch) {
-    // Roll to next year if the date would land more than 6 months in the past.
-    const candidate = new Date(year, month, day);
-    const now = new Date();
-    if (candidate.getTime() < now.getTime() - 183 * 24 * 3600 * 1000) year += 1;
-  }
-  const d = new Date(Date.UTC(year, month, day, 12, 0, 0));
-  if (isNaN(d.getTime())) return null;
-  return d.toISOString();
+// Parse a "WED 1 JUL" / "15/07/2026" / "next Friday" style date into an ISO
+// datetime. Delegates to the shared flexible parser — see lib/flexible-date.
+export function parseMilestoneDate(raw: string, referenceDate?: Date): string | null {
+  const d = parseFlexibleDate(raw, referenceDate);
+  return d ? d.toISOString() : null;
 }
 
 const PHASE_ALIASES: { re: RegExp; phase: MilestonePhase }[] = [
@@ -308,43 +297,98 @@ export interface ParsedMilestone {
 }
 
 // Parse a pasted timeline. One milestone per line, fields separated by an
-// em/en dash or " - ":
+// em-dash or a spaced en-dash/hyphen (unspaced "20-22" survives as a range):
 //   PRE-PRODUCTION — WED 1 JUL — PUMA FEEDBACK ON V1 DECK — Description
-// Phase and description are optional; a line with no recognised date is skipped.
-export function parseMilestones(raw: string): ParsedMilestone[] {
+// The date can sit in any field ("Shoot day - 20th July") or be embedded in
+// running text ("Pre-pro meeting on the 3rd of August"). Ranges ("July 20-22")
+// produce one entry per day. Phase and description are optional; a phase line
+// carries down. Lines with no recognisable date are skipped.
+export function parseMilestones(raw: string, referenceDate?: Date): ParsedMilestone[] {
   const text = (raw || "").replace(/\r\n/g, "\n");
   if (!text.trim()) return [];
+  const ref = referenceDate ?? new Date();
   const out: ParsedMilestone[] = [];
   let phase: MilestonePhase = "PRE_PRODUCTION";
 
+  const push = (
+    date: Date | null,
+    range: FlexibleDateRange | null,
+    title: string,
+    description: string
+  ) => {
+    if (range) {
+      const days = eachDayInRange(range);
+      days.forEach((d, i) =>
+        out.push({
+          phase,
+          date: d.toISOString(),
+          title: days.length > 1 ? `${title} (Day ${i + 1})` : title,
+          description,
+        })
+      );
+    } else if (date) {
+      out.push({ phase, date: date.toISOString(), title, description });
+    }
+  };
+
   for (const line of text.split("\n")) {
     if (!line.trim()) continue;
-    // Split on em-dash, en-dash, or a spaced hyphen; collapse the parts.
+    // Split on em-dash, or spaced en-dash/hyphen. Unspaced en-dashes and
+    // hyphens are kept so "July 20-22" / "20–22 July" stay intact as ranges.
     const parts = line
-      .split(/\s*[—–]\s*|\s+-\s+/)
+      .split(/\s*—\s*|\s+[–-]\s+/)
       .map((p) => p.trim())
       .filter(Boolean);
     if (parts.length === 0) continue;
 
-    // Does the first part name a phase?
+    // Does the first part name a phase? Only when it holds no parseable date,
+    // so "PRODUCTION — TUE 7 JUL — SHOOT DAY" reads phase then date.
     let idx = 0;
     const first = parts[0];
     const aliased = PHASE_ALIASES.find((a) => a.re.test(first));
-    // Only treat the first part as a phase if it has no parseable date (so a
-    // bare "PRODUCTION — TUE 7 JUL — SHOOT DAY" line reads phase then date).
-    if (aliased && !parseMilestoneDate(first)) {
+    if (aliased && !parseFlexibleDate(first, ref)) {
       phase = aliased.phase;
       idx = 1;
     }
+    const rest = parts.slice(idx);
+    if (rest.length === 0) continue; // phase-only line
 
-    const datePart = parts[idx];
-    if (!datePart) continue;
-    const iso = parseMilestoneDate(datePart);
-    if (!iso) continue;
+    // Find the field that reads as a date or a range — it can be anywhere.
+    let dateIdx = -1;
+    let range: FlexibleDateRange | null = null;
+    let single: Date | null = null;
+    for (let i = 0; i < rest.length; i++) {
+      range = parseFlexibleDateRange(rest[i], ref);
+      if (range) {
+        dateIdx = i;
+        break;
+      }
+      single = parseFlexibleDate(rest[i], ref);
+      if (single) {
+        dateIdx = i;
+        break;
+      }
+    }
 
-    const title = parts[idx + 1] || "Milestone";
-    const description = parts.slice(idx + 2).join(" — ");
-    out.push({ phase, date: iso, title, description });
+    if (dateIdx >= 0) {
+      const others = rest.filter((_, i) => i !== dateIdx);
+      // The date field often carries a label too ("Shoot day on 20th July" as
+      // one field) — recover it as the title when no other field provides one.
+      const inField = extractDatePhrase(rest[dateIdx]);
+      const title = others[0] || inField?.remainder || "Milestone";
+      const description = others.slice(1).join(" — ");
+      push(single, range, title, description);
+      continue;
+    }
+
+    // No standalone date field — look for a date phrase inside the whole line
+    // ("Pre-production meeting on the 3rd of August").
+    const flat = rest.join(" — ");
+    const embedded = extractDatePhrase(flat);
+    if (!embedded) continue;
+    const r = parseFlexibleDateRange(embedded.phrase, ref);
+    const d = r ? null : parseFlexibleDate(embedded.phrase, ref);
+    push(d, r, embedded.remainder || "Milestone", "");
   }
   return out;
 }

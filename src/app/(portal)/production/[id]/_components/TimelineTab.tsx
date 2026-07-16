@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -10,6 +10,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
+  CloudOff,
   Loader2,
   CalendarClock,
   CalendarDays,
@@ -42,6 +43,7 @@ import {
   milestoneStatus,
   parseMilestones,
 } from "./types";
+import { parseFlexibleDate } from "@/lib/flexible-date";
 import { ActionTrackPanel } from "@/components/tasks/ActionTrackPanel";
 import { useConfirm } from "@/components/ui/confirm-provider";
 
@@ -147,6 +149,12 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
   const [seeding, setSeeding] = useState(false);
   const [users, setUsers] = useState<TeamUser[]>([]);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("");
+  // Auto-save indicator (same states as the call-sheet editor's PresenceBar).
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+  }, []);
 
   // Active Outlander users to assign tasks to.
   useEffect(() => {
@@ -177,11 +185,20 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
   }
 
   async function update(id: string, patch: Partial<ProductionMilestone>) {
-    await fetch(`/api/productions/${productionId}/milestones?milestoneId=${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
+    setSaveState("saving");
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    try {
+      const res = await fetch(`/api/productions/${productionId}/milestones?milestoneId=${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) throw new Error("save failed");
+      setSaveState("saved");
+      savedTimer.current = setTimeout(() => setSaveState("idle"), 2000);
+    } catch {
+      setSaveState("error");
+    }
     refresh();
   }
 
@@ -217,7 +234,9 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
     setImportError(null);
     const parsed = parseMilestones(raw);
     if (!parsed.length) {
-      setImportError("No milestones found. Check each line has a recognisable date (e.g. WED 1 JUL).");
+      setImportError(
+        "No milestones found. Check each line has a recognisable date (e.g. WED 1 JUL, 15/07/2026, 3rd of August, next Friday)."
+      );
       return;
     }
     setBusy(true);
@@ -282,6 +301,25 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            {saveState === "saving" && (
+              <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500" aria-live="polite">
+                <Loader2 size={12} className="animate-spin" /> Saving…
+              </span>
+            )}
+            {saveState === "saved" && (
+              <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium" aria-live="polite">
+                <Check size={12} /> Saved
+              </span>
+            )}
+            {saveState === "error" && (
+              <span
+                className="flex items-center gap-1 text-xs text-[#A93B2E] font-medium"
+                title="The last change didn't save. It'll retry on your next edit."
+                aria-live="polite"
+              >
+                <CloudOff size={12} /> Not saved
+              </span>
+            )}
             {view === "list" && milestones.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <Users size={13} className="text-gray-400 dark:text-gray-500" />
@@ -393,7 +431,12 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
               <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
                 One item per line:{" "}
                 <span className="font-mono">PHASE — DATE — TITLE — DESCRIPTION</span>. Phase and
-                description are optional; a phase line carries down to the lines beneath it.
+                description are optional; a phase line carries down to the lines beneath it. Dates
+                can be written almost any way — <span className="font-mono">WED 1 JUL</span>,{" "}
+                <span className="font-mono">15/07/2026</span>,{" "}
+                <span className="font-mono">3rd of August</span>,{" "}
+                <span className="font-mono">next Friday</span> — and a range like{" "}
+                <span className="font-mono">July 20-22</span> creates an entry per day.
               </p>
               <textarea
                 value={raw}
@@ -500,6 +543,93 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
   );
 }
 
+// ─── Inline date editor ───────────────────────────────────────────────────────
+// Click the date to edit it in place. Accepts anything parseFlexibleDate
+// understands — "20 Jul", "15/07/2026", "next Friday" — and saves on Enter or
+// blur. Escape (or blurring with unparseable text) cancels without saving.
+
+function InlineDate({
+  dateISO,
+  label,
+  tone,
+  onChange,
+}: {
+  dateISO: string;
+  label: string;
+  tone: DeadlineTone;
+  onChange: (iso: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState("");
+  const [invalid, setInvalid] = useState(false);
+
+  function open() {
+    try {
+      setText(format(parseISO(dateISO), "d MMM yyyy"));
+    } catch {
+      setText("");
+    }
+    setInvalid(false);
+    setEditing(true);
+  }
+
+  function commit(): boolean {
+    const parsed = parseFlexibleDate(text);
+    if (!parsed) {
+      setInvalid(true);
+      return false;
+    }
+    const iso = parsed.toISOString();
+    if (iso !== dateISO) onChange(iso);
+    setEditing(false);
+    return true;
+  }
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setInvalid(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        onBlur={() => {
+          // Save if it parses; otherwise close without changing anything.
+          if (!commit()) setEditing(false);
+        }}
+        placeholder="e.g. 20 Jul, next Fri"
+        title='Any date format works — "20 Jul", "15/07/2026", "next Friday"'
+        className={`w-24 rounded-lg border px-1.5 py-1 text-xs font-semibold tabular-nums text-right bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 outline-none focus:ring-2 ${
+          invalid
+            ? "border-red-400 focus:ring-red-300/40"
+            : "border-gray-200 dark:border-gray-700 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        }`}
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={open}
+      title="Click to change the date"
+      className={`text-xs font-semibold tabular-nums rounded px-1 -mx-1 hover:bg-gray-100 dark:hover:bg-gray-800 hover:underline decoration-dotted underline-offset-2 transition-colors ${
+        tone === "overdue"
+          ? "text-red-500 dark:text-red-400"
+          : tone === "soon"
+          ? "text-amber-600 dark:text-amber-400"
+          : "text-gray-700 dark:text-gray-300"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ─── Milestone / task row (with sub-tasks) ────────────────────────────────────
 
 function MilestoneRow({
@@ -566,19 +696,14 @@ function MilestoneRow({
 
   return (
     <div className="group flex items-start gap-3">
-      {/* Date */}
+      {/* Date — click to edit inline */}
       <div className="w-24 shrink-0 pt-2.5 text-right">
-        <span
-          className={`text-xs font-semibold tabular-nums ${
-            tone === "overdue"
-              ? "text-red-500 dark:text-red-400"
-              : tone === "soon"
-              ? "text-amber-600 dark:text-amber-400"
-              : "text-gray-700 dark:text-gray-300"
-          }`}
-        >
-          {dateLabel}
-        </span>
+        <InlineDate
+          dateISO={milestone.date}
+          label={dateLabel}
+          tone={tone}
+          onChange={(iso) => onUpdate({ date: iso })}
+        />
       </div>
       {/* Glyph: diamond for milestones, circle for tasks */}
       <div className="pt-3 shrink-0">
