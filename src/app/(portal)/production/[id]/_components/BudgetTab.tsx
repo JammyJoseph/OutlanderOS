@@ -23,6 +23,7 @@ import {
   Percent,
   ExternalLink,
   Link2,
+  FileDown,
 } from "lucide-react";
 import {
   BudgetLineItem,
@@ -44,6 +45,7 @@ import { APA_CREW_RATES, TEMPLATE_ROLE_ALIASES, effectiveRate } from "@/lib/apa-
 import { money } from "@/lib/money";
 import { panelClass } from "@/lib/design";
 import ApaRateCard from "./ApaRateCard";
+import { BudgetDocumentPreview } from "./BudgetDocument";
 import { useUser } from "@/components/user-context";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -91,6 +93,9 @@ export default function BudgetTab({
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
   // Detailed figures below the budget-health strip, collapsed by default.
   const [breakdownOpen, setBreakdownOpen] = useState(false);
+  // Printable budget document — opens a full-screen preview that window.print()
+  // captures verbatim.
+  const [showPrint, setShowPrint] = useState(false);
 
   // ── Phase 3E: editorial discount rates ──
   // Only meaningful for editorial productions. `editorialRateDiscount` (null =
@@ -840,6 +845,14 @@ export default function BudgetTab({
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowPrint(true)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+              title="Preview and print the budget as a PDF"
+            >
+              <FileDown size={11} />
+              Export PDF
+            </button>
             {/* Phase 3E — editorial discount toggle (editorial productions only) */}
             {isEditorial && (
               <div
@@ -1055,6 +1068,29 @@ export default function BudgetTab({
 
       {/* APA rate card reference */}
       {showRateCard && <ApaRateCard onClose={() => setShowRateCard(false)} />}
+
+      {showPrint && (
+        <BudgetDocumentPreview
+          onClose={() => setShowPrint(false)}
+          data={{
+            productionTitle: production.title,
+            clientName: production.campaign?.client?.name ?? production.clientName,
+            shootDates: production.shootDates ?? [],
+            budgetStatus,
+            campaignBudget,
+            subtotalExcVat,
+            totalVat,
+            totalIncVat,
+            budgetRemaining,
+            actualCosts,
+            paidCost,
+            outstanding,
+            showActuals: view === "actuals",
+            sections: sections.map((s) => ({ key: s.key, label: s.label })),
+            grouped,
+          }}
+        />
+      )}
 
       {/* Reopen budget confirmation */}
       <ConfirmDialog
