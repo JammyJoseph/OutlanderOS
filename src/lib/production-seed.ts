@@ -5,6 +5,37 @@ import {
   addDaysUTC,
 } from "@/lib/production-templates";
 
+// A new production starts with an EMPTY timeline — the standard template is
+// opt-in from the Timeline tab ("Generate standard timeline"). The one thing
+// seeded automatically is the shoot date entered in quick setup, so the date
+// someone just typed isn't lost.
+//
+// Carries templateKey "shoot_day" so the existing recalculate/apply-template
+// paths recognise it and never create a second shoot row. Idempotent.
+export async function seedShootDateMilestone(
+  productionId: string,
+  shoot: Date
+): Promise<number> {
+  const existing = await prisma.productionMilestone.findFirst({
+    where: { productionId, templateKey: "shoot_day" },
+    select: { id: true },
+  });
+  if (existing) return 0;
+
+  await prisma.productionMilestone.create({
+    data: {
+      productionId,
+      phase: "PRODUCTION",
+      date: addDaysUTC(shoot, 0),
+      title: "SHOOT DAY",
+      isMilestone: true,
+      templateKey: "shoot_day",
+      sortOrder: 0,
+    },
+  });
+  return 1;
+}
+
 // Seed a production's standard timeline from a shoot date. Idempotent: rows are
 // keyed by templateKey, so calling twice never duplicates. Parent milestones are
 // created first, then post-production sub-tasks are wired to their parent.

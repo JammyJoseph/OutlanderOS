@@ -3,9 +3,9 @@ import {
   parseFlexibleDate,
   parseFlexibleDateRange,
   extractDatePhrase,
-  eachDayInRange,
   type FlexibleDateRange,
 } from "@/lib/flexible-date";
+import { assignPhases } from "@/lib/timeline-phases";
 
 export type ProductionStatus =
   | "DRAFT"
@@ -218,6 +218,8 @@ export interface ProductionMilestone {
   productionId: string;
   phase: MilestonePhase;
   date: string;
+  // End of a multi-day item ("Shoot Week — 1–4 September"); null for one-day items.
+  endDate?: string | null;
   title: string;
   description: string | null;
   done: boolean;
@@ -283,32 +285,44 @@ export function parseMilestoneDate(raw: string, referenceDate?: Date): string | 
   return d ? d.toISOString() : null;
 }
 
+// A field that is *only* a phase name marks the phase for the lines that follow.
+// Anchored at both ends so a title that merely starts with the word ("Production
+// Deck Shared") isn't mistaken for a phase heading.
 const PHASE_ALIASES: { re: RegExp; phase: MilestonePhase }[] = [
-  { re: /^\s*pre[\s-]*production/i, phase: "PRE_PRODUCTION" },
-  { re: /^\s*post[\s-]*production/i, phase: "POST_PRODUCTION" },
-  { re: /^\s*production/i, phase: "PRODUCTION" },
+  { re: /^\s*pre[\s-]*(production|pro)\s*:?\s*$/i, phase: "PRE_PRODUCTION" },
+  { re: /^\s*post[\s-]*(production|pro)\s*:?\s*$/i, phase: "POST_PRODUCTION" },
+  { re: /^\s*production\s*:?\s*$/i, phase: "PRODUCTION" },
 ];
 
 export interface ParsedMilestone {
   phase: MilestonePhase;
-  date: string; // ISO
+  date: string; // ISO — start of the item
+  endDate: string | null; // ISO — set only for multi-day items ("1–4 September")
   title: string;
   description: string;
+  isMilestone: boolean;
+  // True when the pasted line named its phase; phase detection leaves it alone.
+  phaseLocked: boolean;
 }
 
 // Parse a pasted timeline. One milestone per line, fields separated by an
 // em-dash or a spaced en-dash/hyphen (unspaced "20-22" survives as a range):
 //   PRE-PRODUCTION — WED 1 JUL — PUMA FEEDBACK ON V1 DECK — Description
 // The date can sit in any field ("Shoot day - 20th July") or be embedded in
-// running text ("Pre-pro meeting on the 3rd of August"). Ranges ("July 20-22")
-// produce one entry per day. Phase and description are optional; a phase line
-// carries down. Lines with no recognisable date are skipped.
+// running text ("Pre-pro meeting on the 3rd of August"). A range ("Shoot Week —
+// 1–4 September") produces ONE item spanning those dates. Phase and description
+// are optional; a phase line carries down. Where no phase is given, it's
+// inferred from the title and the item's position relative to the shoot (see
+// lib/timeline-phases). Lines with no recognisable date are skipped.
 export function parseMilestones(raw: string, referenceDate?: Date): ParsedMilestone[] {
   const text = (raw || "").replace(/\r\n/g, "\n");
   if (!text.trim()) return [];
   const ref = referenceDate ?? new Date();
   const out: ParsedMilestone[] = [];
   let phase: MilestonePhase = "PRE_PRODUCTION";
+  // Only lines under an explicit phase heading (or carrying one inline) keep
+  // their phase verbatim; everything else is auto-detected below.
+  let phaseLocked = false;
 
   const push = (
     date: Date | null,
@@ -316,19 +330,18 @@ export function parseMilestones(raw: string, referenceDate?: Date): ParsedMilest
     title: string,
     description: string
   ) => {
-    if (range) {
-      const days = eachDayInRange(range);
-      days.forEach((d, i) =>
-        out.push({
-          phase,
-          date: d.toISOString(),
-          title: days.length > 1 ? `${title} (Day ${i + 1})` : title,
-          description,
-        })
-      );
-    } else if (date) {
-      out.push({ phase, date: date.toISOString(), title, description });
-    }
+    const start = range ? range.start : date;
+    if (!start) return;
+    const end = range && range.end.getTime() > range.start.getTime() ? range.end : null;
+    out.push({
+      phase,
+      date: start.toISOString(),
+      endDate: end ? end.toISOString() : null,
+      title,
+      description,
+      isMilestone: false,
+      phaseLocked,
+    });
   };
 
   for (const line of text.split("\n")) {
@@ -348,6 +361,7 @@ export function parseMilestones(raw: string, referenceDate?: Date): ParsedMilest
     const aliased = PHASE_ALIASES.find((a) => a.re.test(first));
     if (aliased && !parseFlexibleDate(first, ref)) {
       phase = aliased.phase;
+      phaseLocked = true;
       idx = 1;
     }
     const rest = parts.slice(idx);
@@ -390,7 +404,10 @@ export function parseMilestones(raw: string, referenceDate?: Date): ParsedMilest
     const d = r ? null : parseFlexibleDate(embedded.phrase, ref);
     push(d, r, embedded.remainder || "Milestone", "");
   }
-  return out;
+
+  // Sort into Pre-Production / Production / Post-Production. Lines that named
+  // their own phase are left untouched.
+  return assignPhases(out);
 }
 
 // Commercial-side deliverable (contracted + additional/scope-creep) surfaced

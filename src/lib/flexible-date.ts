@@ -263,13 +263,15 @@ export function parseFlexibleDateRange(
 const DATE_PHRASE_RE = new RegExp(
   `(?:\\bon\\s+)?(?:\\bthe\\s+)?(?:` +
     [
-      // ISO / numeric
       `\\d{4}-\\d{1,2}-\\d{1,2}`,
-      `\\d{1,2}[\\/.-]\\d{1,2}(?:[\\/.-]\\d{2,4})?`,
+      // Month-name forms come before the bare numeric one so a range like
+      // "14-16 September 2026" is lifted whole, not truncated to "14-16".
       // "WED 1 JUL", "15th July 2026", "20-22 July", "3rd of August"
       `(?:(?:${WEEKDAY_RE})\\s+)?\\d{1,2}(?:st|nd|rd|th)?(?:\\s*(?:[-–—]|to|until)\\s*\\d{1,2}(?:st|nd|rd|th)?)?(?:\\s+of)?\\s+(?:${MONTH_RE})\\b(?:\\s*,?\\s*\\d{2,4})?`,
       // "July 15", "Jul 20-22, 2026"
       `(?:${MONTH_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?(?:\\s*(?:[-–—]|to|until)\\s*\\d{1,2}(?:st|nd|rd|th)?)?(?:\\s*,?\\s*\\d{2,4})?`,
+      // Numeric: 15/07/2026, 15.7.26, 15-07-2026
+      `\\d{1,2}[\\/.-]\\d{1,2}(?:[\\/.-]\\d{2,4})?`,
       // Casual
       `(?:next|this)\\s+(?:${WEEKDAY_RE})\\b`,
       `\\btoday\\b|\\btomorrow\\b`,

@@ -9,6 +9,7 @@ import {
 type MilestoneInput = {
   phase?: string;
   date?: string;
+  endDate?: string | null;
   title?: string;
   description?: string | null;
   done?: boolean;
@@ -22,6 +23,15 @@ type MilestoneInput = {
 const PHASES = ["PRE_PRODUCTION", "PRODUCTION", "POST_PRODUCTION"];
 function normPhase(p: string | undefined): string {
   return p && PHASES.includes(p) ? p : "PRE_PRODUCTION";
+}
+
+// End date of a multi-day item. Ignored unless it parses and lands on or after
+// the start, so a bad value degrades to a single-day item rather than failing.
+function normEndDate(end: string | null | undefined, start: Date): Date | null {
+  if (!end) return null;
+  const d = new Date(end);
+  if (isNaN(d.getTime()) || d.getTime() < start.getTime()) return null;
+  return d;
 }
 
 export const GET = withAuth(async (
@@ -92,16 +102,21 @@ export const POST = withAuth(async (
 
     if (Array.isArray(body.milestones)) {
       const rows = (body.milestones as MilestoneInput[])
-        .filter((m) => m.date)
-        .map((m, i) => ({
-          productionId: id,
-          phase: normPhase(m.phase),
-          date: new Date(m.date as string),
-          title: m.title || "Milestone",
-          description: m.description || null,
-          done: !!m.done,
-          sortOrder: m.sortOrder ?? i,
-        }));
+        .filter((m) => m.date && !isNaN(new Date(m.date).getTime()))
+        .map((m, i) => {
+          const date = new Date(m.date as string);
+          return {
+            productionId: id,
+            phase: normPhase(m.phase),
+            date,
+            endDate: normEndDate(m.endDate, date),
+            title: m.title || "Milestone",
+            description: m.description || null,
+            done: !!m.done,
+            isMilestone: !!m.isMilestone,
+            sortOrder: m.sortOrder ?? i,
+          };
+        });
       if (rows.length === 0)
         return NextResponse.json({ error: "No valid milestones" }, { status: 400 });
       await prisma.productionMilestone.createMany({ data: rows });
@@ -113,11 +128,13 @@ export const POST = withAuth(async (
     }
 
     const m = body as MilestoneInput;
+    const start = m.date ? new Date(m.date) : new Date();
     const item = await prisma.productionMilestone.create({
       data: {
         productionId: id,
         phase: normPhase(m.phase),
-        date: m.date ? new Date(m.date) : new Date(),
+        date: start,
+        endDate: normEndDate(m.endDate, start),
         title: m.title || "Milestone",
         description: m.description || null,
         done: !!m.done,
@@ -143,6 +160,18 @@ export const PUT = withAuth(async (request: NextRequest) => {
     const data: Record<string, unknown> = {};
     if (body.phase !== undefined) data.phase = normPhase(body.phase);
     if (body.date !== undefined) data.date = new Date(body.date);
+    if (body.endDate !== undefined) {
+      // Validate against the new start when one is being set, else the stored one.
+      const start =
+        (data.date as Date | undefined) ??
+        (
+          await prisma.productionMilestone.findUnique({
+            where: { id: milestoneId },
+            select: { date: true },
+          })
+        )?.date;
+      data.endDate = start ? normEndDate(body.endDate, start) : null;
+    }
     if (body.title !== undefined) data.title = body.title;
     if (body.description !== undefined) data.description = body.description || null;
     if (body.done !== undefined) data.done = !!body.done;

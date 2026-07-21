@@ -651,6 +651,9 @@ model ProductionMilestone {
   production   Production @relation("productionMilestones", fields: [productionId], references: [id], onDelete: Cascade)
   phase        String     @default("PRE_PRODUCTION") // PRE_PRODUCTION | PRODUCTION | POST_PRODUCTION
   date         DateTime
+  // Optional end of a multi-day item ("Shoot Week — 1–4 September"). Null for
+  // single-day items; `date` is always the start.
+  endDate      DateTime?
   title        String
   description  String?
   done         Boolean    @default(false)

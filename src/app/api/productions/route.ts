@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { validateRequired, sanitizeString } from "@/lib/validate";
-import { seedTemplateMilestones, earliestShoot } from "@/lib/production-seed";
+import { seedShootDateMilestone, earliestShoot } from "@/lib/production-seed";
 
 export const GET = withAuth(async (request: NextRequest) => {
   try {
@@ -84,22 +84,18 @@ export const POST = withAuth(async (request: NextRequest) => {
       },
     });
 
-    // Auto-populate the standard timeline when the project is created with a
-    // shoot date. Best-effort — a seeding hiccup must not fail project creation.
+    // The timeline starts empty — the standard template is applied on demand
+    // from the Timeline tab. The only auto-seeded row is the shoot date from
+    // quick setup, so it isn't lost. Best-effort: a hiccup here must not fail
+    // project creation.
     if (body.seedTemplate !== false) {
       try {
         const shoot = earliestShoot(
           Array.isArray(data.shootDates) ? (data.shootDates as Date[]) : []
         );
-        if (shoot) {
-          await seedTemplateMilestones(
-            production.id,
-            shoot,
-            production.billingType || "EDITORIAL"
-          );
-        }
+        if (shoot) await seedShootDateMilestone(production.id, shoot);
       } catch {
-        // ignore — the timeline can be generated later from the Timeline tab
+        // ignore — the shoot date can be added from the Timeline tab
       }
     }
 

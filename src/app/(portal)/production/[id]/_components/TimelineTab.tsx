@@ -77,6 +77,32 @@ function deadlineTone(dateISO: string, done: boolean): DeadlineTone {
   return "ok";
 }
 
+// Same calendar day? Multi-day items only read as a range when they actually
+// span one (a stray endDate equal to the start renders as a single date).
+function isRange(m: { date: string; endDate?: string | null }): boolean {
+  if (!m.endDate) return false;
+  try {
+    return format(parseISO(m.endDate), "yyyy-MM-dd") !== format(parseISO(m.date), "yyyy-MM-dd");
+  } catch {
+    return false;
+  }
+}
+
+// "WED 1 JUL", or "1–4 SEP" for a range (the month is dropped from the start
+// when both ends sit in the same month).
+function milestoneDateLabel(m: { date: string; endDate?: string | null }): string {
+  try {
+    const start = parseISO(m.date);
+    if (!isRange(m)) return format(start, "EEE d MMM").toUpperCase();
+    const end = parseISO(m.endDate as string);
+    const sameMonth = format(start, "MMM yyyy") === format(end, "MMM yyyy");
+    const left = sameMonth ? format(start, "d") : format(start, "d MMM");
+    return `${left}–${format(end, "d MMM")}`.toUpperCase();
+  } catch {
+    return "—";
+  }
+}
+
 // A pickable assignee — an active Outlander user (assignedTo stores User.id).
 interface TeamUser {
   id: string;
@@ -172,7 +198,9 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
   }, []);
 
   const hasShootDate = (shootDates ?? []).filter(Boolean).length > 0;
-  const hasTemplate = milestones.some((m) => m.templateKey);
+  // The auto-seeded shoot date carries templateKey "shoot_day" but isn't the
+  // standard template — a project holding only that row can still generate it.
+  const hasTemplate = milestones.some((m) => m.templateKey && m.templateKey !== "shoot_day");
 
   async function add(form: Partial<ProductionMilestone>) {
     await fetch(`/api/productions/${productionId}/milestones`, {
@@ -430,19 +458,23 @@ export default function TimelineTab({ productionId, milestones, shootDates, refr
             <div className="mt-3 space-y-2">
               <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
                 One item per line:{" "}
-                <span className="font-mono">PHASE — DATE — TITLE — DESCRIPTION</span>. Phase and
-                description are optional; a phase line carries down to the lines beneath it. Dates
-                can be written almost any way — <span className="font-mono">WED 1 JUL</span>,{" "}
+                <span className="font-mono">TITLE — DATE</span> (or{" "}
+                <span className="font-mono">PHASE — DATE — TITLE — DESCRIPTION</span>). Phases are
+                worked out for you — the shoot is found by name, everything before it is
+                pre-production and everything after it is post — so you only need to name a phase
+                to override that. Dates can be written almost any way —{" "}
+                <span className="font-mono">WED 1 JUL</span>,{" "}
                 <span className="font-mono">15/07/2026</span>,{" "}
                 <span className="font-mono">3rd of August</span>,{" "}
                 <span className="font-mono">next Friday</span> — and a range like{" "}
-                <span className="font-mono">July 20-22</span> creates an entry per day.
+                <span className="font-mono">1–4 September 2026</span> becomes one item spanning
+                those dates.
               </p>
               <textarea
                 value={raw}
                 onChange={(e) => setRaw(e.target.value)}
                 placeholder={
-                  "PRE-PRODUCTION — WED 1 JUL — PUMA FEEDBACK ON V1 DECK — Schedule, route, locations, crew approved\nPRODUCTION — TUE 7 JUL — SHOOT DAY — Shoot\nPOST-PRODUCTION — WED 15 JUL — V1 ASSETS DELIVERED\nPOST-PRODUCTION — FRI 24 JUL — GO LIVE — Launch"
+                  "V1 Production Deck Shared — 13 August 2026\nClient Feedback — 13–17 August 2026\nCasting Confirmed — 21 August 2026\nShoot Week — 1–4 September 2026\nV1 Assets Shared — 11 September 2026\nFinal Delivery — 24 September 2026"
                 }
                 rows={6}
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-mono bg-white dark:bg-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
@@ -655,31 +687,30 @@ function MilestoneRow({
   const [title, setTitle] = useState(milestone.title);
   const [description, setDescription] = useState(milestone.description ?? "");
   const [date, setDate] = useState(milestone.date.split("T")[0]);
+  const [endDate, setEndDate] = useState(milestone.endDate?.split("T")[0] ?? "");
   const [phase, setPhase] = useState<MilestonePhase>(milestone.phase);
   const [addingSub, setAddingSub] = useState(false);
   const [subTitle, setSubTitle] = useState("");
 
-  const status = milestoneStatus(milestone);
+  // A multi-day item isn't late until its last day has passed.
+  const dueISO = milestone.endDate || milestone.date;
+  const status = milestoneStatus({ date: dueISO, done: milestone.done });
   const badge = STATUS_BADGE[status];
-  const tone = deadlineTone(milestone.date, milestone.done);
+  const tone = deadlineTone(dueISO, milestone.done);
   const isDiamond = !!milestone.isMilestone;
   const assigneeName = milestone.assignedTo
     ? users.find((u) => u.id === milestone.assignedTo)?.name ?? "Unknown"
     : "";
 
-  const dateLabel = (() => {
-    try {
-      return format(parseISO(milestone.date), "EEE d MMM").toUpperCase();
-    } catch {
-      return "—";
-    }
-  })();
+  const dateLabel = milestoneDateLabel(milestone);
 
   function saveEdits() {
     const patch: Partial<ProductionMilestone> = {};
     if (title !== milestone.title) patch.title = title;
     if ((description || "") !== (milestone.description || "")) patch.description = description;
     if (date !== milestone.date.split("T")[0]) patch.date = new Date(date + "T12:00:00").toISOString();
+    if (endDate !== (milestone.endDate?.split("T")[0] ?? ""))
+      patch.endDate = endDate ? new Date(endDate + "T12:00:00").toISOString() : null;
     if (phase !== milestone.phase) patch.phase = phase;
     if (Object.keys(patch).length > 0) onUpdate(patch);
     setEditing(false);
@@ -747,6 +778,15 @@ function MilestoneRow({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
+                title="Start date"
+                className={inputCls}
+              />
+              <input
+                type="date"
+                value={endDate}
+                min={date || undefined}
+                onChange={(e) => setEndDate(e.target.value)}
+                title="End date — leave blank for a single-day item"
                 className={inputCls}
               />
               <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
@@ -1014,12 +1054,23 @@ function TimelineCalendar({
   });
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
+  // A multi-day item shows on every day it spans (capped so a bad end date
+  // can't flood the grid).
   const byDay = useMemo(() => {
     const map = new Map<string, ProductionMilestone[]>();
-    for (const m of milestones) {
-      const k = format(parseISO(m.date), "yyyy-MM-dd");
+    const put = (k: string, m: ProductionMilestone) => {
       if (!map.has(k)) map.set(k, []);
       map.get(k)!.push(m);
+    };
+    for (const m of milestones) {
+      try {
+        const start = parseISO(m.date);
+        const end = isRange(m) ? parseISO(m.endDate as string) : start;
+        const days = eachDayOfInterval({ start, end }).slice(0, 31);
+        for (const d of days) put(format(d, "yyyy-MM-dd"), m);
+      } catch {
+        // unparseable date — skip rather than break the grid
+      }
     }
     return map;
   }, [milestones]);
