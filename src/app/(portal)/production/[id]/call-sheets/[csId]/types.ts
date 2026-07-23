@@ -84,6 +84,66 @@ export function sortRoster<T extends { callTime?: string }>(people: T[], unitCal
   return sortByTime(people, (p) => effectiveCallTime(p, unitCall));
 }
 
+// ── Role priority ordering ───────────────────────────────────────────────────
+// The unit list reads in production-hierarchy order — Producer at the top, down
+// through the departments — rather than in the order people were added. Roles
+// are free text, so we match on keywords. Patterns are tested in MATCH-specificity
+// order (not rank order) so a broad keyword can't swallow a more specific role:
+// e.g. "Art Director" and "Director of Photography" are recognised before a bare
+// "Director". The first pattern that hits decides the rank; anything unrecognised
+// sinks to the bottom and sorts alphabetically among its peers.
+export const ROLE_PRIORITY_OTHER = 100;
+
+const ROLE_PRIORITY_MATCHERS: { rank: number; re: RegExp }[] = [
+  { rank: 1, re: /\b(exec(?:utive)?\s+producer|producer|ep)\b/i }, // Producer / Exec Producer
+  { rank: 3, re: /\b(director of photography|d\.?o\.?p\.?|dop|cinematographer)\b/i }, // DOP — before "Director"
+  { rank: 4, re: /(\b\d+(?:st|nd|rd|th)?\s*ad\b|first ad|assistant director)/i }, // 1st AD — before "Director"
+  { rank: 6, re: /\b(art director|production design(?:er)?)\b/i }, // Art Director — before "Director"
+  { rank: 7, re: /\bfashion director\b/i }, // Fashion Director — before "Director"
+  { rank: 2, re: /\bdirector\b/i }, // Director
+  { rank: 5, re: /\b(production manager|pm)\b/i }, // Production Manager
+  { rank: 7, re: /\b(stylist|styling|wardrobe)\b/i }, // Stylist / wardrobe
+  { rank: 8, re: /\b(hair|make ?up|h&?mu|hmu|mua|grooming|glam|mu)\b/i }, // Hair & Make Up
+  { rank: 9, re: /\bset design(?:er)?\b/i }, // Set Designer
+  { rank: 10, re: /\b(gaffer|lighting|electric(?:ian)?|spark|best boy)\b/i }, // Gaffer / Lighting
+  { rank: 11, re: /\b(sound|audio|boom|recordist)\b/i }, // Sound
+  { rank: 12, re: /\b(digi ?tech|digi ?op|dit|data)\b/i }, // Digi Tech / DIT
+  { rank: 13, re: /(\b\d*(?:st|nd)?\s*a\.?c\.?\b|assistant camera|camera assistant|focus puller)/i }, // Camera Assist
+  { rank: 14, re: /\bgrip\b/i }, // Grip
+  { rank: 15, re: /\b(runner|production assistant|pa)\b/i }, // Runner / PA
+  { rank: 16, re: /\b(talent|model|cast|actor|actress)\b/i }, // Talent / Model / Cast
+];
+
+// Rank of a free-text role in the production hierarchy (lower = higher up). An
+// unrecognised role gets ROLE_PRIORITY_OTHER and is later ordered alphabetically.
+export function roleRank(role: string | null | undefined): number {
+  const r = (role || "").trim();
+  if (!r) return ROLE_PRIORITY_OTHER;
+  for (const m of ROLE_PRIORITY_MATCHERS) {
+    if (m.re.test(r)) return m.rank;
+  }
+  return ROLE_PRIORITY_OTHER;
+}
+
+// Order people by production-hierarchy role priority. Same-rank rows keep their
+// existing order (stable), except the unrecognised "other" bucket, which sorts
+// alphabetically by role so the tail of the list is predictable.
+export function sortByRolePriority<T extends { role?: string }>(people: T[]): T[] {
+  return people
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => {
+      const ra = roleRank(a.p.role);
+      const rb = roleRank(b.p.role);
+      if (ra !== rb) return ra - rb;
+      if (ra === ROLE_PRIORITY_OTHER) {
+        const cmp = (a.p.role || "").localeCompare(b.p.role || "");
+        if (cmp !== 0) return cmp;
+      }
+      return a.i - b.i; // stable within a rank
+    })
+    .map((x) => x.p);
+}
+
 export interface LocationData {
   address: string;
   parkingNotes: string;

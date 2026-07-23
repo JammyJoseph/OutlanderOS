@@ -1,6 +1,6 @@
 import type { CallSheetViewData } from "./CallSheetDocument";
 import type { CallSheetLocation } from "./types";
-import { resolveUnitCall, sortSchedule } from "./types";
+import { resolveUnitCall, sortByRolePriority, sortSchedule } from "./types";
 
 // A short, SMS/WhatsApp-friendly roundup of the call sheet. Kept deliberately
 // terse: header, call times, schedule, locations, the key contact(s) and the
@@ -85,11 +85,12 @@ export function generateSMSSummary(
     }
   }
   // Fall back to a production mobile / crew member with a phone only when there
-  // is no producer or agency contact at all.
+  // is no producer or agency contact at all. Crew are taken in production-
+  // hierarchy order, so the most senior reachable person is chosen.
   if (contactLines.length === 0) {
     const fallback =
       (data.productionMobiles || []).find((m) => (m.phone || "").trim() && (m.name || "").trim()) ||
-      (data.crew || []).find((m) => (m.phone || "").trim() && (m.name || "").trim());
+      sortByRolePriority(data.crew || []).find((m) => (m.phone || "").trim() && (m.name || "").trim());
     if (fallback) contactLines.push(`Contact: ${fallback.name.trim()} — ${fallback.phone.trim()}`);
   }
   if (contactLines.length) blocks.push(contactLines.join("\n"));

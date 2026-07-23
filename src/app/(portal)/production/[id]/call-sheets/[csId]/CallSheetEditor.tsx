@@ -716,6 +716,7 @@ export function CallSheetEditor(p: EditorProps) {
           unitCallTime={p.unitCallTime}
           addLabel="Add Crew"
           rolePresets={CREW_ROLE_PRESETS}
+          sortBy="role"
         />
       </Section>
 

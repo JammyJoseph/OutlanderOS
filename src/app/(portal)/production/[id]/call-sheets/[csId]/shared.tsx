@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import type { CrewMember, TalentMember } from "./types";
-import { effectiveCallTime, sortRoster } from "./types";
+import { effectiveCallTime, sortByRolePriority, sortRoster } from "./types";
 
 export const ACCENT = "#A93B2E";
 export const ACCENT_HOVER = "#A93B2E";
@@ -135,6 +135,7 @@ export function PeopleTable({
   readOnly = false,
   addLabel = "Add Person",
   rolePresets,
+  sortBy = "call",
 }: {
   people: (CrewMember | TalentMember)[];
   setPeople: (v: (CrewMember | TalentMember)[]) => void;
@@ -142,8 +143,14 @@ export function PeopleTable({
   readOnly?: boolean;
   addLabel?: string;
   rolePresets?: string[];
+  // "call" keeps the roster in clock order; "role" orders it by the production
+  // hierarchy (Producer / Director / DOP / …). The unit list uses "role".
+  sortBy?: "call" | "role";
 }) {
   const listId = rolePresets ? "crew-role-presets" : undefined;
+
+  const orderPeople = (list: (CrewMember | TalentMember)[]) =>
+    sortBy === "role" ? sortByRolePriority(list) : sortRoster(list, unitCallTime);
 
   function setCallTime(i: number, value: string) {
     setPeople(people.map((m, j) => (j === i ? { ...m, callTime: value } : m)));
@@ -151,7 +158,7 @@ export function PeopleTable({
 
   if (readOnly) {
     if (people.length === 0) return null;
-    const ordered = sortRoster(people, unitCallTime);
+    const ordered = orderPeople(people);
     return (
       <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
         <div className="grid grid-cols-[1fr_1fr_90px_1.2fr_1fr] gap-0 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide bg-gray-50 dark:bg-gray-800 px-4 py-2">
@@ -197,6 +204,9 @@ export function PeopleTable({
             list={listId}
             value={p.role}
             onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, role: e.target.value } : m)))}
+            // Re-order into hierarchy once the row is left — sorting on change
+            // would move the input out from under you mid-type.
+            onBlur={sortBy === "role" ? () => setPeople(orderPeople(people)) : undefined}
             placeholder="Role"
             className={smallInputCls}
           />
@@ -211,9 +221,9 @@ export function PeopleTable({
             type="time"
             value={effectiveCallTime(p, unitCallTime)}
             onChange={(e) => setCallTime(i, e.target.value)}
-            // The roster re-sorts into call order once the row is left —
-            // sorting on change would move the input out from under you.
-            onBlur={() => setPeople(sortRoster(people, unitCallTime))}
+            // The roster re-sorts once the row is left — sorting on change
+            // would move the input out from under you.
+            onBlur={() => setPeople(orderPeople(people))}
             title="Call time"
             className={smallInputCls}
           />

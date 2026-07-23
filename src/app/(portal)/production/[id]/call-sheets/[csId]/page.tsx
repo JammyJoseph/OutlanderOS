@@ -421,7 +421,7 @@ export default function CallSheetPage() {
                 type="text"
                 value={shootTitle}
                 onChange={(e) => setShootTitle(e.target.value)}
-                placeholder="Shoot Title"
+                placeholder={sheet.production.title || "Shoot Title"}
                 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none w-full placeholder-gray-300 dark:placeholder-gray-600 tracking-tight"
               />
               <div className="flex items-center gap-3 mt-1">

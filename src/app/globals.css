@@ -536,6 +536,26 @@
 /* ── Call sheet print / PDF export ──────────────────────────────────────────
    Unchanged from the previous file. */
 @media print {
+  /* Print ONLY the call sheet document. Everything on the page is hidden and
+     then just the .cs-doc subtree is revealed — this catches browser-extension
+     widgets injected straight into <body> (e.g. Arc's sidebar/boost), which
+     carry no print:hidden class and would otherwise land on the right edge of
+     the printout. Hidden ancestors still show a visible descendant, so the
+     document renders normally. */
+  body:has([data-callsheet-print]) * {
+    visibility: hidden !important;
+  }
+  body:has([data-callsheet-print]) .cs-doc,
+  body:has([data-callsheet-print]) .cs-doc * {
+    visibility: visible !important;
+  }
+  body:has([data-callsheet-print]) .cs-doc {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+  }
+
   body:has([data-callsheet-print]) header,
   body:has([data-callsheet-print]) aside,
   body:has([data-callsheet-print]) nav {

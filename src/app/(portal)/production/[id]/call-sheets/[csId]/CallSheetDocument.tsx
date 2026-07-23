@@ -11,7 +11,7 @@ import type {
 import {
   CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
   emptyCallSheetLocation, resolveUnitCall, sortByTime,
-  sortRoster, sortSchedule,
+  sortByRolePriority, sortRoster, sortSchedule,
 } from "./types";
 import {
   journeyStats, formatJourneySummary,
@@ -327,12 +327,15 @@ export function CallSheetDocument({
   const shownEmails = new Set(
     [creative?.email, t0?.email].map(norm).filter(Boolean)
   );
-  // In call order — earliest on set at the top, so the list reads like the day.
-  const contactCrew = sortRoster(crew, unitCall).filter(
-    (c) =>
-      (c.role || c.name) &&
-      !shownNames.has(norm(c.name)) &&
-      !(c.email && shownEmails.has(norm(c.email)))
+  // In production-hierarchy order — Producer / Director / DOP / … at the top,
+  // department by department, rather than the order rows were added.
+  const contactCrew = sortByRolePriority(
+    crew.filter(
+      (c) =>
+        (c.role || c.name) &&
+        !shownNames.has(norm(c.name)) &&
+        !(c.email && shownEmails.has(norm(c.email)))
+    )
   );
   const talentRows = sortRoster(talent, unitCall).filter((t) => t.role || t.name);
 
