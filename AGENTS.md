@@ -53,16 +53,27 @@ NextAuth is installed and partly configured but is **not** the live login path.
 
 ## Schema changes — read this before touching `prisma/schema.prisma`
 
-There is **no migrations directory**. Schema ships via `prisma db push`, which means:
+**Migrations are now live** (baselined 2026-07-27 as `prisma/migrations/0_init`). Prod and
+local are both marked up to date. Use migrations, not `db push`:
 
-- `npm run build` is plain `next build` and applies nothing. Adding a field and deploying
-  without a push ships code that queries a column prod doesn't have → runtime 500s, not
-  build errors.
-- `db push` **halts** on anything it considers data loss — dropping a non-empty table, *or
-  adding a `@unique` column*. Reproduce against the local DB first to find out whether your
-  change needs `--accept-data-loss`, rather than discovering it mid-deploy.
-- Always `pg_dump` before a destructive push. Daily backups run at 3am via
-  `/usr/local/bin/backup-outlanderos.sh` (server-side, 30-day retention).
+```
+# after editing schema.prisma
+DATABASE_URL="postgresql://work@localhost:5432/outlanderos" npx prisma migrate dev --name what_changed
+# review the generated SQL, commit it, then on prod:
+npx prisma migrate deploy
+```
+
+- **`prisma migrate diff` needs `DATABASE_URL` set even for `--from-empty`** — without it the
+  command silently emits nothing rather than erroring.
+- `npm run build` is plain `next build` and applies nothing. A schema change deployed without
+  a migrate step ships code querying a column prod doesn't have → runtime 500s, not build
+  errors.
+- Never hand-edit an applied migration. Add a new one.
+- Daily backups run at 3am via `/usr/local/bin/backup-outlanderos.sh` (server-side, 30-day
+  retention). Run it manually before anything destructive.
+- Legacy note: `db push` **halts** on anything it considers data loss — dropping a non-empty
+  table, *or adding a `@unique` column*. If you ever fall back to it, reproduce against the
+  local DB first rather than discovering it mid-deploy.
 
 ## Styling
 
