@@ -906,9 +906,28 @@ model CostLine {
   campaignId     String?
   campaign       Campaign?     @relation("campaignCostLines", fields: [campaignId], references: [id])
 
-  // Print grouping — MAGAZINE_PRODUCTION | FREELANCE | PRODUCTIONS | EVENTS |
-  // MARKETING | OTHER. Null for costs that aren't part of an issue budget.
-  section String?
+  // Grouping within whichever lens owns the row. Print issues use
+  // MAGAZINE_PRODUCTION | FREELANCE | PRODUCTIONS | EVENTS | MARKETING | OTHER;
+  // production budgets use the industry sections PRE_PRODUCTION | CAST_TALENT |
+  // CREW | STYLING_GLAM | LOCATIONS | EQUIPMENT | TRANSPORT | CATERING |
+  // ART_DEPARTMENT | POST_PRODUCTION. Null when the row belongs to neither.
+  section  String?
+  category String?
+  role     String? // e.g. "DOP", "Lead Talent", "Lighting Kit"
+
+  // A line is often quantity × rate rather than a flat figure. Kept alongside
+  // `amount` because losing the derivation makes a budget impossible to argue
+  // with — `amount` stays authoritative.
+  quantity   Float?
+  rate       Float?
+  vatPercent Float? // per-line VAT; null means the UI's 20% default. Never in `amount`.
+
+  // Invoice tracking, carried over from production budgets:
+  // NOT_INVOICED | INVOICE_RECEIVED | UNDER_REVIEW | APPROVED | PAID
+  invoiceStatus  String?
+  invoiceUrl     String?
+  poNumber       String?
+  invoicedAmount Float?
 
   // ── Drawdown: an ACTUAL may point at the BUDGET row it consumes ───────────
   // Optional by design: unbudgeted spend must always be recordable, otherwise

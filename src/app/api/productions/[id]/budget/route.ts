@@ -2,6 +2,126 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 import { money } from "@/lib/money";
+
+// Production budgets live on the shared CostLine ledger (see the model in
+// prisma/schema.prisma). The rows here are BUDGET rows; a line's `actual` is the
+// sum of ACTUAL rows drawn against it, not a column beside the budgeted figure.
+//
+// The API shape is unchanged — it still returns `items` with `budgeted`/`actual`
+// — so the Budget tab needs no changes. Only the storage moved.
+const PRODUCTION_ACTUAL_DESC = "Recorded actual (production budget)";
+
+const BUDGET_SELECT = {
+  id: true,
+  productionId: true,
+  category: true,
+  section: true,
+  role: true,
+  quantity: true,
+  rate: true,
+  vatPercent: true,
+  description: true,
+  amount: true,
+  notes: true,
+  invoiceStatus: true,
+  invoiceUrl: true,
+  poNumber: true,
+  invoicedAmount: true,
+  sortOrder: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+type BudgetRow = {
+  id: string;
+  productionId: string | null;
+  category: string | null;
+  section: string | null;
+  role: string | null;
+  quantity: number | null;
+  rate: number | null;
+  vatPercent: number | null;
+  description: string;
+  amount: number;
+  notes: string | null;
+  invoiceStatus: string | null;
+  invoiceUrl: string | null;
+  poNumber: string | null;
+  invoicedAmount: number | null;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// Renders ledger rows in the legacy BudgetLineItem shape the UI expects.
+async function serialiseItems(rows: BudgetRow[]) {
+  const actuals = new Map<string, number>();
+  if (rows.length > 0) {
+    const sums = await prisma.costLine.groupBy({
+      by: ["budgetLineId"],
+      where: { kind: "ACTUAL", budgetLineId: { in: rows.map((r) => r.id) } },
+      _sum: { amount: true },
+    });
+    for (const s of sums) {
+      if (s.budgetLineId) actuals.set(s.budgetLineId, s._sum.amount ?? 0);
+    }
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    productionId: r.productionId ?? "",
+    category: r.category ?? "other",
+    section: r.section,
+    role: r.role,
+    quantity: r.quantity,
+    rate: r.rate,
+    vatPercent: r.vatPercent,
+    description: r.description,
+    budgeted: r.amount,
+    actual: actuals.get(r.id) ?? 0,
+    notes: r.notes,
+    invoiceStatus: r.invoiceStatus,
+    invoiceUrl: r.invoiceUrl,
+    poNumber: r.poNumber,
+    invoicedAmount: r.invoicedAmount,
+    sortOrder: r.sortOrder,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  }));
+}
+
+// Sets the manually-entered actual for a budget line by maintaining exactly one
+// ACTUAL row against it. Zero removes the row rather than storing a zero, so a
+// cleared field means "nothing spent" rather than "spent nothing".
+async function setProductionActual(
+  budgetLineId: string,
+  productionId: string,
+  value: number,
+  ctx: { section: string | null; category: string | null }
+) {
+  const existing = await prisma.costLine.findFirst({
+    where: { kind: "ACTUAL", budgetLineId, description: PRODUCTION_ACTUAL_DESC },
+    select: { id: true },
+  });
+  if (!value || value <= 0) {
+    if (existing) await prisma.costLine.delete({ where: { id: existing.id } });
+    return;
+  }
+  if (existing) {
+    await prisma.costLine.update({ where: { id: existing.id }, data: { amount: value } });
+    return;
+  }
+  await prisma.costLine.create({
+    data: {
+      kind: "ACTUAL",
+      description: PRODUCTION_ACTUAL_DESC,
+      amount: value,
+      budgetLineId,
+      productionId,
+      section: ctx.section,
+      category: ctx.category,
+    },
+  });
+}
 // Production budget categories → Finance CostEntry categories. Covers both the
 // new industry-standard section keys and the legacy free-form category keys so
 // production actuals always land in a sensible Finance bucket.
@@ -223,11 +343,12 @@ export const GET = withAuth(async (
 ) => {
   const { id } = await params;
   try {
-    const items = await prisma.budgetLineItem.findMany({
-      where: { productionId: id },
+    const rows = await prisma.costLine.findMany({
+      where: { productionId: id, kind: "BUDGET" },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: BUDGET_SELECT,
     });
-    return NextResponse.json({ items });
+    return NextResponse.json({ items: await serialiseItems(rows) });
   } catch (e) {
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
@@ -250,12 +371,12 @@ export const POST = withAuth(async (
     // ready-to-fill line items. Skips sections that already have items so it's
     // safe to run on a partially-filled budget.
     if (body.template) {
-      const existing = await prisma.budgetLineItem.findMany({
-        where: { productionId: id },
+      const existing = await prisma.costLine.findMany({
+        where: { productionId: id, kind: "BUDGET" },
         select: { section: true, category: true },
       });
       const filledSections = new Set(
-        existing.map((e) => e.section ?? LEGACY_TO_SECTION[e.category] ?? "")
+        existing.map((e) => e.section ?? LEGACY_TO_SECTION[e.category ?? ""] ?? "")
       );
       const rows: {
         productionId: string;
@@ -266,8 +387,8 @@ export const POST = withAuth(async (
         rate: number | null;
         vatPercent: number;
         description: string;
-        budgeted: number;
-        actual: number;
+        amount: number;
+        kind: "BUDGET";
         sortOrder: number;
       }[] = [];
       let order = 0;
@@ -286,13 +407,13 @@ export const POST = withAuth(async (
             rate: 0, // Unit Cost starts at £0 (user enters their own)
             vatPercent: 20,
             description: "",
-            budgeted: 0, // qty 1 × £0
-            actual: 0,
+            amount: 0, // qty 1 × £0
+            kind: "BUDGET",
             sortOrder: order++,
           });
         }
       }
-      if (rows.length > 0) await prisma.budgetLineItem.createMany({ data: rows });
+      if (rows.length > 0) await prisma.costLine.createMany({ data: rows });
       return NextResponse.json({ seeded: rows.length });
     }
 
@@ -318,10 +439,13 @@ export const POST = withAuth(async (
           : Number(body.budgeted)
     );
     const section = body.section || null;
+    const newActual =
+      body.actual == null || body.actual === "" ? 0 : money(Number(body.actual));
     const item = await prisma.$transaction(async (tx) => {
-      const created = await tx.budgetLineItem.create({
+      const created = await tx.costLine.create({
         data: {
           productionId: id,
+          kind: "BUDGET",
           category: section || body.category || "other",
           section,
           role: body.role || null,
@@ -329,9 +453,7 @@ export const POST = withAuth(async (
           rate,
           vatPercent,
           description: body.description || "",
-          budgeted: computedBudgeted,
-          actual:
-            body.actual == null || body.actual === "" ? 0 : money(Number(body.actual)),
+          amount: computedBudgeted,
           notes: body.notes || null,
           invoiceStatus: body.invoiceStatus || null,
           invoiceUrl: body.invoiceUrl || null,
@@ -343,6 +465,20 @@ export const POST = withAuth(async (
           sortOrder: body.sortOrder == null ? 0 : Number(body.sortOrder),
         },
       });
+      // An actual supplied at creation is its own ledger fact, not a column.
+      if (newActual > 0) {
+        await tx.costLine.create({
+          data: {
+            productionId: id,
+            kind: "ACTUAL",
+            description: PRODUCTION_ACTUAL_DESC,
+            amount: newActual,
+            section,
+            category: section || body.category || "other",
+            budgetLineId: created.id,
+          },
+        });
+      }
       // Re-check the lock inside the transaction: if the budget locked between
       // the guard above and this insert, roll the new line back.
       const p = await tx.production.findUnique({
@@ -355,8 +491,19 @@ export const POST = withAuth(async (
       }
       return created;
     });
-    await syncCostEntry(item);
-    return NextResponse.json({ item });
+    await syncCostEntry({
+      id: item.id,
+      productionId: id,
+      category: item.category ?? "other",
+      section: item.section,
+      role: item.role,
+      description: item.description,
+      actual: newActual,
+    });
+    const [serialised] = await serialiseItems([
+      await prisma.costLine.findUniqueOrThrow({ where: { id: item.id }, select: BUDGET_SELECT }),
+    ]);
+    return NextResponse.json({ item: serialised });
   } catch (e) {
     if (e instanceof BudgetLockedError) {
       const blocked = await blockedReason(id, { structure: true });
@@ -379,9 +526,9 @@ export const PUT = withAuth(async (
   if (!itemId) return NextResponse.json({ error: "itemId required" }, { status: 400 });
   const body = await request.json();
   try {
-    const existing = await prisma.budgetLineItem.findUnique({
+    const existing = await prisma.costLine.findUnique({
       where: { id: itemId },
-      select: { productionId: true, budgeted: true, quantity: true, rate: true },
+      select: { productionId: true, amount: true, quantity: true, rate: true, section: true, category: true },
     });
     // The line item must belong to the production in the URL — prevents
     // cross-production edits via a guessed itemId.
@@ -411,7 +558,7 @@ export const PUT = withAuth(async (
           ? body.budgeted === "" || body.budgeted == null
             ? 0
             : Number(body.budgeted)
-          : existing.budgeted
+          : existing.amount
     );
 
     // Compare rounded figures — raw float noise (99.99 vs 99.99000000000001)
@@ -419,7 +566,7 @@ export const PUT = withAuth(async (
     // budget.
     const changesBudgeted =
       (body.budgeted !== undefined || recompute) &&
-      computedBudgeted !== money(existing.budgeted);
+      computedBudgeted !== money(existing.amount);
 
     const data: Record<string, unknown> = {};
     if (body.category !== undefined) data.category = body.category;
@@ -432,10 +579,7 @@ export const PUT = withAuth(async (
         body.vatPercent === "" || body.vatPercent == null ? null : Number(body.vatPercent);
     if (body.description !== undefined) data.description = body.description;
     // budgeted follows qty×rate when either is set, otherwise the manual value.
-    if (body.budgeted !== undefined || recompute) data.budgeted = computedBudgeted;
-    if (body.actual !== undefined)
-      data.actual =
-        body.actual === "" || body.actual == null ? 0 : money(Number(body.actual));
+    if (body.budgeted !== undefined || recompute) data.amount = computedBudgeted;
     if (body.notes !== undefined) data.notes = body.notes || null;
     if (body.invoiceStatus !== undefined) data.invoiceStatus = body.invoiceStatus || null;
     if (body.invoiceUrl !== undefined) data.invoiceUrl = body.invoiceUrl || null;
@@ -451,10 +595,13 @@ export const PUT = withAuth(async (
     // between the read above and this write makes the update match 0 rows rather
     // than slip through.
     const change = { budgeted: changesBudgeted, actual: body.actual !== undefined };
-    const result = await prisma.budgetLineItem.updateMany({
-      where: { id: itemId, productionId, production: guardWhere(change) },
-      data,
-    });
+    const result =
+      Object.keys(data).length > 0
+        ? await prisma.costLine.updateMany({
+            where: { id: itemId, productionId, kind: "BUDGET", production: guardWhere(change) },
+            data,
+          })
+        : { count: 1 }; // actual-only edits touch the drawdown row, not the budget row
     if (result.count === 0) {
       const blocked = await blockedReason(productionId, change);
       return blocked
@@ -462,9 +609,34 @@ export const PUT = withAuth(async (
         : NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const item = await prisma.budgetLineItem.findUnique({ where: { id: itemId } });
-    if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    await syncCostEntry(item);
+    // An actual is a separate ledger row. Re-run the lifecycle guard for it —
+    // actuals stay editable while budgeted amounts are locked, so the two can't
+    // share a single guarded statement.
+    if (body.actual !== undefined) {
+      const blockedActual = await blockedReason(productionId, { actual: true });
+      if (blockedActual) {
+        return NextResponse.json({ error: blockedActual }, { status: 403 });
+      }
+      const value =
+        body.actual === "" || body.actual == null ? 0 : money(Number(body.actual));
+      await setProductionActual(itemId, productionId, value, {
+        section: existing.section,
+        category: existing.category,
+      });
+    }
+
+    const row = await prisma.costLine.findUnique({ where: { id: itemId }, select: BUDGET_SELECT });
+    if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const [item] = await serialiseItems([row]);
+    await syncCostEntry({
+      id: item.id,
+      productionId,
+      category: item.category,
+      section: item.section,
+      role: item.role,
+      description: item.description,
+      actual: item.actual,
+    });
     return NextResponse.json({ item });
   } catch (e) {
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });
@@ -482,8 +654,11 @@ export const DELETE = withAuth(async (
   try {
     // Guarded delete — the lifecycle check is part of the statement, so a line
     // can't be removed from a budget that locked a moment ago.
-    const result = await prisma.budgetLineItem.deleteMany({
-      where: { id: itemId, productionId, production: guardWhere({ structure: true }) },
+    // Drop attributed actuals first — they have nowhere to belong once the
+    // budget row is gone, and orphaned spend appears in no budget at all.
+    await prisma.costLine.deleteMany({ where: { budgetLineId: itemId } });
+    const result = await prisma.costLine.deleteMany({
+      where: { id: itemId, productionId, kind: "BUDGET", production: guardWhere({ structure: true }) },
     });
     if (result.count === 0) {
       const blocked = await blockedReason(productionId, { structure: true });
