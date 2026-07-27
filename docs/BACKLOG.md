@@ -139,11 +139,15 @@ two budget systems still sit outside it.
       one with a deal / COMMERCIAL type / PAID billing is PAID; the rest are DIGITAL_EDITORIAL.
       `Production.strand` overrides the derivation, and derived rows are marked "auto" in the
       UI so a guess never reads as fact.
-      - [ ] **White Label has no derivation signal** — nothing in the data distinguishes it,
-            so nothing lands there until someone sets `strand` explicitly. Needs a picker on
-            the project page (the field and the list already support it).
-- [ ] Keep the **Upcoming** view — it works. Surface budget, date, headroom and project
-      manager on it.
+      - [x] ~~White Label picker~~ — **done 2026-07-27.** Strand selector sits beside the
+            status pill on the project header. "Auto — <derived>" shows what the derivation
+            would pick, so it isn't a black box; choosing a strand overrides it. An invalid
+            value clears the override rather than storing junk. Verified: setting White Label
+            moves the project into that section of the Projects list.
+- [x] ~~Upcoming view shows budget, headroom and project manager~~ — **done 2026-07-27.**
+      Each upcoming shoot row now carries the lead's name alongside client and call time, and
+      budget with remaining headroom on the right (over-budget in red). Hidden on narrow
+      screens so the countdown chip keeps its space.
 - [ ] **Drag-and-drop reordering in the production budget** — both lines *and* whole sections.
       `sortOrder` already exists on the ledger; sections currently have no stored order.
 - [x] ~~Undo "fill from template"~~ — **done 2026-07-27.** "Undo template (n)" appears beside

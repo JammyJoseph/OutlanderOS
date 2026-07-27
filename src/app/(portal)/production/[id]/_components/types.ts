@@ -453,6 +453,9 @@ export interface ProductionFull {
   title: string;
   type: string; // "EDITORIAL" | "COMMERCIAL"
   billingType?: string; // "EDITORIAL" | "PAID"
+  // Strand override for the Projects list. Null/absent = derive it — see
+  // src/lib/production-strand.ts.
+  strand?: string | null;
   campaignBudgetId: string | null;
   status: ProductionStatus;
   brief: string | null;

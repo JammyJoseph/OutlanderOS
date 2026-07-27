@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { STRANDS, STRAND_LABELS, strandOf } from "@/lib/production-strand";
 import { Film, ChevronDown, Check, ExternalLink, Link2, Loader2 } from "lucide-react";
 import {
   ProductionFull,
@@ -25,6 +26,13 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
   const [linking, setLinking] = useState(false);
   const style =
     PRODUCTION_STATUS_STYLES[production.status] || PRODUCTION_STATUS_STYLES.DRAFT;
+  // What the strand would be if nobody had set one — shown on the "Auto" option
+  // so the derivation is visible rather than a black box.
+  const derivedStrand = strandOf({
+    billingType: production.billingType,
+    type: production.type,
+    campaignId: production.campaignId,
+  });
 
   // Fetch (or create) an internal share link and copy it to the clipboard.
   async function copyInternalLink() {
@@ -107,6 +115,26 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
                 </>
               )}
             </div>
+            {/* Strand — which part of the business this belongs to, and how the
+                Projects list groups it. Left on "Auto" the strand is worked out
+                from the project's data; setting it here is the only way to reach
+                White Label, since nothing in the data implies it. */}
+            <label className="flex items-center gap-1.5 text-xs text-gray-500">
+              <span className="sr-only">Strand</span>
+              <select
+                value={production.strand ?? ""}
+                onChange={(e) => onPatch({ strand: e.target.value })}
+                className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                title="Which strand this project belongs to in the Projects list"
+              >
+                <option value="">Auto — {STRAND_LABELS[derivedStrand]}</option>
+                {STRANDS.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             {production.campaign && (
               <span className="text-xs text-gray-500">
                 Campaign: <span className="font-medium text-gray-700">{production.campaign.title}</span>

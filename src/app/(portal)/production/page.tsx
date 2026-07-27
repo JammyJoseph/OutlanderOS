@@ -804,6 +804,8 @@ function UpcomingList({ productions }: { productions: Production[] }) {
         <div className="divide-y divide-gray-50 dark:divide-gray-800">
           {top.map((it, i) => {
             const tone = countdownTone(it.date);
+            const budget = it.production.budgetedTotal ?? 0;
+            const headroom = budget - (it.production.actualTotal ?? 0);
             return (
               <Link
                 key={i}
@@ -830,14 +832,38 @@ function UpcomingList({ productions }: { productions: Production[] }) {
                     <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
                       {getClientName(it.production) || "—"}
                       {it.cs?.callTime ? ` · ${it.cs.callTime}` : ""}
+                      {it.production.lead?.name ? ` · ${it.production.lead.name}` : ""}
                     </p>
                   </div>
                 </div>
-                <span
-                  className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${tone.bg} ${tone.text}`}
-                >
-                  {countdownLabel(it.date)}
-                </span>
+                <div className="shrink-0 flex items-center gap-2.5">
+                  {/* Budget and headroom on the row — you shouldn't have to open
+                      a project to see whether the shoot you're about to run has
+                      money left. */}
+                  {budget > 0 && (
+                    <span className="hidden sm:block text-right leading-tight">
+                      <span className="block text-[11px] tabular-nums text-gray-600 dark:text-gray-300">
+                        {formatBudget(budget)}
+                      </span>
+                      <span
+                        className={`block text-[10px] tabular-nums ${
+                          headroom < 0
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-gray-400 dark:text-gray-500"
+                        }`}
+                      >
+                        {headroom < 0 ? "over by " : ""}
+                        {formatBudget(Math.abs(headroom))}
+                        {headroom >= 0 ? " left" : ""}
+                      </span>
+                    </span>
+                  )}
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tone.bg} ${tone.text}`}
+                  >
+                    {countdownLabel(it.date)}
+                  </span>
+                </div>
               </Link>
             );
           })}

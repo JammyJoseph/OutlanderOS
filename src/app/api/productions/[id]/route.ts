@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { isStrand } from "@/lib/production-strand";
 import { productionBudgetItems } from "@/lib/cost-ledger";
 import { withAuth, isAdminInDb } from "@/lib/auth";
 import { isProductionBudgetStatus } from "@/lib/deal-stages";
@@ -90,6 +91,13 @@ export const PUT = withAuth(async (
     if (body.status !== undefined) updateData.status = body.status;
     if (body.billingType !== undefined) {
       updateData.billingType = body.billingType === "PAID" ? "PAID" : "EDITORIAL";
+    }
+    // Strand override for the Projects list. Empty string / null clears it and
+    // hands the row back to strandOf()'s derivation — which is the only way to
+    // reach White Label, since nothing in the data implies it.
+    if (body.strand !== undefined) {
+      updateData.strand =
+        body.strand && isStrand(body.strand) ? body.strand : null;
     }
     if (body.budgetTotal !== undefined) {
       // COMMERCIAL productions have their total allocation locked by the
