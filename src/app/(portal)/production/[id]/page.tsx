@@ -219,21 +219,38 @@ export default function ProjectDetail() {
     }
   }
 
-  // Standalone (editorial) productions can be archived here by an admin.
-  // Productions linked to a deal are archived from Commercial only.
+  // Editorial projects can be archived by any member. Deal-linked projects show
+  // the same button, but clicking explains that Commercial owns them — only an
+  // admin can go ahead. Archiving here never touches the parent deal.
   async function setArchived(archived: boolean) {
     if (!production) return;
-    if (
-      archived &&
-      !(await confirm({
+
+    if (archived) {
+      const commercial = Boolean(production.campaignId);
+
+      if (commercial && !isAdmin) {
+        // Not an error — an explanation, with a way to get to the right place.
+        const goToDeal = await confirm({
+          title: "This project is bound by a commercial agreement",
+          message:
+            "It came from a signed deal, so Commercial needs to remove it. An admin can archive it from here if you need it out of the way sooner.",
+          confirmLabel: "Open deal",
+          cancelLabel: "Close",
+        });
+        if (goToDeal) router.push(`/commercial/deals/${production.campaignId}`);
+        return;
+      }
+
+      const ok = await confirm({
         title: "Archive this project?",
-        message:
-          "It disappears from the Production dashboard but nothing is deleted — an admin can unarchive it later.",
+        message: commercial
+          ? "This project is bound by a commercial agreement. Archiving hides it from the Production dashboard — the deal stays live in Commercial and nothing is deleted."
+          : "It disappears from the Production dashboard but nothing is deleted — it can be unarchived later.",
         confirmLabel: "Archive",
         confirmVariant: "danger",
-      }))
-    )
-      return;
+      });
+      if (!ok) return;
+    }
     setArchiveError(null);
     setArchiveBusy(true);
     try {
@@ -298,7 +315,7 @@ export default function ProjectDetail() {
             <ArrowLeft size={15} />
             Productions
           </Link>
-          {production.campaignId ? (
+          {production.campaignId && (
             <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 px-2 py-1">
               <Briefcase size={12} />
               This project is managed from Commercial
@@ -309,7 +326,10 @@ export default function ProjectDetail() {
                 View deal <ArrowUpRight size={11} />
               </Link>
             </span>
-          ) : isAdmin ? (
+          )}
+          {/* Always offered. Deal-linked projects explain themselves on click
+              rather than hiding the control — a missing button reads as a bug. */}
+          {!production.archived && (
             <button
               onClick={() => setArchived(true)}
               disabled={archiveBusy}
@@ -318,7 +338,7 @@ export default function ProjectDetail() {
               <Archive size={12} />
               Archive project
             </button>
-          ) : null}
+          )}
         </div>
 
         {archiveError && (
@@ -332,33 +352,36 @@ export default function ProjectDetail() {
             <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2">
               <Archive size={15} />
               This project is archived
-              {production.campaignId && (
+              {production.campaignId && !isAdmin && (
                 <span className="font-normal text-gray-400 text-xs">
-                  — unarchive it by unarchiving the parent deal in Commercial
+                  — it&rsquo;s bound by a commercial agreement, so Commercial or an admin can restore it
                 </span>
               )}
             </p>
-            {production.campaignId ? (
-              <Link
-                href={`/commercial/deals/${production.campaignId}`}
-                className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                <Briefcase size={13} /> Open deal <ArrowUpRight size={12} />
-              </Link>
-            ) : isAdmin ? (
-              <button
-                onClick={() => setArchived(false)}
-                disabled={archiveBusy}
-                className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-              >
-                {archiveBusy ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <ArchiveRestore size={13} />
-                )}
-                Unarchive
-              </button>
-            ) : null}
+            <div className="flex items-center gap-2">
+              {production.campaignId && (
+                <Link
+                  href={`/commercial/deals/${production.campaignId}`}
+                  className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Briefcase size={13} /> Open deal <ArrowUpRight size={12} />
+                </Link>
+              )}
+              {(!production.campaignId || isAdmin) && (
+                <button
+                  onClick={() => setArchived(false)}
+                  disabled={archiveBusy}
+                  className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  {archiveBusy ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <ArchiveRestore size={13} />
+                  )}
+                  Unarchive
+                </button>
+              )}
+            </div>
           </div>
         )}
 
