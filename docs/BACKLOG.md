@@ -124,6 +124,30 @@ two budget systems still sit outside it.
 - [ ] Finance P&L view over the unfiltered ledger — `totalsByAccount()` in `cost-ledger.ts`
       exists and is unused. Uncoded rows deliberately surface rather than hide.
 
+## 1c. Productions view + budget UX (requested 2026-07-27)
+
+- [ ] **Rebuild the Productions view as a list, and delete the tile view.** The large cards
+      are clunky. One list, grouped into **Print · Digital Editorial · White Label · Paid**,
+      with key details on each row including budget. Order by most urgent where a timeline
+      exists, otherwise most recently updated.
+      Note: grouping needs a real field — `type` is EDITORIAL|COMMERCIAL and `billingType` is
+      EDITORIAL|PAID, so neither expresses Print vs Digital Editorial vs White Label. Decide
+      whether this is a new field or derived (e.g. presence of a `magazinePlanId` cost line
+      ⇒ Print) before building, or the grouping will be guesswork.
+- [ ] Keep the **Upcoming** view — it works. Surface budget, date, headroom and project
+      manager on it.
+- [ ] **Drag-and-drop reordering in the production budget** — both lines *and* whole sections.
+      `sortOrder` already exists on the ledger; sections currently have no stored order.
+- [ ] **Undo "fill from template".** Clicking it by accident currently means deleting every
+      seeded line by hand. Offer a one-click revert that removes template-seeded lines that
+      are still untouched (seeded rows are identifiable — the importer/template stamps
+      `createdByName`).
+- [ ] **Budget export should omit unused lines** — zero-value / never-filled rows shouldn't
+      print.
+- [ ] **Print budget structure:** a total tied to specific project deals, plus free-form
+      lines for marketing, freelancers, kill fees and similar. The ledger already supports
+      both (`campaignId` for deal-tied rows, plain rows for the rest) — this is a UI job.
+
 ## 2. Integrations
 
 See `docs/ARCHITECTURE.md` for the full picture. Headline: **Google is integrated three
