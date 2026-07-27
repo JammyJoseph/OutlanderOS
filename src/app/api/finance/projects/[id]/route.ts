@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { productionBudgetItems } from '@/lib/cost-ledger'
 import { withAdminDb } from '@/lib/auth'
 import { getXeroInvoices, getXeroStatus } from '@/lib/xero-finance'
 import { overageStatusFor } from '@/lib/finance-projects'
@@ -33,7 +34,6 @@ export const GET = withAdminDb(async (request: NextRequest, context) => {
               status: true,
               budgetTotal: true,
               productionBudgetStatus: true,
-              budgetItems: { select: { category: true, budgeted: true, actual: true } },
             },
           })
         : Promise.resolve(null),
@@ -104,8 +104,9 @@ export const GET = withAdminDb(async (request: NextRequest, context) => {
     const productionAllocation = allocations.length
       ? productionAllocationOf(allocations)
       : production?.budgetTotal ?? budget.productionBudget
-    const productionBudgeted = (production?.budgetItems ?? []).reduce((s, i) => s + (i.budgeted || 0), 0)
-    const productionActuals = (production?.budgetItems ?? []).reduce((s, i) => s + (i.actual || 0), 0)
+    const prodItems = production ? await productionBudgetItems(production.id) : []
+    const productionBudgeted = prodItems.reduce((s, i) => s + (i.budgeted || 0), 0)
+    const productionActuals = prodItems.reduce((s, i) => s + (i.actual || 0), 0)
     const productionSavings = productionAllocation - productionActuals
 
     // Simplified split (media vs production) — Noah's model. Derived from the

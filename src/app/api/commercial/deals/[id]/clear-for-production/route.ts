@@ -148,12 +148,13 @@ export const POST = withAuth(async (
         // Legacy deals without allocations: copy the splits as starter line
         // items. Allocation-based deals start empty — the production manager
         // budgets their allocation themselves.
-        budgetItems: !hasAllocations && splits.length
+        costLines: !hasAllocations && splits.length
           ? {
               create: splits.map((s, i) => ({
+                kind: "BUDGET" as const,
                 category: mapSplitToProductionCategory(s.category),
                 description: `${s.category} — from Commercial deal budget`,
-                budgeted: s.amount,
+                amount: s.amount,
                 sortOrder: i,
               })),
             }

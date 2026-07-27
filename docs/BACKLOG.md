@@ -104,12 +104,16 @@ two budget systems still sit outside it.
       projects, "Peggy Gou Digital Cover Story", and **two identically-named "Soggy Sucks"**
       plus "SOREL - All Weather Walkies". Someone who knows the work must decide; relink the
       budget row's `productionId` and archive the surplus project.
-- [ ] **Migrate `BudgetLineItem` (121 rows) into the ledger.** Each row currently holds both
-      a budget and an actual in one record — the same two-columns-one-row shape the ledger
-      exists to remove. Split each into a BUDGET row and, where `actual > 0`, an ACTUAL row
-      drawn against it. Then delete the legacy bridge in `cost-ledger.ts`
-      (`actualsForBudgetLines`, marked in-code) which currently reads production actuals from
-      the old table so linked print lines don't read as zero.
+- [x] ~~Migrate `BudgetLineItem` into the ledger~~ — **done 2026-07-27.** Each row became a
+      BUDGET CostLine plus, where `actual > 0`, an ACTUAL row drawn against it. The data move
+      and the `DROP TABLE` are in ONE migration
+      (`20260727150000_migrate_budget_items_into_ledger`) — split apart, there is a window
+      where deployed code reads the ledger while the data is still in the old table, and a
+      standalone script can't read a table the Prisma client no longer models. The migration
+      reconciles both totals in SQL and raises rather than dropping on a shortfall.
+      All 8 read sites converted; the legacy bridge in `cost-ledger.ts` is gone.
+      `BudgetTab.tsx` (2,343 lines) was **not touched** — the API keeps its legacy `items`
+      shape and only the storage moved.
 - [ ] **Migrate `CampaignBudget` (4 rows) into the ledger.** Its four coarse buckets
       (production / media / internal / other) become coded BUDGET rows against the deal.
 - [ ] **Issue revenue should roll up from deals, not be typed in.** `MagazinePlan.totalRevenue`
