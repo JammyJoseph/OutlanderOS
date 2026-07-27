@@ -171,9 +171,17 @@ two budget systems still sit outside it.
       with no money, no spend and no description, then hides any section left empty. A
       deliberate £0 line with a description still prints. The footer discloses how many rows
       were omitted — silently dropping lines from a financial document isn't acceptable.
-- [ ] **Print budget structure:** a total tied to specific project deals, plus free-form
-      lines for marketing, freelancers, kill fees and similar. The ledger already supports
-      both (`campaignId` for deal-tied rows, plain rows for the rest) — this is a UI job.
+- [x] ~~Print budget revenue tied to deals~~ — **done 2026-07-27.** Issue revenue is now the
+      sum of the DISTINCT deals linked on that issue's flat plan (distinct matters: a deal
+      spanning a DPS appears on two pages and must count once). `MagazinePlan.totalRevenue`
+      becomes explicit "other income" and the two are **added**, never chosen between — so
+      neither can silently mask the other.
+      ⚠️ **Neither issue has any deals linked on its flat plan yet** (0 campaignIds across
+      Issue 02's 279 pages), so deal revenue reads £0 and the £680,032 sits in other income.
+      The budget tab says so plainly rather than showing a confident zero. Linking the 13
+      advertisers on the flat plan is the remaining data job — the code is ready.
+      Free-form lines for marketing/freelancers/kill fees already work: the ledger takes
+      plain rows in any section.
 
 ## 2. Integrations
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import {
   Film,
   Plus,
@@ -13,6 +14,7 @@ import {
   Clock,
   AlertCircle,
   Archive,
+  ArchiveRestore,
   Search,
 } from "lucide-react";
 import Link from "next/link";
@@ -246,6 +248,23 @@ function ProductionInner() {
   const [showCreate, setShowCreate] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
+  const loadProductions = useCallback(async () => {
+    try {
+      const r = await fetch("/api/productions?includeArchived=true");
+      if (r.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!r.ok) throw new Error(`GET /api/productions → ${r.status}`);
+      const d = await r.json();
+      setAllProductions(d.productions ?? []);
+    } catch {
+      setLoadFailed(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     // Always pull archived rows: the Projects list has its own Archived filter
     // tab, and the Overview reveals them behind a toggle — no refetch needed.
@@ -253,21 +272,8 @@ function ProductionInner() {
     // A failed load must never fall through to an empty array: rendering "0
     // projects" for what is really an expired session or a 500 makes healthy
     // data look permanently deleted.
-    fetch("/api/productions?includeArchived=true")
-      .then(async (r) => {
-        if (r.status === 401) {
-          router.push("/login");
-          return null;
-        }
-        if (!r.ok) throw new Error(`GET /api/productions → ${r.status}`);
-        return r.json();
-      })
-      .then((d) => {
-        if (d) setAllProductions(d.productions ?? []);
-      })
-      .catch(() => setLoadFailed(true))
-      .finally(() => setLoading(false));
-  }, [router]);
+    void loadProductions();
+  }, [loadProductions]);
 
   useEffect(() => {
     fetch("/api/production/creative-pipeline")
@@ -388,7 +394,7 @@ function ProductionInner() {
         )}
 
         {!loading && !loadFailed && view === "projects" && (
-          <ProjectsListView productions={allProductions} />
+          <ProjectsListView productions={allProductions} onChanged={loadProductions} />
         )}
 
         {!loading && !loadFailed && isOverview && (
@@ -622,7 +628,7 @@ function firstShootTime(p: Production): number | null {
 // falling back to an absolute date for anything older than a year.
 
 
-function ProjectsListView({ productions }: { productions: Production[] }) {
+function ProjectsListView({ productions, onChanged }: { productions: Production[]; onChanged: () => void }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ProjectFilter>("all");
 
@@ -721,7 +727,7 @@ function ProjectsListView({ productions }: { productions: Production[] }) {
           No projects match.
         </div>
       ) : (
-        <ProjectTable rows={visible} />
+        <ProjectTable rows={visible} onChanged={onChanged} />
       )}
     </div>
   );
@@ -937,7 +943,7 @@ function CreativeInProgress({ deals }: { deals: CreativeDeal[] }) {
 // that's what "urgent" means here. Everything else falls back to most recently
 // touched.
 // ─────────────────────────────────────────────────────────────────────────────
-function ProjectTable({ rows, flat = false }: { rows: Production[]; flat?: boolean }) {
+function ProjectTable({ rows, flat = false, onChanged }: { rows: Production[]; flat?: boolean; onChanged?: () => void }) {
   const groups = useMemo(() => {
     const byStrand = new Map<Strand, Production[]>();
     for (const p of rows) {
@@ -976,7 +982,7 @@ function ProjectTable({ rows, flat = false }: { rows: Production[]; flat?: boole
   if (flat) {
     return (
       <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-        <ProjectRows rows={rows} />
+        <ProjectRows rows={rows} onChanged={onChanged} />
       </div>
     );
   }
@@ -995,7 +1001,7 @@ function ProjectTable({ rows, flat = false }: { rows: Production[]; flat?: boole
             </span>
           </div>
           <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-            <ProjectRows rows={g.rows} />
+            <ProjectRows rows={g.rows} onChanged={onChanged} />
           </div>
         </div>
       ))}
@@ -1003,7 +1009,48 @@ function ProjectTable({ rows, flat = false }: { rows: Production[]; flat?: boole
   );
 }
 
-function ProjectRows({ rows }: { rows: Production[] }) {
+function ProjectRows({ rows, onChanged }: { rows: Production[]; onChanged?: () => void }) {
+  const confirm = useConfirm();
+  const [busy, setBusy] = useState<string | null>(null);
+
+  // Archive from the list. Mirrors the project page exactly: editorial projects
+  // are archivable by anyone, deal-linked ones explain that Commercial owns them
+  // and only an admin may go ahead. The button is always shown — hiding it is
+  // what made people think the feature had gone.
+  async function archive(p: Production) {
+    const commercial = Boolean(p.campaignId);
+    const ok = await confirm({
+      title: commercial ? "Archive this commercial project?" : "Archive this project?",
+      message: commercial
+        ? "This project is bound by a commercial agreement. Archiving hides it from Production — the deal stays live in Commercial and nothing is deleted. Only an admin can do this."
+        : "It disappears from the Production dashboard but nothing is deleted — it can be unarchived later.",
+      confirmLabel: "Archive",
+      confirmVariant: "danger",
+    });
+    if (!ok) return;
+    setBusy(p.id);
+    try {
+      const res = await fetch(`/api/productions/${p.id}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: !p.archived }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        await confirm({
+          title: "Couldn't archive",
+          message: data.error || "Something went wrong.",
+          confirmLabel: "OK",
+          cancelLabel: "",
+        });
+        return;
+      }
+      onChanged?.();
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[760px] text-sm">
@@ -1016,6 +1063,7 @@ function ProjectRows({ rows }: { rows: Production[] }) {
             <th className="text-right font-semibold px-3 py-2.5">Spent</th>
             <th className="text-right font-semibold px-3 py-2.5">Headroom</th>
             <th className="text-left font-semibold px-4 py-2.5">Lead</th>
+            <th className="px-3 py-2.5 w-10"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
@@ -1082,6 +1130,22 @@ function ProjectRows({ rows }: { rows: Production[] }) {
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   {p.lead?.name ?? <span className="text-gray-400 dark:text-gray-600">Unassigned</span>}
+                </td>
+                <td className="px-3 py-3 text-right">
+                  <button
+                    onClick={() => archive(p)}
+                    disabled={busy === p.id}
+                    title={p.archived ? "Unarchive this project" : "Archive this project"}
+                    className="text-gray-300 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-40"
+                  >
+                    {busy === p.id ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : p.archived ? (
+                      <ArchiveRestore size={13} />
+                    ) : (
+                      <Archive size={13} />
+                    )}
+                  </button>
                 </td>
               </tr>
             );

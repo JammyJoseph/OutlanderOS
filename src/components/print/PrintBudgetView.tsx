@@ -33,7 +33,18 @@ interface FlatPlanLink {
   shootDate: string;
 }
 interface BudgetPayload {
-  issue: { id: string; issueNumber: number; issueName: string; totalRevenue: number | null };
+  issue: {
+    id: string;
+    issueNumber: number;
+    issueName: string;
+    /** Manual "other income" — anything not coming from a linked deal. */
+    totalRevenue: number | null;
+    otherIncome: number;
+    /** Sum of the distinct deals linked on this issue's flat plan. */
+    dealRevenue: number;
+    revenue: number;
+    deals: { id: string; title: string; client: string | null; value: number }[];
+  };
   lines: PrintBudgetLine[];
   productions: ProductionOption[];
   flatPlanLinks: FlatPlanLink[];
@@ -47,7 +58,11 @@ export default function PrintBudgetView({ issueId }: { issueId: string }) {
   const [lines, setLines] = useState<PrintBudgetLine[]>([]);
   const [productions, setProductions] = useState<ProductionOption[]>([]);
   const [flatPlanLinks, setFlatPlanLinks] = useState<FlatPlanLink[]>([]);
+  // `revenue` is the editable OTHER income. Deal revenue is derived from the
+  // flat plan and is not editable here — it comes from the deals themselves.
   const [revenue, setRevenue] = useState<number | null>(null);
+  const [dealRevenue, setDealRevenue] = useState(0);
+  const [linkedDeals, setLinkedDeals] = useState<{ id: string; title: string; client: string | null; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | "template" | "sync">(null);
@@ -92,6 +107,8 @@ export default function PrintBudgetView({ issueId }: { issueId: string }) {
       setProductions(data.productions ?? []);
       setFlatPlanLinks(data.flatPlanLinks ?? []);
       setRevenue(data.issue?.totalRevenue ?? null);
+      setDealRevenue(data.issue?.dealRevenue ?? 0);
+      setLinkedDeals(data.issue?.deals ?? []);
       setError(null);
     } catch (e) {
       setError(String(e));
@@ -207,7 +224,13 @@ export default function PrintBudgetView({ issueId }: { issueId: string }) {
     [issueId]
   );
 
-  const totals = useMemo(() => grandTotals(lines, revenue), [lines, revenue]);
+  // Headroom is measured against everything coming in: deals linked on the flat
+  // plan plus any other income typed here.
+  const totalRevenue = dealRevenue + (revenue ?? 0);
+  const totals = useMemo(
+    () => grandTotals(lines, dealRevenue > 0 || revenue != null ? totalRevenue : null),
+    [lines, totalRevenue, dealRevenue, revenue]
+  );
 
   // productionIds already represented as lines in the Productions section — used
   // to decide whether "Sync from flat plan" has anything left to do.
@@ -237,11 +260,21 @@ export default function PrintBudgetView({ issueId }: { issueId: string }) {
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Issue revenue</p>
-          <div className="mt-1 flex items-baseline gap-0.5">
-            <span className="text-lg text-muted-foreground">£</span>
-            <RevenueInput value={revenue} onCommit={saveRevenue} />
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{gbp(totalRevenue)}</p>
+          <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
+            <p title={linkedDeals.map((d) => `${d.client ?? d.title}: ${gbp(d.value)}`).join("\n")}>
+              {gbp(dealRevenue)} from {linkedDeals.length} deal{linkedDeals.length === 1 ? "" : "s"} on the flat plan
+            </p>
+            <div className="flex items-center gap-1">
+              <span>other income £</span>
+              <RevenueInput value={revenue} onCommit={saveRevenue} />
+            </div>
           </div>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">deal revenue + other · exc. VAT</p>
+          {linkedDeals.length === 0 && (
+            <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">
+              No deals linked on the flat plan yet — link them there and revenue fills itself in.
+            </p>
+          )}
         </div>
         <Stat label="Total budget" value={gbp(totals.budget)} hint="exc. VAT" />
         <Stat label="Total actual" value={gbp(totals.actual)} hint="spent / committed" />

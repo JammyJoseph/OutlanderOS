@@ -101,8 +101,45 @@ export const GET = withAuth(async (
       take: 200,
     })
 
+    // ── Issue revenue ──
+    // Deal revenue is the sum of the DISTINCT campaigns linked on this issue's
+    // flat plan. Distinct matters: a deal spanning a DPS appears on two pages
+    // and must not be counted twice.
+    //
+    // `totalRevenue` on the plan is now "other income" — anything not coming
+    // from a linked deal. The two are ADDED, never chosen between, so there's no
+    // arbitration and no way for one to silently mask the other.
+    const dealIds = [
+      ...new Set(
+        pages.map((pg) => pg?.campaignId).filter((v): v is string => typeof v === 'string' && !!v)
+      ),
+    ]
+    const linkedDeals = dealIds.length
+      ? await prisma.campaign.findMany({
+          where: { id: { in: dealIds } },
+          select: { id: true, title: true, dealValue: true, value: true, client: { select: { name: true } } },
+        })
+      : []
+    const dealRevenue = linkedDeals.reduce((s, d) => s + (d.dealValue ?? d.value ?? 0), 0)
+    const otherIncome = plan.totalRevenue ?? 0
+
     return NextResponse.json({
-      issue: { id: plan.id, issueNumber: plan.issueNumber, issueName: plan.issueName, totalRevenue: plan.totalRevenue },
+      issue: {
+        id: plan.id,
+        issueNumber: plan.issueNumber,
+        issueName: plan.issueName,
+        // Kept for the editable "other income" field the UI already binds to.
+        totalRevenue: plan.totalRevenue,
+        otherIncome,
+        dealRevenue,
+        revenue: dealRevenue + otherIncome,
+        deals: linkedDeals.map((d) => ({
+          id: d.id,
+          title: d.title,
+          client: d.client?.name ?? null,
+          value: d.dealValue ?? d.value ?? 0,
+        })),
+      },
       lines: await serialiseLines(rows),
       productions: productions.map((p) => ({ id: p.id, title: p.title, client: p.clientName })),
       flatPlanLinks,
