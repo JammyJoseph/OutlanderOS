@@ -96,10 +96,20 @@ incompatible ways and most of its surface is dead code.**
       only one that refreshes properly). Retire the `.tokens.json` app-level client and the
       service account. Delete or finish `google-client.ts` (5 exported functions, zero
       callers), `drive-search.ts` (zero importers), `getUserGmail` (zero callers).
-- [ ] **Fix the two hardcoded `localhost:3000` redirect URIs** — `xero-client.ts:5` and
-      `google-user-auth.ts:14`. Derive from `NEXTAUTH_URL`. The Google one currently forces
-      users to copy an auth code out of a connection-refused URL bar; **Xero OAuth cannot
-      complete in production at all as written.**
+- [ ] 🔴 **Xero is dead in production right now, and cannot be revived without a code fix.**
+      Verified 2026-07-27: a Xero token exists in `.tokens.json`, but `/api/xero/data`
+      returns `{"connected":false,"error":"Token expired — please reconnect Xero in
+      Settings"}`. Reconnecting runs the OAuth flow, whose redirect URI is hardcoded to
+      `http://localhost:3000/api/xero/callback` (`xero-client.ts:5`), so **the flow cannot
+      complete from the production URL.** Every finance figure sourced from Xero is
+      therefore stale or absent, and the account codes / tracking categories needed for
+      budget coding can't be fetched at all.
+      Also found: `expires_at` is written in **milliseconds** where the refresh check reads
+      **seconds** (`.tokens.json` shows year 58292), so the proactive refresh never fires —
+      the connection only ever dies rather than renewing.
+      Same hardcoded-localhost bug in `google-user-auth.ts:14`, which is why connecting
+      Google makes users copy an auth code out of a connection-refused URL bar. Derive both
+      from `NEXTAUTH_URL`.
 - [ ] **Collapse three Xero clients into one** (`xero-finance.ts` is the best). Delete
       `xero-api.ts` and the report half of `xero-client.ts`; they duplicate token refresh
       almost verbatim. Also: admin-gate `/api/xero/connect` (any authenticated user can
