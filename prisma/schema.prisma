@@ -268,6 +268,7 @@ model Campaign {
   activities       DealActivity[]
   tasks            Task[]            @relation("campaignTasks")
   rounds           CreativeRound[]
+  costLines        CostLine[]        @relation("campaignCostLines")
 }
 
 // Creative Rounds — the iterative brief → submit → review → approve loop for a
@@ -505,7 +506,7 @@ model Production {
   milestones       ProductionMilestone[]   @relation("productionMilestones")
   shareLinks       ProductionShareLink[]   @relation("productionShareLinks")
   linkedTasks      Task[]                  @relation("productionLinkedTasks")
-  printBudgetLines PrintBudgetLine[]       @relation("printBudgetProduction")
+  costLines        CostLine[]              @relation("productionCostLines")
 }
 
 // Shareable internal deep-link to a production. Any signed-in Outlander user
@@ -847,31 +848,93 @@ model MagazinePlan {
   updatedAt   DateTime @updatedAt
   updatedBy   String?
 
-  printBudgetLines PrintBudgetLine[]
+  costLines        CostLine[]
 
   @@unique([issueNumber])
 }
 
-// A single line in an issue's section-based budget (Quinn's spreadsheet
-// structure). Sections: MAGAZINE_PRODUCTION | FREELANCE | PRODUCTIONS | EVENTS |
-// MARKETING | OTHER. A line may optionally link to a Production, in which case its
-// `actual` is synced from that production's BudgetLineItem actuals.
-model PrintBudgetLine {
-  id             String       @id @default(cuid())
-  magazinePlanId String
-  magazinePlan   MagazinePlan @relation(fields: [magazinePlanId], references: [id], onDelete: Cascade)
-  section        String // MAGAZINE_PRODUCTION | FREELANCE | PRODUCTIONS | EVENTS | MARKETING | OTHER
-  description    String
-  amount         Float        @default(0) // budgeted amount (ex-VAT)
-  actual         Float? // what was actually spent (manual, or synced from a linked production)
-  notes          String?
-  productionId   String? // links to a Production for auto-import of actuals
-  production     Production?  @relation("printBudgetProduction", fields: [productionId], references: [id])
-  sortOrder      Int          @default(0)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+// ===== COST LEDGER =====
+//
+// One ledger, many lenses. Every planned and actual cost — whichever portal it
+// was entered from — is a row here. Print is this ledger filtered by issue,
+// Production filtered by project, Commercial filtered by deal, and Finance is
+// the same ledger with no filter at all. That is the P&L.
+//
+// The point is that nothing needs syncing. Syncing is what you do when you keep
+// two copies of a number; the previous PrintBudgetLine kept both a manual
+// `actual` and a live `productionActual` and needed a resolvedActual() helper to
+// decide which to believe. A ledger never has to decide.
+//
+// Budget and actual are SEPARATE ROWS, distinguished by `kind`. A plan and a
+// fact are different things: budget-vs-actual is a GROUP BY, not a comparison of
+// two columns on one row.
 
-  @@index([magazinePlanId])
+enum CostKind {
+  BUDGET // planned spend
+  COMMITTED // agreed/ordered but not yet invoiced
+  ACTUAL // real spend, normally evidenced by an invoice
+}
+
+model CostLine {
+  id String @id @default(cuid())
+
+  kind        CostKind @default(BUDGET)
+  description String
+  amount      Float    @default(0) // always ex-VAT — platform rule
+  currency    String   @default("GBP")
+
+  // ── Coding: the red thread ────────────────────────────────────────────────
+  // Mirrors Xero's chart of accounts and tracking categories so a cost entered
+  // in Print lands in the right place in Finance with no reconciliation step.
+  // Nullable because Xero is currently disconnected and its codes cannot be
+  // fetched (see docs/BACKLOG.md) — codes are backfilled, not migrated.
+  // `section` below is effectively a local tracking category and is the natural
+  // thing to map onto a real Xero tracking option once connected.
+  accountCode      String?
+  accountName      String? // denormalised label, captured at coding time
+  trackingCategory String?
+  trackingOption   String?
+
+  // ── Context: what this cost belongs to ────────────────────────────────────
+  // Deliberately not exclusive. A shoot for Issue 02 funded by the Sorel deal is
+  // legitimately all three at once, and the P&L should be able to slice by any
+  // of them without the cost being duplicated.
+  magazinePlanId String?
+  magazinePlan   MagazinePlan? @relation(fields: [magazinePlanId], references: [id], onDelete: Cascade)
+  productionId   String?
+  production     Production?   @relation("productionCostLines", fields: [productionId], references: [id])
+  campaignId     String?
+  campaign       Campaign?     @relation("campaignCostLines", fields: [campaignId], references: [id])
+
+  // Print grouping — MAGAZINE_PRODUCTION | FREELANCE | PRODUCTIONS | EVENTS |
+  // MARKETING | OTHER. Null for costs that aren't part of an issue budget.
+  section String?
+
+  // ── Drawdown: an ACTUAL may point at the BUDGET row it consumes ───────────
+  // Optional by design: unbudgeted spend must always be recordable, otherwise
+  // people work around the system and the ledger stops being the truth.
+  budgetLineId String?
+  budgetLine   CostLine?  @relation("budgetDrawdown", fields: [budgetLineId], references: [id])
+  drawdowns    CostLine[] @relation("budgetDrawdown")
+
+  // ── Reconciliation ────────────────────────────────────────────────────────
+  invoiceRef String? // Xero invoice number / InvoiceSubmission id once ingested
+  paidAt     DateTime?
+
+  notes     String?
+  sortOrder Int     @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdById   String?
+  createdByName String?
+
+  @@index([magazinePlanId, kind])
+  @@index([productionId, kind])
+  @@index([campaignId, kind])
+  @@index([accountCode])
+  @@index([budgetLineId])
+  @@index([kind])
 }
 
 // ===== EDITORIAL =====

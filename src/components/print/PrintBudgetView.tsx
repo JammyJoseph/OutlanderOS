@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import {
   PRINT_BUDGET_SECTIONS,
-  resolvedActual,
   grandTotals,
   type PrintBudgetLine,
   type PrintBudgetSection,
@@ -136,8 +135,8 @@ export default function PrintBudgetView({ issueId }: { issueId: string }) {
             setTimeout(() => setError(null), 4000);
             return;
           }
-          // Reconcile server-resolved fields (productionActual / title) so a newly
-          // linked production shows its live actual immediately.
+          // Reconcile server-computed fields (actual / production title) so a newly
+          // linked production shows its ledger actual immediately.
           const d = (await res.json()) as { line?: PrintBudgetLine };
           if (d.line) setLines((cur) => cur.map((l) => (l.id === id ? d.line! : l)));
         });
@@ -285,10 +284,7 @@ export default function PrintBudgetView({ issueId }: { issueId: string }) {
             .filter((l) => l.section === sec.key)
             .sort((a, b) => a.sortOrder - b.sortOrder);
           const secBudget = secLines.reduce((s, l) => s + (l.amount || 0), 0);
-          const secActual = secLines.reduce((s, l) => {
-            const a = resolvedActual(l);
-            return s + (a ?? 0);
-          }, 0);
+          const secActual = secLines.reduce((s, l) => s + (l.actual || 0), 0);
           const secVar = secBudget - secActual;
           const isCollapsed = !!collapsed[sec.key];
           return (
@@ -421,9 +417,9 @@ function BudgetRow({
   onDelete: () => void;
 }) {
   const linked = !!line.productionId;
-  const actual = resolvedActual(line);
-  const variance = (line.amount || 0) - (actual ?? 0);
-  const hasActual = actual != null;
+  const actual = line.actual || 0;
+  const variance = (line.amount || 0) - actual;
+  const hasActual = actual !== 0;
 
   return (
     <div className="group grid grid-cols-12 items-center gap-2 border-t border-border/60 px-4 py-1 hover:bg-muted/20 dark:hover:bg-white/[0.02]">
@@ -497,8 +493,10 @@ function BudgetRow({
           </span>
         ) : (
           <MoneyInput
-            value={line.actual}
-            onCommit={(v) => onPatch({ actual: v })}
+            // Clearing the field means "nothing spent" — 0 tells the API to drop
+            // the manual ACTUAL ledger row rather than store a zero.
+            value={line.actual || null}
+            onCommit={(v) => onPatch({ actual: v ?? 0 })}
             allowEmpty
             placeholder="—"
           />

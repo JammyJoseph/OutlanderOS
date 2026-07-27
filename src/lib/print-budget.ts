@@ -45,32 +45,33 @@ export const MAGAZINE_PRODUCTION_TEMPLATE: { description: string; amount: number
   { description: 'Magazine Corner (10000 units)', amount: 1500 },
 ]
 
-// The line as returned by the API: the stored row plus a live `productionActual`
-// resolved from the linked production's budget actuals (null when unlinked).
+// A budget line as returned by the API. `amount` is the BUDGET row on the cost
+// ledger; `actual` is the SUM of ACTUAL rows attributed to it, computed server
+// side (see lib/cost-ledger.ts).
+//
+// There used to be a resolvedActual() helper here that chose between a manually
+// typed actual and a linked production's actual. That choice is gone: budget and
+// actual are separate ledger rows, so the actual is a sum, and the client simply
+// displays it.
 export interface PrintBudgetLine {
   id: string
   section: PrintBudgetSection | string
   description: string
   amount: number // budgeted, ex-VAT
-  actual: number | null // manual actual (used when there's no production link)
+  actual: number // summed from ACTUAL ledger rows; 0 when nothing has been spent
   notes: string | null
   productionId: string | null
-  productionActual: number | null // live actual from the linked production, if any
   productionTitle: string | null // resolved title of the linked production, if any
+  // Xero coding — null until the chart of accounts can be fetched.
+  accountCode: string | null
+  accountName: string | null
   sortOrder: number
-}
-
-// The actual to display/roll up for a line: the linked production's live actual
-// wins over any manually-typed figure; unlinked lines use the manual actual.
-export function resolvedActual(line: Pick<PrintBudgetLine, 'productionId' | 'productionActual' | 'actual'>): number | null {
-  if (line.productionId) return line.productionActual ?? 0
-  return line.actual
 }
 
 export interface SectionTotals {
   section: PrintBudgetSection | string
   budget: number
-  actual: number // only lines that have an actual contribute
+  actual: number
   variance: number // budget − actual
   lineCount: number
 }
@@ -89,8 +90,7 @@ export function sectionTotals(lines: PrintBudgetLine[]): SectionTotals {
   let actual = 0
   for (const l of lines) {
     budget += l.amount || 0
-    const a = resolvedActual(l)
-    if (a != null) actual += a
+    actual += l.actual || 0
   }
   return {
     section: lines[0]?.section ?? 'OTHER',
@@ -106,8 +106,7 @@ export function grandTotals(lines: PrintBudgetLine[], revenue: number | null): B
   let actual = 0
   for (const l of lines) {
     budget += l.amount || 0
-    const a = resolvedActual(l)
-    if (a != null) actual += a
+    actual += l.actual || 0
   }
   const headroom = revenue != null ? revenue - budget : null
   return {

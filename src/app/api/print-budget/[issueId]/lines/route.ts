@@ -2,67 +2,63 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
 import { type MagazinePage } from '@/lib/magazine-plan'
+import { actualsForBudgetLines } from '@/lib/cost-ledger'
 import {
   MAGAZINE_PRODUCTION_TEMPLATE,
   isPrintBudgetSection,
   type PrintBudgetSection,
 } from '@/lib/print-budget'
 
-// Live actual for a production: sum of its budget line-item actuals, falling back
-// to the stored budgetActual when no line items have been costed. Mirrors the
-// existing print-budget GET route's productionActual().
-type ProdWithItems = { id: string; title: string; budgetActual: number | null; budgetItems: { actual: number }[] }
-function productionActual(p: ProdWithItems): number {
-  const fromItems = p.budgetItems.reduce((s, i) => s + (i.actual ?? 0), 0)
-  return fromItems > 0 ? fromItems : p.budgetActual ?? 0
+// The print budget is the cost ledger filtered to one issue. The rows shown here
+// are the BUDGET rows; each one's `actual` is summed from ACTUAL rows on the same
+// ledger (see lib/cost-ledger.ts). Nothing is copied or synced between the two.
+
+type LedgerRow = {
+  id: string
+  section: string | null
+  description: string
+  amount: number
+  notes: string | null
+  productionId: string | null
+  accountCode: string | null
+  accountName: string | null
+  sortOrder: number
+  production?: { title: string } | null
 }
 
-// Serialises a stored line to the API shape, resolving the linked production's
-// live actual + title from the supplied production map.
-function serialise(
-  line: {
-    id: string
-    section: string
-    description: string
-    amount: number
-    actual: number | null
-    notes: string | null
-    productionId: string | null
-    sortOrder: number
-  },
-  prodMap: Map<string, ProdWithItems>,
-) {
-  const prod = line.productionId ? prodMap.get(line.productionId) : null
-  return {
-    id: line.id,
-    section: line.section,
-    description: line.description,
-    amount: line.amount,
-    actual: line.actual,
-    notes: line.notes,
-    productionId: line.productionId,
-    productionActual: prod ? productionActual(prod) : null,
-    productionTitle: prod ? prod.title : null,
-    sortOrder: line.sortOrder,
-  }
-}
+const LINE_SELECT = {
+  id: true,
+  section: true,
+  description: true,
+  amount: true,
+  notes: true,
+  productionId: true,
+  accountCode: true,
+  accountName: true,
+  sortOrder: true,
+  production: { select: { title: true } },
+} as const
 
-// Loads every production referenced by the given lines so their live actuals can
-// be resolved in one query.
-async function loadProductions(productionIds: string[]): Promise<Map<string, ProdWithItems>> {
-  const ids = [...new Set(productionIds.filter(Boolean))]
-  if (ids.length === 0) return new Map()
-  const prods = await prisma.production.findMany({
-    where: { id: { in: ids } },
-    select: { id: true, title: true, budgetActual: true, budgetItems: { select: { actual: true } } },
-  })
-  return new Map(prods.map((p) => [p.id, p]))
+async function serialiseLines(rows: LedgerRow[]) {
+  const actuals = await actualsForBudgetLines(
+    rows.map((r) => ({ id: r.id, productionId: r.productionId }))
+  )
+  return rows.map((r) => ({
+    id: r.id,
+    section: r.section ?? 'OTHER',
+    description: r.description,
+    amount: r.amount,
+    actual: actuals.get(r.id) ?? 0,
+    notes: r.notes,
+    productionId: r.productionId,
+    productionTitle: r.production?.title ?? null,
+    accountCode: r.accountCode,
+    accountName: r.accountName,
+    sortOrder: r.sortOrder,
+  }))
 }
 
 // GET /api/print-budget/[issueId]/lines
-// Returns the issue's section-based budget lines (with live production actuals),
-// the issue revenue, the active productions available for linking, and the flat
-// plan's produced features so the Productions section can be auto-synced.
 export const GET = withAuth(async (
   _request: NextRequest,
   { params }: { params?: Promise<Record<string, string>> },
@@ -75,12 +71,11 @@ export const GET = withAuth(async (
     })
     if (!plan) return NextResponse.json({ error: 'Issue not found' }, { status: 404 })
 
-    const lines = await prisma.printBudgetLine.findMany({
-      where: { magazinePlanId: issueId },
+    const rows = await prisma.costLine.findMany({
+      where: { magazinePlanId: issueId, kind: 'BUDGET' },
       orderBy: [{ section: 'asc' }, { sortOrder: 'asc' }],
+      select: LINE_SELECT,
     })
-
-    const prodMap = await loadProductions(lines.map((l) => l.productionId).filter((id): id is string => !!id))
 
     // Produced features on the flat plan that carry a productionId — the source
     // for the Productions section's auto-sync.
@@ -99,7 +94,6 @@ export const GET = withAuth(async (
       }
     }
 
-    // Active productions for the link pickers (archived hidden).
     const productions = await prisma.production.findMany({
       where: { archived: false },
       select: { id: true, title: true, clientName: true },
@@ -109,7 +103,7 @@ export const GET = withAuth(async (
 
     return NextResponse.json({
       issue: { id: plan.id, issueNumber: plan.issueNumber, issueName: plan.issueName, totalRevenue: plan.totalRevenue },
-      lines: lines.map((l) => serialise(l, prodMap)),
+      lines: await serialiseLines(rows),
       productions: productions.map((p) => ({ id: p.id, title: p.title, client: p.clientName })),
       flatPlanLinks,
     })
@@ -120,7 +114,6 @@ export const GET = withAuth(async (
 })
 
 // POST /api/print-budget/[issueId]/lines
-// Supports four shapes:
 //   { action: 'template' }         → seed the standard Magazine Production items
 //   { action: 'syncProductions' }  → upsert a Productions line per linked feature
 //   { lines: [...] }               → bulk create
@@ -128,6 +121,7 @@ export const GET = withAuth(async (
 export const POST = withAuth(async (
   request: NextRequest,
   { params }: { params?: Promise<Record<string, string>> },
+  user,
 ) => {
   const { issueId } = (await params)!
   try {
@@ -138,11 +132,11 @@ export const POST = withAuth(async (
     if (!plan) return NextResponse.json({ error: 'Issue not found' }, { status: 404 })
 
     const body = await request.json().catch(() => ({}))
+    const author = { createdById: user.userId, createdByName: user.name }
 
-    // Next sortOrder within a section = max existing + 1.
     const nextSortOrder = async (section: string, offset = 0) => {
-      const last = await prisma.printBudgetLine.findFirst({
-        where: { magazinePlanId: issueId, section },
+      const last = await prisma.costLine.findFirst({
+        where: { magazinePlanId: issueId, kind: 'BUDGET', section },
         orderBy: { sortOrder: 'desc' },
         select: { sortOrder: true },
       })
@@ -151,8 +145,8 @@ export const POST = withAuth(async (
 
     // ── Template: seed Magazine Production, skipping any already present ──
     if (body.action === 'template') {
-      const existing = await prisma.printBudgetLine.findMany({
-        where: { magazinePlanId: issueId, section: 'MAGAZINE_PRODUCTION' },
+      const existing = await prisma.costLine.findMany({
+        where: { magazinePlanId: issueId, kind: 'BUDGET', section: 'MAGAZINE_PRODUCTION' },
         select: { description: true },
       })
       const have = new Set(existing.map((e) => e.description.trim().toLowerCase()))
@@ -161,13 +155,15 @@ export const POST = withAuth(async (
         return NextResponse.json({ created: 0, message: 'Template already applied' })
       }
       const base = await nextSortOrder('MAGAZINE_PRODUCTION')
-      await prisma.printBudgetLine.createMany({
+      await prisma.costLine.createMany({
         data: toCreate.map((t, i) => ({
           magazinePlanId: issueId,
+          kind: 'BUDGET' as const,
           section: 'MAGAZINE_PRODUCTION',
           description: t.description,
           amount: t.amount,
           sortOrder: base + i,
+          ...author,
         })),
       })
       return NextResponse.json({ created: toCreate.length })
@@ -183,8 +179,8 @@ export const POST = withAuth(async (
         where: { id: { in: linkIds } },
         select: { id: true, title: true },
       })
-      const existing = await prisma.printBudgetLine.findMany({
-        where: { magazinePlanId: issueId, section: 'PRODUCTIONS', productionId: { in: linkIds } },
+      const existing = await prisma.costLine.findMany({
+        where: { magazinePlanId: issueId, kind: 'BUDGET', section: 'PRODUCTIONS', productionId: { in: linkIds } },
         select: { productionId: true },
       })
       const have = new Set(existing.map((e) => e.productionId))
@@ -192,14 +188,16 @@ export const POST = withAuth(async (
       if (missing.length === 0) return NextResponse.json({ created: 0, message: 'Productions already in sync' })
 
       const base = await nextSortOrder('PRODUCTIONS')
-      await prisma.printBudgetLine.createMany({
+      await prisma.costLine.createMany({
         data: missing.map((p, i) => ({
           magazinePlanId: issueId,
+          kind: 'BUDGET' as const,
           section: 'PRODUCTIONS',
           description: p.title,
           amount: 0,
           productionId: p.id,
           sortOrder: base + i,
+          ...author,
         })),
       })
       return NextResponse.json({ created: missing.length })
@@ -209,23 +207,12 @@ export const POST = withAuth(async (
     if (Array.isArray(body.lines)) {
       const valid = body.lines.filter((l: { section?: string }) => l.section && isPrintBudgetSection(l.section))
       if (valid.length === 0) return NextResponse.json({ error: 'No valid lines' }, { status: 400 })
-      // Assign incrementing sortOrders per section, starting after the current max.
       const bases = new Map<string, number>()
-      const data = [] as {
-        magazinePlanId: string
-        section: string
-        description: string
-        amount: number
-        actual: number | null
-        notes: string | null
-        productionId: string | null
-        sortOrder: number
-      }[]
+      const data = []
       for (const l of valid as {
         section: PrintBudgetSection
         description?: string
         amount?: number
-        actual?: number | null
         notes?: string | null
         productionId?: string | null
       }[]) {
@@ -234,16 +221,17 @@ export const POST = withAuth(async (
         bases.set(l.section, so + 1)
         data.push({
           magazinePlanId: issueId,
+          kind: 'BUDGET' as const,
           section: l.section,
           description: (l.description ?? '').trim(),
           amount: l.amount ?? 0,
-          actual: l.actual ?? null,
           notes: l.notes || null,
           productionId: l.productionId || null,
           sortOrder: so,
+          ...author,
         })
       }
-      await prisma.printBudgetLine.createMany({ data })
+      await prisma.costLine.createMany({ data })
       return NextResponse.json({ created: data.length })
     }
 
@@ -252,20 +240,22 @@ export const POST = withAuth(async (
     if (!section || !isPrintBudgetSection(section)) {
       return NextResponse.json({ error: 'Invalid section' }, { status: 400 })
     }
-    const line = await prisma.printBudgetLine.create({
+    const created = await prisma.costLine.create({
       data: {
         magazinePlanId: issueId,
+        kind: 'BUDGET',
         section,
         description: (body.description ?? '').trim(),
         amount: typeof body.amount === 'number' ? body.amount : 0,
-        actual: typeof body.actual === 'number' ? body.actual : null,
         notes: body.notes || null,
         productionId: body.productionId || null,
         sortOrder: typeof body.sortOrder === 'number' ? body.sortOrder : await nextSortOrder(section),
+        ...author,
       },
+      select: LINE_SELECT,
     })
-    const prodMap = await loadProductions([line.productionId].filter((id): id is string => !!id))
-    return NextResponse.json({ line: serialise(line, prodMap) }, { status: 201 })
+    const [line] = await serialiseLines([created])
+    return NextResponse.json({ line }, { status: 201 })
   } catch (err) {
     console.error('POST /api/print-budget/[issueId]/lines', err)
     return NextResponse.json({ error: 'Failed to save print budget line' }, { status: 500 })
