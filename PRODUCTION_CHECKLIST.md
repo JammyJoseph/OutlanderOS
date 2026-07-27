@@ -29,7 +29,7 @@ live portal after deploy.
 - [ ] **Deliverables paste + parse (LLM)** — same flow for the deliverables brief.
 - [ ] **Graceful fallback** — with no `ANTHROPIC_API_KEY` (or on any model error) the route
       falls back to the regex parser and the UI still populates.
-- [ ] Confirm whether `ANTHROPIC_API_KEY` is set in the prod `.env` (feature is LLM-powered
+- [x] Confirm whether `ANTHROPIC_API_KEY` is set in the prod `.env` — **SET (verified 2026-07-27)**, LLM path is live (feature is LLM-powered
       only when present; otherwise regex fallback). Model: `claude-sonnet-4-6`.
 
 ## Campaign Timeline
