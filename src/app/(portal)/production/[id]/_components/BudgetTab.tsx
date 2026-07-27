@@ -260,8 +260,61 @@ export default function BudgetTab({
     const extras = Object.keys(grouped)
       .filter((k) => !known.has(k) && (grouped[k] ?? []).length > 0)
       .map((k) => ({ key: k, label: k.replace(/_/g, " "), costCategory: "other", template: [] }));
-    return [...BUDGET_SECTIONS, ...extras];
-  }, [grouped]);
+    const all = [...BUDGET_SECTIONS, ...extras];
+    // Apply this production's saved section order. Anything not in the saved
+    // list keeps its house position at the end, so adding a new section to
+    // BUDGET_SECTIONS never disappears on a production that has been reordered.
+    const saved = production.budgetSectionOrder ?? [];
+    if (saved.length === 0) return all;
+    const rank = new Map(saved.map((k, i) => [k, i]));
+    return [...all].sort(
+      (a, b) => (rank.get(a.key) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.key) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }, [grouped, production.budgetSectionOrder]);
+
+  // ── Drag reordering ──
+  // Plain HTML5 drag events rather than a library: the rows are a flat list and
+  // pulling in a DnD dependency for two lists isn't worth the bundle.
+  const [dragLine, setDragLine] = useState<{ id: string; section: string } | null>(null);
+  const [overLine, setOverLine] = useState<string | null>(null);
+  const [dragSection, setDragSection] = useState<string | null>(null);
+  const [overSection, setOverSection] = useState<string | null>(null);
+
+  async function commitLineOrder(section: string, orderedIds: string[]) {
+    // Optimistic: the server assigns 0..n from this order, so a refresh settles
+    // any disagreement rather than leaving the two out of step.
+    const res = await fetch(`/api/productions/${production.id}/budget`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reorder: orderedIds }),
+    });
+    await handleResponse(res);
+  }
+
+  function dropLineOn(targetId: string) {
+    if (!dragLine || dragLine.id === targetId) return;
+    const lines = (grouped[dragLine.section] ?? []).map((l) => l.id);
+    const from = lines.indexOf(dragLine.id);
+    const to = lines.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    lines.splice(to, 0, lines.splice(from, 1)[0]);
+    void commitLineOrder(dragLine.section, lines);
+  }
+
+  async function dropSectionOn(targetKey: string) {
+    if (!dragSection || dragSection === targetKey) return;
+    const keys = sections.map((s) => s.key);
+    const from = keys.indexOf(dragSection);
+    const to = keys.indexOf(targetKey);
+    if (from < 0 || to < 0) return;
+    keys.splice(to, 0, keys.splice(from, 1)[0]);
+    const res = await fetch(`/api/productions/${production.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ budgetSectionOrder: keys }),
+    });
+    if (res.ok) await refresh();
+  }
 
   // Every write goes through here: surface the error if the API refused, then
   // re-read the production. `refresh` is awaited so callers know the table is
@@ -1019,10 +1072,36 @@ export default function BudgetTab({
           const secVariance = money(secBudgeted - secActual);
           const isCollapsed = !!collapsed[sec.key];
           return (
-            <div key={sec.key} className="border-b border-border last:border-b-0 border-l-2">
+            <div
+              key={sec.key}
+              className={`border-b border-border last:border-b-0 border-l-2 ${
+                dragSection === sec.key ? "opacity-40" : ""
+              } ${overSection === sec.key && dragSection !== sec.key ? "border-t-2 border-t-[#9C7C2E]" : ""}`}
+              // Sections drag by their heading. Dragging a whole section from
+              // anywhere would fight the row drag inside it.
+              onDragOver={(e) => {
+                if (!dragSection) return;
+                e.preventDefault();
+                setOverSection(sec.key);
+              }}
+              onDrop={(e) => {
+                if (!dragSection) return;
+                e.preventDefault();
+                void dropSectionOn(sec.key);
+                setDragSection(null);
+                setOverSection(null);
+              }}
+            >
               <button
                 onClick={() => toggleSection(sec.key)}
+                draggable={canEditBudgeted}
+                onDragStart={() => setDragSection(sec.key)}
+                onDragEnd={() => {
+                  setDragSection(null);
+                  setOverSection(null);
+                }}
                 className="w-full flex items-center justify-between px-4 py-2 bg-muted/40 dark:bg-white/[0.03] hover:bg-muted/70 dark:hover:bg-white/[0.06] transition-colors text-left"
+                title={canEditBudgeted ? "Drag to reorder this section" : undefined}
               >
                 <div className="flex items-center gap-2">
                   {isCollapsed ? (
@@ -1069,6 +1148,20 @@ export default function BudgetTab({
                       key={line.id}
                       line={line}
                       section={sec.key}
+                      draggable={canEditBudgeted}
+                      isDragging={dragLine?.id === line.id}
+                      isDropTarget={overLine === line.id && dragLine?.id !== line.id}
+                      onDragStart={() => setDragLine({ id: line.id, section: sec.key })}
+                      onDragEnd={() => {
+                        setDragLine(null);
+                        setOverLine(null);
+                      }}
+                      onDragOverRow={() => setOverLine(line.id)}
+                      onDropRow={() => {
+                        dropLineOn(line.id);
+                        setDragLine(null);
+                        setOverLine(null);
+                      }}
                       view={view}
                       canEditBudgeted={canEditBudgeted}
                       canEditActual={canEditActual}
@@ -1578,6 +1671,13 @@ function BudgetRow({
   onEnterAtEnd,
   autoFocusFirst,
   onAutoFocused,
+  draggable = false,
+  isDragging = false,
+  isDropTarget = false,
+  onDragStart,
+  onDragEnd,
+  onDragOverRow,
+  onDropRow,
 }: {
   line: BudgetLineItem;
   section: string;
@@ -1590,6 +1690,13 @@ function BudgetRow({
   onEnterAtEnd: () => void;
   autoFocusFirst: boolean;
   onAutoFocused: () => void;
+  draggable?: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onDragOverRow?: () => void;
+  onDropRow?: () => void;
 }) {
   const [role, setRole] = useState(line.role ?? "");
   const [description, setDescription] = useState(line.description);
@@ -1812,7 +1919,24 @@ function BudgetRow({
 
   if (view === "actuals") {
     return (
-      <div className="border-t border-border/60">
+      <div
+        className={`border-t border-border/60 ${isDragging ? "opacity-40" : ""} ${
+          isDropTarget ? "border-t-2 border-t-[#9C7C2E]" : ""
+        }`}
+        draggable={draggable}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragOver={(e) => {
+          if (!draggable) return;
+          e.preventDefault();
+          onDragOverRow?.();
+        }}
+        onDrop={(e) => {
+          if (!draggable) return;
+          e.preventDefault();
+          onDropRow?.();
+        }}
+      >
       <div
         ref={rowRef}
         className="grid grid-cols-12 gap-1.5 px-4 py-[3px] items-center hover:bg-muted/50 dark:hover:bg-white/[0.04] group min-h-[26px]"
@@ -1937,7 +2061,24 @@ function BudgetRow({
 
   // Budget entry view — Qty / Unit Cost / VAT% editable, VAT £ + Total auto.
   return (
-    <div className="border-t border-border/60">
+    <div
+      className={`border-t border-border/60 ${isDragging ? "opacity-40" : ""} ${
+        isDropTarget ? "border-t-2 border-t-[#9C7C2E]" : ""
+      }`}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => {
+        if (!draggable) return;
+        e.preventDefault();
+        onDragOverRow?.();
+      }}
+      onDrop={(e) => {
+        if (!draggable) return;
+        e.preventDefault();
+        onDropRow?.();
+      }}
+    >
     <div
       ref={rowRef}
       className="grid grid-cols-12 gap-1.5 px-4 py-1 items-center hover:bg-muted/50 dark:hover:bg-white/[0.04] group min-h-[28px]"

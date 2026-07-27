@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { isStrand } from "@/lib/production-strand";
+
+// Valid budget section keys. Mirrors BUDGET_SECTIONS in the production Budget
+// tab's types.ts, which is client-side — kept here rather than imported so this
+// route doesn't pull client code onto the server.
+const BUDGET_SECTION_KEYS = new Set([
+  "PRE_PRODUCTION",
+  "CAST_TALENT",
+  "CREW",
+  "STYLING_GLAM",
+  "LOCATIONS",
+  "EQUIPMENT",
+  "TRANSPORT",
+  "CATERING",
+  "ART_DEPARTMENT",
+  "POST_PRODUCTION",
+]);
 import { productionBudgetItems } from "@/lib/cost-ledger";
 import { withAuth, isAdminInDb } from "@/lib/auth";
 import { isProductionBudgetStatus } from "@/lib/deal-stages";
@@ -98,6 +114,15 @@ export const PUT = withAuth(async (
     if (body.strand !== undefined) {
       updateData.strand =
         body.strand && isStrand(body.strand) ? body.strand : null;
+    }
+    // Per-production budget section order (drag-reorder of section headings).
+    // Unknown keys are dropped rather than stored, so a stale client can't
+    // persist a section that no longer exists.
+    if (body.budgetSectionOrder !== undefined) {
+      const incoming: string[] = Array.isArray(body.budgetSectionOrder)
+        ? body.budgetSectionOrder.filter((v: unknown) => typeof v === "string")
+        : [];
+      updateData.budgetSectionOrder = incoming.filter((k) => BUDGET_SECTION_KEYS.has(k));
     }
     if (body.budgetTotal !== undefined) {
       // COMMERCIAL productions have their total allocation locked by the

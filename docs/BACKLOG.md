@@ -148,8 +148,16 @@ two budget systems still sit outside it.
       Each upcoming shoot row now carries the lead's name alongside client and call time, and
       budget with remaining headroom on the right (over-budget in red). Hidden on narrow
       screens so the countdown chip keeps its space.
-- [ ] **Drag-and-drop reordering in the production budget** — both lines *and* whole sections.
-      `sortOrder` already exists on the ledger; sections currently have no stored order.
+- [x] ~~Drag-and-drop reordering in the production budget~~ — **done 2026-07-27.** Lines drag
+      within their section; sections drag by their heading. Plain HTML5 drag events rather
+      than a library — the rows are a flat list and a DnD dependency wasn't worth the bundle.
+      Lines use the ledger's existing `sortOrder`; sections needed somewhere to live, so
+      `Production.budgetSectionOrder` stores a per-production order (empty = house order, and
+      sections missing from a saved order keep their house position at the end, so adding a
+      new section never makes it vanish on a reordered production).
+      Both endpoints validate: the line reorder ignores ids belonging to another production
+      and respects the budget lock; the section order drops unknown keys rather than storing
+      them. Verified both guards.
 - [x] ~~Undo "fill from template"~~ — **done 2026-07-27.** "Undo template (n)" appears beside
       "Fill template", only when there is something to undo. Removes lines still blank from
       the template; anything with a figure, description, note, invoice tracking **or recorded

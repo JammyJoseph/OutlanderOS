@@ -301,6 +301,34 @@ export const POST = withAuth(async (
     // Template action: seed the standard section structure with empty,
     // ready-to-fill line items. Skips sections that already have items so it's
     // safe to run on a partially-filled budget.
+    // Reorder lines within a section. The client sends the ids in their new
+    // order and the server assigns 0..n, so two people dragging at once can't
+    // interleave into a half-applied order the way per-line index writes would.
+    if (Array.isArray(body.reorder)) {
+      const ids: string[] = body.reorder.filter((v: unknown) => typeof v === "string");
+      if (ids.length === 0) return NextResponse.json({ reordered: 0 });
+
+      // Only touch lines that actually belong to this production — a guessed id
+      // from another project must not be silently renumbered.
+      const owned = await prisma.costLine.findMany({
+        where: { id: { in: ids }, productionId: id, kind: "BUDGET" },
+        select: { id: true },
+      });
+      const ownedIds = new Set(owned.map((o) => o.id));
+      const ordered = ids.filter((i) => ownedIds.has(i));
+      if (ordered.length === 0) return NextResponse.json({ reordered: 0 });
+
+      const blockedOrder = await blockedReason(id, { structure: true });
+      if (blockedOrder) return NextResponse.json({ error: blockedOrder }, { status: 403 });
+
+      await prisma.$transaction(
+        ordered.map((lineId, i) =>
+          prisma.costLine.update({ where: { id: lineId }, data: { sortOrder: i } })
+        )
+      );
+      return NextResponse.json({ reordered: ordered.length });
+    }
+
     // Undo a template fill. Clicking "Fill template" by accident used to mean
     // deleting every seeded row by hand, so this removes them in one go — but
     // only the ones nobody has touched. A line counts as untouched when it still

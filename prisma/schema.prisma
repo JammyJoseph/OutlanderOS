@@ -466,6 +466,10 @@ model Production {
   // all. Derivation covers the common cases; this field exists so any row can be
   // corrected by hand without the guess becoming permanent.
   strand           String?
+  // Per-production ordering of the budget sections. Empty = the house order in
+  // BUDGET_SECTIONS. Stored because the section list is a constant, so there is
+  // nowhere else for a drag-reorder to live.
+  budgetSectionOrder String[]
   campaignBudgetId String? // links back to the CampaignBudget that spawned this production
   title            String
   clientName       String?

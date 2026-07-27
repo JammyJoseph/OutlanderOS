@@ -456,6 +456,8 @@ export interface ProductionFull {
   // Strand override for the Projects list. Null/absent = derive it — see
   // src/lib/production-strand.ts.
   strand?: string | null;
+  // Per-production budget section order; empty = house order.
+  budgetSectionOrder?: string[];
   campaignBudgetId: string | null;
   status: ProductionStatus;
   brief: string | null;
