@@ -21,6 +21,8 @@ export const GET = withAuth(async (request: NextRequest) => {
       where: includeArchived ? {} : { archived: false },
       include: {
         campaign: { include: { client: true } },
+        // Project manager, shown on each row of the Projects list.
+        lead: { select: { id: true, name: true } },
         crew: { include: { contact: true } },
         callSheets: {
           select: { id: true, shootDate: true, status: true, callTime: true, location: true, shootTitle: true, notes: true },
@@ -34,7 +36,42 @@ export const GET = withAuth(async (request: NextRequest) => {
       },
       orderBy: { updatedAt: "desc" },
     });
-    return NextResponse.json({ productions });
+
+    // The Projects list shows budget, spend and headroom per row. Two grouped
+    // queries for the whole list rather than a nested include, so adding rows
+    // doesn't add queries.
+    const ids = productions.map((p) => p.id);
+    const [budgetSums, actualSums, issueLinked] = await Promise.all([
+      prisma.costLine.groupBy({
+        by: ["productionId"],
+        where: { productionId: { in: ids }, kind: "BUDGET" },
+        _sum: { amount: true },
+      }),
+      prisma.costLine.groupBy({
+        by: ["productionId"],
+        where: { productionId: { in: ids }, kind: "ACTUAL" },
+        _sum: { amount: true },
+      }),
+      // Any cost line of this production sitting in an issue budget means the
+      // work was commissioned for print — the signal the strand derivation uses.
+      prisma.costLine.findMany({
+        where: { productionId: { in: ids }, magazinePlanId: { not: null } },
+        select: { productionId: true },
+        distinct: ["productionId"],
+      }),
+    ]);
+    const budgetBy = new Map(budgetSums.map((b) => [b.productionId, b._sum.amount ?? 0]));
+    const actualBy = new Map(actualSums.map((a) => [a.productionId, a._sum.amount ?? 0]));
+    const inIssue = new Set(issueLinked.map((i) => i.productionId));
+
+    return NextResponse.json({
+      productions: productions.map((p) => ({
+        ...p,
+        budgetedTotal: budgetBy.get(p.id) ?? 0,
+        actualTotal: actualBy.get(p.id) ?? 0,
+        inIssueBudget: inIssue.has(p.id),
+      })),
+    });
   } catch (e) {
     // Never answer 200 + [] here. An empty list is indistinguishable from
     // "every project was deleted", so a transient DB error would read to the

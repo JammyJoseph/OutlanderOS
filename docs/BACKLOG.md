@@ -130,14 +130,18 @@ two budget systems still sit outside it.
 
 ## 1c. Productions view + budget UX (requested 2026-07-27)
 
-- [ ] **Rebuild the Productions view as a list, and delete the tile view.** The large cards
-      are clunky. One list, grouped into **Print · Digital Editorial · White Label · Paid**,
-      with key details on each row including budget. Order by most urgent where a timeline
-      exists, otherwise most recently updated.
-      Note: grouping needs a real field — `type` is EDITORIAL|COMMERCIAL and `billingType` is
-      EDITORIAL|PAID, so neither expresses Print vs Digital Editorial vs White Label. Decide
-      whether this is a new field or derived (e.g. presence of a `magazinePlanId` cost line
-      ⇒ Print) before building, or the grouping will be guesswork.
+- [x] ~~Rebuild the Productions view as a list, delete the tile view~~ — **done 2026-07-27.**
+      One table grouped by strand (Print · Digital Editorial · White Label · Paid) with
+      status, shoot date, budget, spent, headroom and lead per row. Soonest shoot first,
+      falling back to most recently updated. `ProjectCard` and the client grouping are gone.
+      **The grouping blocker was resolved by deriving rather than guessing** — see
+      `src/lib/production-strand.ts`. A project with a cost line in an issue budget is PRINT;
+      one with a deal / COMMERCIAL type / PAID billing is PAID; the rest are DIGITAL_EDITORIAL.
+      `Production.strand` overrides the derivation, and derived rows are marked "auto" in the
+      UI so a guess never reads as fact.
+      - [ ] **White Label has no derivation signal** — nothing in the data distinguishes it,
+            so nothing lands there until someone sets `strand` explicitly. Needs a picker on
+            the project page (the field and the list already support it).
 - [ ] Keep the **Upcoming** view — it works. Surface budget, date, headroom and project
       manager on it.
 - [ ] **Drag-and-drop reordering in the production budget** — both lines *and* whole sections.

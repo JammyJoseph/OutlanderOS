@@ -5,10 +5,8 @@ import {
   Film,
   Plus,
   Calendar as CalendarIcon,
-  ClipboardList,
   X,
   Loader2,
-  Users,
   Sparkles,
   ArrowUpRight,
   CheckCircle2,
@@ -18,6 +16,7 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { STRANDS, strandOf, strandIsDerived, type Strand } from "@/lib/production-strand";
 import { useSearchParams, useRouter } from "next/navigation";
 import { isValidUrl } from "@/lib/validation";
 import {
@@ -35,7 +34,6 @@ import {
   startOfDay,
 } from "date-fns";
 import DashboardCalendar from "./_components/DashboardCalendar";
-import { billingTheme } from "./_components/billing";
 
 type ProductionStatus =
   | "DRAFT"
@@ -122,19 +120,6 @@ interface CallSheetSummary {
 
 // Roll a production's call sheets up to one chip: any published sheet wins,
 // otherwise any sheet at all counts as a draft in progress.
-function callSheetChip(p: { callSheets: CallSheetSummary[] }): {
-  label: string;
-  cls: string;
-} {
-  const sheets = p.callSheets ?? [];
-  if (sheets.some((cs) => cs.status === "PUBLISHED")) {
-    return { label: "Published ✓", cls: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300" };
-  }
-  if (sheets.length > 0) {
-    return { label: "Draft", cls: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" };
-  }
-  return { label: "No call sheet", cls: "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500" };
-}
 
 interface Production {
   id: string;
@@ -146,7 +131,13 @@ interface Production {
   status: ProductionStatus;
   type?: string | null;
   billingType?: string | null;
+  strand?: string | null;
   budgetTotal?: number | null;
+  budgetedTotal?: number;
+  actualTotal?: number;
+  inIssueBudget?: boolean;
+  campaignId?: string | null;
+  lead?: { id: string; name: string } | null;
   archived?: boolean;
   archivedAt?: string | null;
   shootDates: string[];
@@ -573,29 +564,13 @@ function OverviewView({
           </div>
         ) : (
           <>
-            {active.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
-                  Active — {active.length}
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {active.map((p) => (
-                    <ProjectCard key={p.id} production={p} />
-                  ))}
-                </div>
-              </div>
-            )}
-
+            <ProjectTable rows={active} />
             {archived.length > 0 && (
-              <div>
+              <div className="mt-8">
                 <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
                   Completed — {archived.length}
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {archived.map((p) => (
-                    <ProjectCard key={p.id} production={p} />
-                  ))}
-                </div>
+                <ProjectTable rows={archived} flat />
               </div>
             )}
           </>
@@ -608,10 +583,8 @@ function OverviewView({
             <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <Archive size={12} /> Archived — {archivedProjects.length}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60 grayscale">
-              {archivedProjects.map((p) => (
-                <ProjectCard key={p.id} production={p} />
-              ))}
+            <div className="opacity-60 grayscale">
+              <ProjectTable rows={archivedProjects} flat />
             </div>
           </div>
         )}
@@ -644,37 +617,12 @@ function firstShootTime(p: Production): number | null {
   return all.length ? all[0].getTime() : null;
 }
 
-function firstShootLabel(p: Production): string {
-  const t = firstShootTime(p);
-  return t !== null ? format(new Date(t), "d MMM yyyy") : "—";
-}
 
 // Human "last updated" label — Today / Yesterday / N days/weeks/months ago,
 // falling back to an absolute date for anything older than a year.
-function updatedLabel(p: Production): string {
-  if (!p.updatedAt) return "—";
-  const d = parseISO(p.updatedAt);
-  const days = differenceInCalendarDays(new Date(), d);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days} days ago`;
-  if (days < 14) return "1 week ago";
-  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-  if (days < 60) return "1 month ago";
-  if (days < 365) return `${Math.floor(days / 30)} months ago`;
-  return format(d, "d MMM yyyy");
-}
 
-interface ClientGroup {
-  client: string | null; // null → Uncategorised
-  key: string;
-  projects: Production[];
-  totalBudget: number;
-  lastModified: number;
-}
 
 function ProjectsListView({ productions }: { productions: Production[] }) {
-  const router = useRouter();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ProjectFilter>("all");
 
@@ -694,10 +642,9 @@ function ProjectsListView({ productions }: { productions: Production[] }) {
     return { all, active: activeC, completed: completedC, archived: archivedC };
   }, [productions]);
 
-  // Filter by tab + search, then bucket by client. Client sections are ordered
-  // by their most-recently-modified project (Uncategorised always last); within
-  // a section, projects run chronologically by shoot date (no-date sinks last).
-  const groups = useMemo<ClientGroup[]>(() => {
+  // Tab + search filter. Grouping and ordering happen in ProjectTable, which
+  // buckets by strand and runs soonest-shoot-first within each.
+  const visible = useMemo<Production[]>(() => {
     const q = query.trim().toLowerCase();
     let list = productions.filter((p) => {
       const isArch = p.archived === true;
@@ -714,45 +661,10 @@ function ProjectsListView({ productions }: { productions: Production[] }) {
         return name.includes(q) || client.includes(q);
       });
     }
-
-    const updatedTime = (p: Production) =>
-      p.updatedAt ? parseISO(p.updatedAt).getTime() : 0;
-
-    const map = new Map<string, ClientGroup>();
-    for (const p of list) {
-      const client = getClientName(p);
-      const key = client ?? "__uncategorised__";
-      let g = map.get(key);
-      if (!g) {
-        g = { client, key, projects: [], totalBudget: 0, lastModified: 0 };
-        map.set(key, g);
-      }
-      g.projects.push(p);
-    }
-
-    const out = Array.from(map.values()).map((g) => {
-      const projects = [...g.projects].sort((a, b) => {
-        const ta = firstShootTime(a);
-        const tb = firstShootTime(b);
-        if (ta == null && tb == null) return 0;
-        if (ta == null) return 1;
-        if (tb == null) return -1;
-        return ta - tb;
-      });
-      const totalBudget = projects.reduce((s, p) => s + (p.budgetTotal ?? 0), 0);
-      const lastModified = projects.reduce((m, p) => Math.max(m, updatedTime(p)), 0);
-      return { ...g, projects, totalBudget, lastModified };
-    });
-
-    out.sort((a, b) => {
-      if (a.client === null) return 1; // Uncategorised last
-      if (b.client === null) return -1;
-      return b.lastModified - a.lastModified;
-    });
-    return out;
+    return list;
   }, [productions, query, filter]);
 
-  const totalRows = groups.reduce((s, g) => s + g.projects.length, 0);
+  const totalRows = visible.length;
 
   const FILTER_TABS: { key: ProjectFilter; label: string; count: number }[] = [
     { key: "all", label: "All", count: counts.all },
@@ -802,86 +714,14 @@ function ProjectsListView({ productions }: { productions: Production[] }) {
         ))}
       </div>
 
-      {/* Grouped by client */}
+      {/* Grouped by strand — Print / Digital Editorial / White Label / Paid.
+          Was grouped by client, which buried the thing you actually plan by. */}
       {totalRows === 0 ? (
         <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
           No projects match.
         </div>
       ) : (
-        <div className="space-y-5">
-          {groups.map((g) => (
-            <div
-              key={g.key}
-              className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden"
-            >
-              {/* Client section header */}
-              <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 flex items-baseline justify-between gap-3">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                  {g.client ?? "Uncategorised"}
-                </h3>
-                <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-                  {g.projects.length} project{g.projects.length !== 1 ? "s" : ""} ·{" "}
-                  {formatBudget(g.totalBudget)} total
-                </span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100 dark:border-gray-800 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                      <th className="px-4 py-2 text-left">Project</th>
-                      <th className="px-4 py-2 text-left">Status</th>
-                      <th className="px-4 py-2 text-left">Shoot Date</th>
-                      <th className="px-4 py-2 text-right">Budget</th>
-                      <th className="px-4 py-2 text-right">Team</th>
-                      <th className="px-4 py-2 text-left">Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {g.projects.map((p) => {
-                      const style = STATUS_STYLES[p.status] || STATUS_STYLES.DRAFT;
-                      return (
-                        <tr
-                          key={p.id}
-                          onClick={() => router.push(`/production/${p.id}`)}
-                          className="border-b border-gray-50 dark:border-gray-800 last:border-0 cursor-pointer hover:bg-gray-50/70 dark:hover:bg-gray-800/50 transition-colors"
-                        >
-                          <td className="px-4 py-3">
-                            <span className="font-medium text-gray-900 dark:text-gray-100">
-                              {p.title}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-                              {style.label}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            {firstShootLabel(p)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
-                            {formatBudget(p.budgetTotal)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400 tabular-nums">
-                            <span className="inline-flex items-center gap-1 justify-end">
-                              <Users size={12} className="text-gray-400 dark:text-gray-500" />
-                              {(p.crew ?? []).length}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            {updatedLabel(p)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ProjectTable rows={visible} />
       )}
     </div>
   );
@@ -1061,112 +901,170 @@ function CreativeInProgress({ deals }: { deals: CreativeDeal[] }) {
 
 // ─── Project card ──────────────────────────────────────────────────────────────
 
-function ProjectCard({ production: p }: { production: Production }) {
-  const next = getNextShoot(p);
-  const style = STATUS_STYLES[p.status] || STATUS_STYLES.DRAFT;
-  const bill = billingTheme(p);
-  const client = getClientName(p);
-  const crewCount = (p.crew ?? []).length;
-  // Fresh arrivals (e.g. just cleared from Commercial) get a NEW badge for 24h.
-  const isNew = p.createdAt
-    ? Date.now() - parseISO(p.createdAt).getTime() < 24 * 60 * 60 * 1000
-    : false;
+// ─────────────────────────────────────────────────────────────────────────────
+// Projects list. Replaces the old card grid: cards gave each project a lot of
+// chrome and very little information, and you couldn't scan budgets across a
+// dozen of them. A row per project, grouped by strand, with the numbers aligned
+// so the eye can run down a column.
+//
+// Order within a strand: anything with a shoot date comes first, soonest first —
+// that's what "urgent" means here. Everything else falls back to most recently
+// touched.
+// ─────────────────────────────────────────────────────────────────────────────
+function ProjectTable({ rows, flat = false }: { rows: Production[]; flat?: boolean }) {
+  const groups = useMemo(() => {
+    const byStrand = new Map<Strand, Production[]>();
+    for (const p of rows) {
+      const key = strandOf({
+        strand: p.strand,
+        billingType: p.billingType,
+        type: p.type,
+        campaignId: p.campaignId,
+        inIssueBudget: p.inIssueBudget,
+      });
+      const list = byStrand.get(key);
+      if (list) list.push(p);
+      else byStrand.set(key, [p]);
+    }
+    for (const list of byStrand.values()) {
+      list.sort((a, b) => {
+        const sa = firstShootTime(a);
+        const sb = firstShootTime(b);
+        if (sa != null && sb != null) return sa - sb;
+        if (sa != null) return -1;
+        if (sb != null) return 1;
+        const ua = a.updatedAt ? parseISO(a.updatedAt).getTime() : 0;
+        const ub = b.updatedAt ? parseISO(b.updatedAt).getTime() : 0;
+        return ub - ua;
+      });
+    }
+    return STRANDS.map((s) => ({ ...s, rows: byStrand.get(s.key) ?? [] })).filter(
+      (g) => g.rows.length > 0
+    );
+  }, [rows]);
 
-  // Progress: based on status order
-  const statusIdx: Record<ProductionStatus, number> = {
-    DRAFT: 0,
-    BRIEFED: 1,
-    PRE_PRODUCTION: 2,
-    SHOOTING: 3,
-    POST_PRODUCTION: 4,
-    DELIVERED: 5,
-    ARCHIVED: 5,
-  };
-  const progress = (statusIdx[p.status] / 5) * 100;
+  if (rows.length === 0) return null;
+
+  // `flat` skips the strand headings — used for the Completed and Archived
+  // blocks, which are already grouped by something else.
+  if (flat) {
+    return (
+      <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+        <ProjectRows rows={rows} />
+      </div>
+    );
+  }
 
   return (
-    <Link href={`/production/${p.id}`}>
-      <div
-        className="bg-white dark:bg-gray-900 rounded-2xl border border-border border-l-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-5 group cursor-pointer h-full flex flex-col"
-        style={{ borderLeftColor: bill.hex }}
-      >
-        <div className="flex items-start justify-between mb-3">
-          <div className="w-10 h-10 bg-[#A93B2E]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Film size={18} className="text-[#A93B2E]" />
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap justify-end">
-            {isNew && (
-              <span className="inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-full bg-[#A93B2E] text-white tracking-wide">
-                NEW
-              </span>
-            )}
-            <span
-              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full ${bill.chip}`}
-              title="Project type"
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: bill.hex }} />
-              {bill.label}
-            </span>
-            <span
-              className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-              {style.label}
+    <div className="space-y-6">
+      {groups.map((g) => (
+        <div key={g.key}>
+          <div className="flex items-baseline gap-2 mb-2">
+            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+              {g.label}
+            </h2>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{g.rows.length}</span>
+            <span className="text-[11px] text-gray-400 dark:text-gray-500 hidden sm:inline">
+              · {g.blurb}
             </span>
           </div>
-        </div>
-
-        <div className="flex-1 mb-3">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-base leading-snug group-hover:text-[#9C7C2E] transition-colors line-clamp-2">
-            {p.title}
-          </h3>
-          {client && (
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5 truncate">{client}</p>
-          )}
-        </div>
-
-        {/* Progress */}
-        <div className="mb-3">
-          <div className="h-1 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-            <div
-              className="h-full bg-[#9C7C2E] rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
+          <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+            <ProjectRows rows={g.rows} />
           </div>
         </div>
-
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-          <div className="flex items-center gap-3">
-            <span
-              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${callSheetChip(p).cls}`}
-              title="Call sheet status"
-            >
-              <ClipboardList size={11} />
-              {callSheetChip(p).label}
-            </span>
-            <span className="flex items-center gap-1" title="Crew">
-              <Users size={12} />
-              {crewCount}
-            </span>
-          </div>
-          {next ? (
-            <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
-              <CalendarIcon size={12} className="text-[#9C7C2E]" />
-              {format(next.date, "d MMM")}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-gray-400 dark:text-gray-500">
-              <CalendarIcon size={12} />
-              No date
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
+      ))}
+    </div>
   );
 }
 
-// ─── Create project modal ────────────────────────────────────────────────────
+function ProjectRows({ rows }: { rows: Production[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[760px] text-sm">
+        <thead>
+          <tr className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500">
+            <th className="text-left font-semibold px-4 py-2.5">Project</th>
+            <th className="text-left font-semibold px-3 py-2.5">Status</th>
+            <th className="text-left font-semibold px-3 py-2.5">Shoot</th>
+            <th className="text-right font-semibold px-3 py-2.5">Budget</th>
+            <th className="text-right font-semibold px-3 py-2.5">Spent</th>
+            <th className="text-right font-semibold px-3 py-2.5">Headroom</th>
+            <th className="text-left font-semibold px-4 py-2.5">Lead</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((p) => {
+            const style = STATUS_STYLES[p.status] || STATUS_STYLES.DRAFT;
+            const next = getNextShoot(p);
+            const budget = p.budgetedTotal ?? 0;
+            const spent = p.actualTotal ?? 0;
+            const headroom = budget - spent;
+            const derived = strandIsDerived({
+              strand: p.strand,
+              billingType: p.billingType,
+              type: p.type,
+              campaignId: p.campaignId,
+              inIssueBudget: p.inIssueBudget,
+            });
+            return (
+              <tr
+                key={p.id}
+                className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition-colors"
+              >
+                <td className="px-4 py-3">
+                  <Link href={`/production/${p.id}`} className="block group">
+                    <span className="font-medium text-gray-900 dark:text-gray-100 group-hover:underline">
+                      {p.title || "Untitled project"}
+                    </span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400">
+                      {getClientName(p) || "—"}
+                      {derived && (
+                        <span
+                          className="ml-1.5 text-gray-300 dark:text-gray-600"
+                          title="Strand worked out from the project's data — open the project to set it explicitly"
+                        >
+                          ·&nbsp;auto
+                        </span>
+                      )}
+                    </span>
+                  </Link>
+                </td>
+                <td className="px-3 py-3">
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${style.bg} ${style.text}`}>
+                    {style.label}
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                  {next?.date
+                    ? next.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                    : <span className="text-gray-400 dark:text-gray-600">—</span>}
+                </td>
+                <td className="px-3 py-3 text-right tabular-nums text-gray-700 dark:text-gray-200 whitespace-nowrap">
+                  {budget ? formatBudget(budget) : <span className="text-gray-400 dark:text-gray-600">—</span>}
+                </td>
+                <td className="px-3 py-3 text-right tabular-nums text-gray-700 dark:text-gray-200 whitespace-nowrap">
+                  {spent ? formatBudget(spent) : <span className="text-gray-400 dark:text-gray-600">—</span>}
+                </td>
+                <td
+                  className={`px-3 py-3 text-right tabular-nums whitespace-nowrap ${
+                    budget && headroom < 0
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-gray-700 dark:text-gray-200"
+                  }`}
+                >
+                  {budget ? formatBudget(headroom) : <span className="text-gray-400 dark:text-gray-600">—</span>}
+                </td>
+                <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                  {p.lead?.name ?? <span className="text-gray-400 dark:text-gray-600">Unassigned</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 function CreateProjectModal({
   onClose,

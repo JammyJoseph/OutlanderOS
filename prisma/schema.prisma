@@ -456,6 +456,16 @@ model Production {
   // always treated as PAID for colour purposes. Set at creation, editable in
   // the Overview tab.
   billingType      String           @default("EDITORIAL") // EDITORIAL | PAID
+  // Which strand of the business this project belongs to, for the Projects list:
+  // PRINT | DIGITAL_EDITORIAL | WHITE_LABEL | PAID.
+  //
+  // Null means "work it out" — see strandOf() in src/lib/production-strand.ts.
+  // Neither `type` nor `billingType` could express this on their own: `type` is
+  // EDITORIAL|COMMERCIAL and `billingType` is EDITORIAL|PAID, so nothing
+  // separated Print from Digital Editorial and nothing marked White Label at
+  // all. Derivation covers the common cases; this field exists so any row can be
+  // corrected by hand without the guess becoming permanent.
+  strand           String?
   campaignBudgetId String? // links back to the CampaignBudget that spawned this production
   title            String
   clientName       String?
