@@ -91,11 +91,20 @@ CSS compiler quirks: `@media screen` gets stripped (use bare `@media`), `:root` 
 
 ```
 ssh root@204.168.245.185
-cd /var/www/outlanderos && git pull origin main && npm install
+cd /var/www/outlanderos
+git checkout -- package-lock.json   # server npm installs rewrite it and block the pull
+git pull origin main                # DO NOT pipe this — see below
+npm install
 export DATABASE_URL="postgresql://outlanderos:test123@127.0.0.1:5432/outlanderos"
 npx prisma db push [--accept-data-loss if needed] && npx prisma generate
 export NODE_OPTIONS="--max-old-space-size=3584" && npm run build && pm2 restart outlanderos
+git log --oneline -1                # confirm this matches what you pushed
 ```
+
+**Never pipe `git pull` into `tail` inside an `&&` chain.** A pipeline's exit status is
+`tail`'s, so an aborted pull is masked: the chain rebuilds and restarts the *old* code and
+prints `DONE`. This has already caused a deploy that silently shipped nothing. Always check
+`git log --oneline -1` on the server afterwards.
 
 Assets under `public/` need only a `git pull` — prod runs plain `next start`. Pulls abort on
 untracked-file collisions on the server.
