@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/current-user'
+import { authCookieOptions } from '@/lib/auth-cookie'
 
 export async function PUT(request: NextRequest) {
   const me = getCurrentUser(request)
@@ -33,6 +34,10 @@ export async function PUT(request: NextRequest) {
 
   const response = NextResponse.json({ ok: true, onboarding: wasOnboarding })
   // Release the proxy lock so the user can navigate freely again.
-  response.cookies.set('must_change_pw', '', { maxAge: 0, path: '/' })
+  // Attributes must match the cookie set at login or the browser may not clear it.
+  response.cookies.set('must_change_pw', '', {
+    ...authCookieOptions(0),
+    httpOnly: false,
+  })
   return response
 }

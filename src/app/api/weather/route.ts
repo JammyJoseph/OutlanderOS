@@ -43,10 +43,9 @@ function windDir(deg: number): string {
   return dirs[Math.round(deg / 45) % 8];
 }
 
-// OpenWeather key — falls back to the build-time key when the host env var is
-// unset (some deploys don't have OPENWEATHER_API_KEY configured), so weather
-// keeps working on shared/public call sheet links.
-const OWM_KEY = process.env.OPENWEATHER_API_KEY || "025b0f097a9d5d086088f011ee0927c7";
+// Env-only. The key that used to sit here as a fallback was a live credential in
+// tracked source; routes below already degrade to `unavailable` when it is unset.
+const OWM_KEY = process.env.OPENWEATHER_API_KEY;
 
 export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
@@ -62,6 +61,12 @@ export const GET = withAuth(async (request: NextRequest) => {
   }
 
   const apiKey = OWM_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "Weather unavailable", forecast: [], unavailable: true },
+      { status: 200 }
+    );
+  }
 
   try {
     const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${encodeURIComponent(

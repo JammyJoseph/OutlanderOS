@@ -11,30 +11,36 @@ Status key: `[ ]` open · `[~]` partial · `[x]` done
 
 Verified against live prod on 2026-07-27.
 
-- [ ] **Rotate the two committed API keys.** Live credentials sit in tracked source and are
-      in git history, so deleting the lines is not enough — rotate at the provider.
-      - OpenWeather key `025b0f…` — `src/app/api/weather/route.ts:49`,
-        `src/app/api/call-sheet-weather/route.ts:18`
-      - Telegram bot token `8790702638:AAG…` + chat id — `src/lib/telegram.ts:1-2`
-      Both are `process.env.X || "<literal>"` fallbacks. Prod *does* set both env vars, so
-      removing the fallbacks is safe.
-- [ ] **Remove the `NEXTAUTH_SECRET` fallback** (`|| 'outlander-os-secret'`) from all 7 sites
-      and fail hard at boot instead. `src/lib/auth.ts:40`, `current-user.ts:4`,
-      `require-admin-page.ts:6`, `api/auth/login/route.ts:6`, `api/auth/google/connect/route.ts:6`,
-      `api/google/callback/route.ts:9`, `(portal)/production/share/[token]/page.tsx:7`.
-      **Verified not currently exploitable** — prod loads the real secret from `.env.local`
-      and rejects a token signed with the literal. This is a latent landmine, not a live
-      breach: if `.env.local` is ever lost or renamed, auth silently degrades to a public
-      secret rather than failing loudly.
-- [ ] **Fix the dot-path proxy bypass.** `src/proxy.ts:22` — `pathname.includes('.')` skips
-      the auth gate for *any* path with a period. Confirmed on prod: `/finance` redirects to
-      `/login`, `/finance/x.y` passes straight through. Currently masked by
-      `requireAdminPage()` in the finance/admin layouts, so no data is exposed today — but
-      any new page without a layout guard would be. Match real static extensions instead.
-- [ ] **Add `secure` + `sameSite` to the auth cookie** (`api/auth/login/route.ts:50-54`).
-      No CSRF token exists anywhere in the app.
-- [ ] **Patch dependency CVEs** — 26 outstanding, 2 critical. The `next-auth`/`@auth/core`
-      critical is reachable via the live unauthenticated `/api/auth/[...nextauth]` route.
+- [ ] 🔴 **PRODUCTION HAS NO TLS.** nginx listens on port 80 only; no 443 listener, no
+      certificate, `server_name` is the bare IP `204.168.245.185`. Every staff login sends
+      the password in cleartext, every request sends the 30-day session cookie in cleartext,
+      and password-reset links cross the wire in the clear. Anyone on the network path — café
+      wifi, ISP, any hop — can read credentials and steal sessions. **This outranks
+      everything else in this file.** Blocked on pointing a domain at the IP (Let's Encrypt
+      will not issue for a bare IP), then certbot + an nginx 443 server block + redirecting
+      80→443, then setting `NEXTAUTH_URL` to the `https://` origin.
+- [x] ~~Rotate the two committed API keys~~ — **fallbacks removed from source** (2026-07-27).
+      Both routes now read env-only and degrade cleanly when unset. ⚠️ **Still to do: rotate
+      both at the provider** — they remain in git history. OpenWeather: regenerate at
+      openweathermap.org. Telegram: `/revoke` at BotFather.
+- [x] ~~Remove the `NEXTAUTH_SECRET` fallback~~ — all 7 sites now call `getJwtSecret()`
+      (`src/lib/jwt-secret.ts`), which throws when the var is unset. Resolved lazily, not at
+      module load, so a missing secret is a clear runtime error rather than a build failure.
+- [x] ~~Fix the dot-path proxy bypass~~ — `src/proxy.ts` now matches a real static-asset
+      extension list. Verified: `/finance/x.y` redirects to `/login`; assets still serve.
+- [x] ~~Add `secure` + `sameSite` to the auth cookie~~ — `src/lib/auth-cookie.ts`.
+      `sameSite: 'lax'` always; `secure` derived from `NEXTAUTH_URL` so it switches itself on
+      the moment TLS lands (hardcoding it now would lock everyone out over HTTP).
+      **A CSRF token still does not exist anywhere in the app** — `sameSite` is the only
+      cross-site protection today.
+- [x] ~~Patch dependency CVEs~~ — **both criticals gone** by deleting the vestigial
+      `next-auth` surface (the `@auth/core` advisory was reachable via the live
+      unauthenticated `/api/auth/[...nextauth]` route). Removed `next-auth`,
+      `@auth/prisma-adapter`, the catch-all route, the dead `/auth/signin` page, `authOptions`
+      and `SessionProvider`. `next` and `prisma` deliberately left at their pinned versions:
+      the remaining `next`/`postcss`/`sharp` advisories have **no patched release** (npm's
+      suggested "fix" is a downgrade to Next 9), and bumping prisma past 7.8 moves *into* a
+      vulnerable range. Remaining highs are the eslint dev toolchain — build-time only.
 - [ ] **Purge `BILLING_PASSWORD` / `Q_PASSWORD`** — plaintext human account passwords in
       prod `.env.local`, read by no code.
 - [ ] **Encrypt or relocate `.tokens.json`.** Plaintext Google + Xero OAuth refresh tokens on

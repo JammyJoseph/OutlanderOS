@@ -1,10 +1,9 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
+import { getJwtSecret } from "@/lib/jwt-secret"
 import prisma from "@/lib/prisma";
 
-// Mirrors the secret used by the JWT auth helpers in src/lib/auth.ts.
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || "outlander-os-secret";
 const OUTLANDER_DOMAIN = "@outlandermag.com";
 
 function Notice({ title, message }: { title: string; message: string }) {
@@ -31,7 +30,7 @@ export default async function ProductionSharePage({
   let email = "";
   if (authToken) {
     try {
-      const payload = jwt.verify(authToken, JWT_SECRET) as { email?: string };
+      const payload = jwt.verify(authToken, getJwtSecret()) as { email?: string };
       email = String(payload?.email ?? "");
     } catch {
       email = "";

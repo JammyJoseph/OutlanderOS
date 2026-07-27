@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { rateLimitResponse } from '@/lib/rate-limit'
 
+const STATIC_ASSET =
+  /\.(?:ico|png|jpe?g|gif|svg|webp|avif|css|js|map|woff2?|ttf|otf|eot|txt|xml|webmanifest|pdf)$/i
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -19,7 +22,12 @@ export function proxy(request: NextRequest) {
   if (pathname === '/auth/google/callback') return NextResponse.next()
   // Public: shared call sheets — crew and talent open these without an account.
   if (pathname.startsWith('/call-sheet/')) return NextResponse.next()
-  if (pathname.startsWith('/_next/') || pathname.includes('.')) return NextResponse.next()
+  // Static assets only. This used to be `pathname.includes('.')`, which let any
+  // path containing a period skip the auth check entirely (`/finance/x.y` walked
+  // straight past this gate). Match real asset extensions instead.
+  if (pathname.startsWith('/_next/') || STATIC_ASSET.test(pathname)) {
+    return NextResponse.next()
+  }
 
   const token = request.cookies.get('auth_token')?.value
   if (!token) {

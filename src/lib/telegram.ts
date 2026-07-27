@@ -1,7 +1,13 @@
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8790702638:AAGMjs7pdpnIwel43LssiYna6DvuVrn6Ukw'
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '8597797195'
+// Env-only. A live bot token and chat id used to sit here as fallbacks, in
+// tracked source and in git history. Rotate at BotFather before reusing this.
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 export async function sendTelegramMessage(text: string, parseMode: string = 'HTML') {
+  if (!BOT_TOKEN || !CHAT_ID) {
+    console.warn('Telegram not configured (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID unset)')
+    return false
+  }
   try {
     const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',

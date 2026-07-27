@@ -1,43 +1,12 @@
-import type { NextAuthOptions } from "next-auth"
 import type { NextRequest } from "next/server"
-import GoogleProvider from "next-auth/providers/google"
 import jwt from "jsonwebtoken"
-
-export const authOptions: NextAuthOptions = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    }),
-  ],
-  session: {
-    strategy: "jwt",
-  },
-  callbacks: {
-    async session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub
-      }
-      return session
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        token.sub = user.id
-      }
-      return token
-    },
-  },
-  pages: {
-    signIn: "/auth/signin",
-  },
-}
+import { getJwtSecret } from "@/lib/jwt-secret"
 
 // ===== JWT AUTH HELPERS (custom email/password login) =====
 // The portal logs users in via /api/auth/login, which issues a signed JWT
 // stored in the httpOnly `auth_token` cookie. Every API route uses these
 // helpers to verify that cookie before returning or mutating data.
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || "outlander-os-secret"
 
 export interface AuthUser {
   userId: string
@@ -66,7 +35,7 @@ export async function getOptionalAuthUser(request: Request): Promise<AuthUser | 
   const token = readAuthToken(request)
   if (!token) return null
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload
+    const payload = jwt.verify(token, getJwtSecret()) as jwt.JwtPayload
     if (!payload?.userId) return null
     return {
       userId: String(payload.userId),

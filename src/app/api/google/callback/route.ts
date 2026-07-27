@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
+import { getJwtSecret } from "@/lib/jwt-secret"
 import { google } from 'googleapis'
 import prisma from '@/lib/prisma'
 import { createOAuth2Client } from '@/lib/google-client'
 import { createUserOAuthClient } from '@/lib/google-user-auth'
 import { setToken } from '@/lib/token-store'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'outlander-os-secret'
 
 // Single Google OAuth callback for both flows:
 //  - App-level: `state` is an account label (e.g. "primary"); tokens go to the
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   // Per-user flow: a valid JWT state identifies who is connecting.
   let userId: string | null = null
   try {
-    const decoded = jwt.verify(state, JWT_SECRET) as { userId?: string }
+    const decoded = jwt.verify(state, getJwtSecret()) as { userId?: string }
     if (decoded?.userId) userId = decoded.userId
   } catch {
     // Not a per-user JWT — treat as an app-level account label below.

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { getJwtSecret } from "@/lib/jwt-secret"
+import { authCookieOptions } from '@/lib/auth-cookie'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'outlander-os-secret'
 
 export async function POST(request: NextRequest) {
   const { email, password } = await request.json()
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
   const token = jwt.sign(
     { userId: user.id, email: user.email, role: user.role, name: user.name },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '30d' }
   )
 
@@ -46,21 +47,21 @@ export async function POST(request: NextRequest) {
     user: { id: user.id, email: user.email, name: user.name, role: user.role },
     mustChangePassword: user.mustChangePassword === true,
   })
-  response.cookies.set('auth_token', token, {
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 30,
-    path: '/',
-  })
+  response.cookies.set('auth_token', token, authCookieOptions())
 
   // New accounts log in with a temporary password. Drop a lightweight flag the
   // proxy uses to lock them onto the change-password screen until it's cleared.
+  // Readable by the proxy, so not httpOnly — it carries no secret.
   if (user.mustChangePassword === true) {
     response.cookies.set('must_change_pw', '1', {
-      maxAge: 60 * 60 * 24 * 30,
-      path: '/',
+      ...authCookieOptions(),
+      httpOnly: false,
     })
   } else {
-    response.cookies.set('must_change_pw', '', { maxAge: 0, path: '/' })
+    response.cookies.set('must_change_pw', '', {
+      ...authCookieOptions(0),
+      httpOnly: false,
+    })
   }
   return response
 }

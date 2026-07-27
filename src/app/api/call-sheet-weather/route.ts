@@ -15,7 +15,7 @@ interface OwmEntry {
   pop?: number;
 }
 
-const OWM_KEY = process.env.OPENWEATHER_API_KEY || "025b0f097a9d5d086088f011ee0927c7";
+const OWM_KEY = process.env.OPENWEATHER_API_KEY;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -29,6 +29,10 @@ export async function GET(request: NextRequest) {
     select: { locationLat: true, locationLng: true, shootDate: true },
   });
   if (!sheet || sheet.locationLat == null || sheet.locationLng == null) {
+    return NextResponse.json({ forecast: [], hourly: [], unavailable: true }, { status: 200 });
+  }
+
+  if (!OWM_KEY) {
     return NextResponse.json({ forecast: [], hourly: [], unavailable: true }, { status: 200 });
   }
 

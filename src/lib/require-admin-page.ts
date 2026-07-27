@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
+import { getJwtSecret } from "@/lib/jwt-secret"
 import prisma from "@/lib/prisma";
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || "outlander-os-secret";
 
 /**
  * Server-component guard for admin-only portal sections (Finance, Admin).
@@ -19,7 +19,7 @@ export async function requireAdminPage(): Promise<void> {
 
   let payload: jwt.JwtPayload | null = null;
   try {
-    payload = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    payload = jwt.verify(token, getJwtSecret()) as jwt.JwtPayload;
   } catch {
     payload = null;
   }
