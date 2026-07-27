@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { productionActualsByProduction } from '@/lib/cost-ledger'
 import { withAdminDb } from '@/lib/auth'
 import { overageStatusFor } from '@/lib/finance-projects'
 
@@ -35,11 +36,12 @@ export const PATCH = withAdminDb(async (request: NextRequest, context, user) => 
     if (invoice.campaignBudgetId && invoice.amount) {
       const budget = await prisma.campaignBudget.findUnique({ where: { id: invoice.campaignBudgetId } })
       if (budget) {
-        const costSum = await prisma.costEntry.aggregate({
-          where: { campaignBudgetId: budget.id },
-          _sum: { amount: true },
-        })
-        const currentCosts = costSum._sum.amount ?? 0
+        // Current spend comes from the ledger's ACTUAL rows for the linked
+        // production — there is no mirrored CostEntry table any more.
+        const ledger = await productionActualsByProduction(
+          budget.productionId ? [budget.productionId] : []
+        )
+        const currentCosts = budget.productionId ? ledger.get(budget.productionId) ?? 0 : 0
         const projectedCosts = currentCosts + invoice.amount
         const projected = overageStatusFor(projectedCosts, budget.totalBudget)
         if (projected === 'OVERAGE' || projected === 'WARNING') {

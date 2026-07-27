@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { productionBudgetItems } from "@/lib/cost-ledger";
+import { productionBudgetItems, financeCostsForProduction } from "@/lib/cost-ledger";
 import { withAuth } from "@/lib/auth";
 
 // GET /api/commercial/projects/[id] — single project with full detail
@@ -24,11 +24,8 @@ export const GET = withAuth(async (
         })
       : null;
 
-    const costs = await prisma.costEntry.findMany({
-      where: { campaignBudgetId: id },
-      orderBy: { date: "desc" },
-    });
-
+    // Both budget lines and spend come from the cost ledger.
+    const costs = await financeCostsForProduction(production?.id ?? null, id);
     // Budget lines come from the cost ledger, in the legacy per-line shape.
     const withBudget = production
       ? { ...production, budgetItems: await productionBudgetItems(production.id) }

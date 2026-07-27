@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { productionActualsByProduction } from '@/lib/cost-ledger'
 import { withAdminDb } from '@/lib/auth'
 import {
   getXeroProfitAndLoss,
@@ -23,7 +24,7 @@ export const GET = withAdminDb(async (request: NextRequest) => {
     const fromDate = params.get('from') || `${now.getFullYear()}-01-01`
     const toDate = params.get('to') || now.toISOString().split('T')[0]
 
-    const [status, pl, bank, invoices, bills, submissions, budgets, costSums] = await Promise.all([
+    const [status, pl, bank, invoices, bills, submissions, budgets] = await Promise.all([
       getXeroStatus(),
       getXeroProfitAndLoss(fromDate, toDate),
       getXeroBankBalance(),
@@ -31,7 +32,6 @@ export const GET = withAdminDb(async (request: NextRequest) => {
       getXeroBills('AUTHORISED'),
       prisma.invoiceSubmission.findMany({ orderBy: { updatedAt: 'desc' }, take: 50 }),
       prisma.campaignBudget.findMany(),
-      prisma.costEntry.groupBy({ by: ['campaignBudgetId'], _sum: { amount: true } }),
     ])
 
     const nowMs = Date.now()
@@ -49,10 +49,14 @@ export const GET = withAdminDb(async (request: NextRequest) => {
     const pendingApprovals = submissions.filter((s) => s.status === 'RECEIVED' || s.status === 'UNDER_REVIEW').length
     const flaggedCount = submissions.filter((s) => s.flagged && s.status !== 'PAID' && s.status !== 'REJECTED').length
 
-    // Overage detection: CampaignBudget.totalBudget vs summed CostEntry amounts.
+    // Overage detection: CampaignBudget.totalBudget vs actual spend on the linked
+    // production, read straight off the ledger (no mirrored CostEntry table).
+    const ledgerActuals = await productionActualsByProduction(
+      budgets.map((b) => b.productionId).filter((id): id is string => !!id)
+    )
     const costsByBudget = new Map<string, number>()
-    for (const c of costSums) {
-      if (c.campaignBudgetId) costsByBudget.set(c.campaignBudgetId, c._sum.amount ?? 0)
+    for (const b of budgets) {
+      if (b.productionId) costsByBudget.set(b.id, ledgerActuals.get(b.productionId) ?? 0)
     }
     const overageAlerts = budgets
       .map((b) => {

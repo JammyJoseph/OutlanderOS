@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { productionBudgetItems } from '@/lib/cost-ledger'
+import { productionBudgetItems, financeCostsForProduction, type FinanceCostEntry } from '@/lib/cost-ledger'
 import { withAdminDb } from '@/lib/auth'
 import { getXeroInvoices, getXeroStatus } from '@/lib/xero-finance'
 import { overageStatusFor } from '@/lib/finance-projects'
@@ -22,8 +22,7 @@ export const GET = withAdminDb(async (request: NextRequest, context) => {
     const budget = await prisma.campaignBudget.findUnique({ where: { id } })
     if (!budget) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
-    const [costs, invoices, production, deal, xeroStatus, xeroInvoices] = await Promise.all([
-      prisma.costEntry.findMany({ where: { campaignBudgetId: id }, orderBy: { date: 'desc' } }),
+    const [invoices, production, deal, xeroStatus, xeroInvoices] = await Promise.all([
       prisma.invoiceSubmission.findMany({ where: { campaignBudgetId: id }, orderBy: { receivedAt: 'desc' } }),
       budget.productionId
         ? prisma.production.findUnique({
@@ -73,6 +72,9 @@ export const GET = withAdminDb(async (request: NextRequest, context) => {
     const contractedDeliverables = deliverables.filter((d) => !d.isAdditional)
     const additionalDeliverables = deliverables.filter((d) => d.isAdditional)
     const additionalOverage = additionalDeliverables.reduce((s, d) => s + (d.overageCost ?? 0), 0)
+
+    // Spend comes from the ledger's ACTUAL rows, not a mirrored CostEntry table.
+    const costs: FinanceCostEntry[] = await financeCostsForProduction(production?.id ?? null, id)
 
     const totalCosts = costs.reduce((s, c) => s + c.amount, 0)
 

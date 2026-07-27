@@ -1253,32 +1253,6 @@ model CampaignBudget {
   @@index([campaignId])
 }
 
-model CostEntry {
-  id               String   @id @default(cuid())
-  campaignBudgetId String?
-  // Mirror of a production budget line's actual spend. Holds a CostLine id since
-  // the BudgetLineItem table was retired; the column name is kept to avoid a
-  // rename migration. This mirror is itself duplicate state and should collapse
-  // into the ledger — see docs/BACKLOG.md §1b.
-  budgetLineItemId String?  @unique
-  category         String // production, media, talent, location, equipment, catering, travel, internal, other
-  description      String
-  amount           Float
-  vendor           String?
-  date             DateTime @default(now())
-  receipt          String? // URL to receipt/proof
-  loggedBy         String? // userId
-  portal           String? // which portal this was logged from: production, commercial, admin
-  status           String   @default("LOGGED") // LOGGED, APPROVED, PAID
-  xeroMatchId      String? // matched Xero transaction ID
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@index([campaignBudgetId])
-  @@index([category])
-  @@index([portal])
-  @@index([status])
-}
 
 model InvoiceSubmission {
   id               String    @id @default(cuid())

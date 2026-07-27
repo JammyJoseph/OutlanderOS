@@ -90,9 +90,8 @@ function earliestShootDate(dates: Date[]): Date | null {
 // its own. Xero failures degrade to totalPaid=0 — internal budget and cost data
 // always renders.
 export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSummary[]> {
-  const [budgets, costSums, pendingCounts, xeroInvoices, clients] = await Promise.all([
+  const [budgets, pendingCounts, xeroInvoices, clients] = await Promise.all([
     prisma.campaignBudget.findMany({ orderBy: { updatedAt: 'desc' } }),
-    prisma.costEntry.groupBy({ by: ['campaignBudgetId'], _sum: { amount: true } }),
     prisma.invoiceSubmission.groupBy({
       by: ['campaignBudgetId'],
       where: { status: { notIn: ['PAID', 'REJECTED'] } },
@@ -152,10 +151,6 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
   const itemsByProduction = await productionBudgetItemsFor(productions.map((p) => p.id))
   const itemsOf = (productionId: string) => itemsByProduction.get(productionId) ?? []
 
-  const costsByBudget = new Map<string, number>()
-  for (const c of costSums) {
-    if (c.campaignBudgetId) costsByBudget.set(c.campaignBudgetId, c._sum.amount ?? 0)
-  }
   const pendingByBudget = new Map<string, number>()
   for (const p of pendingCounts) {
     if (p.campaignBudgetId) pendingByBudget.set(p.campaignBudgetId, p._count._all)
@@ -164,16 +159,19 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
 
   // ── Commercial finance folders (CampaignBudget) ──
   const folderSummaries: ProjectFinancialSummary[] = budgets.map((b) => {
-    const totalCosts = costsByBudget.get(b.id) ?? 0
     const campaign = (b.campaignId && dealById.get(b.campaignId)) || null
     const production = b.productionId ? productionById.get(b.productionId) : null
     const items = production ? itemsOf(production.id) : []
     const prodBudget = production ? productionBudgetExVat(items) : 0
     const prodActuals = production ? productionActualsOf(items) : 0
     // Headline exc-VAT budget: real production line items when present, else the
-    // finance budget carried on the folder.
+    // allocation carried on the folder.
     const budgetExVat = production && prodBudget > 0 ? prodBudget : b.totalBudget
-    const spent = totalCosts > 0 ? totalCosts : prodActuals
+    // Spend is simply the production's ACTUAL ledger rows. This used to choose
+    // between a mirrored CostEntry total and the production's own actuals —
+    // arbitration that only existed because the number was stored twice.
+    const spent = prodActuals
+    const totalCosts = prodActuals
     return {
       id: b.id,
       source: 'commercial',

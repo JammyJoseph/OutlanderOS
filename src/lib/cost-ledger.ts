@@ -218,6 +218,94 @@ export async function productionActualsByProduction(
   return out
 }
 
+// ── Finance's view of a project folder's spend ─────────────────────────────
+//
+// Finance used to read a `CostEntry` table that production actuals were mirrored
+// into on every budget save. Every row in it was a copy, and finance-projects.ts
+// had to arbitrate — `spent = totalCosts > 0 ? totalCosts : prodActuals` — which
+// is the same "which of these two numbers is true?" problem the ledger removes.
+// Finance now reads the ACTUAL rows directly, so there is nothing to mirror and
+// nothing to choose between.
+//
+// Maps production/commercial budget sections onto the coarse finance categories
+// the UI groups by.
+const FINANCE_CATEGORY: Record<string, string> = {
+  PRE_PRODUCTION: 'production',
+  CAST_TALENT: 'talent',
+  CREW: 'production',
+  STYLING_GLAM: 'production',
+  LOCATIONS: 'location',
+  EQUIPMENT: 'equipment',
+  TRANSPORT: 'travel',
+  CATERING: 'catering',
+  ART_DEPARTMENT: 'production',
+  POST_PRODUCTION: 'production',
+  production_company: 'production',
+  styling: 'production',
+  glam_mua: 'production',
+  talent: 'talent',
+  location: 'location',
+  catering: 'catering',
+  equipment: 'equipment',
+  travel: 'travel',
+  contingency: 'other',
+  internal: 'internal',
+  other: 'other',
+}
+
+export function financeCategoryOf(section: string | null, category: string | null): string {
+  return FINANCE_CATEGORY[section ?? ''] ?? FINANCE_CATEGORY[category ?? ''] ?? 'other'
+}
+
+export interface FinanceCostEntry {
+  id: string
+  campaignBudgetId: string | null
+  category: string
+  description: string
+  amount: number
+  vendor: string | null
+  date: string
+  portal: string | null
+  status: string
+}
+
+// Actual spend for a project folder, in the shape Finance's UI expects.
+export async function financeCostsForProduction(
+  productionId: string | null,
+  campaignBudgetId: string | null
+): Promise<FinanceCostEntry[]> {
+  if (!productionId) return []
+  const rows = await prisma.costLine.findMany({
+    where: { kind: 'ACTUAL', productionId },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      description: true,
+      amount: true,
+      section: true,
+      category: true,
+      paidAt: true,
+      createdAt: true,
+      budgetLine: { select: { description: true, role: true } },
+      production: { select: { title: true } },
+    },
+  })
+  return rows.map((r) => {
+    const label = r.budgetLine?.description || r.budgetLine?.role || r.description
+    return {
+      id: r.id,
+      campaignBudgetId,
+      category: financeCategoryOf(r.section, r.category),
+      description: r.production?.title ? `${label} (${r.production.title})` : label,
+      amount: r.amount,
+      vendor: null,
+      date: (r.paidAt ?? r.createdAt).toISOString(),
+      portal: 'production',
+      status: r.paidAt ? 'PAID' : 'LOGGED',
+    }
+  })
+}
+
 // ── Whole-issue / whole-project rollups ────────────────────────────────────
 
 export async function totalsForIssue(magazinePlanId: string): Promise<LedgerTotals> {

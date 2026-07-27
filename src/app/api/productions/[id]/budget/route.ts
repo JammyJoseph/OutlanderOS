@@ -122,34 +122,6 @@ async function setProductionActual(
     },
   });
 }
-// Production budget categories → Finance CostEntry categories. Covers both the
-// new industry-standard section keys and the legacy free-form category keys so
-// production actuals always land in a sensible Finance bucket.
-const COST_CATEGORY: Record<string, string> = {
-  // Industry-standard sections
-  PRE_PRODUCTION: "production",
-  CAST_TALENT: "talent",
-  CREW: "production",
-  STYLING_GLAM: "production",
-  LOCATIONS: "location",
-  EQUIPMENT: "equipment",
-  TRANSPORT: "travel",
-  CATERING: "catering",
-  ART_DEPARTMENT: "production",
-  POST_PRODUCTION: "production",
-  // Legacy categories
-  production_company: "production",
-  styling: "production",
-  glam_mua: "production",
-  talent: "talent",
-  location: "location",
-  catering: "catering",
-  equipment: "equipment",
-  travel: "travel",
-  contingency: "other",
-  internal: "internal",
-  other: "other",
-};
 
 // Legacy category → section, mirrors LEGACY_CATEGORY_TO_SECTION in the UI types.
 const LEGACY_TO_SECTION: Record<string, string> = {
@@ -251,47 +223,6 @@ const BUDGET_TEMPLATE: { section: string; roles: string[] }[] = [
   { section: "POST_PRODUCTION", roles: ["Editor", "Colourist", "Retouching"] },
 ];
 
-// Mirror a budget line's actual spend into Finance as a CostEntry (coded to
-// the production's CampaignBudget) so costs logged in Production show up in
-// Finance's project folders too. No-op for productions without a linked
-// finance budget.
-async function syncCostEntry(item: {
-  id: string;
-  productionId: string;
-  category: string;
-  section: string | null;
-  role: string | null;
-  description: string;
-  actual: number;
-}) {
-  const production = await prisma.production.findUnique({
-    where: { id: item.productionId },
-    select: { campaignBudgetId: true, title: true },
-  });
-  if (!production?.campaignBudgetId) return;
-
-  if (!item.actual || item.actual <= 0) {
-    await prisma.costEntry.deleteMany({ where: { budgetLineItemId: item.id } });
-    return;
-  }
-
-  // Prefer the section mapping; fall back to the legacy category.
-  const financeCategory =
-    COST_CATEGORY[item.section ?? ""] ?? COST_CATEGORY[item.category] ?? "other";
-  const label = item.description || item.role || item.category;
-  const data = {
-    campaignBudgetId: production.campaignBudgetId,
-    category: financeCategory,
-    description: label ? `${label} (${production.title})` : production.title,
-    amount: item.actual,
-    portal: "production",
-  };
-  await prisma.costEntry.upsert({
-    where: { budgetLineItemId: item.id },
-    create: { ...data, budgetLineItemId: item.id },
-    update: data,
-  });
-}
 
 // Lifecycle rules: once the production budget is locked the budgeted amounts
 // and the line-item structure are frozen (actuals still flow in); once FINAL
@@ -491,15 +422,6 @@ export const POST = withAuth(async (
       }
       return created;
     });
-    await syncCostEntry({
-      id: item.id,
-      productionId: id,
-      category: item.category ?? "other",
-      section: item.section,
-      role: item.role,
-      description: item.description,
-      actual: newActual,
-    });
     const [serialised] = await serialiseItems([
       await prisma.costLine.findUniqueOrThrow({ where: { id: item.id }, select: BUDGET_SELECT }),
     ]);
@@ -628,15 +550,6 @@ export const PUT = withAuth(async (
     const row = await prisma.costLine.findUnique({ where: { id: itemId }, select: BUDGET_SELECT });
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const [item] = await serialiseItems([row]);
-    await syncCostEntry({
-      id: item.id,
-      productionId,
-      category: item.category,
-      section: item.section,
-      role: item.role,
-      description: item.description,
-      actual: item.actual,
-    });
     return NextResponse.json({ item });
   } catch (e) {
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });
@@ -666,8 +579,6 @@ export const DELETE = withAuth(async (
         ? NextResponse.json({ error: blocked }, { status: 403 })
         : NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    // The mirrored Finance cost entry is keyed by id, not a FK — clean it up.
-    await prisma.costEntry.deleteMany({ where: { budgetLineItemId: itemId } });
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });
