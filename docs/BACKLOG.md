@@ -54,19 +54,28 @@ Verified against live prod on 2026-07-27.
 
 The architecture is sounder than the tooling around it. This is the real gap.
 
-- [ ] **Prisma migrations.** No `prisma/migrations/` — schema ships via `db push` against
-      prod, with no version history, no rollback and no review of destructive changes. For a
-      schema holding finance and HR data this is the highest-risk item after secrets.
-      Baseline from current prod state.
+- [x] ~~Prisma migrations~~ — **baselined 2026-07-27** as `prisma/migrations/0_init`. Verified
+      prod had zero drift from `schema.prisma` first, then confirmed the generated migration
+      rebuilds the schema exactly on a scratch database (51 tables, 6 enums, 47 FKs) before
+      marking it applied on prod and local. Use `prisma migrate dev` / `migrate deploy` now,
+      not `db push`. Note: `migrate diff` silently emits nothing if `DATABASE_URL` is unset.
 - [ ] **Any test suite at all.** Zero tests, zero test runner. 139 API routes verified only
       by manual clicking. Start with the money paths: auth, budget maths, call-sheet
       publishing, Xero sync.
 - [ ] **CI.** No `.github/`, no pre-commit hooks, no build gate. Deploy is `git pull` on the
       live box. At minimum: typecheck + lint + build on PR.
-- [ ] **Error tracking and alerting.** No Sentry/Datadog/OTel. A prod 500 leaves one line in
-      `/root/.pm2/logs` on a box nobody watches. `/api/health` is well built but nothing
-      polls it. `pm2 max_restarts: 10` means a crash-loop ends with the app **permanently
-      down, silently**.
+- [~] **Error tracking and alerting.** Partly done 2026-07-27:
+      - [x] pm2 no longer dies permanently — `min_uptime: 60s` means the restart counter only
+            advances for genuinely unstable restarts, plus exponential backoff. `pm2 save`d.
+      - [x] `/api/health` is now polled every 5 min by `/usr/local/bin/outlanderos-healthcheck.sh`,
+            which restarts pm2 if the process is gone and alerts on state changes only.
+            Both the healthy and failure paths were tested. See `docs/RUNBOOK.md`.
+      - [ ] **Set `ALERT_WEBHOOK_URL` in `/etc/outlanderos-watchdog.env`** — without it,
+            alerts only reach `/var/log/outlanderos-health.log`, which nobody reads. Any
+            Slack/Discord webhook works. This is a 2-minute job with outsized value.
+      - [ ] Still no *application* error tracking. The watchdog catches down/degraded, not
+            500s. Wants Sentry (free tier) — needs an account + `SENTRY_DSN`.
+      - [ ] Rehearse a database restore. Backups run nightly but have never been restored.
 - [ ] **Retire `ignoreBuildErrors: true`** (`next.config.ts:16-18`) — currently hiding ~80
       type errors, several of them genuine Next 16 route-signature drift. Ratchet down.
 - [ ] **Adopt Zod for request validation.** Zod is already a dependency and used nowhere;
