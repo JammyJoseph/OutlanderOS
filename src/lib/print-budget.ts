@@ -1,0 +1,132 @@
+// ===== Print budget (section-based) shared model =====
+// Mirrors Quinn's issue budget spreadsheet: a flat list of PrintBudgetLine rows
+// grouped into fixed sections. Imported by both the API (server) and the Budget
+// tab (client), so it stays free of server-only imports. VAT is never included —
+// the platform rule is that budget figures always exclude VAT.
+
+export type PrintBudgetSection =
+  | 'MAGAZINE_PRODUCTION'
+  | 'FREELANCE'
+  | 'PRODUCTIONS'
+  | 'EVENTS'
+  | 'MARKETING'
+  | 'OTHER'
+
+// Display order + labels for the collapsible sections.
+export const PRINT_BUDGET_SECTIONS: { key: PrintBudgetSection; label: string; blurb: string }[] = [
+  { key: 'MAGAZINE_PRODUCTION', label: 'Magazine Production', blurb: 'Pre-press, printing, proofs & courier' },
+  { key: 'FREELANCE', label: 'Freelance Editors & Designers', blurb: 'Named freelancers, designers & writers' },
+  { key: 'PRODUCTIONS', label: 'Productions', blurb: 'Produced features — auto-linked from the flat plan' },
+  { key: 'EVENTS', label: 'Events', blurb: 'Hero events & activations' },
+  { key: 'MARKETING', label: 'Marketing', blurb: 'OOH, displays, seeding & activations' },
+  { key: 'OTHER', label: 'Other / Additional', blurb: 'One-off costs that fit nowhere else' },
+]
+
+export const PRINT_BUDGET_SECTION_LABELS: Record<PrintBudgetSection, string> = Object.fromEntries(
+  PRINT_BUDGET_SECTIONS.map((s) => [s.key, s.label]),
+) as Record<PrintBudgetSection, string>
+
+export function isPrintBudgetSection(v: string): v is PrintBudgetSection {
+  return PRINT_BUDGET_SECTIONS.some((s) => s.key === v)
+}
+
+// The standard Magazine Production items that repeat every issue. "Set up from
+// template" seeds exactly these (skipping any already present). Amounts are the
+// house defaults from Quinn's sheet — editable per issue after seeding.
+export const MAGAZINE_PRODUCTION_TEMPLATE: { description: string; amount: number }[] = [
+  { description: 'Pre-Press / Colour Management', amount: 10000 },
+  { description: 'Physical Fogra Epson Colour Proofs', amount: 5000 },
+  { description: 'Correction & Amends', amount: 1000 },
+  { description: 'Reproof/Corrections', amount: 1000 },
+  { description: 'Gatefold Proofs', amount: 1000 },
+  { description: 'Gatefold Retouch', amount: 1000 },
+  { description: 'Courier', amount: 1000 },
+  { description: 'Magazine Production (10000 Units)', amount: 60000 },
+  { description: 'Magazine Corner (10000 units)', amount: 1500 },
+]
+
+// The line as returned by the API: the stored row plus a live `productionActual`
+// resolved from the linked production's budget actuals (null when unlinked).
+export interface PrintBudgetLine {
+  id: string
+  section: PrintBudgetSection | string
+  description: string
+  amount: number // budgeted, ex-VAT
+  actual: number | null // manual actual (used when there's no production link)
+  notes: string | null
+  productionId: string | null
+  productionActual: number | null // live actual from the linked production, if any
+  productionTitle: string | null // resolved title of the linked production, if any
+  sortOrder: number
+}
+
+// The actual to display/roll up for a line: the linked production's live actual
+// wins over any manually-typed figure; unlinked lines use the manual actual.
+export function resolvedActual(line: Pick<PrintBudgetLine, 'productionId' | 'productionActual' | 'actual'>): number | null {
+  if (line.productionId) return line.productionActual ?? 0
+  return line.actual
+}
+
+export interface SectionTotals {
+  section: PrintBudgetSection | string
+  budget: number
+  actual: number // only lines that have an actual contribute
+  variance: number // budget − actual
+  lineCount: number
+}
+
+export interface BudgetGrandTotals {
+  budget: number
+  actual: number
+  variance: number
+  revenue: number | null // issue revenue, if set
+  headroom: number | null // revenue − budget (null when no revenue set)
+  headroomPct: number | null
+}
+
+export function sectionTotals(lines: PrintBudgetLine[]): SectionTotals {
+  let budget = 0
+  let actual = 0
+  for (const l of lines) {
+    budget += l.amount || 0
+    const a = resolvedActual(l)
+    if (a != null) actual += a
+  }
+  return {
+    section: lines[0]?.section ?? 'OTHER',
+    budget,
+    actual,
+    variance: budget - actual,
+    lineCount: lines.length,
+  }
+}
+
+export function grandTotals(lines: PrintBudgetLine[], revenue: number | null): BudgetGrandTotals {
+  let budget = 0
+  let actual = 0
+  for (const l of lines) {
+    budget += l.amount || 0
+    const a = resolvedActual(l)
+    if (a != null) actual += a
+  }
+  const headroom = revenue != null ? revenue - budget : null
+  return {
+    budget,
+    actual,
+    variance: budget - actual,
+    revenue,
+    headroom,
+    headroomPct: revenue != null && revenue > 0 ? (headroom! / revenue) * 100 : null,
+  }
+}
+
+// Groups lines by section in the canonical display order; empty sections are
+// still returned so the UI can render an "add first line" affordance.
+export function groupBySection(lines: PrintBudgetLine[]): { key: PrintBudgetSection; label: string; blurb: string; lines: PrintBudgetLine[] }[] {
+  return PRINT_BUDGET_SECTIONS.map((s) => ({
+    ...s,
+    lines: lines
+      .filter((l) => l.section === s.key)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.description.localeCompare(b.description)),
+  }))
+}

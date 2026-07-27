@@ -113,3 +113,32 @@ export const GET = withAuth(async (
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }
 });
+
+// PATCH /api/print-budget/[issueId]
+// Updates issue-level budget fields — currently just totalRevenue, which drives
+// the section budget's headroom indicator (revenue − total budget).
+export const PATCH = withAuth(async (
+  request: NextRequest,
+  { params }: { params?: Promise<Record<string, string>> }
+) => {
+  const { issueId } = (await params)!;
+  try {
+    const body = await request.json().catch(() => ({}));
+    const data: Record<string, unknown> = {};
+    if (body.totalRevenue !== undefined) {
+      data.totalRevenue = body.totalRevenue === null ? null : Number(body.totalRevenue);
+    }
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+    }
+    const plan = await prisma.magazinePlan.update({
+      where: { id: issueId },
+      data,
+      select: { id: true, totalRevenue: true },
+    });
+    return NextResponse.json({ issue: plan });
+  } catch (e) {
+    console.error("PATCH /api/print-budget/[issueId]", e);
+    return NextResponse.json({ error: "Failed to update issue budget" }, { status: 500 });
+  }
+});

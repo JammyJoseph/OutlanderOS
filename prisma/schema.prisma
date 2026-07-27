@@ -502,6 +502,7 @@ model Production {
   milestones       ProductionMilestone[]   @relation("productionMilestones")
   shareLinks       ProductionShareLink[]   @relation("productionShareLinks")
   linkedTasks      Task[]                  @relation("productionLinkedTasks")
+  printBudgetLines PrintBudgetLine[]       @relation("printBudgetProduction")
 }
 
 // Shareable internal deep-link to a production. Any signed-in Outlander user
@@ -836,11 +837,38 @@ model MagazinePlan {
   totalPages  Int      @default(8)
   pages       Json     @default("[]")
   seedVersion Int      @default(0) // bumped when the seed blueprint changes, so seeded issues re-seed on next load
+  // Total issue revenue (Commercial deal revenue + other income), tracked on the
+  // Budget tab's section view so headroom = totalRevenue − sum(budget lines).
+  totalRevenue Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   updatedBy   String?
 
+  printBudgetLines PrintBudgetLine[]
+
   @@unique([issueNumber])
+}
+
+// A single line in an issue's section-based budget (Quinn's spreadsheet
+// structure). Sections: MAGAZINE_PRODUCTION | FREELANCE | PRODUCTIONS | EVENTS |
+// MARKETING | OTHER. A line may optionally link to a Production, in which case its
+// `actual` is synced from that production's BudgetLineItem actuals.
+model PrintBudgetLine {
+  id             String       @id @default(cuid())
+  magazinePlanId String
+  magazinePlan   MagazinePlan @relation(fields: [magazinePlanId], references: [id], onDelete: Cascade)
+  section        String // MAGAZINE_PRODUCTION | FREELANCE | PRODUCTIONS | EVENTS | MARKETING | OTHER
+  description    String
+  amount         Float        @default(0) // budgeted amount (ex-VAT)
+  actual         Float? // what was actually spent (manual, or synced from a linked production)
+  notes          String?
+  productionId   String? // links to a Production for auto-import of actuals
+  production     Production?  @relation("printBudgetProduction", fields: [productionId], references: [id])
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([magazinePlanId])
 }
 
 // ===== EDITORIAL =====

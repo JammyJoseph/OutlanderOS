@@ -10,17 +10,19 @@ import { TabSkeleton } from './_components/FinanceBits'
 // next/dynamic requires the options arg to be an inline object literal.
 const DashboardTab = dynamic(() => import('./_components/DashboardTab'), { loading: () => <TabSkeleton />, ssr: false })
 const ProjectFoldersTab = dynamic(() => import('./_components/ProjectFoldersTab'), { loading: () => <TabSkeleton />, ssr: false })
+const BudgetVsActualsTab = dynamic(() => import('./_components/BudgetVsActualsTab'), { loading: () => <TabSkeleton />, ssr: false })
 const ClientViewTab = dynamic(() => import('./_components/ClientViewTab'), { loading: () => <TabSkeleton />, ssr: false })
 const InvoicesApprovalsTab = dynamic(() => import('./_components/InvoicesApprovalsTab'), { loading: () => <TabSkeleton />, ssr: false })
 const ExpensesTab = dynamic(() => import('./_components/ExpensesTab'), { loading: () => <TabSkeleton />, ssr: false })
 const PLHistoryTab = dynamic(() => import('./_components/PLHistoryTab'), { loading: () => <TabSkeleton />, ssr: false })
 const PrintPLTab = dynamic(() => import('./_components/PrintPLTab'), { loading: () => <TabSkeleton />, ssr: false })
 
-type TabId = 'dashboard' | 'projects' | 'clients' | 'invoices' | 'expenses' | 'pl' | 'print'
+type TabId = 'dashboard' | 'projects' | 'budget' | 'clients' | 'invoices' | 'expenses' | 'pl' | 'print'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'projects', label: 'Project Folders' },
+  { id: 'budget', label: 'Budget vs Actuals' },
   { id: 'clients', label: 'Client View' },
   { id: 'invoices', label: 'Invoices & Approvals' },
   { id: 'expenses', label: 'Expenses' },
@@ -70,6 +72,7 @@ function FinanceInner() {
         <div>
           {active === 'dashboard' && <DashboardTab />}
           {active === 'projects' && <ProjectFoldersTab />}
+          {active === 'budget' && <BudgetVsActualsTab />}
           {active === 'clients' && <ClientViewTab />}
           {active === 'invoices' && <InvoicesApprovalsTab />}
           {active === 'expenses' && <ExpensesTab />}

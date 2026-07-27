@@ -17,11 +17,13 @@ import {
   Cloud,
   ArrowLeft,
   PoundSterling,
+  Wallet,
   ExternalLink,
 } from "lucide-react";
 import { useMagazinePlan } from "@/components/print/usePlan";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import BudgetView from "@/components/print/BudgetView";
+import PrintBudgetView from "@/components/print/PrintBudgetView";
 import {
   SECTIONS,
   SECTION_KEYS,
@@ -42,7 +44,7 @@ import {
   type StockType,
 } from "@/lib/magazine-plan";
 
-type View = "tracker" | "flatplan" | "budget";
+type View = "tracker" | "flatplan" | "budget" | "sections";
 
 export default function FlatPlanPage() {
   return (
@@ -282,12 +284,20 @@ function FlatPlanInner() {
               <LayoutGrid className="h-3.5 w-3.5" /> Flat Plan
             </button>
             <button
+              onClick={() => setView("sections")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                view === "sections" ? "bg-[#2E5E44] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
+              }`}
+            >
+              <Wallet className="h-3.5 w-3.5" /> Budget
+            </button>
+            <button
               onClick={() => setView("budget")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
                 view === "budget" ? "bg-[#2E5E44] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
-              <PoundSterling className="h-3.5 w-3.5" /> Budget
+              <PoundSterling className="h-3.5 w-3.5" /> Feature P&amp;L
             </button>
           </div>
 
@@ -321,6 +331,8 @@ function FlatPlanInner() {
             addRowAfter={addRowAfter}
             removeRow={removeRow}
           />
+        ) : view === "sections" ? (
+          <PrintBudgetView issueId={plan.id} />
         ) : view === "budget" ? (
           <BudgetView issueId={plan.id} pages={pages} updatePage={updatePage} />
         ) : (

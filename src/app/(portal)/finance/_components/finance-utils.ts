@@ -203,6 +203,7 @@ export interface ProjectSummary {
   clientName: string
   clientId: string | null
   status: string
+  billingType: string // EDITORIAL | PAID
   productionId: string | null
   deal: { id: string; title: string; stage: string } | null
   targetMarginAmount: number | null

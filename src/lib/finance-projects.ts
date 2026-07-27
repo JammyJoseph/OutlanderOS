@@ -19,6 +19,7 @@ export interface ProjectFinancialSummary {
   clientName: string
   clientId: string | null
   status: string
+  billingType: string // EDITORIAL | PAID — colour/filter classification (productions carry it; commercial folders are PAID)
   productionId: string | null
   deal: { id: string; title: string; stage: string } | null // originating Commercial deal
   targetMarginAmount: number | null // company margin set on the deal
@@ -136,6 +137,7 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
       title: true,
       clientName: true,
       status: true,
+      billingType: true,
       productionBudgetStatus: true,
       shootDates: true,
       archived: true,
@@ -175,6 +177,9 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
       clientName: b.clientName,
       clientId: campaign?.clientId ?? clientIdByName.get(b.clientName.trim().toLowerCase()) ?? null,
       status: b.status,
+      // Commercial folders are paid work by definition; if the folder is backed by
+      // a production, defer to that production's own billing classification.
+      billingType: production?.billingType ?? 'PAID',
       productionId: b.productionId,
       deal: campaign ? { id: campaign.id, title: campaign.title, stage: campaign.stage } : null,
       targetMarginAmount: campaign?.marginAmount ?? null,
@@ -216,6 +221,7 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
         clientName,
         clientId,
         status: p.productionBudgetStatus ?? p.status,
+        billingType: p.billingType,
         productionId: p.id,
         deal: p.campaign ? { id: p.campaign.id, title: p.campaign.title, stage: p.campaign.stage } : null,
         targetMarginAmount: null,
