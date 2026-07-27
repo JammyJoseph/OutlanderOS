@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma'
+import { productionBudgetItemsFor } from '@/lib/cost-ledger'
 import { getXeroInvoices } from '@/lib/xero-finance'
 
 // Single source of truth for project financial health:
@@ -130,7 +131,7 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
     .filter((id): id is string => !!id)
   const productions = await prisma.production.findMany({
     where: {
-      OR: [{ id: { in: referencedProductionIds } }, { budgetItems: { some: {} } }],
+      OR: [{ id: { in: referencedProductionIds } }, { costLines: { some: { kind: 'BUDGET' } } }],
     },
     select: {
       id: true,
@@ -143,10 +144,13 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
       archived: true,
       updatedAt: true,
       campaign: { select: { id: true, title: true, stage: true, clientId: true, client: { select: { name: true } } } },
-      budgetItems: { select: { quantity: true, rate: true, budgeted: true, actual: true } },
     },
   })
   const productionById = new Map(productions.map((p) => [p.id, p]))
+  // Budget lines come from the cost ledger — one query for every production here,
+  // not a nested include per row.
+  const itemsByProduction = await productionBudgetItemsFor(productions.map((p) => p.id))
+  const itemsOf = (productionId: string) => itemsByProduction.get(productionId) ?? []
 
   const costsByBudget = new Map<string, number>()
   for (const c of costSums) {
@@ -163,7 +167,7 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
     const totalCosts = costsByBudget.get(b.id) ?? 0
     const campaign = (b.campaignId && dealById.get(b.campaignId)) || null
     const production = b.productionId ? productionById.get(b.productionId) : null
-    const items = production?.budgetItems ?? []
+    const items = production ? itemsOf(production.id) : []
     const prodBudget = production ? productionBudgetExVat(items) : 0
     const prodActuals = production ? productionActualsOf(items) : 0
     // Headline exc-VAT budget: real production line items when present, else the
@@ -208,10 +212,11 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
 
   // ── Standalone productions (budget line items, but no finance folder) ──
   const standalone: ProjectFinancialSummary[] = productions
-    .filter((p) => !referencedProductionIds.includes(p.id) && p.budgetItems.length > 0)
+    .filter((p) => !referencedProductionIds.includes(p.id) && itemsOf(p.id).length > 0)
     .map((p) => {
-      const budgetExVat = productionBudgetExVat(p.budgetItems)
-      const prodActuals = productionActualsOf(p.budgetItems)
+      const items = itemsOf(p.id)
+      const budgetExVat = productionBudgetExVat(items)
+      const prodActuals = productionActualsOf(items)
       const clientName = p.clientName || p.campaign?.client?.name || 'Unassigned'
       const clientId = p.campaign?.clientId ?? clientIdByName.get(clientName.trim().toLowerCase()) ?? null
       return {

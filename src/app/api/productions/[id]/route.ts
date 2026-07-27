@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { productionBudgetItems } from "@/lib/cost-ledger";
 import { withAuth, isAdminInDb } from "@/lib/auth";
 import { isProductionBudgetStatus } from "@/lib/deal-stages";
 import { recalcTemplateMilestones, earliestShoot } from "@/lib/production-seed";
@@ -38,7 +39,6 @@ export const GET = withAuth(async (
           },
         },
         expenses: { orderBy: { createdAt: "asc" } },
-        budgetItems: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         productionTasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         teamMembers: { orderBy: [{ status: "desc" }, { createdAt: "asc" }] },
         creativeAssets: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
@@ -48,7 +48,10 @@ export const GET = withAuth(async (
       },
     });
     if (!production) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json({ production });
+    // Budget lines come from the cost ledger, rendered in the legacy per-line
+    // shape so the Budget tab and Overview need no changes.
+    const budgetItems = await productionBudgetItems(id);
+    return NextResponse.json({ production: { ...production, budgetItems } });
   } catch (e) {
     return NextResponse.json({ error: "An error occurred" }, { status: 500 });
   }

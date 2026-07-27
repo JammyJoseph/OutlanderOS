@@ -32,7 +32,9 @@ Prisma 7 with the `PrismaPg` adapter (no `url` in `schema.prisma` — it comes f
 `prisma.config.ts`). `src/lib/prisma.ts` uses a lazy-init Proxy, so connection failures
 surface at first query rather than at boot.
 
-**No migrations directory.** Schema ships via `db push`. See `AGENTS.md`.
+Schema ships via **Prisma migrations** (baselined 2026-07-27 as `0_init`). Use
+`prisma migrate dev` locally and `migrate deploy` on the server — not `db push`. See
+`AGENTS.md`.
 
 Core models: `User`, `Contact`, `Campaign` (deals), `Production` + `ProductionMilestone` +
 `ProductionDeliverable`, `EditorialPiece`, `Task`, `Deadline`, `HolidayRequest`,
@@ -63,10 +65,13 @@ Actuals attach either to a specific budget row (`budgetLineId`) or to a producti
 are summed, never chosen between, and production-attributed actuals exclude rows that
 already name a line so nothing double-counts.
 
-**Not yet migrated:** `BudgetLineItem` (121 rows, production budgets) and `CampaignBudget`
-(4 rows) still live outside the ledger, so `cost-ledger.ts` carries a clearly-marked legacy
-bridge that reads production actuals from the old table. Delete it with that migration — see
-`docs/BACKLOG.md` §1b.
+**Migrated:** print budgets and production budgets both run on the ledger; `PrintBudgetLine`
+and `BudgetLineItem` are both gone. Production budget lines are rendered back into the legacy
+per-line shape by `productionBudgetItemsFor()` so the Budget tab needed no changes.
+
+**Still outside:** `CampaignBudget` (4 rows), and `CostEntry` — which `syncCostEntry` writes
+as a mirror of production actuals for Finance. That mirror is duplicate state by definition
+and should collapse into the ledger next. See `docs/BACKLOG.md` §1b.
 
 ## Integrations — actual state
 

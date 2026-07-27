@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { productionActualsByProduction } from '@/lib/cost-ledger';
 import { withAuth } from "@/lib/auth";
 import {
   groupBudgetRows,
@@ -45,13 +46,17 @@ export const GET = withAuth(async (
       productionIds.size
         ? prisma.production.findMany({
             where: { id: { in: [...productionIds] } },
-            select: { id: true, title: true, budgetActual: true, budgetItems: { select: { actual: true } } },
+            select: { id: true, title: true, budgetActual: true },
           })
         : Promise.resolve([]),
     ]);
 
-    const productionActual = (p: { budgetActual: number | null; budgetItems: { actual: number }[] }) => {
-      const fromItems = p.budgetItems.reduce((s, i) => s + (i.actual ?? 0), 0);
+    // Production actuals now come from the cost ledger (ACTUAL rows), not the
+    // retired BudgetLineItem table.
+    const ledgerActuals = await productionActualsByProduction([...productionIds]);
+
+    const productionActual = (p: { id: string; budgetActual: number | null }) => {
+      const fromItems = ledgerActuals.get(p.id) ?? 0;
       return fromItems > 0 ? fromItems : p.budgetActual ?? 0;
     };
 
@@ -84,7 +89,7 @@ export const GET = withAuth(async (
       }),
       prisma.production.findMany({
         where: { archived: false },
-        select: { id: true, title: true, clientName: true, budgetActual: true, budgetItems: { select: { actual: true } } },
+        select: { id: true, title: true, clientName: true, budgetActual: true },
         orderBy: { updatedAt: "desc" },
         take: 200,
       }),

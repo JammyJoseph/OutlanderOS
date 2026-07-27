@@ -70,12 +70,14 @@ export const POST = withAuth(async (
           type: "COMMERCIAL",
           status: "DRAFT", // shown as "Planning" in the Production portal
           budgetTotal: totalBudget,
-          budgetItems: splits.length
+          // Starter budget lines land on the cost ledger as BUDGET rows.
+          costLines: splits.length
             ? {
                 create: splits.map((s, i) => ({
+                  kind: "BUDGET" as const,
                   category: mapSplitToProductionCategory(s.category),
                   description: `${s.category} — from Commercial deal budget`,
-                  budgeted: s.amount,
+                  amount: s.amount,
                   sortOrder: i,
                 })),
               }

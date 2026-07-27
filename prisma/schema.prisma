@@ -496,8 +496,6 @@ model Production {
   callSheets CallSheet[]
   expenses   ProductionExpense[]
   crew       ProductionCrew[]
-
-  budgetItems      BudgetLineItem[]        @relation("productionBudget")
   productionTasks  ProductionTask[]        @relation("productionTasks")
   teamMembers      ProductionTeamMember[]  @relation("productionTeam")
   creativeAssets   CreativeAsset[]         @relation("productionCreative")
@@ -523,30 +521,6 @@ model ProductionShareLink {
   createdAt    DateTime   @default(now())
 }
 
-model BudgetLineItem {
-  id           String     @id @default(cuid())
-  productionId String
-  production   Production @relation("productionBudget", fields: [productionId], references: [id], onDelete: Cascade)
-  category     String
-  section      String? // industry-standard grouping: PRE_PRODUCTION | CAST_TALENT | CREW | STYLING_GLAM | LOCATIONS | EQUIPMENT | TRANSPORT | CATERING | ART_DEPARTMENT | POST_PRODUCTION
-  role         String? // specific role/item name (e.g. "DOP", "Lead Talent", "Lighting Kit")
-  quantity     Float? // number of days/units
-  rate         Float? // £ per unit (unit cost)
-  vatPercent   Float? // per-line VAT rate; null treated as the 20% default in the UI
-  description  String
-  budgeted     Float      @default(0) // = quantity × rate when both set, else manual
-  actual       Float      @default(0)
-  notes        String?
-  // Invoice tracking (Phase 4D). invoiceStatus:
-  // NOT_INVOICED | INVOICE_RECEIVED | UNDER_REVIEW | APPROVED | PAID
-  invoiceStatus  String?
-  invoiceUrl     String? // uploaded/linked invoice PDF
-  poNumber       String? // purchase order number
-  invoicedAmount Float? // amount actually invoiced (may differ from budgeted/actual)
-  sortOrder    Int        @default(0)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-}
 
 model ProductionTask {
   id           String     @id @default(cuid())
@@ -1282,7 +1256,11 @@ model CampaignBudget {
 model CostEntry {
   id               String   @id @default(cuid())
   campaignBudgetId String?
-  budgetLineItemId String?  @unique // mirror of a Production BudgetLineItem's actual spend
+  // Mirror of a production budget line's actual spend. Holds a CostLine id since
+  // the BudgetLineItem table was retired; the column name is kept to avoid a
+  // rename migration. This mirror is itself duplicate state and should collapse
+  // into the ledger — see docs/BACKLOG.md §1b.
+  budgetLineItemId String?  @unique
   category         String // production, media, talent, location, equipment, catering, travel, internal, other
   description      String
   amount           Float
