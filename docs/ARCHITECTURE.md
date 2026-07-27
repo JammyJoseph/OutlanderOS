@@ -38,6 +38,36 @@ Core models: `User`, `Contact`, `Campaign` (deals), `Production` + `ProductionMi
 `ProductionDeliverable`, `EditorialPiece`, `Task`, `Deadline`, `HolidayRequest`,
 `Notification` (model retained, UI removed).
 
+## The cost ledger
+
+`CostLine` is the single home for every planned and actual cost, whichever portal entered
+it. **Print is this ledger filtered by issue, Production filtered by project, Commercial
+filtered by deal, and Finance is the same ledger with no filter — that is the P&L.**
+
+Three properties make it work:
+
+1. **BUDGET and ACTUAL are separate rows**, distinguished by `kind`. A plan and a fact are
+   different things, so budget-vs-actual is a `GROUP BY`, never a comparison of two columns
+   on one record. This is what removed `resolvedActual()`, which previously had to *choose*
+   between a typed actual and a linked production's actual. If you ever find yourself
+   writing a function to decide which of two numbers is true, you have duplicate state.
+2. **A coding dimension** (`accountCode`, `trackingCategory`) mirroring Xero. This is the red
+   thread: it's what lets a cost entered in Print appear correctly in Finance with no
+   reconciliation step. Nullable, because Xero is currently disconnected and its chart of
+   accounts can't be fetched — codes are a backfill, not a migration.
+3. **Non-exclusive context.** `magazinePlanId`, `productionId` and `campaignId` are all
+   nullable and can co-exist: a shoot for Issue 02 funded by the Sorel deal is legitimately
+   all three, and each lens should see it without the cost being duplicated.
+
+Actuals attach either to a specific budget row (`budgetLineId`) or to a production; the two
+are summed, never chosen between, and production-attributed actuals exclude rows that
+already name a line so nothing double-counts.
+
+**Not yet migrated:** `BudgetLineItem` (121 rows, production budgets) and `CampaignBudget`
+(4 rows) still live outside the ledger, so `cost-ledger.ts` carries a clearly-marked legacy
+bridge that reads production actuals from the old table. Delete it with that migration — see
+`docs/BACKLOG.md` §1b.
+
 ## Integrations — actual state
 
 | Integration | State | Notes |

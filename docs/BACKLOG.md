@@ -87,6 +87,43 @@ The architecture is sounder than the tooling around it. This is the real gap.
 - [ ] Bound the 86 unbounded `findMany` calls; `src/lib/pagination.ts` exists but is barely
       adopted.
 
+## 1b. Cost ledger — finish the migration
+
+The `CostLine` ledger landed 2026-07-27 (see `docs/ARCHITECTURE.md`). Print runs on it;
+two budget systems still sit outside it.
+
+- [x] ~~`CostLine` ledger~~ — BUDGET/COMMITTED/ACTUAL as separate rows, coding dimension,
+      non-exclusive context (issue / production / deal), drawdown link, invoice ref.
+      `resolvedActual()` deleted. `PrintBudgetLine` dropped (was empty).
+- [x] ~~Issue 02 imported~~ — 62 rows, £634,868.95, exactly the sheet total. 14 produced
+      shoots linked to production projects. Importer is idempotent
+      (`prisma/import-issue02-budget.ts`).
+- [ ] **Merge the 3 duplicate-looking production projects.** The importer refused to guess
+      and created new projects for Bottega Veneta — Louise Trotter, Peggy Gou — Bag
+      Collection, and Sorel — Heat Reactive Paw Prints. Existing candidates: two Bottega
+      projects, "Peggy Gou Digital Cover Story", and **two identically-named "Soggy Sucks"**
+      plus "SOREL - All Weather Walkies". Someone who knows the work must decide; relink the
+      budget row's `productionId` and archive the surplus project.
+- [ ] **Migrate `BudgetLineItem` (121 rows) into the ledger.** Each row currently holds both
+      a budget and an actual in one record — the same two-columns-one-row shape the ledger
+      exists to remove. Split each into a BUDGET row and, where `actual > 0`, an ACTUAL row
+      drawn against it. Then delete the legacy bridge in `cost-ledger.ts`
+      (`actualsForBudgetLines`, marked in-code) which currently reads production actuals from
+      the old table so linked print lines don't read as zero.
+- [ ] **Migrate `CampaignBudget` (4 rows) into the ledger.** Its four coarse buckets
+      (production / media / internal / other) become coded BUDGET rows against the deal.
+- [ ] **Issue revenue should roll up from deals, not be typed in.** `MagazinePlan.totalRevenue`
+      is currently a single manual figure (set to £680,032 for Issue 02 from the sheet). Tab 2
+      of Quinn's sheet is really a list of commercial deals — Porsche, Vans, Chanel, Omega,
+      Timberland, Sorel, MCM, Penhaligons, Bulgari, Armani, Balmain — each with an "IO Signed?"
+      flag that the IO maker already models. Tag deals to an issue and the revenue side gets
+      the same red thread as the cost side.
+- [ ] **Backfill Xero account codes** once Xero is reconnected (§2). Every `CostLine` has
+      `accountCode` / `trackingCategory` waiting. `section` is the natural thing to map onto a
+      real tracking option.
+- [ ] Finance P&L view over the unfiltered ledger — `totalsByAccount()` in `cost-ledger.ts`
+      exists and is unused. Uncoded rows deliberately surface rather than hide.
+
 ## 2. Integrations
 
 See `docs/ARCHITECTURE.md` for the full picture. Headline: **Google is integrated three
