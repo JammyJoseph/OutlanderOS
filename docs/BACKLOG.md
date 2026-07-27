@@ -142,12 +142,19 @@ two budget systems still sit outside it.
       manager on it.
 - [ ] **Drag-and-drop reordering in the production budget** — both lines *and* whole sections.
       `sortOrder` already exists on the ledger; sections currently have no stored order.
-- [ ] **Undo "fill from template".** Clicking it by accident currently means deleting every
-      seeded line by hand. Offer a one-click revert that removes template-seeded lines that
-      are still untouched (seeded rows are identifiable — the importer/template stamps
-      `createdByName`).
-- [ ] **Budget export should omit unused lines** — zero-value / never-filled rows shouldn't
-      print.
+- [x] ~~Undo "fill from template"~~ — **done 2026-07-27.** "Undo template (n)" appears beside
+      "Fill template", only when there is something to undo. Removes lines still blank from
+      the template; anything with a figure, description, note, invoice tracking **or recorded
+      spend** is kept. Verified: seeded 66, filled 3, undo removed exactly 63 — including
+      correctly keeping a £0 line that had an actual against it.
+      Caveat: lines migrated from the old `BudgetLineItem` table had their blank descriptions
+      backfilled from `role` (CostLine.description is NOT NULL), so pre-migration template
+      rows read as "filled in" and are not removed. Only affects budgets seeded before
+      2026-07-27.
+- [x] ~~Budget export omits unused lines~~ — **done 2026-07-27.** `BudgetDocument` drops rows
+      with no money, no spend and no description, then hides any section left empty. A
+      deliberate £0 line with a description still prints. The footer discloses how many rows
+      were omitted — silently dropping lines from a financial document isn't acceptable.
 - [ ] **Print budget structure:** a total tied to specific project deals, plus free-form
       lines for marketing, freelancers, kill fees and similar. The ledger already supports
       both (`campaignId` for deal-tied rows, plain rows for the rest) — this is a UI job.

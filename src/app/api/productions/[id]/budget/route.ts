@@ -301,6 +301,64 @@ export const POST = withAuth(async (
     // Template action: seed the standard section structure with empty,
     // ready-to-fill line items. Skips sections that already have items so it's
     // safe to run on a partially-filled budget.
+    // Undo a template fill. Clicking "Fill template" by accident used to mean
+    // deleting every seeded row by hand, so this removes them in one go — but
+    // only the ones nobody has touched. A line counts as untouched when it still
+    // carries a template role for its section, has no money on it, no notes, no
+    // invoice tracking and no actuals recorded against it. Anything typed into
+    // is left alone, so this can never destroy real work.
+    if (body.undoTemplate) {
+      const rolesBySection = new Map(BUDGET_TEMPLATE.map((s) => [s.section, new Set(s.roles)]));
+      const candidates = await prisma.costLine.findMany({
+        where: {
+          productionId: id,
+          kind: "BUDGET",
+          amount: 0,
+          description: "",
+          notes: null,
+          invoiceStatus: null,
+          invoiceUrl: null,
+          poNumber: null,
+          invoicedAmount: null,
+        },
+        select: { id: true, section: true, role: true, quantity: true, rate: true },
+      });
+
+      const pristine = candidates.filter((c) => {
+        if (!c.section || !c.role) return false;
+        if (!rolesBySection.get(c.section)?.has(c.role)) return false;
+        // Template seeds quantity 1 / rate 0; anything else has been edited.
+        const qtyUntouched = c.quantity == null || c.quantity === 1;
+        const rateUntouched = c.rate == null || c.rate === 0;
+        return qtyUntouched && rateUntouched;
+      });
+      if (pristine.length === 0) {
+        return NextResponse.json({ removed: 0, message: "No untouched template lines to remove" });
+      }
+
+      // Never remove a line that has spend recorded against it, even if the
+      // budgeted figure is still zero.
+      const ids = pristine.map((p) => p.id);
+      const withActuals = await prisma.costLine.findMany({
+        where: { kind: "ACTUAL", budgetLineId: { in: ids } },
+        select: { budgetLineId: true },
+      });
+      const spent = new Set(withActuals.map((a) => a.budgetLineId));
+      const removable = ids.filter((i) => !spent.has(i));
+      if (removable.length === 0) {
+        return NextResponse.json({ removed: 0, message: "No untouched template lines to remove" });
+      }
+
+      const result = await prisma.costLine.deleteMany({
+        where: { id: { in: removable }, productionId: id, production: guardWhere({ structure: true }) },
+      });
+      if (result.count === 0) {
+        const blocked = await blockedReason(id, { structure: true });
+        if (blocked) return NextResponse.json({ error: blocked }, { status: 403 });
+      }
+      return NextResponse.json({ removed: result.count });
+    }
+
     if (body.template) {
       const existing = await prisma.costLine.findMany({
         where: { productionId: id, kind: "BUDGET" },

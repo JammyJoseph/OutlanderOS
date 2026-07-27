@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import {
   ArrowUpRight,
   Briefcase,
@@ -12,6 +13,7 @@ import {
   Plus,
   Receipt,
   Sparkles,
+  Undo2,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -87,6 +89,7 @@ export default function BudgetTab({
   const [statusBusy, setStatusBusy] = useState(false);
   const { user } = useUser();
   const isAdmin = user?.role === "ADMIN";
+  const confirm = useConfirm();
   const [seeding, setSeeding] = useState(false);
   const [showRateCard, setShowRateCard] = useState(false);
   const [reopenTarget, setReopenTarget] = useState<ProductionBudgetStatus | null>(null);
@@ -343,6 +346,31 @@ export default function BudgetTab({
     }
   }
 
+  // Removes template lines nobody has filled in. Anything with a figure, a note,
+  // invoice tracking or recorded spend is kept, so this can't lose real work.
+  async function undoTemplate() {
+    if (
+      !(await confirm({
+        title: "Remove unused template lines?",
+        message:
+          "Only lines still blank from the template go — anything you've typed a figure, note or actual into stays.",
+        confirmLabel: "Remove",
+      }))
+    )
+      return;
+    setSeeding(true);
+    try {
+      const res = await fetch(`/api/productions/${production.id}/budget`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ undoTemplate: true }),
+      });
+      await handleResponse(res);
+    } finally {
+      setSeeding(false);
+    }
+  }
+
   async function deleteLine(itemId: string) {
     const res = await fetch(`/api/productions/${production.id}/budget?itemId=${itemId}`, {
       method: "DELETE",
@@ -451,6 +479,24 @@ export default function BudgetTab({
           : null;
 
   const hasItems = (items ?? []).length > 0;
+  // Mirrors the server's definition of "untouched template line" so the undo
+  // control only appears when it would actually remove something.
+  const untouchedTemplateCount = useMemo(
+    () =>
+      (items ?? []).filter(
+        (i) =>
+          !!i.role &&
+          !i.description &&
+          !i.notes &&
+          !i.invoiceStatus &&
+          !i.poNumber &&
+          (i.budgeted || 0) === 0 &&
+          (i.actual || 0) === 0 &&
+          (i.quantity == null || i.quantity === 1) &&
+          (i.rate == null || i.rate === 0)
+      ).length,
+    [items]
+  );
 
   return (
     <div className="space-y-5">
@@ -907,6 +953,19 @@ export default function BudgetTab({
               >
                 {seeding ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                 Fill template
+              </button>
+            )}
+            {/* Only offered when there is something to undo, so it doesn't sit
+                there inviting a click on a budget that's been filled in. */}
+            {hasItems && canEditBudgeted && untouchedTemplateCount > 0 && (
+              <button
+                onClick={undoTemplate}
+                disabled={seeding}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
+                title={`Remove ${untouchedTemplateCount} unused template line${untouchedTemplateCount === 1 ? "" : "s"}`}
+              >
+                <Undo2 size={11} />
+                Undo template ({untouchedTemplateCount})
               </button>
             )}
             {!canEditBudgeted && (
