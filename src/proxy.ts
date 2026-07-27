@@ -13,6 +13,8 @@ export function proxy(request: NextRequest) {
   }
 
   if (pathname === '/login') return NextResponse.next()
+  // Public: reset links are opened by users who can't sign in yet.
+  if (pathname === '/reset-password') return NextResponse.next()
   // Public: Google drops the user here after consent to surface the auth code.
   if (pathname === '/auth/google/callback') return NextResponse.next()
   // Public: shared call sheets — crew and talent open these without an account.

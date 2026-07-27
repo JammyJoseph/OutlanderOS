@@ -1,6 +1,6 @@
 'use client'
-import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 // Deterministic pseudo-random so the star field is identical on server and
 // client (no hydration mismatch) but still looks scattered.
@@ -37,13 +37,48 @@ function useStars(count: number): Star[] {
   }, [count])
 }
 
+function ResetSuccessBanner() {
+  const done = useSearchParams().get('reset') === '1'
+  if (!done) return null
+  return (
+    <div className="mb-4 text-sm text-[#7ddca4] bg-[#7ddca4]/10 border border-[#7ddca4]/20 rounded-lg px-3 py-2">
+      Password updated. Sign in with your new password.
+    </div>
+  )
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [forgotOpen, setForgotOpen] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotSending, setForgotSending] = useState(false)
+  const [forgotMessage, setForgotMessage] = useState('')
+  const [forgotLink, setForgotLink] = useState('')
   const router = useRouter()
   const stars = useStars(90)
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault()
+    setForgotSending(true)
+    setForgotMessage('')
+    setForgotLink('')
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      })
+      const data = await res.json()
+      setForgotMessage(data.message || data.error || 'Something went wrong')
+      if (data.link) setForgotLink(data.link)
+    } catch {
+      setForgotMessage('Connection error')
+    }
+    setForgotSending(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -137,6 +172,9 @@ export default function LoginPage() {
           </h1>
           <p className="text-sm text-gray-400 mt-2">Sign in to your workspace</p>
         </div>
+        <Suspense fallback={null}>
+          <ResetSuccessBanner />
+        </Suspense>
         <form onSubmit={handleSubmit} className="rounded-2xl border border-[#2a2a2a] bg-[#0e1018]/80 p-6 shadow-2xl shadow-black/50 backdrop-blur-md space-y-4">
           {error && <div className="text-sm text-[#ff6b6b] bg-[#ff6b6b]/10 border border-[#ff6b6b]/20 rounded-lg px-3 py-2">{error}</div>}
           <div>
@@ -154,6 +192,59 @@ export default function LoginPage() {
             className="w-full py-2.5 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black font-semibold text-sm hover:brightness-110 disabled:opacity-50 transition-all duration-200">
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+
+          <div className="pt-1 border-t border-[#2a2a2a]">
+            {!forgotOpen ? (
+              <button
+                type="button"
+                onClick={() => { setForgotOpen(true); setForgotEmail(email) }}
+                className="mt-3 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                Forgot password?
+              </button>
+            ) : (
+              <div className="mt-3 space-y-2">
+                <label className="block text-xs font-medium text-gray-400">
+                  Enter your email to generate a reset link
+                </label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  placeholder="you@outlandermag.com"
+                  className="w-full px-3 py-2 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleForgot}
+                    disabled={forgotSending || !forgotEmail}
+                    className="flex-1 py-2 rounded-lg border border-[#2a2a2a] text-gray-200 text-xs font-semibold hover:bg-[#161922] disabled:opacity-50 transition-all"
+                  >
+                    {forgotSending ? 'Sending...' : 'Send reset link'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setForgotOpen(false); setForgotMessage(''); setForgotLink('') }}
+                    className="px-3 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {forgotMessage && (
+                  <p className="text-xs text-gray-400 leading-relaxed">{forgotMessage}</p>
+                )}
+                {forgotLink && (
+                  <div className="rounded-lg border border-[#9C7C2E]/30 bg-[#9C7C2E]/10 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wider text-[#C9A44A] mb-1">
+                      Admin only — reset link
+                    </p>
+                    <code className="block break-all text-[11px] text-gray-200">{forgotLink}</code>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </form>
         <p className="mt-6 text-center text-[11px] text-gray-500">Internal operating system · Outlander Magazine</p>
       </div>

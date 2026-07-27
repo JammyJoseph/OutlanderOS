@@ -32,6 +32,9 @@ model User {
   mustChangePassword Boolean @default(false)
   hasSeenWelcome     Boolean @default(false)
 
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+
   googleAccessToken  String?
   googleRefreshToken String?
   googleTokenExpiry  DateTime?

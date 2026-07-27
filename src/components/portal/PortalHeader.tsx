@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NotificationBell } from "@/components/layout/NotificationBell";
 import { portalAccent } from "@/lib/design";
 import { PortalSwitcher } from "@/components/portal/PortalSwitcher";
 import { BrandLogo } from "@/components/portal/BrandLogo";
@@ -86,7 +85,6 @@ export function PortalHeader() {
       {/* Right: actions */}
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <NotificationBell />
 
         <Link
           href="/me"

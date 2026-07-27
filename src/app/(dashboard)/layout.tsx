@@ -1,6 +1,5 @@
 "use client";
 
-import { NotificationBell } from "@/components/layout/NotificationBell";
 import { BrandLogo } from "@/components/portal/BrandLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Link from "next/link";
@@ -36,7 +35,6 @@ export default function DashboardLayout({
               <Settings className="h-4 w-4" />
             </Link>
             <ThemeToggle />
-            <NotificationBell />
           </div>
         </header>
       )}

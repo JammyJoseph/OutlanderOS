@@ -5,7 +5,6 @@ import { useState, useRef, useEffect } from "react";
 import { User as UserIcon } from "lucide-react";
 import { PortalSwitcher } from "@/components/portal/PortalSwitcher";
 import { BrandLogo } from "@/components/portal/BrandLogo";
-import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useUser } from "@/components/user-context";
 
@@ -55,9 +54,6 @@ export function PersonalHeader() {
 
         {/* Theme toggle */}
         <ThemeToggle />
-
-        {/* Notifications (shared unified bell) */}
-        <NotificationBell />
 
         {/* Profile */}
         <div className="relative ml-1" ref={profileRef}>
