@@ -183,6 +183,27 @@ two budget systems still sit outside it.
       Free-form lines for marketing/freelancers/kill fees already work: the ledger takes
       plain rows in any section.
 
+## 1d. IO signature workflow (DocuSign)
+
+- [x] ~~Send IOs for signature from the Commercial portal~~ — **built 2026-07-27, not yet
+      proven against a live account.** JWT Grant auth, envelope from template, status polling,
+      guards. See `docs/DOCUSIGN.md`. Before today "Send" only stamped a status — nothing left
+      the building, and there is still no mail library in the project.
+- [ ] **Provide the four DocuSign credentials** (integration key, user id, RSA private key,
+      template id) and grant consent once. Until then the Send button returns a clear
+      "not connected" message.
+- [ ] **Build the IO template in DocuSign** with the tab labels in `docs/DOCUSIGN.md`, signer
+      role `Client`. The template's line-row count is a hard limit — the send route refuses
+      rather than truncating a contract.
+- [ ] **Go-live certification** — ~20 successful demo calls then a DocuSign review before
+      production envelopes are legally binding. Days, not hours.
+- [ ] **Webhooks once TLS lands.** Connect needs an HTTPS callback and prod has no 443, so
+      status is polled via a Refresh button. Add a Connect subscription writing the same
+      fields when the certificate exists; polling then becomes the fallback.
+- [ ] Store the completed PDF. `downloadSignedPdf()` exists and `signedPdfUrl` is on the
+      model, but nothing calls it yet — needs a decision on where files live (Drive vs
+      `public/uploads`, which is lost on server rebuild).
+
 ## 2. Integrations
 
 See `docs/ARCHITECTURE.md` for the full picture. Headline: **Google is integrated three

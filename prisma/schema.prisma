@@ -437,6 +437,23 @@ model InsertionOrder {
   signedAt       DateTime?
   signedFileUrl  String? // link to the countersigned copy, if uploaded elsewhere
   sentAt         DateTime?
+
+  // ── E-signature ──────────────────────────────────────────────────────────
+  // `status` above stays the business status (DRAFT | SENT | SIGNED | VOID).
+  // These track the provider's own view of the envelope, which is finer-grained
+  // and moves on its own — keeping them apart means a provider hiccup can never
+  // corrupt the business status, and an IO signed on paper still works.
+  signatureProvider String? // DOCUSIGN — null for IOs handled manually
+  envelopeId        String? @unique
+  // The provider's raw status, stored verbatim rather than mapped on write:
+  // created | sent | delivered | signed | completed | declined | voided.
+  // Mapping on read means a provider adding a state can't silently mislabel one.
+  signatureStatus   String?
+  sentToEmail       String?
+  viewedAt          DateTime?
+  declinedReason    String?
+  signedPdfUrl      String? // stored copy of the completed envelope
+  lastSyncedAt      DateTime?
   createdById    String
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Loader2, Check, Edit2, Eye, FileDown, Plus, Trash2, Send, PenLine, Ban,
+  ArrowLeft, Loader2, Check, Edit2, Eye, FileDown, Plus, Trash2, Send, PenLine, Ban, RefreshCw, ExternalLink,
 } from "lucide-react";
 import { IODocument, type IOViewData } from "../IODocument";
 import { IO_SIGNATORY, type IOLineItem, type IOStatus } from "@/lib/io-template";
@@ -36,6 +36,13 @@ interface IORecord {
   lineItems: IOLineItem[];
   totalNet: number;
   notes: string | null;
+  envelopeId?: string | null;
+  signatureProvider?: string | null;
+  signatureStatus?: string | null;
+  sentToEmail?: string | null;
+  viewedAt?: string | null;
+  declinedReason?: string | null;
+  lastSyncedAt?: string | null;
   signedName: string | null;
   signedTitle: string | null;
   campaign: { id: string; title: string; client: { id: string; name: string } };
@@ -44,6 +51,19 @@ interface IORecord {
 function emptyLine(): IOLineItem {
   return { startDate: "", endDate: "", description: "", quantity: 1, rate: 0, subtotal: 0 };
 }
+
+// What DocuSign currently says about the envelope, in plain words. Kept separate
+// from the IO's own status so it's obvious which is which — an IO can read SENT
+// while the envelope is only "delivered" (opened, but not signed).
+const ENVELOPE_LABEL: Record<string, string> = {
+  created: "Draft in DocuSign",
+  sent: "Sent — waiting for the client to open it",
+  delivered: "Opened by the client — not signed yet",
+  signed: "Signed — completing",
+  completed: "Signed and completed",
+  declined: "Declined by the client",
+  voided: "Voided",
+};
 
 export default function InsertionOrderPage({
   params,
@@ -59,6 +79,9 @@ export default function InsertionOrderPage({
   const [saved, setSaved] = useState(false);
   const [mode, setMode] = useState<Mode>("editor");
   const [statusBusy, setStatusBusy] = useState(false);
+  const [sigBusy, setSigBusy] = useState(false);
+  const [sigError, setSigError] = useState<string | null>(null);
+  const [consentUrl, setConsentUrl] = useState<string | null>(null);
 
   // ── Form state (the variable fields) ──
   const [advertiserName, setAdvertiserName] = useState("");
@@ -158,6 +181,47 @@ export default function InsertionOrderPage({
         return next;
       })
     );
+  }
+
+  // ── E-signature (DocuSign) ──
+  async function sendForSignature() {
+    setSigBusy(true);
+    setSigError(null);
+    try {
+      await persist(); // never send a document that differs from what's on screen
+      const res = await fetch(`/api/insertion-orders/${ioId}/send-for-signature`, {
+        method: "POST",
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setSigError(d.error || "Couldn't send for signature");
+        setConsentUrl(d.consentUrl ?? null);
+        return;
+      }
+      setIo((prev) => (prev ? { ...prev, ...d.insertionOrder, campaign: prev.campaign } : prev));
+    } finally {
+      setSigBusy(false);
+    }
+  }
+
+  // Polls DocuSign for the envelope's current state. Prod has no HTTPS listener,
+  // so Connect webhooks can't reach us — this is the only way to learn that a
+  // client signed until TLS lands.
+  async function syncSignature() {
+    setSigBusy(true);
+    setSigError(null);
+    try {
+      const res = await fetch(`/api/insertion-orders/${ioId}/sync-signature`, { method: "POST" });
+      const d = await res.json();
+      if (!res.ok) {
+        setSigError(d.error || "Couldn't refresh signature status");
+        setConsentUrl(d.consentUrl ?? null);
+        return;
+      }
+      setIo((prev) => (prev ? { ...prev, ...d.insertionOrder, campaign: prev.campaign } : prev));
+    } finally {
+      setSigBusy(false);
+    }
   }
 
   // ── Status transitions ──
@@ -276,11 +340,23 @@ export default function InsertionOrderPage({
             {io.status === "DRAFT" && (
               <>
                 <button
-                  onClick={() => setStatus("SENT")}
-                  disabled={statusBusy}
-                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors disabled:opacity-50"
+                  onClick={sendForSignature}
+                  disabled={sigBusy || statusBusy}
+                  title="Email this IO to the client for signature via DocuSign"
+                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  <Send size={12} /> Mark as Sent
+                  {sigBusy ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                  Send for signature
+                </button>
+                {/* Kept for IOs signed outside the platform — on paper, or over
+                    email before DocuSign was connected. */}
+                <button
+                  onClick={() => setStatus("SENT")}
+                  disabled={statusBusy || sigBusy}
+                  title="Record that this was sent outside the platform"
+                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  Mark as sent manually
                 </button>
                 <button
                   onClick={deleteDraft}
@@ -292,9 +368,20 @@ export default function InsertionOrderPage({
             )}
             {io.status === "SENT" && (
               <>
+                {io.envelopeId && (
+                  <button
+                    onClick={syncSignature}
+                    disabled={sigBusy || statusBusy}
+                    title="Ask DocuSign whether the client has signed yet"
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  >
+                    {sigBusy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    Refresh status
+                  </button>
+                )}
                 <button
                   onClick={() => setStatus("SIGNED")}
-                  disabled={statusBusy}
+                  disabled={statusBusy || sigBusy}
                   className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50"
                 >
                   <PenLine size={12} /> Mark as Signed
@@ -322,6 +409,55 @@ export default function InsertionOrderPage({
             )}
           </div>
         </div>
+
+        {/* ── Signature status ── */}
+        {(sigError || io.envelopeId) && (
+          <div className="mb-5 print:hidden">
+            {sigError && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/25 dark:text-amber-200">
+                <p>{sigError}</p>
+                {consentUrl && (
+                  <a
+                    href={consentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-flex items-center gap-1 font-medium underline"
+                  >
+                    Grant DocuSign consent <ExternalLink size={11} />
+                  </a>
+                )}
+              </div>
+            )}
+            {io.envelopeId && (
+              <div className="mt-2 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    DocuSign
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {ENVELOPE_LABEL[io.signatureStatus ?? ""] ?? io.signatureStatus ?? "Unknown"}
+                  </span>
+                  {io.sentToEmail && (
+                    <span className="text-xs text-gray-500">to {io.sentToEmail}</span>
+                  )}
+                </div>
+                {io.declinedReason && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    Reason given: {io.declinedReason}
+                  </p>
+                )}
+                <p className="mt-1 text-[11px] text-gray-400">
+                  {io.lastSyncedAt
+                    ? `Last checked ${new Date(io.lastSyncedAt).toLocaleString("en-GB")}`
+                    : "Not checked yet"}
+                  {" · "}
+                  status is polled, not pushed — DocuSign can&apos;t call back until the
+                  server has HTTPS
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {mode === "editor" ? (
           <div className="space-y-5 print:hidden">
