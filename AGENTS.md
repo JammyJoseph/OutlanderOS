@@ -107,7 +107,7 @@ git checkout -- package-lock.json   # server npm installs rewrite it and block t
 git pull origin main                # DO NOT pipe this — see below
 npm install
 export DATABASE_URL="postgresql://outlanderos:test123@127.0.0.1:5432/outlanderos"
-npx prisma db push [--accept-data-loss if needed] && npx prisma generate
+npx prisma migrate deploy && npx prisma generate   # NOT db push — migrations are live
 export NODE_OPTIONS="--max-old-space-size=3584" && npm run build && pm2 restart outlanderos
 git log --oneline -1                # confirm this matches what you pushed
 ```
