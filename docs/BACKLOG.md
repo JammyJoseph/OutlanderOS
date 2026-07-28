@@ -3,6 +3,10 @@
 Recovered 2026-07-27 by auditing the codebase, git history and the four markdown files in
 the repo. Until now this list existed only in chat sessions. **Keep it here.**
 
+**See `docs/ROADMAP.md` for the order to do these in.** This file is the itemised
+list with file:line detail; the roadmap sequences it by dependency — most of it sits
+behind one DNS record.
+
 Status key: `[ ]` open · `[~]` partial · `[x]` done
 
 ---

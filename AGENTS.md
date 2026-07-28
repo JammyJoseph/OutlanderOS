@@ -9,8 +9,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 Internal operating system for Outlander Magazine. ~7 staff users. Next.js 16 (App Router) +
 Prisma 7 + Postgres, deployed as a single `next start` process under pm2 on one VPS.
 
-**Read `docs/BACKLOG.md` for outstanding work and `docs/ARCHITECTURE.md` for how the pieces
-fit.** This file is conventions and landmines only.
+**Read `docs/ROADMAP.md` for what's next and in what order, `docs/BACKLOG.md` for the
+itemised detail, and `docs/ARCHITECTURE.md` for how the pieces fit.** This file is conventions and landmines only.
 
 ## Product shape
 
