@@ -303,7 +303,7 @@ export default function PrintBudgetView({ issueId }: { issueId: string }) {
       </div>
 
       {/* ===== Column header ===== */}
-      <div className="grid grid-cols-12 gap-2 rounded-t-md border border-b-0 border-border bg-card px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+      <div className="grid grid-cols-12 gap-2 rounded-t-md border border-b-0 border-border bg-muted px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-foreground">
         <div className="col-span-5">Description</div>
         <div className="col-span-2">Link</div>
         <div className="col-span-1 text-right">Budget</div>
@@ -324,29 +324,37 @@ export default function PrintBudgetView({ issueId }: { issueId: string }) {
             <div key={sec.key} className="border-b border-border last:border-b-0">
               <button
                 onClick={() => toggleSection(sec.key)}
-                className="flex w-full items-center justify-between bg-muted/40 px-4 py-2 text-left transition-colors hover:bg-muted/70 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
+                className="flex w-full items-center justify-between bg-foreground px-4 py-2.5 text-left text-background transition-opacity hover:opacity-90"
               >
                 <div className="flex items-center gap-2">
                   {isCollapsed ? (
-                    <ChevronRight size={14} className="text-muted-foreground" />
+                    <ChevronRight size={14} className="text-background" />
                   ) : (
-                    <ChevronDown size={14} className="text-muted-foreground" />
+                    <ChevronDown size={14} className="text-background" />
                   )}
-                  <span className="text-xs font-bold uppercase tracking-widest text-foreground">{sec.label}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-background">{sec.label}</span>
                   {secLines.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground">({secLines.length})</span>
+                    <span className="rounded-full bg-background px-1.5 py-px text-[10px] font-semibold text-foreground">
+                      {secLines.length}
+                    </span>
                   )}
                 </div>
                 <div className="flex items-center gap-5 text-xs tabular-nums">
-                  <span className="text-muted-foreground" title="Budget">
+                  <span className="text-background" title="Budget">
                     {gbp(secBudget)}
                   </span>
-                  <span className="text-muted-foreground/70" title="Actual">
+                  <span className="text-background" title="Actual">
                     {gbp(secActual)}
                   </span>
                   <span
-                    className={`w-24 text-right font-medium ${
-                      secVar >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+                    // The bar is bg-foreground, so it flips black→white between
+                    // themes and the variance colour has to flip with it: light
+                    // green on the black bar, dark green on the white one.
+                    // Without the dark: variant this was emerald-300 on white.
+                    className={`w-24 text-right font-semibold ${
+                      secVar >= 0
+                        ? "text-emerald-300 dark:text-emerald-700"
+                        : "text-red-300 dark:text-red-700"
                     }`}
                     title="Variance"
                   >
@@ -455,7 +463,7 @@ function BudgetRow({
   const hasActual = actual !== 0;
 
   return (
-    <div className="group grid grid-cols-12 items-center gap-2 border-t border-border/60 px-4 py-1 hover:bg-muted/20 dark:hover:bg-white/[0.02]">
+    <div className="group grid grid-cols-12 items-center gap-2 border-t border-border bg-card px-4 py-1.5 transition-colors hover:bg-muted">
       {/* Description + notes */}
       <div className="col-span-5 min-w-0">
         <TextInput
