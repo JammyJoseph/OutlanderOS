@@ -22,6 +22,9 @@ export function proxy(request: NextRequest) {
   if (pathname === '/auth/google/callback') return NextResponse.next()
   // Public: shared call sheets — crew and talent open these without an account.
   if (pathname.startsWith('/call-sheet/')) return NextResponse.next()
+  // Public: invoice submission. Crew aren't OutlanderOS users, so the token in
+  // the URL is the credential — see api/invoice/[token]/route.ts.
+  if (pathname.startsWith('/invoice/')) return NextResponse.next()
   // Static assets only. This used to be `pathname.includes('.')`, which let any
   // path containing a period skip the auth check entirely (`/finance/x.y` walked
   // straight past this gate). Match real asset extensions instead.

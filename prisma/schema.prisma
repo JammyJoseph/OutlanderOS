@@ -536,6 +536,7 @@ model Production {
   shareLinks       ProductionShareLink[]   @relation("productionShareLinks")
   linkedTasks      Task[]                  @relation("productionLinkedTasks")
   costLines        CostLine[]              @relation("productionCostLines")
+  invoices         InvoiceSubmission[]     @relation("productionInvoices")
 }
 
 // Shareable internal deep-link to a production. Any signed-in Outlander user
@@ -1286,10 +1287,31 @@ model CampaignBudget {
 }
 
 
+// A supplier invoice, from the moment it's requested to the moment it's paid.
+//
+// Deliberately NOT an invoice store. OutlanderOS asks for the invoice, records
+// what was submitted and tracks its status; Xero remains the ledger of record
+// and Moss (or Xero) makes the payment. Holding a third copy of every invoice is
+// the doubling-up this is meant to avoid — `attachmentUrl` points at the file,
+// it isn't the file.
 model InvoiceSubmission {
   id               String    @id @default(cuid())
   supplierName     String
   supplierEmail    String
+  // ── Request phase ────────────────────────────────────────────────────────
+  // Set when Production wraps a shoot and asks the crew to invoice. The token
+  // is the crew member's front door: a long random string, since the page it
+  // opens is public and must not be guessable from an id.
+  token            String?   @unique
+  productionId     String?
+  production       Production? @relation("productionInvoices", fields: [productionId], references: [id], onDelete: SetNull)
+  ioNumber         String? // quoted back to the supplier so finance can match it
+  requestedAt      DateTime?
+  requestedById    String?
+  submittedAt      DateTime?
+  // Expected value from the production budget line, so finance can see at a
+  // glance whether what arrived matches what was agreed.
+  expectedAmount   Float?
   amount           Float?
   currency         String    @default("GBP")
   description      String?
@@ -1298,7 +1320,9 @@ model InvoiceSubmission {
   attachmentUrl    String?
   receivedAt       DateTime  @default(now())
   paymentDeadline  DateTime // 30 days from received
-  status           String    @default("RECEIVED") // RECEIVED, UNDER_REVIEW, APPROVED, PAID, REJECTED
+  // REQUESTED — asked for, nothing submitted yet (the new first state)
+  // RECEIVED → UNDER_REVIEW → APPROVED → PAID, or REJECTED
+  status           String    @default("RECEIVED")
   campaignBudgetId String? // project this invoice is coded to
   flagged          Boolean   @default(false)
   flagNote         String?
