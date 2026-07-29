@@ -854,6 +854,7 @@ model MagazinePlan {
   updatedBy   String?
 
   costLines        CostLine[]
+  rolloutPlan      RolloutPlan?
 
   @@unique([issueNumber])
 }
@@ -1314,4 +1315,215 @@ model InvoiceSubmission {
   @@index([status])
   @@index([paymentDeadline])
   @@index([campaignBudgetId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ROLLOUT & DISTRIBUTION
+//
+// The fulfilment plan for one issue: how a print run is split across covers,
+// channels, territories, warehouses, stockists and events, and the calendar that
+// gets it there.
+//
+// DESIGN RULE — store inputs, derive everything else. The spreadsheet this
+// replaces marks cells "blue = input, black = calculated, green = pulled from
+// another tab", and that distinction is load-bearing. Only blue cells are
+// columns here. Cover splits per store, per-hub totals, the regional warehouse
+// table and every reconciliation variance are COMPUTED in lib/rollout.ts, never
+// stored — a stored total is a total that can drift from the rows beneath it.
+// ═══════════════════════════════════════════════════════════════════════════
+
+model RolloutPlan {
+  id             String       @id @default(cuid())
+  magazinePlanId String       @unique
+  magazinePlan   MagazinePlan @relation(fields: [magazinePlanId], references: [id], onDelete: Cascade)
+
+  totalPrintRun     Int       @default(0)
+  launchDate        DateTime?
+  // The hard one. Every milestone counts back from this.
+  warehouseDeadline DateTime?
+
+  // US shipping economics inputs.
+  gbpToUsd       Float @default(1.30)
+  eastCoastShare Float @default(60) // % of US orders priced on the NY lane
+
+  // Free-text assumptions and open items — the bullet list at the foot of the
+  // overview. Prose, not data, so it stays prose.
+  assumptions String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  covers     RolloutCover[]
+  hubs       FulfilmentHub[]
+  channels   RolloutChannel[]
+  territories RolloutTerritory[]
+  stockists  Stockist[]
+  events     RolloutEvent[]
+  lanes      ShippingLane[]
+  milestones RolloutMilestone[]
+  profiles   CoverProfile[]
+}
+
+// One cover = one SKU = one factory-printed barcode. No substitutions.
+model RolloutCover {
+  id       String      @id @default(cuid())
+  planId   String
+  plan     RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name     String // "Cover 1"
+  sku      String // OUT02-C1
+  sharePct Float // share of the total print run
+  // Exactly one cover should be the balancer: it absorbs rounding so every
+  // split ties exactly rather than drifting a unit at a time.
+  isBalancer Boolean @default(false)
+  notes      String?
+  sortOrder  Int     @default(0)
+
+  @@index([planId])
+}
+
+// Named cover mixes applied to stockists — Standard 35/35/20, Talent 40/25/25,
+// Collector 30/45/15. Percentages are keyed by cover name so adding a cover
+// doesn't require a migration: { "Cover 1": 35, "Cover 2": 35, ... }.
+model CoverProfile {
+  id        String      @id @default(cuid())
+  planId    String
+  plan      RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name      String
+  splits    Json        @default("{}")
+  isDefault Boolean     @default(false)
+  notes     String?
+  sortOrder Int         @default(0)
+
+  stockists Stockist[]
+
+  @@index([planId])
+}
+
+model FulfilmentHub {
+  id        String      @id @default(cuid())
+  planId    String
+  plan      RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name      String // "US (SLC)"
+  location  String? // "Salt Lake City, Utah"
+  serves    String? // what this hub covers
+  // Direct-from-printer is a "hub" for allocation purposes but holds no stock.
+  isDirect  Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  territories RolloutTerritory[]
+  stockists   Stockist[]
+  events      RolloutEvent[]
+  channels    RolloutChannel[]
+
+  @@index([planId])
+}
+
+// How the run divides by purpose: Phase 1, Phase 2, B2B, seeding, events, buffer.
+model RolloutChannel {
+  id      String      @id @default(cuid())
+  planId  String
+  plan    RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name    String
+  units   Int         @default(0)
+  purpose String?
+  // Reserve and buffer sit at a named hub; the rest are distributed via
+  // territories, events and stockists, so this is null for them.
+  hubId   String?
+  hub     FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
+  // Which reconciliation family this row belongs to, so the checks know what
+  // should tie to what: B2C | B2B | SEEDING | EVENTS | BUFFER.
+  kind      String @default("B2C")
+  sortOrder Int    @default(0)
+
+  @@index([planId])
+}
+
+// B2C and gifting demand by territory, and which hub serves it.
+model RolloutTerritory {
+  id       String      @id @default(cuid())
+  planId   String
+  plan     RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name     String // "Asia-Pacific / Middle East"
+  hubId    String?
+  hub      FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
+  phase1     Int @default(0)
+  phase2     Int @default(0)
+  seedingVip Int @default(0)
+  sortOrder  Int @default(0)
+
+  @@index([planId])
+}
+
+// A confirmed retail account. Cover splits are DERIVED from units × profile.
+model Stockist {
+  id      String      @id @default(cuid())
+  planId  String
+  plan    RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name    String
+  city    String?
+  market  String? // UK | US | France | … — groups the market reconciliation
+  hubId   String?
+  hub     FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
+  profileId String?
+  profile   CoverProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  units     Int     @default(0)
+  // Optional link to the Directory, so a stockist is the same record the
+  // commercial team already knows about rather than a second address book.
+  contactId String?
+  notes     String?
+  sortOrder Int     @default(0)
+
+  @@index([planId])
+  @@index([contactId])
+}
+
+model RolloutEvent {
+  id     String      @id @default(cuid())
+  planId String
+  plan   RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  city   String
+  hubId  String?
+  hub    FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
+  units     Int     @default(0)
+  eventDate DateTime?
+  notes     String?
+  sortOrder Int     @default(0)
+
+  @@index([planId])
+}
+
+// A costed shipping route. Rates arrive at different times from different
+// partners, so `ratePerOrder` is nullable and `quoteStatus` carries the reason.
+model ShippingLane {
+  id     String      @id @default(cuid())
+  planId String
+  plan   RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name         String
+  ratePerOrder Float?
+  currency     String  @default("GBP")
+  volume       Int     @default(0)
+  quoteStatus  String?
+  // The lane being beaten — last year's cost per order. Excluded from cost
+  // totals and used as the comparison baseline.
+  isBaseline   Boolean @default(false)
+  sortOrder    Int     @default(0)
+
+  @@index([planId])
+}
+
+model RolloutMilestone {
+  id     String      @id @default(cuid())
+  planId String
+  plan   RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  seq          Int
+  window       String? // "By 7 August"
+  date         DateTime?
+  action       String
+  owner        String?
+  // Slip one of these and the launch date moves.
+  criticalPath Boolean @default(false)
+  status       String  @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | DONE | BLOCKED
+  notes        String?
+
+  @@index([planId])
 }
