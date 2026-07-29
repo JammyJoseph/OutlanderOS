@@ -99,6 +99,40 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
             </dd>
           </div>
         )}
+        {/* Contracted revenue — what the advertiser has actually signed for, as
+            distinct from the deal value Commercial is forecasting. */}
+        {p.ioCount > 0 && (
+          <div className="col-span-2 border-t border-gray-100 pt-1.5 dark:border-gray-800">
+            <dt className="text-gray-400 dark:text-gray-500">
+              Contracted (IO) · {p.ioSignedCount} of {p.ioCount} signed
+            </dt>
+            <dd className="font-mono font-semibold text-gray-900 dark:text-gray-100">
+              {fmtGBP(p.ioSigned)}
+              {p.ioPending > 0 && (
+                <span className="text-gray-400 dark:text-gray-500">
+                  {' '}+ {fmtGBP(p.ioPending)} unsigned
+                </span>
+              )}
+            </dd>
+            {p.contractedMargin != null ? (
+              <dd className="mt-0.5 font-mono text-[10px] text-gray-500 dark:text-gray-400">
+                margin {fmtGBP(p.contractedMargin)}
+                {p.contractedMarginPct != null && ` (${fmtPct(p.contractedMarginPct)})`}
+              </dd>
+            ) : (
+              <dd className="mt-0.5 text-[10px] text-amber-600 dark:text-amber-400">
+                Nothing signed yet — margin can&apos;t be measured
+              </dd>
+            )}
+            {/* The two figures disagreeing is the point of showing both. */}
+            {p.ioSigned > 0 && Math.abs(p.ioSigned - p.totalBudget) > 1 && (
+              <dd className="mt-0.5 text-[10px] text-amber-600 dark:text-amber-400">
+                {fmtGBP(Math.abs(p.ioSigned - p.totalBudget))}{' '}
+                {p.ioSigned > p.totalBudget ? 'above' : 'below'} the finance budget
+              </dd>
+            )}
+          </div>
+        )}
       </dl>
       <BudgetBar spent={p.totalCosts} budget={p.totalBudget} />
       <div className="mt-2 flex items-center justify-between">

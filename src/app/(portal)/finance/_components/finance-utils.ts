@@ -208,6 +208,14 @@ export interface ProjectSummary {
   deal: { id: string; title: string; stage: string } | null
   targetMarginAmount: number | null
   targetMarginPercent: number | null
+  // Contracted revenue from insertion orders — the signed contract value, as
+  // distinct from the deal value Commercial forecasts.
+  ioSigned: number
+  ioPending: number
+  ioCount: number
+  ioSignedCount: number
+  contractedMargin: number | null
+  contractedMarginPct: number | null
   budgetLocked: boolean
   totalBudget: number
   budgetExVat: number

@@ -25,6 +25,19 @@ export interface ProjectFinancialSummary {
   deal: { id: string; title: string; stage: string } | null // originating Commercial deal
   targetMarginAmount: number | null // company margin set on the deal
   targetMarginPercent: number | null
+  // ── Contracted revenue, from insertion orders ──
+  // The IO is the contract. `dealValue` is what Commercial expects; this is what
+  // the advertiser has actually signed for. They diverge, and finance had no
+  // sight of it at all before — the deal figure was the only revenue number.
+  ioSigned: number // sum of SIGNED insertion orders
+  ioPending: number // DRAFT + SENT — pipeline, not revenue
+  ioCount: number
+  ioSignedCount: number
+  // Margin measured against signed IOs rather than the deal's target %. Null
+  // when nothing is signed yet — a margin on zero revenue is meaningless, and
+  // showing 0% would read as "we're making nothing" rather than "not yet known".
+  contractedMargin: number | null
+  contractedMarginPct: number | null
   budgetLocked: boolean // deal economics finalised in Commercial
   totalBudget: number // deal/finance budget (commercial folders); line-item budget for productions
   budgetExVat: number // headline budget exc. VAT — production line items when present, else totalBudget
@@ -123,6 +136,30 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
     : []
   const dealById = new Map(campaigns.map((c) => [c.id, c]))
 
+  // Insertion-order value per deal, split by status. VOID is excluded entirely —
+  // a voided IO is not revenue and not pipeline.
+  const ioRows = campaignIds.length
+    ? await prisma.insertionOrder.groupBy({
+        by: ['campaignId', 'status'],
+        where: { campaignId: { in: campaignIds }, status: { not: 'VOID' } },
+        _sum: { totalNet: true },
+        _count: { _all: true },
+      })
+    : []
+  const ioByDeal = new Map<string, { signed: number; pending: number; count: number; signedCount: number }>()
+  for (const r of ioRows) {
+    const cur = ioByDeal.get(r.campaignId) ?? { signed: 0, pending: 0, count: 0, signedCount: 0 }
+    const amount = r._sum.totalNet ?? 0
+    if (r.status === 'SIGNED') {
+      cur.signed += amount
+      cur.signedCount += r._count._all
+    } else {
+      cur.pending += amount
+    }
+    cur.count += r._count._all
+    ioByDeal.set(r.campaignId, cur)
+  }
+
   // Every production that is either referenced by a folder or carries a budget
   // of its own. Line items drive the exc-VAT budget, actuals, and shoot date.
   const referencedProductionIds = budgets
@@ -157,6 +194,29 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
   }
   const paid = paidByClient(xeroInvoices)
 
+  // Contracted revenue and the margin it implies, for one folder.
+  const ioFigures = (campaignId: string | null, spend: number) => {
+    const io = (campaignId && ioByDeal.get(campaignId)) || {
+      signed: 0,
+      pending: 0,
+      count: 0,
+      signedCount: 0,
+    }
+    // Margin only means something once revenue is contracted. Before that it's
+    // reported as null rather than 0 — "not yet known" and "zero" look identical
+    // on a dashboard otherwise, and only one of them is a problem.
+    const contractedMargin = io.signed > 0 ? io.signed - spend : null
+    return {
+      ioSigned: io.signed,
+      ioPending: io.pending,
+      ioCount: io.count,
+      ioSignedCount: io.signedCount,
+      contractedMargin,
+      contractedMarginPct:
+        contractedMargin != null && io.signed > 0 ? (contractedMargin / io.signed) * 100 : null,
+    }
+  }
+
   // ── Commercial finance folders (CampaignBudget) ──
   const folderSummaries: ProjectFinancialSummary[] = budgets.map((b) => {
     const campaign = (b.campaignId && dealById.get(b.campaignId)) || null
@@ -186,6 +246,7 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
       deal: campaign ? { id: campaign.id, title: campaign.title, stage: campaign.stage } : null,
       targetMarginAmount: campaign?.marginAmount ?? null,
       targetMarginPercent: campaign?.marginPercent ?? null,
+      ...ioFigures(b.campaignId, spent),
       budgetLocked: campaign?.budgetLocked ?? false,
       totalBudget: b.totalBudget,
       budgetExVat,
@@ -229,6 +290,12 @@ export async function getProjectFinancialSummaries(): Promise<ProjectFinancialSu
         deal: p.campaign ? { id: p.campaign.id, title: p.campaign.title, stage: p.campaign.stage } : null,
         targetMarginAmount: null,
         targetMarginPercent: null,
+        ioSigned: 0,
+        ioPending: 0,
+        ioCount: 0,
+        ioSignedCount: 0,
+        contractedMargin: null,
+        contractedMarginPct: null,
         budgetLocked: p.productionBudgetStatus === 'LOCKED' || p.productionBudgetStatus === 'FINAL',
         totalBudget: budgetExVat,
         budgetExVat,
