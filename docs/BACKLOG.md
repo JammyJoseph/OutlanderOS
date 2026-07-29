@@ -208,6 +208,25 @@ two budget systems still sit outside it.
       model, but nothing calls it yet — needs a decision on where files live (Drive vs
       `public/uploads`, which is lost on server rebuild).
 
+## 1e. Rollout & distribution (built 2026-07-29)
+
+- [x] ~~Fulfilment and distribution strategy in the print portal~~ — Quinn's spreadsheet built
+      in: covers/SKUs, channel allocation, regional warehouse model, B2C territory split,
+      53 stockists with cover profiles, launch events, shipping lanes, US economics and the
+      19-milestone calendar. Everything editable; everything derived stays derived
+      (`src/lib/rollout.ts`). Seven reconciliation checks pinned to the top of the page.
+      Issue 02 seeded and reconciling on prod.
+- [ ] **Link stockists to the Directory.** `Stockist.contactId` exists and is unused — the 53
+      outlets are currently a second address book. Wiring it means commercial and print share
+      one record per account.
+- [ ] **Shipping lanes should post to the cost ledger.** Lane cost (rate × volume) is real
+      spend against the issue and belongs on `CostLine` as BUDGET rows, so distribution shows
+      up in the issue P&L rather than only here. Blocked on nothing — just not done.
+- [ ] Cover-level stock tracking (received / picked / remaining per hub) once the fulfilment
+      partner is appointed and there's real inventory to track.
+- [ ] Milestone owners are free text. Could link to `User` for real assignment and a
+      "my deadlines" view.
+
 ## 2. Integrations
 
 See `docs/ARCHITECTURE.md` for the full picture. Headline: **Google is integrated three
