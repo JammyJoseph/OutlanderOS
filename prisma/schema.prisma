@@ -1366,9 +1366,29 @@ model RolloutPlan {
   // The hard one. Every milestone counts back from this.
   warehouseDeadline DateTime?
 
-  // US shipping economics inputs.
-  gbpToUsd       Float @default(1.30)
-  eastCoastShare Float @default(60) // % of US orders priced on the NY lane
+  // ── Economics inputs ──
+  gbpToUsd       Float @default(1.27)
+  eurToUsd       Float @default(1.08)
+  eastCoastShare Float @default(55) // % of US orders priced on the NY lane
+  // 0% means the parcel rate is flat however many magazines are in it — the
+  // aggressive case, and the whole basis of the bundling argument. Raise it if
+  // the carrier charges by weight.
+  shippingUpliftPct Float @default(0)
+  // Blended placeholder until B2B freight is quoted per lane.
+  b2bFreightPerShipment Float @default(45)
+  usHubRunningCost      Float @default(0)
+  // Last year's UK→US per-order cost. The comparator the whole saving is against.
+  lastYearUsRateGbp     Float @default(33)
+
+  // ── The print-to-stockist clock ──
+  // Everything about wave timing derives from these five inputs. If the promo
+  // wave can't fit inside the lead time, the print date has to move — that's the
+  // constraint this exists to surface.
+  printCompleteDate    DateTime?
+  leadTimeWeeks        Float @default(3)
+  promoDaysBeforeDrop1 Int   @default(5)
+  widerDaysAfterLastDrop Int @default(2)
+  hubToStoreTransitDays Int  @default(4)
 
   // Free-text assumptions and open items — the bullet list at the foot of the
   // overview. Prose, not data, so it stays prose.
@@ -1378,6 +1398,9 @@ model RolloutPlan {
   updatedAt DateTime @updatedAt
 
   covers     RolloutCover[]
+  drops      RolloutDrop[]
+  waves      StockistWave[]
+  rateCards  FulfilmentRateCard[]
   hubs       FulfilmentHub[]
   channels   RolloutChannel[]
   territories RolloutTerritory[]
@@ -1394,8 +1417,12 @@ model RolloutCover {
   planId   String
   plan     RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   name     String // "Cover 1"
+  subject  String? // "Human talent", "Pokemon character — holographic, limited"
   sku      String // OUT02-C1
   sharePct Float // share of the total print run
+  // Which drop this cover is released in. Two covers can share a drop.
+  dropId   String?
+  drop     RolloutDrop? @relation(fields: [dropId], references: [id], onDelete: SetNull)
   // Exactly one cover should be the balancer: it absorbs rounding so every
   // split ties exactly rather than drifting a unit at a time.
   isBalancer Boolean @default(false)
@@ -1405,9 +1432,81 @@ model RolloutCover {
   @@index([planId])
 }
 
-// Named cover mixes applied to stockists — Standard 35/35/20, Talent 40/25/25,
-// Collector 30/45/15. Percentages are keyed by cover name so adding a cover
-// doesn't require a migration: { "Cover 1": 35, "Cover 2": 35, ... }.
+// A release date, NOT a delivery date. Every B2C unit ships to the warehouses
+// once, weeks before the first drop; a drop is a rule in the ecommerce platform
+// that makes a cover buyable. Modelling it as a logistics event would invent
+// three shipments that don't exist and triple the freight forecast.
+model RolloutDrop {
+  id        String      @id @default(cuid())
+  planId    String
+  plan      RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name      String // "Drop 1"
+  goLiveAt  DateTime
+  // Share of the B2C pool released here. Territory holds are derived from this,
+  // so a drop's units never disagree with the territory split.
+  sharePct  Float
+  // Absorbs rounding across territories, exactly as the balancer cover does
+  // across cover splits.
+  isBalancer Boolean @default(false)
+  notes     String?
+  sortOrder Int     @default(0)
+
+  covers RolloutCover[]
+
+  @@index([planId])
+}
+
+// Stockists receive in waves, one delivery per store. The wave carries the
+// dates; a store's tier picks its wave. Two waves and 53 shipments, against 149
+// if every store received every drop separately.
+model StockistWave {
+  id        String      @id @default(cuid())
+  planId    String
+  plan      RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name      String // "Wave 1 — Promo"
+  tier      String // PRIMARY | WIDER — which stores belong to this wave
+  // Both dates are DERIVED from the plan's clock inputs and the drop schedule,
+  // and cached here only so a wave can be overridden by hand when a carrier
+  // gives a real date. Null means "use the derived date".
+  inStoreByOverride  DateTime?
+  dispatchByOverride DateTime?
+  // Promo stock sits in store before the first cover is public, so it needs a
+  // signed agreement per account. The wider wave lands after every cover is out
+  // and has nothing to embargo.
+  isEmbargoed Boolean @default(false)
+  notes       String?
+  sortOrder   Int     @default(0)
+
+  @@index([planId])
+}
+
+// Per-hub pick-and-pack pricing. Order fee is charged once per parcel; item pick
+// is charged per magazine. That asymmetry is the entire bundling argument — a
+// Full Set costs one order fee, not four.
+model FulfilmentRateCard {
+  id        String      @id @default(cuid())
+  planId    String
+  plan      RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  hubId     String?
+  hub       FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  currency  String  @default("USD") // GBP | USD | EUR
+  orderFee  Float   @default(0)
+  itemPick  Float   @default(0)
+  // Monthly storage/account cost, kept separate because it doesn't scale with
+  // orders and shouldn't be folded into a per-parcel figure.
+  runningCost Float @default(0)
+  // "Yellow cell": a working assumption, not a quote.
+  isPlaceholder Boolean @default(false)
+  source    String?
+  sortOrder Int     @default(0)
+
+  @@index([planId])
+}
+
+// Named cover mixes applied to stockists — Even 37.5/37.5/18.75, Talent-led
+// 42.5/40/12.5, Character-led 28/28/36, with the balancer cover taking the
+// remainder. Percentages are keyed by cover name so adding a cover doesn't
+// require a migration: { "Cover 1": 37.5, "Cover 2": 37.5, ... }.
 model CoverProfile {
   id        String      @id @default(cuid())
   planId    String
@@ -1438,11 +1537,12 @@ model FulfilmentHub {
   stockists   Stockist[]
   events      RolloutEvent[]
   channels    RolloutChannel[]
+  rateCards   FulfilmentRateCard[]
 
   @@index([planId])
 }
 
-// How the run divides by purpose: Phase 1, Phase 2, B2B, seeding, events, buffer.
+// How the run divides by purpose: B2C, B2B, seeding, events, reserve, buffer.
 model RolloutChannel {
   id      String      @id @default(cuid())
   planId  String
@@ -1470,8 +1570,10 @@ model RolloutTerritory {
   name     String // "Asia-Pacific / Middle East"
   hubId    String?
   hub      FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
-  phase1     Int @default(0)
-  phase2     Int @default(0)
+  // One B2C pool per territory. The per-drop hold is DERIVED from each drop's
+  // share of the run — the sheet's "held for Drop 1/2/3" columns are calculated,
+  // not typed, and storing them would let them drift from the drop schedule.
+  b2cUnits   Int @default(0)
   seedingVip Int @default(0)
   sortOrder  Int @default(0)
 
@@ -1491,6 +1593,18 @@ model Stockist {
   profileId String?
   profile   CoverProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
   units     Int     @default(0)
+  // PRIMARY accounts receive before the first drop under a written embargo;
+  // WIDER accounts receive after the last one, when every cover is public and
+  // there is physically nothing to leak. The tier is the ONLY input — the wave,
+  // in-store date, dispatch date and embargo days all follow from it.
+  tier      String  @default("WIDER") // PRIMARY | WIDER
+  // Named-later source-location slots. They hold no units and must not count as
+  // a shipment, so freight isn't billed for a delivery nobody is making.
+  isReserved Boolean @default(false)
+  // Embargo paperwork, tracked per account because the milestone requires a
+  // signed agreement from every promo store before the wave dispatches.
+  embargoStatus String? // NOT_REQUIRED | SENT | SIGNED
+  embargoSignedAt DateTime?
   // Optional link to the Directory, so a stockist is the same record the
   // commercial team already knows about rather than a second address book.
   contactId String?
@@ -1527,6 +1641,9 @@ model ShippingLane {
   currency     String  @default("GBP")
   volume       Int     @default(0)
   quoteStatus  String?
+  // "Yellow cell" — a working assumption, not a quote. Counted and surfaced so
+  // the headline saving is never presented as firmer than its inputs.
+  isPlaceholder Boolean @default(false)
   // The lane being beaten — last year's cost per order. Excluded from cost
   // totals and used as the comparison baseline.
   isBaseline   Boolean @default(false)

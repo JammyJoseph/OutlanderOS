@@ -63,6 +63,19 @@ DATABASE_URL="postgresql://work@localhost:5432/outlanderos" npx prisma migrate d
 npx prisma migrate deploy
 ```
 
+- **`migrate dev` fails outright in a non-interactive shell** (any agent session). When it
+  would prompt — which includes every data-loss warning — generate the SQL by hand instead:
+
+  ```
+  npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script \
+    > prisma/migrations/<timestamp>_<name>/migration.sql
+  npx prisma migrate deploy
+  ```
+
+- **Prisma 7 renamed the `migrate diff` flags.** `--from-database` → `--from-config-datasource`,
+  `--to-schema-datamodel` → `--to-schema`. The old names exit non-zero with an empty script, so
+  a redirect leaves you a 0-byte migration that `migrate deploy` accepts silently. Check the
+  byte count.
 - **`prisma migrate diff` needs `DATABASE_URL` set even for `--from-empty`** — without it the
   command silently emits nothing rather than erroring.
 - `npm run build` is plain `next build` and applies nothing. A schema change deployed without

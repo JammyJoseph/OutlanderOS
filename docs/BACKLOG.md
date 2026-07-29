@@ -210,15 +210,40 @@ two budget systems still sit outside it.
 
 ## 1e. Rollout & distribution (built 2026-07-29)
 
-- [x] ~~Fulfilment and distribution strategy in the print portal~~ — Quinn's spreadsheet built
+- [x] ~~Fulfilment and distribution strategy in the print portal~~ — the spreadsheet built
       in: covers/SKUs, channel allocation, regional warehouse model, B2C territory split,
-      53 stockists with cover profiles, launch events, shipping lanes, US economics and the
-      19-milestone calendar. Everything editable; everything derived stays derived
-      (`src/lib/rollout.ts`). Seven reconciliation checks pinned to the top of the page.
-      Issue 02 seeded and reconciling on prod.
+      53 stockists with cover profiles, launch events, shipping lanes and the milestone
+      calendar. Everything editable; everything derived stays derived (`src/lib/rollout.ts`).
+- [x] ~~**v2: three drops, two waves, full economics**~~ (2026-07-29). The v1 plan was
+      replaced by a fresh seed rather than migrated — territory splits and cover profiles both
+      changed shape, so mapping old buckets onto new ones would have tied to nothing.
+      What's new:
+      - **`RolloutDrop`** — release dates, *not* delivery dates. All 4,000 B2C units reach the
+        warehouses once, before Drop 1; a drop is a rule in the ecommerce platform. Modelling
+        it as logistics would invent three shipments and triple the freight forecast.
+      - **`StockistWave` + `Stockist.tier`** — one delivery per store. Tier is the only input;
+        wave, in-store date, dispatch date and embargo days all derive from it. 53 shipments
+        against 149. Control comes from *who* holds stock early (12 accounts under embargo),
+        not from how often you ship.
+      - **The print clock** — print date + lead time gives the earliest possible in-store date.
+        Headroom is currently 4 days. Negative headroom turns the page red and names the wave
+        that no longer fits; it's a feasibility check, not an allocation one.
+      - **`FulfilmentRateCard` + basket economics** — order fee is per parcel, item pick is per
+        magazine. That asymmetry is the whole bundling argument: a Full Set customer saves
+        $35.47 against four separate orders, and bundling to an average basket of two saves
+        $11,588 across the US pool.
+      - **`isPlaceholder`** on lanes and rate cards — 4 rates are still assumptions, surfaced
+        as a count and an amber banner. The $73,120 headline saving depends on them.
+      Twelve reconciliation checks now, including wave units, promo-account range, signed
+      embargo agreements and print-clock headroom.
+- [ ] **Chase the 12 signed embargo agreements.** Tracked per stockist (`embargoStatus`), all
+      currently `SENT`. The check fails until every promo account has signed — deliberately,
+      since the wave can't dispatch without them.
+- [ ] **Confirm the 4 placeholder rates**: the EU (NL) rate card, UK domestic, EU domestic and
+      UK→rest-of-world lanes. Until then the saving figures are provisional.
 - [ ] **Link stockists to the Directory.** `Stockist.contactId` exists and is unused — the 53
       outlets are currently a second address book. Wiring it means commercial and print share
-      one record per account.
+      one record per account, and the promo 12 become a real chase list.
 - [ ] **Shipping lanes should post to the cost ledger.** Lane cost (rate × volume) is real
       spend against the issue and belongs on `CostLine` as BUDGET rows, so distribution shows
       up in the issue P&L rather than only here. Blocked on nothing — just not done.

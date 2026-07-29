@@ -7,6 +7,9 @@ import type { Prisma } from '@prisma/client'
 // string and Prisma rejects the whole include.
 const INCLUDE: Prisma.RolloutPlanInclude = {
   covers: { orderBy: { sortOrder: 'asc' } },
+  drops: { orderBy: { sortOrder: 'asc' } },
+  waves: { orderBy: { sortOrder: 'asc' } },
+  rateCards: { orderBy: { sortOrder: 'asc' } },
   profiles: { orderBy: { sortOrder: 'asc' } },
   hubs: { orderBy: { sortOrder: 'asc' } },
   channels: { orderBy: { sortOrder: 'asc' } },
@@ -88,14 +91,36 @@ export const PATCH = withAuth(async (
     const data: Record<string, unknown> = {}
 
     if (body.totalPrintRun !== undefined) data.totalPrintRun = Number(body.totalPrintRun) || 0
-    if (body.gbpToUsd !== undefined) data.gbpToUsd = Number(body.gbpToUsd) || 0
-    if (body.eastCoastShare !== undefined) data.eastCoastShare = Number(body.eastCoastShare) || 0
-    if (body.assumptions !== undefined) data.assumptions = body.assumptions || null
-    if (body.launchDate !== undefined) {
-      data.launchDate = body.launchDate ? new Date(String(body.launchDate)) : null
+    // Numeric plan inputs. `|| 0` is wrong for a rate — a blank FX field would
+    // silently zero every converted figure — but these are all required inputs
+    // with sane non-zero defaults, so a bad value is rejected rather than coerced.
+    const NUMERIC = [
+      'gbpToUsd',
+      'eurToUsd',
+      'eastCoastShare',
+      'shippingUpliftPct',
+      'b2bFreightPerShipment',
+      'usHubRunningCost',
+      'lastYearUsRateGbp',
+      'leadTimeWeeks',
+      'promoDaysBeforeDrop1',
+      'widerDaysAfterLastDrop',
+      'hubToStoreTransitDays',
+    ] as const
+    for (const key of NUMERIC) {
+      if (body[key] === undefined) continue
+      const n = Number(body[key])
+      if (!Number.isFinite(n)) {
+        return NextResponse.json({ error: `${key} must be a number` }, { status: 400 })
+      }
+      data[key] = n
     }
-    if (body.warehouseDeadline !== undefined) {
-      data.warehouseDeadline = body.warehouseDeadline ? new Date(String(body.warehouseDeadline)) : null
+
+    if (body.assumptions !== undefined) data.assumptions = body.assumptions || null
+
+    for (const key of ['launchDate', 'warehouseDeadline', 'printCompleteDate'] as const) {
+      if (body[key] === undefined) continue
+      data[key] = body[key] ? new Date(String(body[key])) : null
     }
 
     if (Object.keys(data).length === 0) {

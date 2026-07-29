@@ -8,9 +8,29 @@ import prisma from '@/lib/prisma'
 export const ROLLOUT_ENTITIES = {
   covers: {
     model: 'rolloutCover',
-    fields: ['name', 'sku', 'sharePct', 'isBalancer', 'notes', 'sortOrder'],
+    fields: ['name', 'subject', 'sku', 'sharePct', 'isBalancer', 'dropId', 'notes', 'sortOrder'],
     numeric: ['sharePct', 'sortOrder'],
     boolean: ['isBalancer'],
+  },
+  drops: {
+    model: 'rolloutDrop',
+    fields: ['name', 'goLiveAt', 'sharePct', 'isBalancer', 'notes', 'sortOrder'],
+    numeric: ['sharePct', 'sortOrder'],
+    boolean: ['isBalancer'],
+    date: ['goLiveAt'],
+  },
+  waves: {
+    model: 'stockistWave',
+    fields: ['name', 'tier', 'inStoreByOverride', 'dispatchByOverride', 'isEmbargoed', 'notes', 'sortOrder'],
+    numeric: ['sortOrder'],
+    boolean: ['isEmbargoed'],
+    date: ['inStoreByOverride', 'dispatchByOverride'],
+  },
+  rateCards: {
+    model: 'fulfilmentRateCard',
+    fields: ['hubId', 'currency', 'orderFee', 'itemPick', 'runningCost', 'isPlaceholder', 'source', 'sortOrder'],
+    numeric: ['orderFee', 'itemPick', 'runningCost', 'sortOrder'],
+    boolean: ['isPlaceholder'],
   },
   profiles: {
     model: 'coverProfile',
@@ -32,13 +52,15 @@ export const ROLLOUT_ENTITIES = {
   },
   territories: {
     model: 'rolloutTerritory',
-    fields: ['name', 'hubId', 'phase1', 'phase2', 'seedingVip', 'sortOrder'],
-    numeric: ['phase1', 'phase2', 'seedingVip', 'sortOrder'],
+    fields: ['name', 'hubId', 'b2cUnits', 'seedingVip', 'sortOrder'],
+    numeric: ['b2cUnits', 'seedingVip', 'sortOrder'],
   },
   stockists: {
     model: 'stockist',
-    fields: ['name', 'city', 'market', 'hubId', 'profileId', 'units', 'contactId', 'notes', 'sortOrder'],
+    fields: ['name', 'city', 'market', 'hubId', 'profileId', 'units', 'tier', 'isReserved', 'embargoStatus', 'embargoSignedAt', 'contactId', 'notes', 'sortOrder'],
     numeric: ['units', 'sortOrder'],
+    boolean: ['isReserved'],
+    date: ['embargoSignedAt'],
   },
   events: {
     model: 'rolloutEvent',
@@ -48,9 +70,9 @@ export const ROLLOUT_ENTITIES = {
   },
   lanes: {
     model: 'shippingLane',
-    fields: ['name', 'ratePerOrder', 'currency', 'volume', 'quoteStatus', 'isBaseline', 'sortOrder'],
+    fields: ['name', 'ratePerOrder', 'currency', 'volume', 'quoteStatus', 'isPlaceholder', 'isBaseline', 'sortOrder'],
     numeric: ['ratePerOrder', 'volume', 'sortOrder'],
-    boolean: ['isBaseline'],
+    boolean: ['isPlaceholder', 'isBaseline'],
   },
   milestones: {
     model: 'rolloutMilestone',

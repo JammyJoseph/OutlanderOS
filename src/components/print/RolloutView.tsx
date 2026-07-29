@@ -1,16 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Plus, Trash2, AlertTriangle, Check } from "lucide-react";
+import { Loader2, Plus, Trash2, AlertTriangle, Check, Clock, Lock } from "lucide-react";
 import {
   coverUnits,
   channelCoverGrid,
   stockistCoverSplit,
   stockistCoverTotals,
   hubTotals,
-  usEconomics,
   reconcile,
   daysBetween,
+  dropSchedule,
+  territoryDropHolds,
+  waveSchedule,
+  printClock,
+  blendedUsLaneUsd,
+  rateCardFor,
+  basketEconomics,
+  scenarioCosts,
+  yearOnYear,
+  stockistFreight,
+  placeholderAudit,
+  toUsd,
   MILESTONE_STATUSES,
   MILESTONE_STATUS_LABEL,
   CHANNEL_KINDS,
@@ -61,6 +72,23 @@ function money(v: number | null, ccy: string) {
   if (v == null) return "—";
   const symbol = ccy === "USD" ? "$" : ccy === "EUR" ? "€" : "£";
   return `${symbol}${v.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+const usd = (v: number | null) => money(v, "USD");
+// Whole-dollar variant for totals in the thousands, where cents are noise.
+const usd0 = (v: number | null) =>
+  v == null ? "—" : `$${Math.round(v).toLocaleString("en-GB")}`;
+
+function shortDate(v: Date | string | null | undefined) {
+  if (!v) return "—";
+  const d = typeof v === "string" ? new Date(v) : v;
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
 }
 
 export default function RolloutView({ issueId }: { issueId: string }) {
@@ -146,19 +174,53 @@ export default function RolloutView({ issueId }: { issueId: string }) {
   }
 
   // ── Derived ──
+  //
+  // Everything below the inputs is recomputed here on every keystroke. Nothing
+  // in this block is stored: change a drop share and the territory holds, the
+  // wave dates, the headroom and the freight comparison all move together.
   const derived = useMemo(() => {
     if (!plan) return null;
+
+    const nyLaneId = plan.lanes.find((l) => /new york/i.test(l.name))?.id;
+    const laLaneId = plan.lanes.find((l) => /los angeles/i.test(l.name))?.id;
+    const blended = blendedUsLaneUsd(plan, { nyLaneId, laLaneId });
+
+    // The US hub is the one every US-bound order ships from, so its rate card
+    // is what the basket maths is priced on.
+    const usHub = plan.hubs.find((h) => /US/i.test(h.name) && !h.isDirect);
+    const usCard = rateCardFor(plan, usHub?.id ?? null);
+    const basket = basketEconomics(plan, blended, usCard);
+
+    // Territories fulfilled from the US hub — by hub, not by name, so renaming
+    // a territory can't silently drop it out of the headline saving.
+    const usVolume = plan.territories
+      .filter((t) => t.hubId === usHub?.id)
+      .reduce((s, t) => s + t.b2cUnits, 0);
+
+    const scenarios = scenarioCosts(plan, usVolume, basket);
+
     return {
       covers: coverUnits(plan),
       grid: channelCoverGrid(plan),
       hubs: hubTotals(plan),
       stockCovers: stockistCoverTotals(plan),
       checks: reconcile(plan),
-      us: usEconomics(plan, {
-        nyLaneId: plan.lanes.find((l) => /new york/i.test(l.name))?.id,
-        laLaneId: plan.lanes.find((l) => /los angeles/i.test(l.name))?.id,
-        usTerritoryNames: ["US"],
-      }),
+      drops: dropSchedule(plan),
+      holds: territoryDropHolds(plan),
+      waves: waveSchedule(plan),
+      clock: printClock(plan),
+      blended,
+      usCard,
+      usHub,
+      usVolume,
+      basket,
+      scenarios,
+      // The bundling upside is quoted at a basket of two — the conservative
+      // assumption. Claiming the Full Set number would assume every customer
+      // buys all four.
+      yoy: yearOnYear(plan, usVolume, basket, scenarios[1]),
+      freight: stockistFreight(plan),
+      placeholders: placeholderAudit(plan),
     };
   }, [plan]);
 
@@ -254,6 +316,60 @@ export default function RolloutView({ issueId }: { issueId: string }) {
         </div>
       </div>
 
+      {/* ══ The print clock — feasibility, not arithmetic ══
+          Everything else on this page assumes the schedule is possible. This is
+          the row that says whether it is, so it sits above the inputs. */}
+      {derived.clock.headroomDays != null && (
+        <div
+          className={`rounded-xl border px-4 py-3 ${
+            derived.clock.feasible
+              ? "border-border bg-card"
+              : "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-900/25"
+          }`}
+        >
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Clock
+              size={15}
+              className={derived.clock.feasible ? "text-muted-foreground" : "text-red-700 dark:text-red-300"}
+            />
+            <span
+              className={`text-sm font-semibold ${
+                derived.clock.feasible ? "text-foreground" : "text-red-800 dark:text-red-200"
+              }`}
+            >
+              {derived.clock.feasible
+                ? `${derived.clock.headroomDays} day${derived.clock.headroomDays === 1 ? "" : "s"} of headroom to the first stockist wave`
+                : `The first wave is due in store ${Math.abs(derived.clock.headroomDays)} day${
+                    Math.abs(derived.clock.headroomDays) === 1 ? "" : "s"
+                  } before print can deliver it`}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Print completes {shortDate(derived.clock.printCompleteDate)} + {plan.leadTimeWeeks} week
+            {plan.leadTimeWeeks === 1 ? "" : "s"} lead time → nothing can be in a store before{" "}
+            <strong className="text-foreground">{shortDate(derived.clock.earliestInStore)}</strong>. The
+            promo wave needs to be there by {shortDate(derived.clock.firstWaveInStore)}.
+            {!derived.clock.feasible && " Move the print date or the wave."}
+          </p>
+        </div>
+      )}
+
+      {/* ══ Unquoted rates ══
+          A placeholder that reads like a quote is how a plan gets signed off on
+          numbers nobody has actually been given. */}
+      {derived.placeholders.total > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-900/25">
+          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+            {derived.placeholders.total} rate{derived.placeholders.total === 1 ? " is" : "s are"} still an
+            assumption
+          </p>
+          <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+            {derived.placeholders.items.join(" · ")}. Every total below that touches{" "}
+            {derived.placeholders.total === 1 ? "it" : "them"} is provisional until the partner quotes.
+          </p>
+        </div>
+      )}
+
       {/* ══ At a glance ══ */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label="Total print run">
@@ -297,19 +413,183 @@ export default function RolloutView({ issueId }: { issueId: string }) {
         </Tile>
       </div>
 
+      {/* ══ Drops ══ */}
+      <Section
+        title="Release drops"
+        blurb="Release dates, not delivery dates. All B2C stock reaches the warehouses before the first drop — a drop only decides when a cover becomes buyable, so staggering them costs nothing in freight."
+        onAdd={() => addRow("drops")}
+      >
+        <Table
+          head={["Drop", "Goes live", "Covers released", "Share %", "Balancer", "Units live", "Cumulative", "In store", ""]}
+        >
+          {derived.drops.map((r) => (
+            <tr key={r.drop.id} className="border-t border-border">
+              <Td><TextInput value={r.drop.name} onCommit={(v) => patchRow("drops", r.drop.id, { name: v })} /></Td>
+              <Td><DateInput small value={r.drop.goLiveAt} onCommit={(v) => patchRow("drops", r.drop.id, { goLiveAt: v })} /></Td>
+              <Td>
+                <span className="text-xs text-muted-foreground">
+                  {r.covers.length ? r.covers.map((c) => c.name).join(" + ") : "— none assigned"}
+                </span>
+              </Td>
+              <Td right><NumberInput value={r.drop.sharePct} onCommit={(v) => patchRow("drops", r.drop.id, { sharePct: v })} /></Td>
+              <Td center>
+                <input
+                  type="radio"
+                  name="drop-balancer"
+                  checked={r.drop.isBalancer}
+                  onChange={() => {
+                    plan.drops.forEach((o) => patchRow("drops", o.id, { isBalancer: o.id === r.drop.id }));
+                  }}
+                  title="Absorbs rounding so the drops always sum to the B2C pool"
+                />
+              </Td>
+              <Td right><span className="font-medium tabular-nums">{n(r.unitsLive)}</span></Td>
+              <Td right><Derived>{n(r.cumulativeLive)}</Derived></Td>
+              <Td right>
+                {/* Stockist stock already on shelves when this drop lands. The
+                    leak exposure the wave design is trading against. */}
+                {r.stockistUnitsInStore > 0 ? (
+                  <span className="inline-flex items-center gap-1 tabular-nums text-amber-700 dark:text-amber-400">
+                    <Lock size={11} />
+                    {n(r.stockistUnitsInStore)}
+                  </span>
+                ) : (
+                  <Derived>—</Derived>
+                )}
+              </Td>
+              <Td right><DeleteBtn onClick={() => deleteRow("drops", r.drop.id)} /></Td>
+            </tr>
+          ))}
+          <TotalRow
+            cells={[
+              "Total",
+              "",
+              "",
+              `${plan.drops.reduce((s, d) => s + d.sharePct, 0).toFixed(2)}%`,
+              "",
+              n(derived.drops.reduce((s, r) => s + r.unitsLive, 0)),
+              "",
+              "",
+              "",
+            ]}
+          />
+        </Table>
+      </Section>
+
+      {/* ══ Stockist waves ══ */}
+      <Section
+        title="Stockist waves"
+        blurb="One delivery per store. A store's tier picks its wave; both dates follow from the drop schedule, so moving a drop moves the dispatch rather than leaving a stale date behind."
+      >
+        <Table head={["Wave", "Tier", "Stores", "Units", "Dispatch", "In store", "Embargo", "Agreements"]}>
+          {derived.waves.map((w) => (
+            <tr key={w.wave.id} className="border-t border-border">
+              <Td><TextInput value={w.wave.name} onCommit={(v) => patchRow("waves", w.wave.id, { name: v })} /></Td>
+              <Td>
+                <Select
+                  value={w.wave.tier}
+                  options={[
+                    { value: "PRIMARY", label: "Primary" },
+                    { value: "WIDER", label: "Wider" },
+                  ]}
+                  onCommit={(v) => patchRow("waves", w.wave.id, { tier: v })}
+                />
+              </Td>
+              <Td right><Derived>{n(w.stores)}</Derived></Td>
+              <Td right><span className="font-medium tabular-nums">{n(w.units)}</span></Td>
+              <Td>
+                <DateInput
+                  small
+                  value={w.dispatchBy}
+                  onCommit={(v) => patchRow("waves", w.wave.id, { dispatchByOverride: v })}
+                />
+              </Td>
+              <Td>
+                <DateInput
+                  small
+                  value={w.inStoreBy}
+                  onCommit={(v) => patchRow("waves", w.wave.id, { inStoreByOverride: v })}
+                />
+                {w.isDerivedInStore && (
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">derived from the drops</p>
+                )}
+              </Td>
+              <Td right>
+                {w.embargoDays == null ? (
+                  <Derived>none</Derived>
+                ) : (
+                  <span className="tabular-nums text-amber-700 dark:text-amber-400">{w.embargoDays} days</span>
+                )}
+              </Td>
+              <Td right>
+                {w.wave.isEmbargoed ? (
+                  <span
+                    className={`tabular-nums ${
+                      w.embargoOutstanding > 0
+                        ? "font-medium text-red-700 dark:text-red-400"
+                        : "text-emerald-700 dark:text-emerald-400"
+                    }`}
+                  >
+                    {w.embargoSigned} / {w.stores} signed
+                  </span>
+                ) : (
+                  <Derived>not required</Derived>
+                )}
+              </Td>
+            </tr>
+          ))}
+        </Table>
+
+        {/* The trade being made, stated plainly: embargo exposure bought with
+            freight saved. Both halves belong on the same screen. */}
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <Tile label="Shipments booked">
+            <p className="text-2xl font-semibold text-foreground tabular-nums">{n(derived.freight.shipments)}</p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">{usd0(derived.freight.costUsd)} freight</p>
+          </Tile>
+          <Tile label="One delivery per drop instead">
+            <p className="text-2xl font-semibold text-muted-foreground tabular-nums">
+              {n(derived.freight.perDropShipments)}
+            </p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              {usd0(derived.freight.perDropCostUsd)} — the rejected model
+            </p>
+          </Tile>
+          <Tile label="Saved by shipping once">
+            <p className="text-2xl font-semibold text-emerald-700 tabular-nums dark:text-emerald-400">
+              {usd0(derived.freight.savedUsd)}
+            </p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              at {usd0(derived.freight.ratePerShipmentUsd)} per shipment
+            </p>
+          </Tile>
+        </div>
+      </Section>
+
       {/* ══ Covers ══ */}
       <Section
         title="Cover master"
         blurb="One cover, one SKU, one factory-printed barcode. Units are derived from the share of the run; the balancer absorbs rounding."
         onAdd={() => addRow("covers")}
       >
-        <Table head={["Cover", "SKU", "Share %", "Balancer", "Units", ""]}>
+        <Table head={["Cover", "Subject", "SKU", "Drop", "Share %", "Balancer", "Units", ""]}>
           {plan.covers.map((c) => {
             const units = derived.covers.find((x) => x.cover.id === c.id)?.units ?? 0;
             return (
               <tr key={c.id} className="border-t border-border">
                 <Td><TextInput value={c.name} onCommit={(v) => patchRow("covers", c.id, { name: v })} /></Td>
+                <Td><TextInput value={c.subject ?? ""} onCommit={(v) => patchRow("covers", c.id, { subject: v })} /></Td>
                 <Td><TextInput value={c.sku} onCommit={(v) => patchRow("covers", c.id, { sku: v })} mono /></Td>
+                <Td>
+                  <Select
+                    value={c.dropId ?? ""}
+                    options={[
+                      { value: "", label: "— not released" },
+                      ...plan.drops.map((dr) => ({ value: dr.id, label: dr.name })),
+                    ]}
+                    onCommit={(v) => patchRow("covers", c.id, { dropId: v || null })}
+                  />
+                </Td>
                 <Td right><NumberInput value={c.sharePct} onCommit={(v) => patchRow("covers", c.id, { sharePct: v })} /></Td>
                 <Td center>
                   <input
@@ -330,7 +610,9 @@ export default function RolloutView({ issueId }: { issueId: string }) {
               </tr>
             );
           })}
-          <TotalRow cells={["Total", "", "", "", n(derived.covers.reduce((s, c) => s + c.units, 0)), ""]} />
+          <TotalRow
+            cells={["Total", "", "", "", "", "", n(derived.covers.reduce((s, c) => s + c.units, 0)), ""]}
+          />
         </Table>
       </Section>
 
@@ -427,10 +709,21 @@ export default function RolloutView({ issueId }: { issueId: string }) {
         blurb="Individual-order demand and which hub serves it. This is the volume to quote for fulfilment."
         onAdd={() => addRow("territories")}
       >
-        <Table head={["Territory", "Hub", "Phase 1", "Phase 2", "Seeding & VIP", "Total", "Share", ""]}>
+        <Table
+          head={[
+            "Territory",
+            "Hub",
+            "B2C units",
+            ...plan.drops.map((d) => `Held for ${d.name}`),
+            "Seeding & VIP",
+            "Total",
+            "Share",
+            "",
+          ]}
+        >
           {plan.territories.map((t) => {
-            const total = t.phase1 + t.phase2 + t.seedingVip;
-            const grand = plan.territories.reduce((s, x) => s + x.phase1 + x.phase2 + x.seedingVip, 0);
+            const total = t.b2cUnits + t.seedingVip;
+            const grand = plan.territories.reduce((s, x) => s + x.b2cUnits + x.seedingVip, 0);
             return (
               <tr key={t.id} className="border-t border-border">
                 <Td><TextInput value={t.name} onCommit={(v) => patchRow("territories", t.id, { name: v })} /></Td>
@@ -441,8 +734,14 @@ export default function RolloutView({ issueId }: { issueId: string }) {
                     onCommit={(v) => patchRow("territories", t.id, { hubId: v })}
                   />
                 </Td>
-                <Td right><NumberInput value={t.phase1} onCommit={(v) => patchRow("territories", t.id, { phase1: v })} /></Td>
-                <Td right><NumberInput value={t.phase2} onCommit={(v) => patchRow("territories", t.id, { phase2: v })} /></Td>
+                <Td right><NumberInput value={t.b2cUnits} onCommit={(v) => patchRow("territories", t.id, { b2cUnits: v })} /></Td>
+                {/* Derived from each drop's share of the run. Typing these in
+                    would let a territory's holds drift from the drop schedule. */}
+                {plan.drops.map((dr) => (
+                  <Td key={dr.id} right>
+                    <Derived>{n(derived.holds[t.id]?.[dr.id] ?? 0)}</Derived>
+                  </Td>
+                ))}
                 <Td right><NumberInput value={t.seedingVip} onCommit={(v) => patchRow("territories", t.id, { seedingVip: v })} /></Td>
                 <Td right><span className="font-medium tabular-nums">{n(total)}</span></Td>
                 <Td right><Derived>{grand > 0 ? pct((total / grand) * 100) : "—"}</Derived></Td>
@@ -454,10 +753,12 @@ export default function RolloutView({ issueId }: { issueId: string }) {
             cells={[
               "Total",
               "",
-              n(plan.territories.reduce((s, t) => s + t.phase1, 0)),
-              n(plan.territories.reduce((s, t) => s + t.phase2, 0)),
+              n(plan.territories.reduce((s, t) => s + t.b2cUnits, 0)),
+              ...plan.drops.map((dr) =>
+                n(plan.territories.reduce((s, t) => s + (derived.holds[t.id]?.[dr.id] ?? 0), 0))
+              ),
               n(plan.territories.reduce((s, t) => s + t.seedingVip, 0)),
-              n(plan.territories.reduce((s, t) => s + t.phase1 + t.phase2 + t.seedingVip, 0)),
+              n(plan.territories.reduce((s, t) => s + t.b2cUnits + t.seedingVip, 0)),
               "100%",
               "",
             ]}
@@ -493,15 +794,33 @@ export default function RolloutView({ issueId }: { issueId: string }) {
 
       {/* ══ Stockists ══ */}
       <Section
-        title={`Stockists · ${plan.stockists.length} outlets`}
-        blurb="Edit units or the cover profile and every cover split, hub total and reconciliation check updates."
+        title={`Stockists · ${plan.stockists.filter((s) => !s.isReserved).length} trading outlets`}
+        blurb="Change a tier and that store's delivery dates, embargo exposure and freight cost all move. Reserved slots hold no stock and are not a shipment."
         onAdd={() => addRow("stockists")}
       >
-        <Table head={["Store", "City", "Market", "Ships from", "Profile", "Units", ...plan.covers.map((c) => c.name), ""]}>
+        <Table
+          head={[
+            "Store",
+            "City",
+            "Market",
+            "Ships from",
+            "Profile",
+            "Tier",
+            "Units",
+            ...plan.covers.map((c) => c.name),
+            "In store",
+            "Embargo",
+            "",
+          ]}
+        >
           {plan.stockists.map((s) => {
             const split = stockistCoverSplit(s, plan);
+            const wave = derived.waves.find((w) => w.wave.tier === s.tier);
             return (
-              <tr key={s.id} className="border-t border-border">
+              <tr
+                key={s.id}
+                className={`border-t border-border ${s.isReserved ? "bg-amber-50/60 dark:bg-amber-900/10" : ""}`}
+              >
                 <Td><TextInput value={s.name} onCommit={(v) => patchRow("stockists", s.id, { name: v })} /></Td>
                 <Td><TextInput value={s.city ?? ""} onCommit={(v) => patchRow("stockists", s.id, { city: v })} /></Td>
                 <Td><TextInput value={s.market ?? ""} onCommit={(v) => patchRow("stockists", s.id, { market: v })} /></Td>
@@ -519,10 +838,51 @@ export default function RolloutView({ issueId }: { issueId: string }) {
                     onCommit={(v) => patchRow("stockists", s.id, { profileId: v })}
                   />
                 </Td>
+                <Td>
+                  <Select
+                    value={s.isReserved ? "RESERVED" : s.tier}
+                    options={[
+                      { value: "PRIMARY", label: "Primary" },
+                      { value: "WIDER", label: "Wider" },
+                      { value: "RESERVED", label: "Reserved (TBC)" },
+                    ]}
+                    onCommit={(v) =>
+                      patchRow("stockists", s.id, {
+                        isReserved: v === "RESERVED",
+                        // A reserved slot keeps a tier so it still has dates the
+                        // moment an account is named against it.
+                        tier: v === "RESERVED" ? s.tier : v,
+                      })
+                    }
+                  />
+                </Td>
                 <Td right><NumberInput value={s.units} onCommit={(v) => patchRow("stockists", s.id, { units: v })} /></Td>
                 {plan.covers.map((c) => (
                   <Td key={c.id} right><Derived>{n(split[c.id] ?? 0)}</Derived></Td>
                 ))}
+                <Td><Derived>{s.isReserved ? "—" : shortDate(wave?.inStoreBy ?? null)}</Derived></Td>
+                <Td>
+                  {/* Only the embargoed wave needs paperwork. Showing a status
+                      for the wider list would imply an obligation that isn't
+                      there and bury the twelve that matter. */}
+                  {wave?.wave.isEmbargoed && !s.isReserved ? (
+                    <Select
+                      value={s.embargoStatus ?? "SENT"}
+                      options={[
+                        { value: "SENT", label: "Sent" },
+                        { value: "SIGNED", label: "Signed" },
+                      ]}
+                      onCommit={(v) =>
+                        patchRow("stockists", s.id, {
+                          embargoStatus: v,
+                          embargoSignedAt: v === "SIGNED" ? new Date().toISOString() : null,
+                        })
+                      }
+                    />
+                  ) : (
+                    <Derived>—</Derived>
+                  )}
+                </Td>
                 <Td right><DeleteBtn onClick={() => deleteRow("stockists", s.id)} /></Td>
               </tr>
             );
@@ -534,8 +894,11 @@ export default function RolloutView({ issueId }: { issueId: string }) {
               "",
               "",
               "",
+              "",
               n(plan.stockists.reduce((s, x) => s + x.units, 0)),
               ...plan.covers.map((c) => n(derived.stockCovers[c.id] ?? 0)),
+              "",
+              "",
               "",
             ]}
           />
@@ -580,38 +943,201 @@ export default function RolloutView({ issueId }: { issueId: string }) {
         </Table>
       </Section>
 
-      {/* ══ US economics ══ */}
-      <Section title="US shipping economics" blurb="Salt Lake City domestic rates against last year's UK lane.">
+      {/* ══ Rate cards ══ */}
+      <Section
+        title="Fulfilment rate cards"
+        blurb="Order fee is charged once per parcel; item pick is charged per magazine. That asymmetry is the whole bundling argument."
+        onAdd={() => addRow("rateCards")}
+      >
+        <Table
+          head={["Hub", "Currency", "Order fee", "Item pick", "1 magazine", "2 magazines", "4 magazines", "Status", ""]}
+        >
+          {plan.rateCards.map((r) => {
+            const hub = plan.hubs.find((h) => h.id === r.hubId);
+            const at = (items: number) => money(r.orderFee + r.itemPick * items, r.currency);
+            return (
+              <tr
+                key={r.id}
+                className={`border-t border-border ${
+                  r.isPlaceholder ? "bg-amber-50/60 dark:bg-amber-900/10" : ""
+                }`}
+              >
+                <Td>
+                  <Select
+                    value={r.hubId ?? ""}
+                    options={[{ value: "", label: "—" }, ...plan.hubs.map((h) => ({ value: h.id, label: h.name }))]}
+                    onCommit={(v) => patchRow("rateCards", r.id, { hubId: v || null })}
+                  />
+                </Td>
+                <Td>
+                  <Select
+                    value={r.currency}
+                    options={["GBP", "USD", "EUR"].map((c) => ({ value: c, label: c }))}
+                    onCommit={(v) => patchRow("rateCards", r.id, { currency: v })}
+                  />
+                </Td>
+                <Td right><NumberInput value={r.orderFee} onCommit={(v) => patchRow("rateCards", r.id, { orderFee: v })} step="0.01" /></Td>
+                <Td right><NumberInput value={r.itemPick} onCommit={(v) => patchRow("rateCards", r.id, { itemPick: v })} step="0.01" /></Td>
+                <Td right><Derived>{at(1)}</Derived></Td>
+                <Td right><Derived>{at(2)}</Derived></Td>
+                <Td right><Derived>{at(4)}</Derived></Td>
+                <Td>
+                  <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={r.isPlaceholder}
+                      onChange={(e) => patchRow("rateCards", r.id, { isPlaceholder: e.target.checked })}
+                    />
+                    {r.isPlaceholder ? "assumption" : "quoted"}
+                  </label>
+                  {hub?.isDirect && (
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">direct — holds no stock</p>
+                  )}
+                </Td>
+                <Td right><DeleteBtn onClick={() => deleteRow("rateCards", r.id)} /></Td>
+              </tr>
+            );
+          })}
+        </Table>
+      </Section>
+
+      {/* ══ Basket economics ══
+          The reason the Full Set bundle exists. Three staggered drops push the
+          same customer into three parcels unless something stops them. */}
+      <Section
+        title="US basket economics"
+        blurb="Shipping is flat per parcel; only the pick cost scales. A customer buying four covers in one order pays one shipping fee, not four."
+      >
         <div className="grid gap-3 px-4 py-3 sm:grid-cols-4">
           <Field label="GBP → USD">
             <NumberInput value={plan.gbpToUsd} onCommit={(v) => patchPlan({ gbpToUsd: v ?? 0 })} step="0.01" />
           </Field>
+          <Field label="EUR → USD">
+            <NumberInput value={plan.eurToUsd} onCommit={(v) => patchPlan({ eurToUsd: v ?? 0 })} step="0.01" />
+          </Field>
           <Field label="East Coast share %">
             <NumberInput value={plan.eastCoastShare} onCommit={(v) => patchPlan({ eastCoastShare: v ?? 0 })} />
           </Field>
-          <Field label="Blended domestic rate">
-            <Derived>{money(derived.us.blendedUsd, "USD")}</Derived>
-          </Field>
-          <Field label="Saving per order">
-            <Derived>{money(derived.us.savingPerOrderUsd, "USD")}</Derived>
+          <Field label="Uplift per extra magazine %">
+            <NumberInput
+              value={plan.shippingUpliftPct}
+              onCommit={(v) => patchPlan({ shippingUpliftPct: v ?? 0 })}
+            />
           </Field>
         </div>
-        <div className="border-t border-border bg-muted px-4 py-3">
-          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Total estimated saving
-            </span>
-            <span className="text-xl font-semibold tabular-nums text-foreground">
-              {money(derived.us.totalSavingUsd, "USD")}
-            </span>
-            <span className="text-sm tabular-nums text-muted-foreground">
-              {money(derived.us.totalSavingGbp, "GBP")}
-            </span>
-            <span className="text-[11px] text-muted-foreground">
-              on {n(derived.us.usVolume)} US orders · assumes one magazine per order
-            </span>
-          </div>
-        </div>
+
+        {derived.basket.length === 0 ? (
+          <p className="px-4 pb-3 text-xs text-muted-foreground">
+            Needs both US lane rates and a rate card on the US hub before this can be calculated.
+          </p>
+        ) : (
+          <>
+            <p className="px-4 pb-2 text-[11px] text-muted-foreground">
+              Blended US lane <strong className="text-foreground">{usd(derived.blended)}</strong> —{" "}
+              {plan.eastCoastShare}% New York, {100 - plan.eastCoastShare}% Los Angeles.
+            </p>
+            <Table
+              head={["Order", "Magazines", "Pick & pack", "Shipping", "Total", "Per magazine", "Saved vs one at a time"]}
+            >
+              {derived.basket.map((b) => (
+                <tr
+                  key={b.items}
+                  className={`border-t border-border ${
+                    b.items === derived.basket.length ? "bg-emerald-50/60 dark:bg-emerald-900/15" : ""
+                  }`}
+                >
+                  <Td>
+                    <span className="text-xs">
+                      {b.items === 1
+                        ? "Single copy"
+                        : b.items === derived.basket.length
+                          ? "Full Set"
+                          : `${b.items} covers`}
+                    </span>
+                  </Td>
+                  <Td right><Derived>{b.items}</Derived></Td>
+                  <Td right><Derived>{usd(b.pickUsd)}</Derived></Td>
+                  <Td right><Derived>{usd(b.shippingUsd)}</Derived></Td>
+                  <Td right><span className="font-medium tabular-nums">{usd(b.totalUsd)}</span></Td>
+                  <Td right><span className="tabular-nums">{usd(b.perMagazineUsd)}</span></Td>
+                  <Td right>
+                    <span
+                      className={`tabular-nums ${
+                        b.savedUsd > 0 ? "font-medium text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
+                      }`}
+                    >
+                      {usd(b.savedUsd)}
+                    </span>
+                  </Td>
+                </tr>
+              ))}
+            </Table>
+
+            {/* ── Scenarios ── */}
+            <div className="border-t border-border px-4 pb-1 pt-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                What {n(derived.usVolume)} US B2C units cost to fulfil
+              </h4>
+            </div>
+            <Table head={["Average basket", "Orders", "Cost per order", "Total cost", "Saved vs worst case"]}>
+              {derived.scenarios.map((s) => (
+                <tr key={s.itemsPerOrder} className="border-t border-border">
+                  <Td><span className="text-xs">{s.label}</span></Td>
+                  <Td right><Derived>{n(Math.round(s.orders))}</Derived></Td>
+                  <Td right><Derived>{usd(s.costPerOrderUsd)}</Derived></Td>
+                  <Td right><span className="font-medium tabular-nums">{usd0(s.costUsd)}</span></Td>
+                  <Td right>
+                    <span
+                      className={`tabular-nums ${
+                        s.savedVsWorstUsd > 0
+                          ? "font-medium text-emerald-700 dark:text-emerald-400"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {s.savedVsWorstUsd > 0 ? usd0(s.savedVsWorstUsd) : "—"}
+                    </span>
+                  </Td>
+                </tr>
+              ))}
+            </Table>
+
+            {/* ── Versus last year ── */}
+            <div className="border-t border-border bg-muted px-4 py-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                This year versus last
+              </h4>
+              <div className="mt-2 space-y-1 text-xs">
+                <YoYRow
+                  label="Last year — every US order shipped from the UK"
+                  per={usd(derived.yoy.lastYearPerOrderUsd)}
+                  total={usd0(derived.yoy.lastYearTotalUsd)}
+                />
+                <YoYRow
+                  label="This year — shipped from Salt Lake City"
+                  per={usd(derived.yoy.thisYearPerOrderUsd)}
+                  total={usd0(derived.yoy.thisYearTotalUsd)}
+                />
+                <YoYRow label="Saved by moving the warehouse" total={usd0(derived.yoy.warehouseSavingUsd)} good />
+                <YoYRow
+                  label="Bundling upside at an average basket of two"
+                  total={usd0(derived.yoy.bundlingUpsideUsd)}
+                  good
+                />
+              </div>
+              <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-border pt-2">
+                <span className="text-xs font-semibold text-foreground">Total saving versus last year</span>
+                <span className="text-xl font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+                  {usd0(derived.yoy.totalSavingUsd)}
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Last year&rsquo;s figure is freight <em>plus</em> the UK rate card — they picked and packed in
+                Britain too. Comparing bare freight against this year&rsquo;s all-in cost would overstate the
+                saving.
+              </p>
+            </div>
+          </>
+        )}
       </Section>
 
       {/* ══ Lanes ══ */}
@@ -620,10 +1146,20 @@ export default function RolloutView({ issueId }: { issueId: string }) {
         blurb="Rates arrive from different partners at different times — a blank rate is an outstanding quote, not a zero."
         onAdd={() => addRow("lanes")}
       >
-        <Table head={["Lane", "Rate / order", "Currency", "Volume", "Total", "Quote status", ""]}>
+        <Table head={["Lane", "Rate / order", "Currency", "In USD", "Volume", "Total", "Status", ""]}>
           {plan.lanes.map((l) => (
-            <tr key={l.id} className={`border-t border-border ${l.isBaseline ? "bg-muted" : ""}`}>
-              <Td><TextInput value={l.name} onCommit={(v) => patchRow("lanes", l.id, { name: v })} /></Td>
+            <tr
+              key={l.id}
+              className={`border-t border-border ${
+                l.isBaseline ? "bg-muted" : l.isPlaceholder ? "bg-amber-50/60 dark:bg-amber-900/10" : ""
+              }`}
+            >
+              <Td>
+                <TextInput value={l.name} onCommit={(v) => patchRow("lanes", l.id, { name: v })} />
+                {l.isBaseline && (
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">the comparator — not a cost</p>
+                )}
+              </Td>
               <Td right><NumberInput value={l.ratePerOrder} onCommit={(v) => patchRow("lanes", l.id, { ratePerOrder: v })} step="0.01" placeholder="—" /></Td>
               <Td>
                 <Select
@@ -632,20 +1168,94 @@ export default function RolloutView({ issueId }: { issueId: string }) {
                   onCommit={(v) => patchRow("lanes", l.id, { currency: v })}
                 />
               </Td>
+              {/* Every lane in one currency, so they can actually be compared. */}
+              <Td right>
+                <Derived>{l.ratePerOrder == null ? "—" : usd(toUsd(l.ratePerOrder, l.currency, plan))}</Derived>
+              </Td>
               <Td right><NumberInput value={l.volume} onCommit={(v) => patchRow("lanes", l.id, { volume: v })} /></Td>
               <Td right>
                 <Derived>
                   {l.ratePerOrder == null ? "awaiting quote" : money(l.ratePerOrder * l.volume, l.currency)}
                 </Derived>
               </Td>
-              <Td><TextInput value={l.quoteStatus ?? ""} onCommit={(v) => patchRow("lanes", l.id, { quoteStatus: v })} /></Td>
+              <Td>
+                <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={l.isPlaceholder}
+                    onChange={(e) => patchRow("lanes", l.id, { isPlaceholder: e.target.checked })}
+                  />
+                  {l.isPlaceholder ? "assumption" : "quoted"}
+                </label>
+              </Td>
               <Td right><DeleteBtn onClick={() => deleteRow("lanes", l.id)} /></Td>
             </tr>
           ))}
         </Table>
         <p className="px-4 py-2 text-[11px] text-muted-foreground">
-          Lane costs are in mixed currencies and deliberately not totalled.
+          Native-currency totals are deliberately not summed across lanes; the USD column is what to compare on.
         </p>
+      </Section>
+
+      {/* ══ Timing inputs ══
+          Five numbers decide every wave date and the headroom at the top of the
+          page. They're grouped here rather than scattered so the consequence of
+          changing one is obvious. */}
+      <Section
+        title="Timing inputs"
+        blurb="Change any of these and both wave dates, the embargo exposure and the headroom recalculate."
+      >
+        <div className="grid gap-3 px-4 py-3 sm:grid-cols-3 lg:grid-cols-5">
+          <Field label="Print completes">
+            <DateInput value={plan.printCompleteDate} onCommit={(v) => patchPlan({ printCompleteDate: v })} />
+          </Field>
+          <Field label="Printer lead time (weeks)">
+            <NumberInput value={plan.leadTimeWeeks} onCommit={(v) => patchPlan({ leadTimeWeeks: v ?? 0 })} step="0.5" />
+          </Field>
+          <Field label="Promo wave — days before Drop 1">
+            <NumberInput
+              value={plan.promoDaysBeforeDrop1}
+              onCommit={(v) => patchPlan({ promoDaysBeforeDrop1: v ?? 0 })}
+            />
+          </Field>
+          <Field label="Wider wave — days after last drop">
+            <NumberInput
+              value={plan.widerDaysAfterLastDrop}
+              onCommit={(v) => patchPlan({ widerDaysAfterLastDrop: v ?? 0 })}
+            />
+          </Field>
+          <Field label="Hub → store transit (days)">
+            <NumberInput
+              value={plan.hubToStoreTransitDays}
+              onCommit={(v) => patchPlan({ hubToStoreTransitDays: v ?? 0 })}
+            />
+          </Field>
+        </div>
+        <div className="border-t border-border px-4 py-3">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="B2B freight per shipment (USD)">
+              <NumberInput
+                value={plan.b2bFreightPerShipment}
+                onCommit={(v) => patchPlan({ b2bFreightPerShipment: v ?? 0 })}
+                step="0.01"
+              />
+            </Field>
+            <Field label="Last year — UK→US per order (GBP)">
+              <NumberInput
+                value={plan.lastYearUsRateGbp}
+                onCommit={(v) => patchPlan({ lastYearUsRateGbp: v ?? 0 })}
+                step="0.01"
+              />
+            </Field>
+            <Field label="US hub running cost (USD)">
+              <NumberInput
+                value={plan.usHubRunningCost}
+                onCommit={(v) => patchPlan({ usHubRunningCost: v ?? 0 })}
+                step="0.01"
+              />
+            </Field>
+          </div>
+        </div>
       </Section>
 
       {/* ══ Milestones ══ */}
@@ -711,6 +1321,30 @@ export default function RolloutView({ issueId }: { issueId: string }) {
 }
 
 // ── Presentational bits ─────────────────────────────────────────────────────
+
+function YoYRow({
+  label,
+  per,
+  total,
+  good,
+}: {
+  label: string;
+  per?: string;
+  total: string;
+  good?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="shrink-0 tabular-nums">
+        {per && <span className="mr-3 text-muted-foreground">{per} / order</span>}
+        <span className={good ? "font-medium text-emerald-700 dark:text-emerald-400" : "text-foreground"}>
+          {total}
+        </span>
+      </span>
+    </div>
+  );
+}
 
 function Tile({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -913,6 +1547,11 @@ function DateInput({
   const iso = value ? new Date(value).toISOString().slice(0, 10) : "";
   return (
     <input
+      // Uncontrolled so typing isn't fought by a re-render mid-edit — but the
+      // wave dates are DERIVED, and a defaultValue alone would keep showing the
+      // old date after a drop moves. Keying on the value remounts the input when
+      // the underlying date genuinely changes.
+      key={iso}
       type="date"
       defaultValue={iso}
       onBlur={(e) => e.target.value !== iso && onCommit(e.target.value || null)}
