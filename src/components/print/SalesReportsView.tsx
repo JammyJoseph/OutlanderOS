@@ -44,6 +44,11 @@ interface Payload {
       totalOrders: number; totalUnits: number; averageBasket: number; bands: Band[];
       fullSetShare: number | null; multiCoverShare: number;
     };
+    products: { sku: string; title: string; units: number; revenue: number; orders: number; unitSharePct: number; revenueSharePct: number; firstSoldAt: string | null; lastSoldAt: string | null }[];
+    byMonth: { period: string; orders: number; units: number; revenue: number }[];
+    countries: { country: string; orders: number; units: number; revenue: number; sharePct: number }[];
+    currencies: { currency: string; orders: number; revenue: number; sharePct: number }[];
+    hasPlanComparison: boolean;
     covers: CoverSale[];
     otherProducts: { sku: string; title: string; units: number; revenue: number }[];
     coverUnits: number;
@@ -221,7 +226,7 @@ export default function SalesReportsView() {
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {d
-              ? `${n(d.headline.orders)} orders · ${n(d.headline.units)} magazines${
+              ? `${n(d.headline.orders)} orders · ${n(d.headline.units)} items${
                   d.headline.excludedOrders > 0
                     ? ` · ${n(d.headline.excludedOrders)} cancelled or test order(s) excluded`
                     : ""
@@ -335,8 +340,8 @@ export default function SalesReportsView() {
           {d.dropsObserved < 2 && (
             <div className="rounded-xl border border-border bg-muted px-4 py-3">
               <p className="text-xs text-muted-foreground">
-                <strong className="text-foreground">One selling period in the data.</strong> Sell-through,
-                attach rate and territory demand are all real signals, but with a single drop they point a
+                <strong className="text-foreground">One selling period in the data.</strong> Everything
+                below is what the store actually did, but with a single drop behind it the patterns point a
                 direction rather than prove a trend. The second data point arrives after this year&rsquo;s
                 rollout.
               </p>
@@ -347,14 +352,133 @@ export default function SalesReportsView() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             <Tile label="Revenue">{money0(d.headline.revenue, ccy)}</Tile>
             <Tile label="Orders">{n(d.headline.orders)}</Tile>
-            <Tile label="Magazines sold">{n(d.headline.units)}</Tile>
+            <Tile label={d.hasPlanComparison ? "Magazines sold" : "Units sold"}>
+              {n(d.hasPlanComparison ? d.coverUnits : d.headline.units)}
+            </Tile>
             <Tile label="Average order value">{money(d.headline.averageOrderValue, ccy)}</Tile>
-            <Tile label="Average basket" hint="magazines per order">
+            <Tile label="Average basket" hint={d.hasPlanComparison ? "magazines per order" : "items per order"}>
               {d.headline.averageBasket.toFixed(2)}
             </Tile>
           </div>
 
-          {/* ══ Recommendations — the reason the tab exists ══ */}
+
+          {/* ══ Sales over time ══ */}
+          {d.byMonth.length > 0 && (
+            <Section title="Sales by month" blurb="Everything the store has done, month by month.">
+              <Table head={["Month", "Orders", "Units", "Revenue", "Avg order"]}>
+                {d.byMonth.map((m) => {
+                  const peak = Math.max(...d.byMonth.map((x) => x.revenue), 1);
+                  return (
+                    <tr key={m.period} className="border-t border-border">
+                      <Td>
+                        {new Date(`${m.period}-01T00:00:00Z`).toLocaleDateString("en-GB", {
+                          month: "short", year: "numeric", timeZone: "UTC",
+                        })}
+                      </Td>
+                      <Td right>{n(m.orders)}</Td>
+                      <Td right>{n(m.units)}</Td>
+                      <Td right>
+                        <div className="flex items-center justify-end gap-2">
+                          <Bar value={(m.revenue / peak) * 100} />
+                          <span className="font-medium tabular-nums">{money0(m.revenue, ccy)}</span>
+                        </div>
+                      </Td>
+                      <Td right>{money(m.orders > 0 ? m.revenue / m.orders : 0, ccy)}</Td>
+                    </tr>
+                  );
+                })}
+              </Table>
+            </Section>
+          )}
+
+          {/* ══ Products ══ */}
+          <Section
+            title="Products"
+            blurb="Everything sold to date, ranked by revenue. No classification applied — this is the store as it is."
+          >
+            <Table head={["Product", "SKU", "Orders", "Units", "Revenue", "% of units", "% of revenue"]}>
+              {d.products.slice(0, 25).map((pr) => (
+                <tr key={`${pr.sku}-${pr.title}`} className="border-t border-border">
+                  <Td>{pr.title}</Td>
+                  <Td mono>{pr.sku}</Td>
+                  <Td right>{n(pr.orders)}</Td>
+                  <Td right>{n(pr.units)}</Td>
+                  <Td right><span className="font-medium tabular-nums">{money0(pr.revenue, ccy)}</span></Td>
+                  <Td right>{pct(pr.unitSharePct)}</Td>
+                  <Td right>
+                    <div className="flex items-center justify-end gap-2">
+                      <Bar value={pr.revenueSharePct} />
+                      <span className="tabular-nums">{pct(pr.revenueSharePct)}</span>
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </Table>
+            {d.products.length > 25 && (
+              <p className="px-4 py-2 text-xs text-muted-foreground">
+                Showing the top 25 of {n(d.products.length)} by revenue.
+              </p>
+            )}
+          </Section>
+
+          {/* ══ Where it went ══ */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Section title="Countries" blurb="Where orders actually shipped.">
+              <Table head={["Country", "Orders", "Units", "Revenue", "Share"]}>
+                {d.countries.slice(0, 12).map((c) => (
+                  <tr key={c.country} className="border-t border-border">
+                    <Td>{c.country}</Td>
+                    <Td right>{n(c.orders)}</Td>
+                    <Td right>{n(c.units)}</Td>
+                    <Td right>{money0(c.revenue, ccy)}</Td>
+                    <Td right>
+                      <div className="flex items-center justify-end gap-2">
+                        <Bar value={c.sharePct} />
+                        <span className="tabular-nums">{pct(c.sharePct)}</span>
+                      </div>
+                    </Td>
+                  </tr>
+                ))}
+              </Table>
+              {d.countries.length > 12 && (
+                <p className="px-4 py-2 text-xs text-muted-foreground">
+                  Showing the top 12 of {n(d.countries.length)}.
+                </p>
+              )}
+            </Section>
+
+            <Section
+              title="Currency paid in"
+              blurb="Totals elsewhere are in store currency. This is what customers actually paid in."
+            >
+              <Table head={["Currency", "Orders", "Revenue", "Share"]}>
+                {d.currencies.map((c) => (
+                  <tr key={c.currency} className="border-t border-border">
+                    <Td>{c.currency}</Td>
+                    <Td right>{n(c.orders)}</Td>
+                    <Td right>{money0(c.revenue, ccy)}</Td>
+                    <Td right>{pct(c.sharePct)}</Td>
+                  </tr>
+                ))}
+              </Table>
+              <div className="border-t border-border px-4 py-3">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Tile label="Identified customers" flat>{n(d.repeat.identifiedCustomers)}</Tile>
+                  <Tile label="Bought more than once" flat>{n(d.repeat.repeat)}</Tile>
+                  <Tile label="Repeat rate" flat>{pct(d.repeat.repeatSharePct)}</Tile>
+                </div>
+                {d.repeat.guestOrders > 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {n(d.repeat.guestOrders)}{" "}guest order(s) have no customer attached and can&rsquo;t be
+                    counted either way.
+                  </p>
+                )}
+              </div>
+            </Section>
+          </div>
+
+          {/* ══ Recommendations — only once there is a plan to compare against ══ */}
+          {d.hasPlanComparison && (
           <Section
             title="What this says about the next drop"
             blurb="Each row is a number in the rollout plan, shown against what the store actually did."
@@ -387,18 +511,28 @@ export default function SalesReportsView() {
               </div>
             )}
           </Section>
+          )}
 
           {/* ══ Basket — the input the economics rest on ══ */}
           <Section
             title="Basket profile"
-            blurb="The rollout's fulfilment economics price one-per-order against a basket of two and the Full Set. This is which one actually happens."
+            blurb="How many items customers buy at once. Once the next issue is on sale this is also what the rollout's bundling saving rests on."
           >
             <div className="grid gap-3 px-4 py-3 sm:grid-cols-3">
               <Tile label="Average basket" flat>{d.basket.averageBasket.toFixed(2)}</Tile>
-              <Tile label="Orders taking 2+ covers" flat>{pct(d.basket.multiCoverShare)}</Tile>
-              <Tile label="Full Set attach rate" flat>{pct(d.basket.fullSetShare)}</Tile>
+              <Tile label={d.hasPlanComparison ? "Orders taking 2+ covers" : "Orders taking 2+ items"} flat>
+                {pct(d.basket.multiCoverShare)}
+              </Tile>
+              <Tile label="Full Set attach rate" flat>
+                {d.hasPlanComparison ? pct(d.basket.fullSetShare) : "—"}
+              </Tile>
             </div>
-            <Table head={["Magazines per order", "Orders", "Share of orders", "Units", "Revenue"]}>
+            <Table
+              head={[
+                d.hasPlanComparison ? "Magazines per order" : "Items per order",
+                "Orders", "Share of orders", "Units", "Revenue",
+              ]}
+            >
               {d.basket.bands.map((b) => (
                 <tr key={b.items} className="border-t border-border">
                   <Td>{b.items}</Td>
@@ -416,7 +550,8 @@ export default function SalesReportsView() {
             </Table>
           </Section>
 
-          {/* ══ Covers ══ */}
+          {/* ══ Covers — plan comparison ══ */}
+          {d.hasPlanComparison && (
           <Section
             title="Sell-through by cover"
             blurb="Share of units sold against the share of the run each cover was given. A positive delta means it was under-printed."
@@ -435,48 +570,20 @@ export default function SalesReportsView() {
               ))}
             </Table>
             {d.noSkuMatch && (
-              <div className="border-t border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-900/25">
-                <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-                  No sales matched a cover SKU
-                </p>
-                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
-                  {n(d.otherUnits)} unit(s) sold, none under a SKU the rollout plan knows about. Cover
-                  analysis stays empty until the Shopify variant SKUs match the plan&rsquo;s
-                  (<span className="font-mono">{d.covers.map((c) => c.sku).join(", ") || "none set"}</span>).
-                  Either rename the variants in Shopify or change the SKUs on the Distribution tab —
-                  they only need to agree.
-                </p>
-              </div>
+              <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
+                Nothing sold yet under the next issue&rsquo;s SKUs
+                (<span className="font-mono">{d.covers.map((c) => c.sku).join(", ") || "none set"}</span>) —
+                expected until it goes on sale. This table fills in on its own once those variants exist in
+                Shopify and start selling. Everything above is unaffected.
+              </p>
             )}
           </Section>
-
-          {d.otherProducts.length > 0 && (
-            <Section
-              title="Other products"
-              blurb="Prints, merch and anything else. Real revenue, deliberately excluded from cover and basket figures so posters don't get counted as magazines."
-            >
-              <Table head={["Product", "SKU", "Units", "Revenue"]}>
-                {d.otherProducts.slice(0, 15).map((o) => (
-                  <tr key={o.sku} className="border-t border-border">
-                    <Td>{o.title}</Td>
-                    <Td mono>{o.sku}</Td>
-                    <Td right>{n(o.units)}</Td>
-                    <Td right>{money0(o.revenue, ccy)}</Td>
-                  </tr>
-                ))}
-              </Table>
-              {d.otherProducts.length > 15 && (
-                <p className="px-4 py-2 text-xs text-muted-foreground">
-                  Showing the top 15 of {n(d.otherProducts.length)} by units.
-                </p>
-              )}
-            </Section>
           )}
 
           {/* ══ Territories ══ */}
           <Section
             title="Demand by territory"
-            blurb="Where orders actually shipped, against the planned B2C split. This is the input to the territory allocation."
+            blurb="Grouped the way the rollout plan allocates stock. The planned columns fill in once the next issue is on sale."
           >
             <Table head={["Territory", "Orders", "Units", "Revenue", "Share of sales", "Planned share", "Delta"]}>
               {d.territories.map((t) => (
@@ -514,19 +621,6 @@ export default function SalesReportsView() {
               </p>
             </Section>
 
-            <Section title="Repeat buyers" blurb="Customers who bought in more than one order.">
-              <div className="grid gap-3 px-4 py-3 sm:grid-cols-3">
-                <Tile label="Identified customers" flat>{n(d.repeat.identifiedCustomers)}</Tile>
-                <Tile label="Bought more than once" flat>{n(d.repeat.repeat)}</Tile>
-                <Tile label="Repeat rate" flat>{pct(d.repeat.repeatSharePct)}</Tile>
-              </div>
-              {d.repeat.guestOrders > 0 && (
-                <p className="px-4 pb-3 text-xs text-muted-foreground">
-                  {n(d.repeat.guestOrders)} guest order(s) have no customer attached and can&rsquo;t be
-                  counted either way.
-                </p>
-              )}
-            </Section>
           </div>
 
           {/* ══ Sales curve ══ */}

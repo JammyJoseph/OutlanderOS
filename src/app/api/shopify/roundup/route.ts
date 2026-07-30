@@ -7,6 +7,9 @@ import {
   basketProfile,
   coverMix,
   coverSkuSet,
+  productPerformance,
+  salesByMonth,
+  countryBreakdown,
   territoryDemand,
   coastSplit,
   repeatBuyers,
@@ -106,8 +109,21 @@ export const GET = withAuth(async () => {
         pctOrdersTakingFullSet: basket.fullSetShare == null ? null : Number(basket.fullSetShare.toFixed(1)),
         note: 'The rollout plan assumes an average basket of two when claiming its bundling saving.',
       },
+      topProducts: productPerformance(rows).slice(0, 8).map((p) => ({
+        product: p.title,
+        sku: p.sku,
+        units: p.units,
+        revenue: Math.round(p.revenue),
+        pctOfRevenue: Number(p.revenueSharePct.toFixed(1)),
+      })),
+      salesByMonth: salesByMonth(rows).map((m) => ({
+        month: m.period, orders: m.orders, units: m.units, revenue: Math.round(m.revenue),
+      })),
+      topCountries: countryBreakdown(rows).slice(0, 8).map((c) => ({
+        country: c.country, orders: c.orders, units: c.units, pctOfOrders: Number(c.sharePct.toFixed(1)),
+      })),
       coversVsPlan: mix.noSkuMatch
-        ? 'NO MATCH: no sold line item used a SKU the rollout plan knows about, so cover-level analysis is unavailable.'
+        ? 'NO MATCH — expected. The next issue has not gone on sale, so its SKUs do not exist in the store yet. Not a fault.'
         : mix.covers.map((c) => ({
             cover: c.title,
             unitsSold: c.units,
@@ -138,15 +154,15 @@ export const GET = withAuth(async () => {
       model: MODEL,
       max_tokens: 700,
       system: [
-        'You write the standing summary at the top of an internal sales dashboard for Outlander, an independent magazine that publishes once a year with multiple collectable covers.',
-        'The reader is the small team deciding how much of each cover to print next time and where to ship it.',
+        'You write the standing summary at the top of an internal sales dashboard for Outlander, an independent magazine that publishes once a year with multiple collectable covers and also sells prints and merch.',
+        'The reader is the small team who run it. They want to know what the store has actually done.',
         '',
         'Rules:',
         '- Use ONLY the figures provided. Never invent, estimate or extrapolate a number.',
-        '- Lead with the single most decision-relevant thing, not a recap of totals.',
-        '- Say what it implies for the next print run where the data supports it.',
+        '- Lead with what the trading picture actually is — best sellers, where customers are, how revenue moved. That is the point of the summary.',
+        '- Then, only where the figures support it, note what it implies for the next print run.',
         '- If sellingPeriodsObserved is 1, say plainly that this is one selling period and the signals are directional, not a trend.',
-        '- If coversVsPlan reports NO MATCH, lead with that: it means the SKUs need fixing before cover analysis works at all.',
+        '- coversVsPlan reporting NO MATCH is EXPECTED and NOT a problem: the next issue has not gone on sale yet, so its SKUs do not exist in the store. Mention it at most in passing, near the end, as something that will resolve itself. Never lead with it and never frame it as broken or as needing a fix.',
         '- Never claim a saving, forecast or trend the figures do not contain.',
         '',
         'Format: 3 to 5 short paragraphs, plain sentences, no headings, no bullet points, no markdown. British English. Never open with "Here is" or similar.',

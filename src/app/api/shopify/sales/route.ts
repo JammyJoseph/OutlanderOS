@@ -5,6 +5,10 @@ import { isShopifyConfigured } from '@/lib/shopify'
 import { SYNC_SOURCE } from '@/lib/shopify-sync'
 import {
   headline,
+  productPerformance,
+  salesByMonth,
+  countryBreakdown,
+  currencyBreakdown,
   basketProfile,
   coverMix,
   coverSkuSet,
@@ -69,9 +73,21 @@ export const GET = withAuth(async () => {
     // cover mix and inflate the basket the fulfilment economics rest on.
     const skus = coverSkuSet(plannedShares)
     const mix = coverMix(rows, plannedShares)
-    const territories = territoryDemand(rows, plannedTerritories, skus)
-    const basket = basketProfile(rows, plan?.covers.length, skus)
-    const coast = coastSplit(rows, plan?.eastCoastShare)
+
+    // A plan whose SKUs match NOTHING must not filter every figure down to zero.
+    // Before the next issue goes on sale that is the normal state, and gating on
+    // it produced an average basket of 0.00 and a territory table of 0 units —
+    // which reads as "we sold nothing", not "the comparison isn't live yet".
+    const planLive = !mix.noSkuMatch && mix.coverUnits > 0
+    const effectiveSkus = planLive ? skus : new Set<string>()
+
+    const territories = territoryDemand(
+      rows,
+      planLive ? plannedTerritories : undefined,
+      effectiveSkus
+    )
+    const basket = basketProfile(rows, planLive ? plan?.covers.length : undefined, effectiveSkus)
+    const coast = coastSplit(rows, planLive ? plan?.eastCoastShare : undefined)
 
     // Distinct calendar years containing a sale, as a rough count of how many
     // drops we've observed. It's what decides whether recommendations are
@@ -95,6 +111,14 @@ export const GET = withAuth(async () => {
         : null,
       data: {
         headline: headline(rows),
+        // ── Primary reporting: stands alone, needs no plan ──
+        products: productPerformance(rows),
+        byMonth: salesByMonth(rows),
+        countries: countryBreakdown(rows),
+        currencies: currencyBreakdown(rows),
+        // ── Optional plan comparison, meaningful only once the next issue's
+        //    SKUs exist in the store ──
+        hasPlanComparison: planLive,
         basket,
         covers: mix.covers,
         otherProducts: mix.other,

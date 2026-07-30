@@ -1,15 +1,20 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// Sales analysis — Shopify orders read as rollout inputs.
+// Sales analysis.
 //
-// Shopify Analytics already answers "how much did we sell". The question it
-// can't answer, and the only reason this file exists, is "what should the next
-// rollout's numbers be". Every function here maps order data onto a specific
-// input in the distribution plan:
+// Reports what the store actually did — every figure here stands on its own and
+// needs no rollout plan to be useful. Products sold, where they went, how sales
+// moved over time, who came back.
+//
+// A second, OPTIONAL layer compares those figures to the next issue's plan:
 //
 //   basketProfile  → the average basket the fulfilment economics assume
 //   coverMix       → RolloutCover.sharePct
 //   territoryDemand→ RolloutTerritory.b2cUnits
 //   coastSplit     → RolloutPlan.eastCoastShare
+//
+// That layer only means anything once the next issue's SKUs exist in the store,
+// which is months after the plan is written. Until then its absence is the
+// normal state, not a fault, and nothing in the primary reporting depends on it.
 //
 // Cancelled and test orders are excluded everywhere. They are still stored, so
 // a sync doesn't lose rows, but no figure should ever include them.
@@ -46,6 +51,148 @@ export const sellable = (orders: OrderRow[]) => orders.filter(isSellable)
 const unitsIn = (o: OrderRow) => o.lineItems.reduce((s, l) => s + l.quantity, 0)
 
 const asDate = (v: Date | string) => (typeof v === 'string' ? new Date(v) : v)
+
+
+// ── Product performance ─────────────────────────────────────────────────────
+//
+// Every product sold, ranked. Needs no plan and makes no judgement about what
+// is or isn't a magazine — this is the store as it actually is.
+
+export interface ProductSale {
+  sku: string
+  title: string
+  units: number
+  revenue: number
+  orders: number
+  unitSharePct: number
+  revenueSharePct: number
+  firstSoldAt: string | null
+  lastSoldAt: string | null
+}
+
+export function productPerformance(orders: OrderRow[]): ProductSale[] {
+  const map = new Map<
+    string,
+    { title: string; units: number; revenue: number; orders: Set<string>; first: number; last: number }
+  >()
+
+  for (const o of sellable(orders)) {
+    const t = asDate(o.orderedAt).getTime()
+    for (const l of o.lineItems) {
+      // Key on SKU where there is one, title otherwise — an unSKU'd product is
+      // still a product, and dropping it would make the units not tie.
+      const key = l.sku?.trim() || `title:${l.title}`
+      const row = map.get(key) ?? {
+        title: l.title, units: 0, revenue: 0, orders: new Set<string>(),
+        first: Number.POSITIVE_INFINITY, last: 0,
+      }
+      row.units += l.quantity
+      row.revenue += l.price * l.quantity
+      row.orders.add(o.id)
+      if (t < row.first) row.first = t
+      if (t > row.last) row.last = t
+      map.set(key, row)
+    }
+  }
+
+  const totalUnits = [...map.values()].reduce((s, r) => s + r.units, 0)
+  const totalRevenue = [...map.values()].reduce((s, r) => s + r.revenue, 0)
+
+  return [...map.entries()]
+    .map(([key, r]) => ({
+      sku: key.startsWith('title:') ? '—' : key,
+      title: r.title,
+      units: r.units,
+      revenue: r.revenue,
+      orders: r.orders.size,
+      unitSharePct: totalUnits > 0 ? (r.units / totalUnits) * 100 : 0,
+      revenueSharePct: totalRevenue > 0 ? (r.revenue / totalRevenue) * 100 : 0,
+      firstSoldAt: Number.isFinite(r.first) ? new Date(r.first).toISOString() : null,
+      lastSoldAt: r.last > 0 ? new Date(r.last).toISOString() : null,
+    }))
+    .sort((a, b) => b.revenue - a.revenue)
+}
+
+// ── Sales over time ─────────────────────────────────────────────────────────
+
+export interface PeriodSales {
+  period: string // YYYY-MM
+  orders: number
+  units: number
+  revenue: number
+}
+
+export function salesByMonth(orders: OrderRow[]): PeriodSales[] {
+  const map = new Map<string, PeriodSales>()
+
+  for (const o of sellable(orders)) {
+    const d = asDate(o.orderedAt)
+    if (Number.isNaN(d.getTime())) continue
+    const period = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+    const row = map.get(period) ?? { period, orders: 0, units: 0, revenue: 0 }
+    row.orders += 1
+    row.units += o.lineItems.reduce((s, l) => s + l.quantity, 0)
+    row.revenue += o.totalPrice
+    map.set(period, row)
+  }
+
+  return [...map.values()].sort((a, b) => a.period.localeCompare(b.period))
+}
+
+// ── Country detail ──────────────────────────────────────────────────────────
+// Territory grouping answers the allocation question; this answers "where are
+// our customers", which is the one people actually ask.
+
+export interface CountrySales {
+  country: string
+  orders: number
+  units: number
+  revenue: number
+  sharePct: number
+}
+
+export function countryBreakdown(orders: OrderRow[]): CountrySales[] {
+  const map = new Map<string, CountrySales>()
+
+  for (const o of sellable(orders)) {
+    const country = (o.shipCountryCode ?? 'Unknown').toUpperCase()
+    const row = map.get(country) ?? { country, orders: 0, units: 0, revenue: 0, sharePct: 0 }
+    row.orders += 1
+    row.units += o.lineItems.reduce((s, l) => s + l.quantity, 0)
+    row.revenue += o.totalPrice
+    map.set(country, row)
+  }
+
+  const total = [...map.values()].reduce((s, r) => s + r.orders, 0)
+  return [...map.values()]
+    .map((r) => ({ ...r, sharePct: total > 0 ? (r.orders / total) * 100 : 0 }))
+    .sort((a, b) => b.orders - a.orders)
+}
+
+// ── Currency mix ────────────────────────────────────────────────────────────
+// Totals are shop currency throughout, but knowing what customers actually paid
+// in is what says whether a regional store or local pricing is worth having.
+
+export interface CurrencySales {
+  currency: string
+  orders: number
+  revenue: number
+  sharePct: number
+}
+
+export function currencyBreakdown(orders: OrderRow[]): CurrencySales[] {
+  const map = new Map<string, CurrencySales>()
+  for (const o of sellable(orders)) {
+    const row = map.get(o.currency) ?? { currency: o.currency, orders: 0, revenue: 0, sharePct: 0 }
+    row.orders += 1
+    row.revenue += o.totalPrice
+    map.set(o.currency, row)
+  }
+  const total = [...map.values()].reduce((s, r) => s + r.orders, 0)
+  return [...map.values()]
+    .map((r) => ({ ...r, sharePct: total > 0 ? (r.orders / total) * 100 : 0 }))
+    .sort((a, b) => b.orders - a.orders)
+}
 
 // ── Basket profile ──────────────────────────────────────────────────────────
 //
