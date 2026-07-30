@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, RefreshCw, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { Loader2, RefreshCw, AlertTriangle, TrendingUp, TrendingDown, Upload, Sparkles } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shopify sales reporting.
@@ -80,6 +80,9 @@ export default function SalesReportsView() {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string[] | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [roundup, setRoundup] = useState<{ text: string; generatedAt: string } | null>(null);
+  const [roundupState, setRoundupState] = useState<"idle" | "loading" | "unavailable">("idle");
 
   const load = useCallback(async () => {
     try {
@@ -95,6 +98,47 @@ export default function SalesReportsView() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Fetched separately from the data so a slow model call never delays the
+  // numbers. The page is fully usable before this arrives.
+  const loadRoundup = useCallback(async () => {
+    setRoundupState("loading");
+    try {
+      const res = await fetch("/api/shopify/roundup", { cache: "no-store" });
+      const d = await res.json();
+      if (d.available) { setRoundup({ text: d.text, generatedAt: d.generatedAt }); setRoundupState("idle"); }
+      else setRoundupState("unavailable");
+    } catch {
+      setRoundupState("unavailable");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (payload?.data) void loadRoundup();
+  }, [payload?.data, loadRoundup]);
+
+  async function importCsv(file: File) {
+    setImporting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/shopify/import", { method: "POST", body });
+      const d = await res.json();
+      if (!res.ok) { setError(d.error ?? "The import failed."); return; }
+      const r = d.result;
+      setNotice([
+        `Imported ${n(r.orders)} orders (${n(r.created)} new, ${n(r.updated)} updated) — ${n(r.units)} units, ${r.earliest.slice(0, 10)} to ${r.latest.slice(0, 10)}.`,
+        ...(r.problems ?? []),
+      ]);
+      await load();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setImporting(false);
+    }
+  }
 
   async function sync() {
     setSyncing(true);
@@ -140,7 +184,10 @@ export default function SalesReportsView() {
   }
 
   // ── Not configured ──
-  if (payload && !payload.configured) {
+  // Only when there is nothing to show. With imported orders the dashboard is
+  // fully usable and the missing API credentials are a sync problem, not a
+  // reason to blank the page.
+  if (payload && !payload.configured && !payload.data) {
     return (
       <div className="rounded-2xl border border-border bg-card px-6 py-12 text-center">
         <h2 className="text-base font-semibold text-foreground">Shopify isn&rsquo;t connected yet</h2>
@@ -182,15 +229,46 @@ export default function SalesReportsView() {
               : "No orders synced yet."}
           </p>
         </div>
-        <button
-          onClick={sync}
-          disabled={syncing}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-          {syncing ? "Syncing…" : "Sync from Shopify"}
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <label
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted ${
+              importing ? "pointer-events-none opacity-50" : ""
+            }`}
+            title="Backfill history from a Shopify admin CSV export — the way past the 60-day API limit"
+          >
+            {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            {importing ? "Importing…" : "Import CSV"}
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                // Reset so re-picking the same file fires change again.
+                e.target.value = "";
+                if (f) void importCsv(f);
+              }}
+            />
+          </label>
+          <button
+            onClick={sync}
+            disabled={syncing}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+            {syncing ? "Syncing…" : "Sync from Shopify"}
+          </button>
+        </div>
       </div>
+
+      {payload && !payload.configured && d && (
+        <div className="rounded-xl border border-border bg-muted px-4 py-3">
+          <p className="text-xs text-muted-foreground">
+            Showing imported data. The Shopify API isn&rsquo;t configured on this server, so
+            &ldquo;Sync from Shopify&rdquo; won&rsquo;t work here — importing a CSV export still does.
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/25 dark:text-red-200">
@@ -218,6 +296,41 @@ export default function SalesReportsView() {
         </div>
       ) : (
         <>
+          {/* ══ The roundup ══ */}
+          {(roundupState === "loading" || roundup) && (
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <div className="flex items-center gap-2">
+                <Sparkles size={14} className="text-[#9C7C2E]" />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  What the numbers say
+                </h3>
+              </div>
+              {roundupState === "loading" && !roundup ? (
+                <div className="mt-3 space-y-2">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="h-3 animate-pulse rounded bg-muted" style={{ width: `${94 - i * 12}%` }} />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="mt-2.5 space-y-2.5 text-sm leading-relaxed text-foreground">
+                    {roundup!.text.split(/\n\s*\n/).map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-[10px] text-muted-foreground">
+                    Written from the figures below — every number in this summary appears in a panel on this
+                    page. Generated{" "}
+                    {new Date(roundup!.generatedAt).toLocaleString("en-GB", {
+                      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                    })}
+                    .
+                  </p>
+                </>
+              )}
+            </section>
+          )}
+
           {/* ══ Small-sample warning — stated before any number is read ══ */}
           {d.dropsObserved < 2 && (
             <div className="rounded-xl border border-border bg-muted px-4 py-3">

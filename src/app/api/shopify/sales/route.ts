@@ -24,10 +24,11 @@ import {
 // panels would be slow for no benefit.
 export const GET = withAuth(async () => {
   try {
-    if (!isShopifyConfigured()) {
-      return NextResponse.json({ configured: false, connected: false, plan: null, data: null })
-    }
-
+    // Deliberately NOT gated on isShopifyConfigured(). History can be imported
+    // from a CSV export without any API credentials at all — and for a store
+    // without read_all_orders that is the only way to get it. Gating the whole
+    // payload on the API would have shown "Shopify isn't connected" to someone
+    // looking at thousands of orders they had just imported.
     const [orders, sync, plan] = await Promise.all([
       prisma.shopifyOrder.findMany({
         include: { lineItems: true },
@@ -51,8 +52,8 @@ export const GET = withAuth(async () => {
 
     if (rows.length === 0) {
       return NextResponse.json({
-        configured: true,
-        connected: true,
+        configured: isShopifyConfigured(),
+        connected: isShopifyConfigured(),
         neverSynced: sync == null,
         sync,
         plan: null,
@@ -80,8 +81,8 @@ export const GET = withAuth(async () => {
     )
 
     return NextResponse.json({
-      configured: true,
-      connected: true,
+      configured: isShopifyConfigured(),
+      connected: isShopifyConfigured(),
       neverSynced: false,
       sync,
       plan: plan

@@ -1087,6 +1087,11 @@ model ShopifyOrder {
   // email or address is stored.
   customerId String?
 
+  // Where the row came from. The API cannot return orders older than 60 days
+  // without read_all_orders, so history arrives by CSV export instead — and a
+  // sync must never delete what it is structurally incapable of re-fetching.
+  source    String   @default("API") // API | CSV
+
   lineItems ShopifyOrderLine[]
   syncedAt  DateTime @default(now())
 

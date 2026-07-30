@@ -1,11 +1,18 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // Shopify → Postgres sync.
 //
-// Full replace, not incremental. Orders mutate after creation — refunds,
-// cancellations, fulfilment — so "fetch everything since the last watermark"
-// quietly leaves stale rows behind. A magazine store's order count is small
-// enough that re-reading all of it is cheaper than reasoning about which rows
-// went out of date, and it means the tables can never drift from Shopify.
+// Upsert, never replace. This started as a full delete-and-reinsert, on the
+// reasoning that orders mutate after creation — refunds, cancellations,
+// fulfilment — and re-reading everything is cheaper than tracking which rows
+// went stale. That reasoning held only while the API was the sole source.
+//
+// It isn't. Without read_all_orders the API cannot see past 60 days, so history
+// arrives by CSV export instead. A full replace would then delete thousands of
+// imported orders and write back the 60 days of nothing the API can see. A sync
+// must never destroy rows it is structurally incapable of re-fetching.
+//
+// Line items are still replaced per order, because a line can be removed from
+// an order and leaving the old row would double-count it.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import prisma from '@/lib/prisma'
@@ -167,20 +174,33 @@ export async function syncShopifyOrders(
 
   // One transaction: a partially-written sync is worse than no sync, because
   // the dashboard would show totals that reconcile to nothing.
+  const all = [...orders.values()]
+  const fetchedIds = all.map((o) => o.id)
+
   await prisma.$transaction(
     async (tx) => {
-      await tx.shopifyOrderLine.deleteMany({})
-      await tx.shopifyOrder.deleteMany({})
-      const all = [...orders.values()]
+      // Only the fetched orders' lines are cleared — a blanket delete would
+      // orphan every CSV-imported order's line items.
+      if (fetchedIds.length > 0) {
+        await tx.shopifyOrderLine.deleteMany({ where: { orderId: { in: fetchedIds } } })
+      }
+
       const CHUNK = 500
-      for (let i = 0; i < all.length; i += CHUNK) {
-        await tx.shopifyOrder.createMany({ data: all.slice(i, i + CHUNK) })
+      for (const o of all) {
+        await tx.shopifyOrder.upsert({
+          where: { id: o.id },
+          create: { ...o, source: 'API' },
+          // `source` is deliberately not updated: an order first seen in a CSV
+          // import stays labelled CSV, so the provenance of the backfill
+          // survives a later API sync touching the same row.
+          update: o,
+        })
       }
       for (let i = 0; i < keep.length; i += CHUNK) {
         await tx.shopifyOrderLine.createMany({ data: keep.slice(i, i + CHUNK) })
       }
     },
-    { timeout: 120_000 }
+    { timeout: 180_000 }
   )
 
   return {
