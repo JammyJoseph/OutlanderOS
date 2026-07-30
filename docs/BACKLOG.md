@@ -268,6 +268,30 @@ two budget systems still sit outside it.
 - [ ] Milestone owners are free text. Could link to `User` for real assignment and a
       "my deadlines" view.
 
+## 1f. Sales reporting (built 2026-07-30)
+
+- [x] ~~**Shopify sales dashboard** at `/print/sales-reports`~~ — reads the store's order
+      history and reports it back against the rollout plan rather than as generic sales
+      figures, because Shopify Analytics already does the latter better. Basket profile,
+      sell-through by cover, demand by territory, US coast split, sales curve and repeat
+      buyers, each shown against the plan's current assumption. See `docs/SHOPIFY.md`.
+- [ ] **BLOCKED — install the app on the store.** `Outlanderosconnect-1` is registered but
+      not installed, so token exchange returns `app_not_installed`. Settings → Apps →
+      Develop apps → Build apps in Dev Dashboard → Installs → Install app.
+- [ ] **BLOCKED — `read_all_orders` approval.** Without it Shopify returns only the last 60
+      days, which for an annual drop is usually zero orders. Requested via Dev Dashboard →
+      API access → Request access; Shopify reviews manually.
+- [ ] **Rotate the Shopify client secret.** It was shared in a chat transcript during setup.
+      Dev Dashboard → app → Settings → rotate, then update prod `.env.local`.
+- [ ] **Check the Shopify variant SKUs match the print plan** (`OUT02-C1` …). Cover-level
+      analysis joins on SKU; anything without one lands in a visible `(no SKU)` bucket.
+- [ ] **Write recommendations back into the rollout plan.** The dashboard surfaces suggested
+      cover shares and territory splits but you retype them into Distribution. A one-click
+      "apply to plan" is the obvious next step, and deliberately not built until the numbers
+      have been sanity-checked against a real drop.
+- [ ] **Schedule the sync.** Runs on a button today. Once installed, a daily run via the
+      existing sync engine (`SyncStatus` source `shopifyOrders`) would keep it warm.
+
 ## 2. Integrations
 
 See `docs/ARCHITECTURE.md` for the full picture. Headline: **Google is integrated three

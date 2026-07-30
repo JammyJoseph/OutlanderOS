@@ -17,6 +17,7 @@ import {
   Clipboard,
   Newspaper,
   Receipt,
+  BarChart3,
   Camera,
   FolderKanban,
   Contact,
@@ -60,6 +61,7 @@ const SIDEBAR_CONFIG: Record<string, { title: string; items: NavItem[] }> = {
       { label: "Dashboard", href: "/print", icon: LayoutDashboard },
       { label: "Flat Plan", href: "/print/flat-plan", icon: Newspaper },
       { label: "Distribution", href: "/print/distribution", icon: Camera },
+      { label: "Sales Reports", href: "/print/sales-reports", icon: BarChart3 },
     ],
   },
   finance: {

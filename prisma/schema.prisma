@@ -1051,6 +1051,70 @@ model SyncLog {
   @@index([source, startedAt])
 }
 
+// ===== SHOPIFY SALES =====
+//
+// Orders are synced into Postgres rather than queried live. The dashboard reads
+// these tables, so it renders fast, survives Shopify being down, and doesn't
+// spend the API rate limit on every page view. A full re-sync is cheap (bulk
+// operations), so nothing here caches raw payloads — if a field is missing,
+// add it and re-sync rather than storing JSON nobody reads.
+model ShopifyOrder {
+  id       String   @id // Shopify GID, e.g. gid://shopify/Order/123
+  name     String // the customer-facing "#1001"
+  orderedAt DateTime // createdAt in Shopify
+  currency String // shop currency — every amount below is in THIS, never presentment
+  // Amounts are shopMoney. Storing presentment would make totals uncomparable
+  // across a customer paying in USD and one paying in GBP.
+  totalPrice     Float @default(0)
+  subtotalPrice  Float @default(0)
+  totalShipping  Float @default(0)
+  totalTax       Float @default(0)
+  totalDiscounts Float @default(0)
+
+  financialStatus    String?
+  fulfillmentStatus  String?
+  // Cancelled and test orders must be excluded from every figure. Kept rather
+  // than dropped so a sync doesn't silently lose rows it already had.
+  cancelledAt DateTime?
+  isTest      Boolean @default(false)
+
+  // Destination — the territory and coast signal. Country code is ISO-2.
+  shipCountryCode  String?
+  shipProvinceCode String?
+  shipCity         String?
+
+  // Pseudonymous — used only to count repeat buyers across drops. No name,
+  // email or address is stored.
+  customerId String?
+
+  lineItems ShopifyOrderLine[]
+  syncedAt  DateTime @default(now())
+
+  @@index([orderedAt])
+  @@index([shipCountryCode])
+  @@index([customerId])
+}
+
+model ShopifyOrderLine {
+  id      String       @id
+  orderId String
+  order   ShopifyOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // The join to RolloutCover.sku. Everything cover-level depends on the store
+  // using the same codes as the print plan (OUT02-C1 …) — see docs/SHOPIFY.md.
+  sku          String?
+  title        String
+  variantTitle String?
+  quantity     Int    @default(0)
+  // Per-unit, shop currency, after line discounts.
+  price        Float  @default(0)
+  productId    String?
+  variantId    String?
+
+  @@index([orderId])
+  @@index([sku])
+}
+
 // ===== INTELLIGENCE ENGINE =====
 model IntelligenceLog {
   id         String    @id @default(cuid())
