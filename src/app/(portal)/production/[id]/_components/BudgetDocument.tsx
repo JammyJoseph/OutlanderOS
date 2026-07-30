@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useSinglePagePrint } from "@/lib/use-single-page-print";
 import {
   BudgetLineItem,
   ProductionBudgetStatus,
@@ -212,8 +213,12 @@ export function BudgetDocument({ data }: { data: BudgetDocumentData }) {
     year: "numeric",
   });
 
+  // Size the printed sheet to the budget rather than paginating it mid-table.
+  const docRef = useRef<HTMLDivElement>(null);
+  useSinglePagePrint(docRef, { id: "budget-page-size" });
+
   return (
-    <div style={docStyle}>
+    <div ref={docRef} className="print-doc" style={docStyle}>
       {/* Masthead */}
       <div
         style={{

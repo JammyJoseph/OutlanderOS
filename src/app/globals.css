@@ -546,13 +546,20 @@
     visibility: hidden !important;
   }
   body:has([data-callsheet-print]) .cs-doc,
-  body:has([data-callsheet-print]) .cs-doc * {
+  body:has([data-callsheet-print]) .cs-doc *,
+  body:has([data-callsheet-print]) .print-doc,
+  body:has([data-callsheet-print]) .print-doc * {
     visibility: visible !important;
   }
-  body:has([data-callsheet-print]) .cs-doc {
+  body:has([data-callsheet-print]) .cs-doc,
+  body:has([data-callsheet-print]) .print-doc {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
+  }
+  /* The call sheet flows to page width; a fit-to-page document has already been
+     sized in px by useFitToPage, and forcing width:100% here would undo it. */
+  body:has([data-callsheet-print]) .cs-doc {
     width: 100% !important;
   }
 

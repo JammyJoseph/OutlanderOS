@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useSinglePagePrint } from "@/lib/use-single-page-print";
 import { format } from "date-fns";
 import type {
   AgencyTeamMember, Attachment, CallSheetHeader, CallSheetLocation, CallTimeRow,
@@ -199,28 +200,8 @@ export function CallSheetDocument({
   // user ever opens the print dialog (the beforeprint event fired too late for
   // Chrome to pick up). Result: one continuous page fitted to the content.
   const docRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const style = document.createElement("style");
-    style.id = "cs-page-size";
-    document.head.appendChild(style);
-
-    const updatePageSize = () => {
-      const el = docRef.current;
-      if (!el) return;
-      // px → mm (96dpi), plus a buffer to clear the @page margins.
-      const heightMm = Math.ceil(el.scrollHeight * 0.264583) + 20;
-      style.textContent = `@media print { @page { size: 210mm ${heightMm}mm; margin: 8mm; } }`;
-    };
-
-    const observer = new ResizeObserver(updatePageSize);
-    if (docRef.current) observer.observe(docRef.current);
-    updatePageSize();
-
-    return () => {
-      observer.disconnect();
-      style.remove();
-    };
-  }, []);
+  // Same technique the production budget uses — shared so the two can't drift.
+  useSinglePagePrint(docRef, { id: "cs-page-size", marginMm: 8 });
 
   const companyName = (
     productionCompany.name || header.productionCompany || "Outlander"
