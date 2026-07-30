@@ -67,6 +67,30 @@ interface Payload {
   } | null;
 }
 
+
+// A proxy that rejects a request answers with an HTML error page, not JSON.
+// Calling res.json() on that throws "Unexpected token '<'", which tells the user
+// nothing about what actually happened — the most common cause is the upload
+// exceeding a size limit somewhere between the browser and the app.
+async function readJson(res: Response): Promise<Record<string, unknown>> {
+  const body = await res.text();
+  try {
+    return JSON.parse(body) as Record<string, unknown>;
+  } catch {
+    if (res.status === 413) {
+      throw new Error(
+        "The server rejected the upload as too large. It never reached the app — the limit is on the web server in front of it."
+      );
+    }
+    if (res.status === 502 || res.status === 504) {
+      throw new Error("The server didn't respond in time. If the file is very large, try again — the import may still be running.");
+    }
+    throw new Error(
+      `The server returned ${res.status} with a non-JSON response. That usually means a proxy rejected the request before the app saw it.`
+    );
+  }
+}
+
 const n = (v: number) => v.toLocaleString("en-GB");
 const pct = (v: number | null) => (v == null ? "—" : `${v.toFixed(1)}%`);
 
@@ -130,9 +154,12 @@ export default function SalesReportsView() {
       const body = new FormData();
       body.append("file", file);
       const res = await fetch("/api/shopify/import", { method: "POST", body });
-      const d = await res.json();
-      if (!res.ok) { setError(d.error ?? "The import failed."); return; }
-      const r = d.result;
+      const d = await readJson(res);
+      if (!res.ok) { setError(String(d.error ?? "The import failed.")); return; }
+      const r = d.result as {
+        orders: number; created: number; updated: number; units: number;
+        earliest: string; latest: string; problems?: string[];
+      };
       setNotice([
         `Imported ${n(r.orders)} orders (${n(r.created)} new, ${n(r.updated)} updated) — ${n(r.units)} units, ${r.earliest.slice(0, 10)} to ${r.latest.slice(0, 10)}.`,
         ...(r.problems ?? []),
@@ -151,9 +178,10 @@ export default function SalesReportsView() {
     setNotice(null);
     try {
       const res = await fetch("/api/shopify/sync", { method: "POST" });
-      const d = await res.json();
-      if (!res.ok) { setError(d.error ?? "The sync failed."); return; }
-      setNotice(d.result?.warnings?.length ? d.result.warnings : [`Synced ${n(d.result.orders)} orders.`]);
+      const d = await readJson(res);
+      if (!res.ok) { setError(String(d.error ?? "The sync failed.")); return; }
+      const r = d.result as { orders: number; warnings?: string[] } | undefined;
+      setNotice(r?.warnings?.length ? r.warnings : [`Synced ${n(r?.orders ?? 0)} orders.`]);
       await load();
     } catch (e) {
       setError(String(e));
