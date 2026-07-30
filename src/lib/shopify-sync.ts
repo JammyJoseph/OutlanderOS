@@ -86,7 +86,7 @@ export async function syncShopifyOrders(
   const fullHistory = await hasFullHistoryAccess()
   if (!fullHistory) {
     warnings.push(
-      'The app does not hold read_all_orders, so Shopify only returned the last 60 days. With an annual drop that window usually contains no sales at all — request the scope in the Dev Dashboard.'
+      'The app does not hold read_all_orders, so Shopify only returned the last 60 days — for an annual drop, usually nothing. This is not a fault. Use Import CSV to load the full history now (Shopify admin → Orders → Export → All orders), or request the read_all_orders scope to make syncing automatic.'
     )
   }
 
@@ -111,7 +111,7 @@ export async function syncShopifyOrders(
         ...warnings,
         fullHistory
           ? 'Shopify returned no orders at all for this store.'
-          : 'Shopify returned no orders in the last 60 days.',
+          : 'Nothing sold in the last 60 days, which is all the API can see. Everything older is still reachable via Import CSV.',
       ],
     }
   }

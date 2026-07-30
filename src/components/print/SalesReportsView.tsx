@@ -291,12 +291,33 @@ export default function SalesReportsView() {
       )}
 
       {!d ? (
-        <div className="rounded-2xl border border-border bg-card px-6 py-12 text-center">
-          <h2 className="text-base font-semibold text-foreground">No orders yet</h2>
-          <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
-            Press <strong>Sync from Shopify</strong> to pull the store&rsquo;s order history. If the app
-            doesn&rsquo;t hold the <code className="rounded bg-muted px-1">read_all_orders</code> scope,
-            Shopify only returns the last 60 days — which for an annual drop is usually nothing.
+        <div className="rounded-2xl border border-border bg-card px-6 py-10">
+          <h2 className="text-center text-base font-semibold text-foreground">No orders loaded yet</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-muted-foreground">
+            Shopify&rsquo;s API can only return the last 60 days unless the app holds the{" "}
+            <code className="rounded bg-muted px-1">read_all_orders</code> scope. Publishing once a year
+            means that window is almost always empty — so syncing finds nothing even though the store has
+            years of history.
+          </p>
+
+          <div className="mx-auto mt-6 max-w-xl rounded-xl border border-border bg-muted/50 p-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Load it now — no waiting on Shopify
+            </p>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-foreground">
+              <li>Shopify admin → <strong>Orders</strong> → <strong>Export</strong></li>
+              <li>Choose <strong>All orders</strong>, format <strong>CSV</strong></li>
+              <li>Come back here and press <strong>Import CSV</strong></li>
+            </ol>
+            <p className="mt-2 text-xs text-muted-foreground">
+              That gives you every order the store has ever taken. Ongoing sales sync automatically —
+              a drop&rsquo;s orders all land well inside the 60-day window.
+            </p>
+          </div>
+
+          <p className="mx-auto mt-4 max-w-xl text-center text-xs text-muted-foreground">
+            To make the backfill automatic too, request <code className="rounded bg-muted px-1">read_all_orders</code>{" "}
+            in the Shopify Dev Dashboard. It&rsquo;s reviewed by hand, so the CSV is the faster route today.
           </p>
         </div>
       ) : (
