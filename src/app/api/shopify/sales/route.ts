@@ -7,6 +7,7 @@ import {
   headline,
   basketProfile,
   coverMix,
+  coverSkuSet,
   territoryDemand,
   coastSplit,
   salesCurve,
@@ -62,9 +63,13 @@ export const GET = withAuth(async () => {
     const plannedShares = plan?.covers.map((c) => ({ sku: c.sku, sharePct: c.sharePct, name: c.name }))
     const plannedTerritories = plan?.territories.map((t) => ({ name: t.name, b2cUnits: t.b2cUnits }))
 
-    const covers = coverMix(rows, plannedShares)
-    const territories = territoryDemand(rows, plannedTerritories)
-    const basket = basketProfile(rows, plan?.covers.length)
+    // Cover SKUs gate every magazine-level figure. Without them a print or a
+    // t-shirt would count as a unit sold, which would put posters into the
+    // cover mix and inflate the basket the fulfilment economics rest on.
+    const skus = coverSkuSet(plannedShares)
+    const mix = coverMix(rows, plannedShares)
+    const territories = territoryDemand(rows, plannedTerritories, skus)
+    const basket = basketProfile(rows, plan?.covers.length, skus)
     const coast = coastSplit(rows, plan?.eastCoastShare)
 
     // Distinct calendar years containing a sale, as a rough count of how many
@@ -90,14 +95,19 @@ export const GET = withAuth(async () => {
       data: {
         headline: headline(rows),
         basket,
-        covers,
+        covers: mix.covers,
+        otherProducts: mix.other,
+        coverUnits: mix.coverUnits,
+        otherUnits: mix.otherUnits,
+        otherRevenue: mix.otherRevenue,
+        noSkuMatch: mix.noSkuMatch,
         territories,
         coast,
         curve: salesCurve(rows),
         repeat: repeatBuyers(rows),
         dropsObserved: years.size,
         recommendations: recommendations({
-          covers,
+          covers: mix.covers,
           territories,
           basket,
           coast,

@@ -45,6 +45,11 @@ interface Payload {
       fullSetShare: number | null; multiCoverShare: number;
     };
     covers: CoverSale[];
+    otherProducts: { sku: string; title: string; units: number; revenue: number }[];
+    coverUnits: number;
+    otherUnits: number;
+    otherRevenue: number;
+    noSkuMatch: boolean;
     territories: TerritoryDemand[];
     coast: {
       usOrders: number; east: number; west: number; unknown: number;
@@ -316,13 +321,44 @@ export default function SalesReportsView() {
                 </tr>
               ))}
             </Table>
-            {d.covers.some((c) => c.sku === "(no SKU)") && (
-              <p className="px-4 py-2 text-xs text-amber-700 dark:text-amber-400">
-                Some line items have no SKU, so they can&rsquo;t be attributed to a cover. Set SKUs on the
-                Shopify variants to match the rollout plan and they&rsquo;ll join automatically.
-              </p>
+            {d.noSkuMatch && (
+              <div className="border-t border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-900/25">
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                  No sales matched a cover SKU
+                </p>
+                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+                  {n(d.otherUnits)} unit(s) sold, none under a SKU the rollout plan knows about. Cover
+                  analysis stays empty until the Shopify variant SKUs match the plan&rsquo;s
+                  (<span className="font-mono">{d.covers.map((c) => c.sku).join(", ") || "none set"}</span>).
+                  Either rename the variants in Shopify or change the SKUs on the Distribution tab —
+                  they only need to agree.
+                </p>
+              </div>
             )}
           </Section>
+
+          {d.otherProducts.length > 0 && (
+            <Section
+              title="Other products"
+              blurb="Prints, merch and anything else. Real revenue, deliberately excluded from cover and basket figures so posters don't get counted as magazines."
+            >
+              <Table head={["Product", "SKU", "Units", "Revenue"]}>
+                {d.otherProducts.slice(0, 15).map((o) => (
+                  <tr key={o.sku} className="border-t border-border">
+                    <Td>{o.title}</Td>
+                    <Td mono>{o.sku}</Td>
+                    <Td right>{n(o.units)}</Td>
+                    <Td right>{money0(o.revenue, ccy)}</Td>
+                  </tr>
+                ))}
+              </Table>
+              {d.otherProducts.length > 15 && (
+                <p className="px-4 py-2 text-xs text-muted-foreground">
+                  Showing the top 15 of {n(d.otherProducts.length)} by units.
+                </p>
+              )}
+            </Section>
+          )}
 
           {/* ══ Territories ══ */}
           <Section

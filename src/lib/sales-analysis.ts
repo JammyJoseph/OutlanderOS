@@ -71,12 +71,20 @@ export interface BasketProfile {
   multiCoverShare: number
 }
 
-export function basketProfile(orders: OrderRow[], coverCount?: number): BasketProfile {
+export function basketProfile(
+  orders: OrderRow[],
+  coverCount?: number,
+  coverSkus: Set<string> = new Set()
+): BasketProfile {
   const live = sellable(orders)
   const byBand = new Map<number, BasketBand>()
 
   for (const o of live) {
-    const items = unitsIn(o)
+    // Magazines only. An order of one magazine plus an A3 print is a basket of
+    // one for shipping purposes we care about — the Full Set bundle is about
+    // covers, and counting the print would overstate the attach rate that the
+    // whole bundling saving is justified by.
+    const items = coverUnitsIn(o, coverSkus)
     if (items <= 0) continue
     const band = byBand.get(items) ?? { items, orders: 0, share: 0, units: 0, revenue: 0 }
     band.orders += 1
@@ -106,9 +114,30 @@ export function basketProfile(orders: OrderRow[], coverCount?: number): BasketPr
   }
 }
 
+// ── What counts as a magazine ───────────────────────────────────────────────
+//
+// The store sells prints and merch alongside the magazine. Counting an A3 print
+// as a unit would put posters into "share of sales by cover", and counting a
+// t-shirt would inflate the basket — which is the number the whole fulfilment
+// economics rest on. So every cover-level figure is computed over lines whose
+// SKU matches a cover in the rollout plan, and nothing else.
+
+export function coverSkuSet(planned?: { sku: string }[]): Set<string> {
+  return new Set((planned ?? []).map((p) => p.sku.trim()).filter(Boolean))
+}
+
+const isCoverLine = (l: LineRow, skus: Set<string>) =>
+  skus.size > 0 && !!l.sku && skus.has(l.sku.trim())
+
+/** Magazine units in an order. Falls back to all units when no plan is loaded. */
+function coverUnitsIn(o: OrderRow, skus: Set<string>): number {
+  if (skus.size === 0) return o.lineItems.reduce((s, l) => s + l.quantity, 0)
+  return o.lineItems.filter((l) => isCoverLine(l, skus)).reduce((s, l) => s + l.quantity, 0)
+}
+
 // ── Cover mix ───────────────────────────────────────────────────────────────
 //
-// Units sold per SKU. Compared against the share of the run each cover was
+// Units sold per cover. Compared against the share of the run each cover was
 // given, this is what says a cover was under- or over-printed — the direct
 // input to next year's RolloutCover.sharePct.
 
@@ -118,7 +147,7 @@ export interface CoverSale {
   units: number
   revenue: number
   orders: number
-  /** Share of all units sold. */
+  /** Share of magazine units sold — prints and merch are excluded. */
   soldSharePct: number
   /** Share of the print run this cover was given, when a plan is supplied. */
   plannedSharePct: number | null
@@ -126,44 +155,86 @@ export interface CoverSale {
   deltaPct: number | null
 }
 
+export interface OtherProduct {
+  sku: string
+  title: string
+  units: number
+  revenue: number
+}
+
+export interface CoverMix {
+  covers: CoverSale[]
+  /** Everything that isn't a magazine — still real revenue, just not a cover. */
+  other: OtherProduct[]
+  coverUnits: number
+  otherUnits: number
+  otherRevenue: number
+  /**
+   * True when a plan defines cover SKUs but no sold line matched one. Almost
+   * always a naming mismatch between the store and the plan, and it must be
+   * said out loud — silently showing an empty table reads as "no sales".
+   */
+  noSkuMatch: boolean
+}
+
 export function coverMix(
   orders: OrderRow[],
   plannedShares?: { sku: string; sharePct: number; name?: string }[]
-): CoverSale[] {
-  const bySku = new Map<string, { units: number; revenue: number; orders: Set<string>; title: string }>()
+): CoverMix {
+  const skus = coverSkuSet(plannedShares)
+  const covers = new Map<string, { units: number; revenue: number; orders: Set<string>; title: string }>()
+  const other = new Map<string, OtherProduct>()
 
   for (const o of sellable(orders)) {
     for (const l of o.lineItems) {
-      // A line with no SKU can't be attributed to a cover. Bucketed under a
-      // visible placeholder rather than dropped, so the totals still tie and
-      // the gap is obvious.
       const sku = l.sku?.trim() || '(no SKU)'
-      const row = bySku.get(sku) ?? { units: 0, revenue: 0, orders: new Set<string>(), title: l.title }
-      row.units += l.quantity
-      row.revenue += l.price * l.quantity
-      row.orders.add(o.id)
-      bySku.set(sku, row)
+      if (isCoverLine(l, skus)) {
+        const row = covers.get(sku) ?? { units: 0, revenue: 0, orders: new Set<string>(), title: l.title }
+        row.units += l.quantity
+        row.revenue += l.price * l.quantity
+        row.orders.add(o.id)
+        covers.set(sku, row)
+      } else {
+        const row = other.get(sku) ?? { sku, title: l.title, units: 0, revenue: 0 }
+        row.units += l.quantity
+        row.revenue += l.price * l.quantity
+        other.set(sku, row)
+      }
     }
   }
 
-  const totalUnits = [...bySku.values()].reduce((s, r) => s + r.units, 0)
+  const coverUnits = [...covers.values()].reduce((s, r) => s + r.units, 0)
 
-  return [...bySku.entries()]
-    .map(([sku, r]) => {
-      const planned = plannedShares?.find((p) => p.sku === sku)?.sharePct ?? null
-      const soldSharePct = totalUnits > 0 ? (r.units / totalUnits) * 100 : 0
+  const rows: CoverSale[] = (plannedShares ?? [])
+    .map((p) => {
+      const r = covers.get(p.sku.trim())
+      const units = r?.units ?? 0
+      const soldSharePct = coverUnits > 0 ? (units / coverUnits) * 100 : 0
       return {
-        sku,
-        title: plannedShares?.find((p) => p.sku === sku)?.name ?? r.title,
-        units: r.units,
-        revenue: r.revenue,
-        orders: r.orders.size,
+        sku: p.sku,
+        title: p.name ?? r?.title ?? p.sku,
+        units,
+        revenue: r?.revenue ?? 0,
+        orders: r?.orders.size ?? 0,
         soldSharePct,
-        plannedSharePct: planned,
-        deltaPct: planned == null ? null : soldSharePct - planned,
+        plannedSharePct: p.sharePct,
+        // A cover with no sales at all isn't evidence it was over-printed — it's
+        // evidence it hasn't dropped yet. Only compare once something sold.
+        deltaPct: coverUnits > 0 ? soldSharePct - p.sharePct : null,
       }
     })
     .sort((a, b) => b.units - a.units)
+
+  const otherRows = [...other.values()].sort((a, b) => b.units - a.units)
+
+  return {
+    covers: rows,
+    other: otherRows,
+    coverUnits,
+    otherUnits: otherRows.reduce((s, r) => s + r.units, 0),
+    otherRevenue: otherRows.reduce((s, r) => s + r.revenue, 0),
+    noSkuMatch: skus.size > 0 && coverUnits === 0 && otherRows.length > 0,
+  }
 }
 
 // ── Territory demand ────────────────────────────────────────────────────────
@@ -205,7 +276,8 @@ export interface TerritoryDemand {
 
 export function territoryDemand(
   orders: OrderRow[],
-  planned?: { name: string; b2cUnits: number }[]
+  planned?: { name: string; b2cUnits: number }[],
+  coverSkus: Set<string> = new Set()
 ): TerritoryDemand[] {
   const map = new Map<string, { orders: number; units: number; revenue: number }>()
 
@@ -213,7 +285,9 @@ export function territoryDemand(
     const t = territoryForCountry(o.shipCountryCode)
     const row = map.get(t) ?? { orders: 0, units: 0, revenue: 0 }
     row.orders += 1
-    row.units += unitsIn(o)
+    // Units are magazines; revenue stays whole-order, because the shipping and
+    // fulfilment cost of that order is incurred whatever else is in it.
+    row.units += coverUnitsIn(o, coverSkus)
     row.revenue += o.totalPrice
     map.set(t, row)
   }
