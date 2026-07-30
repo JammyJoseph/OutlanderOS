@@ -236,6 +236,22 @@ two budget systems still sit outside it.
         as a count and an amber banner. The $73,120 headline saving depends on them.
       Twelve reconciliation checks now, including wave units, promo-account range, signed
       embargo agreements and print-clock headroom.
+- [x] ~~**TLC ships every stockist direct.**~~ (2026-07-30) All 53 trading accounts now sit on
+      the `Direct (TLC)` hub, not the regional warehouses — previously only the 5 Asia-Pacific
+      cartons were direct and the other 2,790 units were wrongly counted at UK/EU/US. The
+      regional warehouse count is now 7,000 (B2C, gifting, events and the reserve); TLC holds
+      3,000. This also makes the warehouse table agree with the print clock, which already
+      ran three weeks from *print completion* to in-store rather than from a warehouse.
+      A reconciliation check guards it, since the store's hub is a dropdown.
+      **Assumption to confirm with TLC:** they hold the B2B allocation on the print floor from
+      2 October until each wave dispatches — 3 weeks for the promo wave, 6 for the wider one.
+- [ ] **Decide where the 750-unit reserve lives.** Kept at the UK hub, on the reasoning that
+      replenishment and secondary selects from 16 November cannot ship off a print floor months
+      after the run. If TLC will warehouse it, move it to the direct hub and the regional count
+      drops to 6,250.
+- [ ] **Re-quote B2B freight now it is all ex-printer.** The $45/shipment placeholder was a
+      blend of ex-warehouse and ex-printer lanes; every shipment now originates at TLC, so it
+      should be one quotable rate (or a per-region set) rather than a blended guess.
 - [ ] **Chase the 12 signed embargo agreements.** Tracked per stockist (`embargoStatus`), all
       currently `SENT`. The check fails until every promo account has signed — deliberately,
       since the wave can't dispatch without them.

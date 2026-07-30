@@ -956,6 +956,31 @@ export function reconcile(plan: PlanInput): Check[] {
     }
   }
 
+  // The printer stocks every brick-and-mortar account worldwide, straight off
+  // the print floor, so no stockist carton should pass through a regional
+  // warehouse. The store's hub is a dropdown, so this is one reassignment away
+  // from being quietly untrue — and it would inflate the regional warehouse
+  // count with stock those warehouses never see.
+  const misrouted = plan.stockists.filter((s) => {
+    if (s.isReserved || s.units === 0) return false
+    const hub = plan.hubs.find((h) => h.id === s.hubId)
+    return hub != null && !hub.isDirect
+  })
+  if (plan.hubs.some((h) => h.isDirect)) {
+    const units = misrouted.reduce((s, x) => s + x.units, 0)
+    checks.push({
+      label: 'Stockist stock routed via a warehouse',
+      result: units,
+      target: 0,
+      variance: units,
+      ok: units === 0,
+      note:
+        units === 0
+          ? 'Every stockist ships direct from the printer.'
+          : `${misrouted.length} account(s) are routed via a regional warehouse. Move them to the direct hub, or the warehouse model counts stock that never arrives.`,
+    })
+  }
+
   // The clock. Not an allocation check — a feasibility one. Negative headroom
   // means the plan cannot happen, and no amount of correct arithmetic elsewhere
   // fixes it.
