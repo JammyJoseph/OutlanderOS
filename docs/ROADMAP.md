@@ -15,7 +15,9 @@ Written 2026-07-28.
         │
         ├─→ TLS certificate ──┬─→ Secure cookies          (automatic, no code)
         │                     ├─→ DocuSign webhooks       (replaces polling)
-        │                     └─→ Passwords stop crossing the wire in cleartext
+        │                     ├─→ Passwords stop crossing the wire in cleartext
+        │                     ├─→ EXTERNAL COLLABORATOR ACCESS  (see Phase 1b)
+        │                     └─→ CONCIERGE sharing             (see Phase 1b)
         │
         └─→ A real public URL ─┬─→ Fix hardcoded localhost redirect URIs
                                ├─→ XERO reconnect ─→ chart of accounts
@@ -52,6 +54,55 @@ Until this lands, every staff login sends the password in the clear, and the
 | 1.3 | Reconnect Xero (currently dead: token expired, and OAuth can't complete from prod) | 1.1, 1.2 | 15 min |
 | 1.4 | Reconnect Google — the current flow makes users copy an auth code out of a connection-refused URL bar | 1.1 | 15 min |
 | 1.5 | Set `GOOGLE_SERVICE_ACCOUNT_EMAIL` on prod, or finish moving off the service account. Directory Sheets import throws hard today | — | 30 min |
+
+## Phase 1b — Things deliberately held until TLS exists
+
+Neither of these is technically blocked — both would function over HTTP today.
+They are held because shipping them over cleartext would put other people's data
+on the wire, and that is a different kind of mistake from putting our own there.
+
+| # | Item | Why it waits for TLS | Effort |
+|---|---|---|---|
+| 1b.1 | **External collaborator access** — scoped, expiring, per-project grants for outside producers | Invites people outside the company to authenticate. Their session unlocks our cost data, and it would cross the wire in the clear on whatever network they happen to be on | 3–4 days |
+| 1b.2 | **Concierge** — talent and crew movement schedules, shareable PDF | The shared link carries flight numbers, hotel names, room numbers and pickup times for named people. Real-time location data for talent, unencrypted, is a personal-safety problem before it is a security one | 1–2 days |
+
+### 1b.1 — External collaborator access, in outline
+
+The design decision that matters: **collaborators are not `User` rows and never
+touch the staff API.** Adding an `EXTERNAL` role would mean retrofitting a guard
+onto 139 routes, and one miss exposes the company's finances. Instead a separate
+surface of roughly six endpoints under `/api/collab/*`, small enough to audit in
+one sitting, with its own cookie name so a collaborator session can never be
+mistaken for a staff one.
+
+- `Collaborator` (email, name, company) → `CollaboratorGrant` (production,
+  scopes, `expiresAt`, `revokedAt`) → `CollaboratorSession` (token, expiry).
+- **Magic-link invites, no passwords** — reuses the mailer built for invoices.
+  No credential of ours for them to lose.
+- Project and scopes derive from the session, **never from the request**, so a
+  collaborator cannot reach another production by editing an ID in a URL.
+- Mandatory expiry, instant revocation, every action logged.
+- **Read-only first.** View budget, view call sheets, pull a live XLSX.
+  Cost submission comes second, on the path already built for crew invoices.
+
+On the "auto-updating Excel" idea: a two-way sync is rejected — conflict
+resolution, schema drift, and no audit trail on the cost ledger. The version
+worth building is a **tokenised read-only XLSX endpoint** their sheet refreshes
+from. One-way, always current, and changes come back through the platform.
+
+### 1b.2 — Concierge, in outline
+
+A new tab on the production project, beside Budget and Call Sheets. Owns almost
+no data of its own: people come from Team, times and locations from Call Sheets.
+
+- `ConciergeGuest` → `ConciergeSegment` (one table, not one per type — a flight,
+  a car and a hotel all have a start, an end, a from, a to and a reference).
+- **Conflict detection is the point**, not the PDF. Same pattern as the print
+  clock on the distribution tab: *"lands 14:20, call time 14:00"*, *"no pickup
+  between landing and call"*, *"checkout 11:00, flight 21:40 — 10 hours
+  unaccounted"*. A schedule that tells you when it doesn't work.
+- Sharing reuses the tokenised public page pattern from call sheets, and the
+  `.print-doc` / `useSinglePagePrint` export.
 
 ## Phase 2 — Xero: the coding backbone
 

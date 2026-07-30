@@ -292,6 +292,35 @@ two budget systems still sit outside it.
 - [ ] **Schedule the sync.** Runs on a button today. Once installed, a daily run via the
       existing sync engine (`SyncStatus` source `shopifyOrders`) would keep it warm.
 
+## 1g. Held until TLS (see ROADMAP Phase 1b)
+
+Neither is technically blocked. Both are held because shipping them over
+cleartext would put *other people's* data on the wire, which is a different kind
+of mistake from putting our own there.
+
+- [ ] **External collaborator access.** Scoped, expiring, per-project grants so
+      outside producers can see budgets, cost tracking and call sheets for one
+      production. Collaborators are **not `User` rows and never touch the staff
+      API** — an `EXTERNAL` role would mean retrofitting a guard onto 139 routes
+      and one miss exposes the company's finances. Separate `/api/collab/*`
+      surface, separate cookie, magic-link invites via the existing mailer,
+      mandatory expiry, instant revocation, audit log. Scopes derive from the
+      session, never the request. Read-only first; cost submission second, on
+      the path already built for crew invoices.
+      **Rejected:** two-way Excel sync — conflict resolution, schema drift and
+      no audit trail on the ledger. Build a tokenised read-only XLSX endpoint
+      their sheet refreshes from instead: one-way, always current.
+- [ ] **Concierge.** New tab on the production project for talent and crew
+      movement — pickups, flights, hotels, timings — with a shareable PDF for
+      management teams. Owns almost no data: people from Team, times from Call
+      Sheets. **Conflict detection is the point, not the PDF** — "lands 14:20,
+      call time 14:00", "checkout 11:00, flight 21:40, 10 hours unaccounted".
+      Reuses the tokenised public-page pattern and the `.print-doc` export.
+      Waits for TLS because the shared link carries flight numbers, hotels, room
+      numbers and pickup times for named people; talent location data in the
+      clear is a personal-safety problem before it is a security one.
+      **Open question:** are guests opt-in per person, or derived from Team?
+
 ## 2. Integrations
 
 See `docs/ARCHITECTURE.md` for the full picture. Headline: **Google is integrated three
