@@ -84,6 +84,78 @@ export function sortRoster<T extends { callTime?: string }>(people: T[], unitCal
   return sortByTime(people, (p) => effectiveCallTime(p, unitCall));
 }
 
+// The roster order used on the printed sheet: call time first, then production
+// hierarchy within each time.
+//
+// Time has to lead, because the sheet is read on the day by someone asking "who
+// is here now" — sorting by role first scatters a single call time down the
+// page. Role breaks the tie so that everyone arriving at 08:00 still reads
+// Producer, Director, DOP rather than in entry order.
+//
+// Defined here rather than composing sortByTime and sortByRolePriority: running
+// them in sequence works only because JS sorts are stable, which is a subtle
+// thing to depend on and silently wrong if either is ever reordered.
+export function sortRosterByCallThenRole<T extends { callTime?: string; role?: string }>(
+  people: T[],
+  unitCall: string
+): T[] {
+  return people
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => {
+      const ta = timeRank(effectiveCallTime(a.p, unitCall));
+      const tb = timeRank(effectiveCallTime(b.p, unitCall));
+      // Both untimed is a tie — subtracting two Infinities gives NaN, which
+      // makes the comparator incoherent and the result order arbitrary.
+      if (ta !== tb) return ta < tb ? -1 : 1;
+
+      const ra = roleRank(a.p.role);
+      const rb = roleRank(b.p.role);
+      if (ra !== rb) return ra - rb;
+      if (ra === ROLE_PRIORITY_OTHER) {
+        const cmp = (a.p.role || "").localeCompare(b.p.role || "");
+        if (cmp !== 0) return cmp;
+      }
+      return a.i - b.i; // stable within a time + rank
+    })
+    .map((x) => x.p);
+}
+
+// ── Who the talent actually is ───────────────────────────────────────────────
+//
+// The sheet's header calls out one person as the talent. It used to take the
+// first row of the talent array, which is only right when that array holds
+// nothing but talent — and in practice a whole unit often gets entered into one
+// list, so the header named whoever happened to be typed first (a photographer,
+// on the sheet that surfaced this).
+//
+// Match on the role instead, and prefer a bare "Talent" over "Talent Assist" or
+// "Talent Manager", which also contain the word.
+export function findTalent<T extends { role?: string; name?: string; callTime?: string }>(
+  people: T[]
+): T | undefined {
+  const named = people.filter((p) => (p.name || "").trim() || p.callTime);
+  const role = (p: T) => (p.role || "").trim();
+
+  // "Talent", "Model", "Cast" — but not "Talent Assist" / "Talent Manager".
+  const exact = named.find((p) => /^(talent|model|cast|artist)$/i.test(role(p)));
+  if (exact) return exact;
+
+  // A qualified principal — "Lead Talent", "Talent (Cover)" — still beats an
+  // assistant or a manager, so those are excluded rather than merely ranked.
+  const principal = named.find(
+    (p) =>
+      /\b(talent|model|cast|actor|actress)\b/i.test(role(p)) &&
+      !/\b(assist(?:ant)?|manager|mgmt|management|agent|rep|handler|double|stand[- ]?in)\b/i.test(role(p))
+  );
+  if (principal) return principal;
+
+  // Nothing is labelled talent. Returning the first row here is what caused the
+  // original bug, so only fall back when no row carries a role at all — that is
+  // the legacy shape where the talent list genuinely was just names.
+  if (named.every((p) => !role(p))) return named[0];
+  return undefined;
+}
+
 // ── Role priority ordering ───────────────────────────────────────────────────
 // The unit list reads in production-hierarchy order — Producer at the top, down
 // through the departments — rather than in the order people were added. Roles
@@ -95,22 +167,39 @@ export function sortRoster<T extends { callTime?: string }>(people: T[], unitCal
 export const ROLE_PRIORITY_OTHER = 100;
 
 const ROLE_PRIORITY_MATCHERS: { rank: number; re: RegExp }[] = [
+  // Assistant variants are matched BEFORE the role they assist, so "Photo
+  // Assist" doesn't rank as the photographer.
+  { rank: 13, re: /\b(photo(?:graphy)?|camera)\s*(assist(?:ant)?|intern)\b/i },
   { rank: 1, re: /\b(exec(?:utive)?\s+producer|producer|ep)\b/i }, // Producer / Exec Producer
+  { rank: 1, re: /\b(eic|editor[- ]?in[- ]?chief|editorial director)\b/i }, // EIC — runs the shoot editorially
+  // On a stills shoot the photographer is the lead creative, the equivalent of
+  // the director on a film unit. Without this they fell to the unranked bucket
+  // and sorted alphabetically halfway down the sheet.
+  { rank: 2, re: /\bphotograph(?:er|y)\b/i },
   { rank: 3, re: /\b(director of photography|d\.?o\.?p\.?|dop|cinematographer)\b/i }, // DOP — before "Director"
+  // A lighting director is a head of department, not a director. It only ranked
+  // near the top before because it contains the word "Director" — same place,
+  // but by intent rather than by accident.
+  { rank: 3, re: /\blighting director\b/i }, // before the generic "Director"
   { rank: 4, re: /(\b\d+(?:st|nd|rd|th)?\s*ad\b|first ad|assistant director)/i }, // 1st AD — before "Director"
-  { rank: 6, re: /\b(art director|production design(?:er)?)\b/i }, // Art Director — before "Director"
+  // "Art Direction" as well as "Art Director" — the noun form is what gets
+  // typed in practice and it missed the old pattern entirely.
+  { rank: 6, re: /\b(art director|art direction|production design(?:er)?)\b/i }, // before "Director"
   { rank: 7, re: /\bfashion director\b/i }, // Fashion Director — before "Director"
   { rank: 2, re: /\bdirector\b/i }, // Director
   { rank: 5, re: /\b(production manager|pm)\b/i }, // Production Manager
   { rank: 7, re: /\b(stylist|styling|wardrobe)\b/i }, // Stylist / wardrobe
-  { rank: 8, re: /\b(hair|make ?up|h&?mu|hmu|mua|grooming|glam|mu)\b/i }, // Hair & Make Up
+  // `make[- ]?up` — the hyphenated spelling is the common one and the old
+  // `make ?up` didn't match it, so every "Make-Up Artist" went unranked.
+  { rank: 8, re: /\b(hair|make[- ]?up|h&?mu|hmu|mua|grooming|glam|mu)\b/i }, // Hair & Make Up
   { rank: 9, re: /\bset design(?:er)?\b/i }, // Set Designer
   { rank: 10, re: /\b(gaffer|lighting|electric(?:ian)?|spark|best boy)\b/i }, // Gaffer / Lighting
   { rank: 11, re: /\b(sound|audio|boom|recordist)\b/i }, // Sound
   { rank: 12, re: /\b(digi ?tech|digi ?op|dit|data)\b/i }, // Digi Tech / DIT
   { rank: 13, re: /(\b\d*(?:st|nd)?\s*a\.?c\.?\b|assistant camera|camera assistant|focus puller)/i }, // Camera Assist
+  { rank: 14, re: /\b(bts|behind[- ]the[- ]scenes|videographer|content)\b/i }, // BTS / content capture
   { rank: 14, re: /\bgrip\b/i }, // Grip
-  { rank: 15, re: /\b(runner|production assistant|pa)\b/i }, // Runner / PA
+  { rank: 15, re: /\b(runner|production assistant|prod\.? assist(?:ant)?|pa)\b/i }, // Runner / PA
   { rank: 16, re: /\b(talent|model|cast|actor|actress)\b/i }, // Talent / Model / Cast
 ];
 

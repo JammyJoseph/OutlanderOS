@@ -12,7 +12,7 @@ import type {
 import {
   CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
   emptyCallSheetLocation, resolveUnitCall, sortByTime,
-  sortByRolePriority, sortRoster, sortSchedule,
+  sortRosterByCallThenRole, findTalent, sortSchedule,
 } from "./types";
 import {
   journeyStats, formatJourneySummary,
@@ -243,7 +243,10 @@ export function CallSheetDocument({
   // Individual people are NOT listed here — each person's call time appears
   // exactly once, against them, in the crew / talent lists further down.
   const unitCall = resolveUnitCall(unitCallTime, callTime) || earliestTime(crew);
-  const t0 = talent.find((t) => (t.name || "").trim() || t.callTime);
+  // The person actually labelled as talent — not simply the first row. See
+  // findTalent: a whole unit is often entered into one list, and taking [0]
+  // named whoever was typed first.
+  const t0 = findTalent(talent);
 
   const callTimeRows: { time: string; label: string }[] = [
     { time: unitCall || "TBC", label: "Unit Call" },
@@ -310,15 +313,16 @@ export function CallSheetDocument({
   );
   // In production-hierarchy order — Producer / Director / DOP / … at the top,
   // department by department, rather than the order rows were added.
-  const contactCrew = sortByRolePriority(
+  const contactCrew = sortRosterByCallThenRole(
     crew.filter(
       (c) =>
         (c.role || c.name) &&
         !shownNames.has(norm(c.name)) &&
         !(c.email && shownEmails.has(norm(c.email)))
-    )
+    ),
+    unitCall
   );
-  const talentRows = sortRoster(talent, unitCall).filter((t) => t.role || t.name);
+  const talentRows = sortRosterByCallThenRole(talent, unitCall).filter((t) => t.role || t.name);
 
   const facts: [string, string][] = [];
   if (clientName) facts.push(["Client", clientName]);

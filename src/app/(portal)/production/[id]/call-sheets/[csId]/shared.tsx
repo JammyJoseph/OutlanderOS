@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import type { CrewMember, TalentMember } from "./types";
-import { effectiveCallTime, sortByRolePriority, sortRoster } from "./types";
+import { effectiveCallTime, sortRoster, sortRosterByCallThenRole } from "./types";
 
 export const ACCENT = "#A93B2E";
 export const ACCENT_HOVER = "#A93B2E";
@@ -143,14 +143,19 @@ export function PeopleTable({
   readOnly?: boolean;
   addLabel?: string;
   rolePresets?: string[];
-  // "call" keeps the roster in clock order; "role" orders it by the production
-  // hierarchy (Producer / Director / DOP / …). The unit list uses "role".
+  // Both orders lead on call time, because that is how the sheet is read on the
+  // day. "call" then keeps entry order within a time; "role" breaks the tie by
+  // production hierarchy (Producer / Photographer / DOP / …). The unit list uses
+  // "role", which is exactly the order the printed sheet uses — so what is on
+  // screen is what comes out of the export.
   sortBy?: "call" | "role";
 }) {
   const listId = rolePresets ? "crew-role-presets" : undefined;
 
   const orderPeople = (list: (CrewMember | TalentMember)[]) =>
-    sortBy === "role" ? sortByRolePriority(list) : sortRoster(list, unitCallTime);
+    sortBy === "role"
+      ? sortRosterByCallThenRole(list, unitCallTime)
+      : sortRoster(list, unitCallTime);
 
   function setCallTime(i: number, value: string) {
     setPeople(people.map((m, j) => (j === i ? { ...m, callTime: value } : m)));
