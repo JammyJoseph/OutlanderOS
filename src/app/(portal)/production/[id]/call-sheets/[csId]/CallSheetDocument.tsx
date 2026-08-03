@@ -12,7 +12,7 @@ import type {
 import {
   CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
   emptyCallSheetLocation, resolveUnitCall, sortByTime,
-  sortRosterByCallThenRole, findTalent, sortSchedule,
+  sortRosterByCallThenRole, findTalent, isPrincipalTalent, sortSchedule,
 } from "./types";
 import {
   journeyStats, formatJourneySummary,
@@ -242,9 +242,14 @@ export function CallSheetDocument({
     "";
 
   // ── Call times ──
-  // The shape of the day, top to bottom: unit call, any department calls, wrap.
-  // Individual people are NOT listed here — each person's call time appears
-  // exactly once, against them, in the crew / talent lists further down.
+  // The shape of the day, top to bottom: unit call, any department calls,
+  // talent call, wrap.
+  //
+  // Crew are NOT listed here individually — each person's call time appears
+  // once, against them, in the roster below. Talent is the exception, and a
+  // deliberate one: "Talent Call" is a department call on any real sheet, the
+  // same as a crew or H/MU call. Everyone on set needs to know when the subject
+  // of the shoot is due without hunting the roster for it.
   const unitCall = resolveUnitCall(unitCallTime, callTime) || earliestTime(crew);
   // The person actually labelled as talent — not simply the first row. See
   // findTalent: a whole unit is often entered into one list, and taking [0]
@@ -267,9 +272,38 @@ export function CallSheetDocument({
           .map((c) => ({ time: c.time || "TBC", label: c.department }))
       : [];
 
-  // Department calls sit chronologically between the unit call and the wrap, so
-  // the section reads down the day. Untimed rows sink to the bottom of the block.
-  callTimeRows.push(...sortByTime(departmentRows, (r) => r.time));
+  // Talent call, derived from the roster so it can never disagree with the
+  // person's own row. Skipped when the call-times table already carries an
+  // explicit talent line — a hand-entered row is someone's decision and must
+  // not be doubled up.
+  const talentAlreadyListed = departmentRows.some((r) => /\b(talent|cast)\b/i.test(r.label || ""));
+  const principals = talent.filter(
+    (t) => isPrincipalTalent(t.role) && ((t.name || "").trim() || t.callTime)
+  );
+
+  const talentRowsForCalls: { time: string; label: string }[] = [];
+  if (!talentAlreadyListed && principals.length > 0) {
+    // Group by the time they're actually due. One time is the ordinary case and
+    // reads as a plain "Talent Call"; several means naming who is due when,
+    // because two rows both saying "Talent Call" would be unreadable.
+    const byTime = new Map<string, string[]>();
+    for (const p of principals) {
+      const t = effectiveCallTime(p, unitCall) || "TBC";
+      byTime.set(t, [...(byTime.get(t) ?? []), (p.name || "").trim()].filter(Boolean));
+    }
+    const single = byTime.size === 1;
+    for (const [time, names] of byTime) {
+      talentRowsForCalls.push({
+        time,
+        label: single || names.length === 0 ? "Talent Call" : `Talent Call — ${names.join(", ")}`,
+      });
+    }
+  }
+
+  // Department and talent calls sit chronologically between the unit call and
+  // the wrap, so the section reads down the day. Untimed rows sink to the bottom
+  // of the block.
+  callTimeRows.push(...sortByTime([...departmentRows, ...talentRowsForCalls], (r) => r.time));
 
   callTimeRows.push({ time: wrapTime || "TBC", label: "Wrap" });
 

@@ -130,6 +130,18 @@ export function sortRosterByCallThenRole<T extends { callTime?: string; role?: s
 //
 // Match on the role instead, and prefer a bare "Talent" over "Talent Assist" or
 // "Talent Manager", which also contain the word.
+// Someone who is actually the subject of the shoot, as opposed to the people
+// who come with them. Shared so the header, the call-times block and anything
+// later can't drift on what counts as talent.
+export function isPrincipalTalent(role: string | null | undefined): boolean {
+  const r = (role || "").trim();
+  if (!r) return false;
+  return (
+    /\b(talent|model|cast|actor|actress)\b/i.test(r) &&
+    !/\b(assist(?:ant)?|manager|mgmt|management|agent|rep|handler|double|stand[- ]?in)\b/i.test(r)
+  );
+}
+
 export function findTalent<T extends { role?: string; name?: string; callTime?: string }>(
   people: T[]
 ): T | undefined {
@@ -142,11 +154,7 @@ export function findTalent<T extends { role?: string; name?: string; callTime?: 
 
   // A qualified principal — "Lead Talent", "Talent (Cover)" — still beats an
   // assistant or a manager, so those are excluded rather than merely ranked.
-  const principal = named.find(
-    (p) =>
-      /\b(talent|model|cast|actor|actress)\b/i.test(role(p)) &&
-      !/\b(assist(?:ant)?|manager|mgmt|management|agent|rep|handler|double|stand[- ]?in)\b/i.test(role(p))
-  );
+  const principal = named.find((p) => isPrincipalTalent(role(p)));
   if (principal) return principal;
 
   // Nothing is labelled talent. Returning the first row here is what caused the
