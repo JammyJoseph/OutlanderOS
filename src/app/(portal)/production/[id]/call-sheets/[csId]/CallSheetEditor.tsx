@@ -43,6 +43,8 @@ export interface EditorProps {
   shotStyle: ShotStyle; setShotStyle: (v: ShotStyle) => void;
   crew: CrewMember[]; setCrew: (v: CrewMember[]) => void;
   talent: TalentMember[]; setTalent: (v: TalentMember[]) => void;
+  crewManualOrder: boolean; setCrewManualOrder: (v: boolean) => void;
+  talentManualOrder: boolean; setTalentManualOrder: (v: boolean) => void;
   catering: CateringDetails; setCatering: (v: CateringDetails) => void;
   documents: Attachment[]; setDocuments: (v: Attachment[]) => void;
   notesGeneral: string; setNotesGeneral: (v: string) => void;
@@ -717,12 +719,14 @@ export function CallSheetEditor(p: EditorProps) {
           addLabel="Add Crew"
           rolePresets={CREW_ROLE_PRESETS}
           sortBy="role"
+          manualOrder={p.crewManualOrder}
+          setManualOrder={p.setCrewManualOrder}
         />
       </Section>
 
       {/* 15. Talent */}
       <Section
-        title="Talent / Cast"
+        title="Cast &amp; Crew"
         icon={<Users size={15} className={iconCls} />}
         action={
           <a
@@ -739,7 +743,13 @@ export function CallSheetEditor(p: EditorProps) {
           people={p.talent}
           setPeople={(v) => p.setTalent(v as TalentMember[])}
           unitCallTime={p.unitCallTime}
-          addLabel="Add Talent"
+          addLabel="Add Person"
+          rolePresets={CREW_ROLE_PRESETS}
+          // In practice this list holds the whole unit, not just cast, so it
+          // gets the same hierarchy ordering as the crew list.
+          sortBy="role"
+          manualOrder={p.talentManualOrder}
+          setManualOrder={p.setTalentManualOrder}
         />
       </Section>
 

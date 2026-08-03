@@ -52,6 +52,8 @@ export type SheetState = {
   shotlist: Shot[];
   crew: CrewMember[];
   talent: TalentMember[];
+  crewManualOrder: boolean;
+  talentManualOrder: boolean;
   catering: CateringDetails;
   documents: Attachment[];
   notesGeneral: string;
@@ -89,8 +91,17 @@ export function sheetToState(s: CallSheet): SheetState {
     shotStyle: isObj(s.shotStyle) ? { ...emptyShotStyle(), ...s.shotStyle } : emptyShotStyle(),
     weatherData: s.weatherData ?? null,
     shotlist: Array.isArray(s.shotlist) ? s.shotlist : [],
-    crew: sortRoster(Array.isArray(s.crew) ? s.crew : [], unitCall),
-    talent: sortRoster(Array.isArray(s.talent) ? s.talent : [], unitCall),
+    // Canonicalising through sortRoster is what keeps two editors from fighting
+    // over row order — but it must not run on a list someone has arranged by
+    // hand, or the next autosave silently throws the arrangement away.
+    crew: s.crewManualOrder
+      ? (Array.isArray(s.crew) ? s.crew : [])
+      : sortRoster(Array.isArray(s.crew) ? s.crew : [], unitCall),
+    talent: s.talentManualOrder
+      ? (Array.isArray(s.talent) ? s.talent : [])
+      : sortRoster(Array.isArray(s.talent) ? s.talent : [], unitCall),
+    crewManualOrder: !!s.crewManualOrder,
+    talentManualOrder: !!s.talentManualOrder,
     catering: migrateCatering(s.cateringDetails, s.notes),
     documents: Array.isArray(s.documents) ? s.documents : [],
     notesGeneral: s.productionNotes || "",
@@ -149,8 +160,14 @@ const FRAGMENT: Record<FieldKey, (s: SheetState) => Record<string, unknown>> = {
   shotStyle: (s) => ({ shotStyle: s.shotStyle }),
   weatherData: (s) => ({ weatherData: s.weatherData }),
   shotlist: (s) => ({ shotlist: s.shotlist }),
-  crew: (s) => ({ crew: sortRoster(s.crew, s.unitCallTime || "") }),
-  talent: (s) => ({ talent: sortRoster(s.talent, s.unitCallTime || "") }),
+  crew: (s) => ({
+    crew: s.crewManualOrder ? s.crew : sortRoster(s.crew, s.unitCallTime || ""),
+  }),
+  talent: (s) => ({
+    talent: s.talentManualOrder ? s.talent : sortRoster(s.talent, s.unitCallTime || ""),
+  }),
+  crewManualOrder: (s) => ({ crewManualOrder: s.crewManualOrder }),
+  talentManualOrder: (s) => ({ talentManualOrder: s.talentManualOrder }),
   catering: (s) => ({ cateringDetails: s.catering }),
   documents: (s) => ({ documents: s.documents }),
   notesGeneral: (s) => ({ productionNotes: s.notesGeneral }),

@@ -73,6 +73,10 @@ function buildUpdateData(body: Record<string, unknown>): Record<string, unknown>
     if (body.shotStyle !== undefined) updateData.shotStyle = body.shotStyle;
     if (body.crew !== undefined) updateData.crew = body.crew;
     if (body.talent !== undefined) updateData.talent = body.talent;
+    // Without these the drag persists but the flag doesn't, so the next load
+    // re-sorts the list and the arrangement silently disappears.
+    if (body.crewManualOrder !== undefined) updateData.crewManualOrder = !!body.crewManualOrder;
+    if (body.talentManualOrder !== undefined) updateData.talentManualOrder = !!body.talentManualOrder;
     if (body.cateringDetails !== undefined) updateData.cateringDetails = body.cateringDetails;
     if (body.documents !== undefined) updateData.documents = body.documents;
     if (body.weatherData !== undefined) updateData.weatherData = body.weatherData;

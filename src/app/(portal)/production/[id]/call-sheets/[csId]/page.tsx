@@ -23,7 +23,7 @@ import { CallSheetDocument, type CallSheetViewData } from "./CallSheetDocument";
 import { generateSMSSummary } from "./smsSummary";
 import { PresenceBar } from "./PresenceBar";
 import {
-  fullPayload, sheetToState, useCollab,
+  FIELD_KEYS, fullPayload, sheetToState, useCollab,
   type FieldKey, type SheetState,
 } from "./collab";
 import { EmailSharePanel } from "./EmailSharePanel";
@@ -76,6 +76,8 @@ export default function CallSheetPage() {
   const [shotStyle, setShotStyle] = useState<ShotStyle>(emptyShotStyle());
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const [talent, setTalent] = useState<TalentMember[]>([]);
+  const [crewManualOrder, setCrewManualOrder] = useState(false);
+  const [talentManualOrder, setTalentManualOrder] = useState(false);
   const [catering, setCatering] = useState<CateringDetails>(emptyCatering());
   const [documents, setDocuments] = useState<Attachment[]>([]);
   const [notesGeneral, setNotesGeneral] = useState("");
@@ -98,6 +100,7 @@ export default function CallSheetPage() {
   const state: SheetState = {
     shootTitle, shootDate, unitCallTime, wrapTime, schedule, location, locationLat,
     locationLng, locations, shotStyle, weatherData, shotlist, crew, talent,
+    crewManualOrder, talentManualOrder,
     catering, documents, notesGeneral, notesSafety, notesParking, header,
     clientTeam, agencyTeam, productionCompany, callTimes, productionMobiles,
     movementOrder, equipment,
@@ -124,6 +127,8 @@ export default function CallSheetPage() {
       case "shotlist": setShotlist(value as Shot[]); break;
       case "crew": setCrew(value as CrewMember[]); break;
       case "talent": setTalent(value as TalentMember[]); break;
+      case "crewManualOrder": setCrewManualOrder(value as boolean); break;
+      case "talentManualOrder": setTalentManualOrder(value as boolean); break;
       case "catering": setCatering(value as CateringDetails); break;
       case "documents": setDocuments(value as Attachment[]); break;
       case "notesGeneral": setNotesGeneral(value as string); break;
@@ -174,33 +179,11 @@ export default function CallSheetPage() {
         // sheetToState in ./collab), so local and remote state are always
         // compared after exactly the same massaging.
         const next = sheetToState(s);
-        applyRemote("shootTitle", next.shootTitle);
-        applyRemote("shootDate", next.shootDate);
-        applyRemote("unitCallTime", next.unitCallTime);
-        applyRemote("wrapTime", next.wrapTime);
-        applyRemote("schedule", next.schedule);
-        applyRemote("location", next.location);
-        applyRemote("locationLat", next.locationLat);
-        applyRemote("locationLng", next.locationLng);
-        applyRemote("locations", next.locations);
-        applyRemote("shotStyle", next.shotStyle);
-        applyRemote("weatherData", next.weatherData);
-        applyRemote("shotlist", next.shotlist);
-        applyRemote("crew", next.crew);
-        applyRemote("talent", next.talent);
-        applyRemote("catering", next.catering);
-        applyRemote("documents", next.documents);
-        applyRemote("notesGeneral", next.notesGeneral);
-        applyRemote("notesSafety", next.notesSafety);
-        applyRemote("notesParking", next.notesParking);
-        applyRemote("header", next.header);
-        applyRemote("clientTeam", next.clientTeam);
-        applyRemote("agencyTeam", next.agencyTeam);
-        applyRemote("productionCompany", next.productionCompany);
-        applyRemote("callTimes", next.callTimes);
-        applyRemote("productionMobiles", next.productionMobiles);
-        applyRemote("movementOrder", next.movementOrder);
-        applyRemote("equipment", next.equipment);
+        // Driven off FIELD_KEYS rather than a hand-written list of applyRemote
+        // calls. The list version silently failed to hydrate any field added
+        // after it was written — the field saved fine and then came back as its
+        // default on the next load, which looks like the save not working.
+        for (const k of FIELD_KEYS) applyRemote(k, next[k] as SheetState[FieldKey]);
         // Nothing is dirty at rest — this row is the baseline auto-save diffs against.
         collab.seed(s);
       })
@@ -324,7 +307,8 @@ export default function CallSheetPage() {
 
   const viewData: CallSheetViewData = {
     shootTitle, shootDate, callTime: unitCallTime, unitCallTime, wrapTime, location, locationLat, locationLng,
-    locations, shotStyle, deliverables, weatherData, schedule, shotlist, crew, talent, catering, documents,
+    locations, shotStyle, deliverables, weatherData, schedule, shotlist, crew, talent,
+    crewManualOrder, talentManualOrder, catering, documents,
     notesGeneral, notesSafety, notesParking,
     header, clientTeam, agencyTeam, productionCompany, callTimes, productionMobiles,
     movementOrder, equipment,
@@ -449,6 +433,8 @@ export default function CallSheetPage() {
                 shotStyle={shotStyle} setShotStyle={setShotStyle}
                 crew={crew} setCrew={setCrew}
                 talent={talent} setTalent={setTalent}
+                crewManualOrder={crewManualOrder} setCrewManualOrder={setCrewManualOrder}
+                talentManualOrder={talentManualOrder} setTalentManualOrder={setTalentManualOrder}
                 catering={catering} setCatering={setCatering}
                 documents={documents} setDocuments={setDocuments}
                 notesGeneral={notesGeneral} setNotesGeneral={setNotesGeneral}

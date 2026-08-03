@@ -729,6 +729,12 @@ model CallSheet {
   shotStyle       Json            @default("{}")
   crew            Json
   talent          Json            @default("[]")
+  // Rosters normally auto-sort by call time then production hierarchy. Dragging
+  // a row sets these, and the stored array order is used verbatim instead —
+  // otherwise the next re-sort would silently undo the drag. Per-list, because
+  // wanting a hand-built cast order says nothing about the crew list.
+  crewManualOrder   Boolean       @default(false)
+  talentManualOrder Boolean       @default(false)
   cateringDetails Json            @default("{}")
   documents       Json            @default("[]")
   weatherData     Json?

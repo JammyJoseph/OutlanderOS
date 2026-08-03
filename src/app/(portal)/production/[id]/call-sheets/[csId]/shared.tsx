@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ArrowDownUp, ChevronDown, GripVertical, Plus, Trash2 } from "lucide-react";
 import type { CrewMember, TalentMember } from "./types";
 import { effectiveCallTime, sortRoster, sortRosterByCallThenRole } from "./types";
 
@@ -136,6 +136,8 @@ export function PeopleTable({
   addLabel = "Add Person",
   rolePresets,
   sortBy = "call",
+  manualOrder = false,
+  setManualOrder,
 }: {
   people: (CrewMember | TalentMember)[];
   setPeople: (v: (CrewMember | TalentMember)[]) => void;
@@ -143,6 +145,11 @@ export function PeopleTable({
   readOnly?: boolean;
   addLabel?: string;
   rolePresets?: string[];
+  // Hand-built order. The stored array is used verbatim and nothing re-sorts
+  // it — a drag that could be undone by the next blur would be worse than no
+  // drag at all.
+  manualOrder?: boolean;
+  setManualOrder?: (v: boolean) => void;
   // Both orders lead on call time, because that is how the sheet is read on the
   // day. "call" then keeps entry order within a time; "role" breaks the tie by
   // production hierarchy (Producer / Photographer / DOP / …). The unit list uses
@@ -151,11 +158,32 @@ export function PeopleTable({
   sortBy?: "call" | "role";
 }) {
   const listId = rolePresets ? "crew-role-presets" : undefined;
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  const orderPeople = (list: (CrewMember | TalentMember)[]) =>
-    sortBy === "role"
+  const orderPeople = (list: (CrewMember | TalentMember)[]) => {
+    if (manualOrder) return list;
+    return sortBy === "role"
       ? sortRosterByCallThenRole(list, unitCallTime)
       : sortRoster(list, unitCallTime);
+  };
+
+  // Dragging is what switches a list to manual. Asking someone to flip a mode
+  // first, then drag, is a step nobody would guess at.
+  function handleDrop(target: number) {
+    if (dragIndex === null || dragIndex === target) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const next = [...people];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(target, 0, moved);
+    setPeople(next);
+    setManualOrder?.(true);
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }
 
   function setCallTime(i: number, value: string) {
     setPeople(people.map((m, j) => (j === i ? { ...m, callTime: value } : m)));
@@ -203,7 +231,36 @@ export function PeopleTable({
         </datalist>
       )}
       {people.map((p, i) => (
-        <div key={i} className="grid grid-cols-[1fr_1fr_110px_1fr_1fr_32px] gap-2 items-center">
+        <div
+          key={i}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOverIndex(i);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            handleDrop(i);
+          }}
+          className={`grid grid-cols-[18px_1fr_1fr_110px_1fr_1fr_32px] gap-2 items-center rounded-md transition-colors ${
+            dragOverIndex === i && dragIndex !== null && dragIndex !== i
+              ? "bg-amber-50 dark:bg-amber-900/20"
+              : dragIndex === i
+                ? "opacity-40"
+                : ""
+          }`}
+        >
+          <span
+            draggable
+            onDragStart={() => setDragIndex(i)}
+            onDragEnd={() => {
+              setDragIndex(null);
+              setDragOverIndex(null);
+            }}
+            title="Drag to reorder"
+            className="cursor-grab text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-gray-600 dark:hover:text-gray-400"
+          >
+            <GripVertical size={14} />
+          </span>
           <input
             type="text"
             list={listId}
@@ -211,7 +268,9 @@ export function PeopleTable({
             onChange={(e) => setPeople(people.map((m, j) => (j === i ? { ...m, role: e.target.value } : m)))}
             // Re-order into hierarchy once the row is left — sorting on change
             // would move the input out from under you mid-type.
-            onBlur={sortBy === "role" ? () => setPeople(orderPeople(people)) : undefined}
+            onBlur={
+              sortBy === "role" && !manualOrder ? () => setPeople(orderPeople(people)) : undefined
+            }
             placeholder="Role"
             className={smallInputCls}
           />
@@ -228,7 +287,7 @@ export function PeopleTable({
             onChange={(e) => setCallTime(i, e.target.value)}
             // The roster re-sorts once the row is left — sorting on change
             // would move the input out from under you.
-            onBlur={() => setPeople(orderPeople(people))}
+            onBlur={manualOrder ? undefined : () => setPeople(orderPeople(people))}
             title="Call time"
             className={smallInputCls}
           />
@@ -249,10 +308,34 @@ export function PeopleTable({
           <DeleteButton onClick={() => setPeople(people.filter((_, j) => j !== i))} />
         </div>
       ))}
-      <AddButton
-        label={addLabel}
-        onClick={() => setPeople([...people, { role: "", name: "", callTime: "", email: "", phone: "" }])}
-      />
+      <div className="flex items-center justify-between gap-3">
+        <AddButton
+          label={addLabel}
+          onClick={() => setPeople([...people, { role: "", name: "", callTime: "", email: "", phone: "" }])}
+        />
+        {setManualOrder &&
+          (manualOrder ? (
+            <button
+              type="button"
+              onClick={() => {
+                setManualOrder(false);
+                setPeople(
+                  sortBy === "role"
+                    ? sortRosterByCallThenRole(people, unitCallTime)
+                    : sortRoster(people, unitCallTime)
+                );
+              }}
+              className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              title="Discard the hand-built order and sort by call time, then role"
+            >
+              <ArrowDownUp size={12} /> Custom order — re-sort automatically
+            </button>
+          ) : (
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              Sorted by call time, then role · drag to reorder
+            </span>
+          ))}
+      </div>
     </div>
   );
 }

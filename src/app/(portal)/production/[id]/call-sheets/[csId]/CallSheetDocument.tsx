@@ -66,6 +66,9 @@ export interface CallSheetViewData {
   shotlist: Shot[];
   crew: CrewMember[];
   talent: TalentMember[];
+  // Roster arranged by hand. When set the stored order is printed verbatim.
+  crewManualOrder?: boolean;
+  talentManualOrder?: boolean;
   catering: CateringDetails;
   documents: Attachment[];
   notesGeneral: string;
@@ -186,7 +189,7 @@ export function CallSheetDocument({
   const {
     shootTitle, clientName, shootDate, callTime, unitCallTime, wrapTime, location, locationLat,
     locationLng, locations, shotStyle, deliverables, figmaUrl, weatherData, schedule,
-    shotlist, crew, talent, catering, documents,
+    shotlist, crew, talent, crewManualOrder, talentManualOrder, catering, documents,
     notesGeneral, notesSafety, notesParking, header, clientTeam, agencyTeam,
     productionCompany, callTimes, productionMobiles, movementOrder, equipment,
   } = data;
@@ -313,16 +316,22 @@ export function CallSheetDocument({
   );
   // In production-hierarchy order — Producer / Director / DOP / … at the top,
   // department by department, rather than the order rows were added.
-  const contactCrew = sortRosterByCallThenRole(
-    crew.filter(
-      (c) =>
-        (c.role || c.name) &&
-        !shownNames.has(norm(c.name)) &&
-        !(c.email && shownEmails.has(norm(c.email)))
-    ),
-    unitCall
+  // A hand-built order is printed exactly as arranged — re-sorting it here
+  // would mean the sheet on screen and the sheet on paper disagree.
+  const crewFiltered = crew.filter(
+    (c) =>
+      (c.role || c.name) &&
+      !shownNames.has(norm(c.name)) &&
+      !(c.email && shownEmails.has(norm(c.email)))
   );
-  const talentRows = sortRosterByCallThenRole(talent, unitCall).filter((t) => t.role || t.name);
+  const contactCrew = crewManualOrder
+    ? crewFiltered
+    : sortRosterByCallThenRole(crewFiltered, unitCall);
+
+  const talentFiltered = talent.filter((t) => t.role || t.name);
+  const talentRows = talentManualOrder
+    ? talentFiltered
+    : sortRosterByCallThenRole(talentFiltered, unitCall);
 
   const facts: [string, string][] = [];
   if (clientName) facts.push(["Client", clientName]);
@@ -641,7 +650,7 @@ export function CallSheetDocument({
 
         {/* ── Talent (dedicated list, if present) ── */}
         {show("talent") && talentRows.length > 0 && (
-          <Section title="Talent">
+          <Section title="Cast &amp; Crew">
             <GridTable
               columns={[
                 { label: "Name", width: "30%" },

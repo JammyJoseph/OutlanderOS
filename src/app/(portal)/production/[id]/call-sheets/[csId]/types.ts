@@ -528,6 +528,10 @@ export interface CallSheet {
   shotStyle: ShotStyle;
   crew: CrewMember[];
   talent: TalentMember[];
+  // Roster arranged by hand — see sortRosterByCallThenRole. When set, the
+  // stored array order is authoritative and nothing re-sorts it.
+  crewManualOrder: boolean;
+  talentManualOrder: boolean;
   cateringDetails: CateringDetails;
   documents: Attachment[];
   weatherData: WeatherData | null;
