@@ -89,19 +89,23 @@ export function creditInviteEmail(opts: {
   link: string
 }): { subject: string; text: string; html: string } {
   const first = opts.name.trim().split(/\s+/)[0] || 'there'
-  const roleLine = opts.role ? ` as ${/^[aeiou]/i.test(opts.role) ? 'an' : 'a'} ${opts.role}` : ''
 
   const subject = `${first}, Outlander invites you to The Outlander Directory`
 
+  // Deliberately role-free. Naming a discipline in the outreach guesses at how
+  // someone defines their own work, and the guess comes from a spreadsheet.
+  // The page is where they tell us how the credit should read.
   const text = [
     `Hi ${first},`,
     '',
-    `We're crediting you${roleLine} in something we're building for the next issue of Outlander Magazine. We'd like to get your name exactly right, and we need your sign-off to print it.`,
+    `We're reaching out because we would love to feature you in the next issue of Outlander Magazine, in something we're building called The Outlander Directory: a printed, curated index of the people shaping this culture.`,
+    '',
+    `Before it goes to print, we'd like to get a few details exactly right, and we need your sign-off.`,
     '',
     'It takes about two minutes:',
     opts.link,
     '',
-    'The link is personal to you, so please don’t forward it. What we’re building is under wraps until the issue is announced; the page explains everything once you’re in.',
+    'The link is personal to you, so please don’t forward it. The page explains everything once you’re in.',
     '',
     'If anything looks wrong, just reply to this email.',
     '',
@@ -112,11 +116,12 @@ export function creditInviteEmail(opts: {
   <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#141414;font-size:15px;line-height:1.6">
     <p style="margin:28px 0 0;letter-spacing:.14em;font-size:11px;font-weight:700;color:#9a9a9a">OUTLANDER MAGAZINE</p>
     <p style="margin:22px 0 0">Hi ${escapeHtml(first)},</p>
-    <p style="margin:14px 0 0">We&rsquo;re crediting you${escapeHtml(roleLine)} in something we&rsquo;re building for the next issue of Outlander Magazine. We&rsquo;d like to get your name exactly right, and we need your sign-off to print it.</p>
+    <p style="margin:14px 0 0">We&rsquo;re reaching out because we would love to feature you in the next issue of Outlander Magazine, in something we&rsquo;re building called The Outlander Directory: a printed, curated index of the people shaping this culture.</p>
+    <p style="margin:14px 0 0">Before it goes to print, we&rsquo;d like to get a few details exactly right, and we need your sign-off.</p>
     <p style="margin:22px 0 0">
       <a href="${opts.link}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:500">Confirm your credit</a>
     </p>
-    <p style="margin:20px 0 0;font-size:13px;color:#6b6b6b">Takes about two minutes. The link is personal to you, so please don&rsquo;t forward it. What we&rsquo;re building is under wraps until the issue is announced; the page explains everything once you&rsquo;re in.</p>
+    <p style="margin:20px 0 0;font-size:13px;color:#6b6b6b">Takes about two minutes. The link is personal to you, so please don&rsquo;t forward it. The page explains everything once you&rsquo;re in.</p>
     <p style="margin:14px 0 0;font-size:13px;color:#6b6b6b">If anything looks wrong, just reply to this email.</p>
     <p style="margin:26px 0 40px;font-size:13px;color:#9a9a9a">Outlander Magazine</p>
   </div>`
