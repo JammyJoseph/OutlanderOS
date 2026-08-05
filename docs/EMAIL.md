@@ -1,4 +1,4 @@
-# Email — invoices@outlandermag.com
+# Email — submit@outlandermag.com
 
 The app sends transactional email over SMTP. Before this there was no mail
 library at all: every "email" was a `mailto:` link and every Send button only
@@ -11,21 +11,27 @@ refuses with a clear message rather than half-running.
 
 ```bash
 SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_USER=invoices@outlandermag.com
+SMTP_PORT=587
+SMTP_USER=submit@outlandermag.com
 SMTP_PASS=<16-character app password>
-MAIL_FROM="Outlander Magazine <invoices@outlandermag.com>"
-MAIL_REPLY_TO=invoices@outlandermag.com   # optional; defaults to SMTP_USER
+MAIL_FROM="Outlander Magazine <submit@outlandermag.com>"
+MAIL_REPLY_TO=silver@outlandermag.com   # optional; defaults to SMTP_USER
 ```
+
+**Configured live on prod 2026-08-05** with an app password for the
+"OutlanderOS" app on `submit@outlandermag.com`.
 
 ### Getting the app password (Google Workspace)
 
-`invoices@outlandermag.com` needs 2-step verification enabled, then:
+The sending account needs 2-step verification enabled, then:
 Google Account → Security → 2-Step Verification → App passwords → generate one
 for "Mail". It's shown once. It is **not** the mailbox password, and the mailbox
 password will not work — Google blocks basic auth.
 
-Port 465 uses implicit TLS; 587 upgrades via STARTTLS. Both work.
+**Use 587.** The VPS host blocks outbound 465, 25 and 2525 — a send on 465
+doesn't error, it hangs until the connection times out, which presents as the
+API request never returning. 587 is open and the mailer STARTTLSes on it
+automatically (`secure: port === 465`). Diagnosed live 2026-08-05.
 
 ## Why SMTP and not Resend/Postmark
 
@@ -47,6 +53,7 @@ mailing list.
 |---|---|---|
 | Wrap a shoot (`POST /api/productions/[id]/wrap`) | Every crew member with an email | Invoice request, with their own link |
 | Crew submits an invoice | That crew member | Invoice received confirmation |
+| Credit invite (Directory → Print Directory → Name credits) | The contributor — **test-redirected to silver@ until `CREDIT_SEND_LIVE=true`** | Credit confirmation, with their own link |
 
 ## Failure behaviour
 
