@@ -1104,9 +1104,12 @@ model CreditRequest {
   confirmedEmail     String?
   // PRIVATE. Delivery only. { line1, line2, city, region, postcode, country }
   address            Json?
-  // Which version of the agreement text they accepted, and when. If the copy
-  // ever changes, this says exactly what each person signed.
+  // Which version of the agreement they accepted, when, and the FULL TEXT they
+  // saw, snapshotted at acceptance. The version points at the copy in source;
+  // the snapshot makes each row self-contained proof of what was signed even if
+  // the source copy changes later.
   agreementVersion   String?
+  agreementText      String?
   agreementAcceptedAt DateTime?
   printConsent       Boolean?
   declineNote        String?

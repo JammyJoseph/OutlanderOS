@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Loader2, RefreshCw, Send, Check, X, AlertTriangle, Lock,
-  ChevronDown, ChevronUp, Pencil, Trash2, Copy, FlaskConical,
+  ChevronDown, ChevronUp, Pencil, Trash2, Copy, FlaskConical, UserPlus, BadgeCheck,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,6 +74,8 @@ export default function CreditConsentPanel() {
   const [filter, setFilter] = useState<Filter>("all");
   const [open, setOpen] = useState<string | null>(null); // expanded row id
   const [editingEmail, setEditingEmail] = useState<{ id: string; value: string } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [addForm, setAddForm] = useState({ name: "", email: "", role: "", instagram: "", tier: "" });
 
   const load = useCallback(async () => {
     try {
@@ -111,6 +113,16 @@ export default function CreditConsentPanel() {
     }
   }
 
+  // Confirmed people lead the list wherever they'd appear: they're the result
+  // this tool exists to produce, and their signed credentials are what goes to
+  // print. Within the group, most recent signature first.
+  const confirmedFirst = useCallback((list: CreditRow[]) => {
+    const confirmed = list
+      .filter((r) => r.status === "CONFIRMED")
+      .sort((a, b) => (b.respondedAt ?? "").localeCompare(a.respondedAt ?? ""));
+    return [...confirmed, ...list.filter((r) => r.status !== "CONFIRMED")];
+  }, []);
+
   const rows = useMemo(() => {
     if (!data) return [];
     switch (filter) {
@@ -120,9 +132,9 @@ export default function CreditConsentPanel() {
       case "declined": return data.rows.filter((r) => r.status === "DECLINED");
       case "problems":
         return data.rows.filter((r) => r.status === "FAILED" || !emailOk(r.email));
-      default: return data.rows;
+      default: return confirmedFirst(data.rows);
     }
-  }, [data, filter]);
+  }, [data, filter, confirmedFirst]);
 
   const sendableUnsent = useMemo(
     () => (data?.rows ?? []).filter((r) => r.status === "DRAFT" && emailOk(r.email)).map((r) => r.id),
@@ -192,6 +204,14 @@ export default function CreditConsentPanel() {
           {busy === "import" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           {data?.rows.length ? "Re-import sheet" : "Import from sheet"}
         </button>
+        <button
+          onClick={() => setAdding((v) => !v)}
+          disabled={busy !== null}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+        >
+          <UserPlus size={14} />
+          Add person
+        </button>
         {sendableUnsent.length > 0 && (
           <button
             onClick={() => act("sendAll", { action: "send", ids: sendableUnsent }, (d) => {
@@ -208,6 +228,42 @@ export default function CreditConsentPanel() {
           </button>
         )}
       </div>
+
+      {adding && (
+        <form
+          className="grid gap-2 rounded-2xl border border-border bg-card p-4 sm:grid-cols-[1.2fr_1.4fr_1fr_1fr_90px_auto]"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void act("add", { action: "add", ...addForm }, () => {
+              setNotice(`${addForm.name} added to the list.`);
+              setAdding(false);
+              setAddForm({ name: "", email: "", role: "", instagram: "", tier: "" });
+            });
+          }}
+        >
+          <input required autoFocus placeholder="Name" value={addForm.name}
+            onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
+          <input type="email" placeholder="Email" value={addForm.email}
+            onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
+          <input placeholder="Skill" value={addForm.role}
+            onChange={(e) => setAddForm({ ...addForm, role: e.target.value })}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
+          <input placeholder="Instagram" value={addForm.instagram}
+            onChange={(e) => setAddForm({ ...addForm, instagram: e.target.value })}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
+          <select value={addForm.tier}
+            onChange={(e) => setAddForm({ ...addForm, tier: e.target.value })}
+            className="rounded-lg border border-border bg-background px-2 py-2 text-sm">
+            <option value="">Tier</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          </select>
+          <button type="submit" disabled={busy !== null}
+            className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50">
+            {busy === "add" ? <Loader2 size={13} className="animate-spin" /> : "Add"}
+          </button>
+        </form>
+      )}
 
       {notice && (
         <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/25 dark:text-emerald-200">
@@ -237,17 +293,36 @@ export default function CreditConsentPanel() {
           <div className="grid grid-cols-[minmax(140px,1.4fr)_minmax(100px,1fr)_minmax(160px,1.6fr)_90px_110px_150px] items-center gap-2 border-b border-border bg-muted px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             <span>Name</span><span>Skill</span><span>Email</span><span>Tier</span><span>Status</span><span className="text-right">Actions</span>
           </div>
-          {rows.map((r) => {
+          {rows.map((r, i) => {
             const meta = STATUS_META[r.status] ?? STATUS_META.DRAFT;
             const bad = !emailOk(r.email);
             const expanded = open === r.id;
+            const isConfirmed = r.status === "CONFIRMED";
+            // The divider between the signed group and everyone else.
+            const firstUnconfirmed =
+              filter === "all" && !isConfirmed && (i === 0 || rows[i - 1].status === "CONFIRMED");
+            const showConfirmedHeader = filter === "all" && isConfirmed && i === 0;
             return (
               <div key={r.id} className="border-b border-border last:border-0">
+                {showConfirmedHeader && (
+                  <div className="flex items-center gap-1.5 border-b border-border bg-emerald-50/60 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
+                    <BadgeCheck size={12} /> Confirmed for print — credentials as signed
+                  </div>
+                )}
+                {firstUnconfirmed && i > 0 && (
+                  <div className="border-b border-border bg-muted px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Everyone else
+                  </div>
+                )}
                 <div className="grid grid-cols-[minmax(140px,1.4fr)_minmax(100px,1fr)_minmax(160px,1.6fr)_90px_110px_150px] items-center gap-2 px-4 py-2.5 text-sm">
                   <span className="truncate font-medium text-foreground">
-                    {r.name}
-                    {r.instagram && (
-                      <span className="ml-1.5 text-xs text-muted-foreground">@{r.instagram}</span>
+                    {/* A confirmed row shows what was SIGNED, not what the sheet
+                        guessed — the signed version is what goes to print. */}
+                    {isConfirmed ? (r.confirmedName ?? r.name) : r.name}
+                    {(isConfirmed ? r.confirmedInstagram : r.instagram) && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">
+                        @{isConfirmed ? r.confirmedInstagram : r.instagram}
+                      </span>
                     )}
                   </span>
                   <span className="truncate text-muted-foreground">{r.role ?? "—"}</span>

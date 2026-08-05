@@ -15,6 +15,7 @@ import {
 //   GET               → every request + summary + whether sending is live
 //   POST {action:"import"}          → pull the Google Sheet, upsert DRAFT rows
 //   POST {action:"send", ids}       → send (or resend) invites — batched
+//   POST {action:"add", name, email, ...} → one person, typed in by hand
 //   POST {action:"update", id, ...} → fix a row's email/name before sending
 //   POST {action:"delete", id}      → remove a row that shouldn't exist
 //
@@ -205,6 +206,38 @@ export const POST = withAuth(async (request: NextRequest) => {
         }
       }
       return NextResponse.json({ ok: true, sent, failures, live: isSendingLive() })
+    }
+
+    // ── Add one person by hand ──
+    // The sheet is the bulk source, but people join late, and re-editing a
+    // Google Sheet to add one name is the long way round.
+    if (action === 'add') {
+      const name = String(body.name ?? '').trim()
+      if (!name) return NextResponse.json({ error: 'A name is required.' }, { status: 400 })
+      const email = String(body.email ?? '').trim().toLowerCase() || null
+      if (email && !isValidEmail(email)) {
+        return NextResponse.json({ error: 'That email doesn’t look right.' }, { status: 400 })
+      }
+      const duplicate = email
+        ? await prisma.creditRequest.findFirst({ where: { email } })
+        : await prisma.creditRequest.findFirst({ where: { name: { equals: name, mode: 'insensitive' } } })
+      if (duplicate) {
+        return NextResponse.json(
+          { error: `${duplicate.name} is already on the list (${duplicate.status.toLowerCase()}).` },
+          { status: 409 }
+        )
+      }
+      const row = await prisma.creditRequest.create({
+        data: {
+          token: newCreditToken(),
+          name,
+          email,
+          role: String(body.role ?? '').trim() || null,
+          instagram: String(body.instagram ?? '').trim().replace(/^@+/, '') || null,
+          tier: /^[123]$/.test(String(body.tier ?? '')) ? Number(body.tier) : null,
+        },
+      })
+      return NextResponse.json({ ok: true, id: row.id })
     }
 
     // ── Fix a row before sending ──

@@ -4,7 +4,9 @@ import {
   AGREEMENT_SUMMARY,
   AGREEMENT_TERMS,
   AGREEMENT_VERSION,
+  agreementFullText,
   isValidEmail,
+  sendCreditOutcome,
 } from '@/lib/credit-consent'
 
 // Public — the token is the credential, exactly like /api/invoice/[token].
@@ -100,6 +102,8 @@ export async function POST(
         data: {
           agreementAcceptedAt: req.agreementAcceptedAt ?? new Date(),
           agreementVersion: req.agreementVersion ?? AGREEMENT_VERSION,
+          // The exact words they saw, in writing, on the row itself.
+          agreementText: req.agreementText ?? agreementFullText(),
         },
       })
       return NextResponse.json({ ok: true })
@@ -115,6 +119,13 @@ export async function POST(
           declineNote: String(body.note ?? '').slice(0, 2000) || null,
         },
       })
+      // Best effort: the decline is recorded either way. Failing their
+      // response because a receipt didn't send would be worse than no receipt.
+      if (isValidEmail(req.email)) {
+        void sendCreditOutcome({ to: req.email!, name: req.name, confirmed: false }).catch((e) =>
+          console.error('credit decline receipt failed', e)
+        )
+      }
       return NextResponse.json({ ok: true, declined: true })
     }
 
@@ -122,6 +133,15 @@ export async function POST(
       if (!req.agreementAcceptedAt) {
         return NextResponse.json(
           { error: 'Please accept the agreement first.' },
+          { status: 400 }
+        )
+      }
+      // The final tick is its own consent, distinct from opening the agreement.
+      // The page can't submit without it, but the page is not the boundary —
+      // this endpoint is public and the record has to prove the tick was made.
+      if (body.agree !== true) {
+        return NextResponse.json(
+          { error: 'Please tick the box confirming you agree to the terms.' },
           { status: 400 }
         )
       }
@@ -160,6 +180,15 @@ export async function POST(
           address: Object.keys(addr).length > 0 ? addr : undefined,
         },
       })
+      const receiptTo = confirmedEmail || req.email
+      if (isValidEmail(receiptTo)) {
+        void sendCreditOutcome({
+          to: receiptTo!,
+          name: confirmedName,
+          confirmed: true,
+          creditAs: confirmedName,
+        }).catch((e) => console.error('credit confirm receipt failed', e))
+      }
       return NextResponse.json({ ok: true, confirmed: true })
     }
 

@@ -48,6 +48,7 @@ export default function CreditConfirmPage({
   const [instagram, setInstagram] = useState("");
   const [email, setEmail] = useState("");
   const [addr, setAddr] = useState({ line1: "", line2: "", city: "", region: "", postcode: "", country: "" });
+  const [agree, setAgree] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [declineNote, setDeclineNote] = useState("");
 
@@ -106,7 +107,7 @@ export default function CreditConfirmPage({
     setBusy(true);
     setError(null);
     try {
-      await post({ action: "submit", name, instagram, email, address: addr });
+      await post({ action: "submit", name, instagram, email, address: addr, agree });
       setStage("done");
     } catch (err) {
       setError(String((err as Error).message));
@@ -141,7 +142,7 @@ export default function CreditConfirmPage({
   if (error && !data) {
     return (
       <Shell>
-        <h1 className="font-serif text-2xl text-gray-900">This link isn’t valid</h1>
+        <h1 className="font-serif text-2xl text-black">This link isn’t valid</h1>
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
           It may have expired or been mistyped. Reply to the email we sent you and we’ll sort it
           out.
@@ -159,17 +160,17 @@ export default function CreditConfirmPage({
       <Shell>
         <div className="flex items-center gap-2.5 text-emerald-700">
           <Check size={20} />
-          <h1 className="font-serif text-2xl text-gray-900">You’re in the Directory</h1>
+          <h1 className="font-serif text-2xl text-black">You’re in the Directory</h1>
         </div>
         <p className="mt-4 text-sm leading-relaxed text-gray-600">
           Thank you{first ? `, ${first}` : ""}. Your credit is confirmed
           {r.confirmedName ? (
             <>
               {" "}
-              as <strong className="text-gray-900">{r.confirmedName}</strong>
+              as <strong className="text-black">{r.confirmedName}</strong>
             </>
           ) : null}
-          . We’ll be in touch before the issue is announced — until then, this stays between us.
+          . We’ll be in touch before the issue is announced. Until then, this stays between us. A confirmation email is on its way to you.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
           Need to change anything? Email{" "}
@@ -186,9 +187,9 @@ export default function CreditConfirmPage({
   if (stage === "declined") {
     return (
       <Shell>
-        <h1 className="font-serif text-2xl text-gray-900">Understood</h1>
+        <h1 className="font-serif text-2xl text-black">Understood</h1>
         <p className="mt-4 text-sm leading-relaxed text-gray-600">
-          We won’t print your name, and that’s the end of it — no hard feelings. If you change your
+          We won’t print your name, and that’s the end of it, no hard feelings. We’ve emailed you confirmation of that choice. If you change your
           mind before we go to print, email{" "}
           <a href="mailto:silver@outlandermag.com" className="underline">
             silver@outlandermag.com
@@ -206,12 +207,12 @@ export default function CreditConfirmPage({
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">
           Private &amp; confidential{first ? ` · for ${r.name}` : ""}
         </p>
-        <h1 className="mt-3 font-serif text-3xl leading-tight text-gray-900">
+        <h1 className="mt-3 font-serif text-3xl leading-tight text-black">
           We’d like to put your name in print.
         </h1>
 
         {data!.agreement.summary.split("\n\n").map((p, i) => (
-          <p key={i} className="mt-4 text-sm leading-relaxed text-gray-700">
+          <p key={i} className="mt-4 text-sm leading-relaxed text-black">
             {p}
           </p>
         ))}
@@ -222,7 +223,7 @@ export default function CreditConfirmPage({
               <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">
                 {t.heading}
               </h2>
-              <p className="mt-1.5 text-sm leading-relaxed text-gray-700">{t.body}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-black">{t.body}</p>
             </div>
           ))}
         </div>
@@ -236,7 +237,7 @@ export default function CreditConfirmPage({
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
-            I agree — show me
+            I agree, show me
           </button>
           <button
             onClick={() => setDeclining(true)}
@@ -248,8 +249,8 @@ export default function CreditConfirmPage({
 
         {declining && (
           <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <p className="text-sm text-gray-700">
-              No problem — we won’t print your name. If you’d like to tell us why, it helps; if
+            <p className="text-sm text-black">
+              No problem, we won’t print your name. If you’d like to tell us why, it helps; if
               not, just confirm.
             </p>
             <textarea
@@ -264,7 +265,7 @@ export default function CreditConfirmPage({
               disabled={busy}
               className="mt-3 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 disabled:opacity-50"
             >
-              Confirm — leave me out
+              Confirm, leave me out
             </button>
           </div>
         )}
@@ -278,12 +279,12 @@ export default function CreditConfirmPage({
       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">
         The Outlander Directory · Issue 02
       </p>
-      <h1 className="mt-3 font-serif text-3xl leading-tight text-gray-900">
+      <h1 className="mt-3 font-serif text-3xl leading-tight text-black">
         A printed index of the people who make this culture.
       </h1>
-      <p className="mt-4 text-sm leading-relaxed text-gray-700">
+      <p className="mt-4 text-sm leading-relaxed text-black">
         Issue 02 of Outlander Magazine will carry a Directory: a curated, printed index of the
-        photographers, stylists, producers, directors and designers behind the work — filed by
+        photographers, stylists, producers, directors and designers behind the work, filed by
         discipline, in print, on paper that outlasts a feed. Not a follower count in sight. You’ve
         been selected{r.role ? ` as ${/^[aeiou]/i.test(r.role) ? "an" : "a"} ${r.role}` : ""}, and
         we’d like to credit you exactly as you want to be credited.
@@ -326,7 +327,7 @@ export default function CreditConfirmPage({
           <div className="flex items-center gap-2">
             <Lock size={13} className="text-gray-500" />
             <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">
-              Postal address — private
+              Postal address, kept private
             </h2>
           </div>
           <p className="mt-1.5 text-xs leading-relaxed text-gray-600">
@@ -359,20 +360,33 @@ export default function CreditConfirmPage({
           </div>
         </div>
 
+        {/* The active tick. Required here AND enforced server-side — the row
+            records that it was made, not merely that the form was sent. */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-300 p-4">
+          <input
+            type="checkbox"
+            required
+            checked={agree}
+            onChange={(e) => setAgree(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-black"
+          />
+          <span className="text-sm leading-relaxed text-black">
+            I have read and agree to the terms on the previous page, including the
+            confidentiality agreement, and I consent to Outlander printing the name and handle
+            above in Issue 02.
+          </span>
+        </label>
+
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
         <button
           type="submit"
-          disabled={busy}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#111] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          disabled={busy || !agree}
+          className="inline-flex items-center gap-2 rounded-xl bg-black px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40"
         >
           {busy && <Loader2 size={14} className="animate-spin" />}
           Confirm my credit for print
         </button>
-        <p className="text-xs leading-relaxed text-gray-500">
-          Submitting confirms your consent for Outlander to print the name and handle above in
-          Issue 02, under the terms you accepted.
-        </p>
       </form>
     </Shell>
   );
@@ -400,12 +414,20 @@ function Field({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#faf9f7] px-5 py-14">
+    // Pure white, black type, and the magazine wordmark rather than the OS
+    // lockup. This page is Outlander to 244 industry people, not OutlanderOS —
+    // the wordmark is set live in AtGambit (the same face the printed logo is
+    // set in) so it stays sharp at every size and needs no asset.
+    <div className="min-h-screen bg-white px-5 py-14 text-black">
       <div className="mx-auto max-w-xl">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/OutlanderOS_Logo_Light.svg" alt="Outlander" className="mb-10 h-5 w-auto" />
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">{children}</div>
-        <p className="mt-8 text-center text-xs text-gray-400">
+        <p
+          className="mb-12 text-4xl tracking-tight text-black"
+          style={{ fontFamily: '"AtGambit", Georgia, serif' }}
+        >
+          Outlander<span className="text-black">.</span>
+        </p>
+        <div>{children}</div>
+        <p className="mt-14 text-center text-xs text-gray-400">
           Outlander Magazine Ltd · Company 13257633 · Private &amp; confidential
         </p>
       </div>
