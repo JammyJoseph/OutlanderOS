@@ -29,6 +29,7 @@ interface CreditData {
     summary: string;
     terms: { heading: string; body: string }[];
   };
+  roleGroups: { label: string; roles: string[] }[];
 }
 
 export default function CreditConfirmPage({
@@ -45,6 +46,7 @@ export default function CreditConfirmPage({
   const [stage, setStage] = useState<"agreement" | "form" | "done" | "declined">("agreement");
 
   const [name, setName] = useState("");
+  const [role, setRole] = useState("");
   const [instagram, setInstagram] = useState("");
   const [email, setEmail] = useState("");
   const [addr, setAddr] = useState({ line1: "", line2: "", city: "", region: "", postcode: "", country: "" });
@@ -63,6 +65,11 @@ export default function CreditConfirmPage({
       setData(d);
       const r = d.request;
       setName(r.name ?? "");
+      // The sheet's Skill column preselects the picker only when it exactly
+      // matches a real option; otherwise they choose from scratch.
+      const flat = (d.roleGroups ?? []).flatMap((g: { roles: string[] }) => g.roles);
+      const guess = (r.role ?? "").trim();
+      setRole(flat.find((x: string) => x.toLowerCase() === guess.toLowerCase()) ?? "");
       setInstagram((r.instagram ?? "").replace(/^@+/, ""));
       setEmail(r.email ?? "");
       if (r.responded) setStage(r.printConsent ? "done" : "declined");
@@ -107,7 +114,7 @@ export default function CreditConfirmPage({
     setBusy(true);
     setError(null);
     try {
-      await post({ action: "submit", name, instagram, email, address: addr, agree });
+      await post({ action: "submit", name, role, instagram, email, address: addr, agree });
       setStage("done");
     } catch (err) {
       setError(String((err as Error).message));
@@ -299,6 +306,31 @@ export default function CreditConfirmPage({
             onChange={(e) => setName(e.target.value)}
             className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
           />
+        </Field>
+
+        <Field label="Your discipline, as it will appear beside your name" required>
+          <select
+            required
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm"
+          >
+            <option value="" disabled>
+              Choose one
+            </option>
+            {data!.roleGroups.map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.roles.map((r2) => (
+                  <option key={r2} value={r2}>
+                    {r2}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            One choice. This is the credit line, so pick the word you want next to your name.
+          </p>
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">

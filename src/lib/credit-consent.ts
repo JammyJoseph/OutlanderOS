@@ -16,6 +16,12 @@ import { sendMail, isMailConfigured } from '@/lib/mailer'
 
 export const TEST_INBOX = 'silver@outlandermag.com'
 
+// The ONLY addresses a test-mode email may actually reach. Everyone else's
+// sends redirect to the test inbox. Quinn is here so he can experience the
+// real flow end to end while the system is still not live; widening this list
+// is a code change, on purpose, so it shows up in review like any other.
+export const TEST_ALLOWED_RECIPIENTS = ['silver@outlandermag.com', 'q@outlandermag.com']
+
 export const isSendingLive = () => process.env.CREDIT_SEND_LIVE === 'true'
 
 export const newCreditToken = () => randomBytes(32).toString('hex')
@@ -23,6 +29,73 @@ export const newCreditToken = () => randomBytes(32).toString('hex')
 // Bumped whenever the agreement copy materially changes. Stored on the request
 // at acceptance, so we always know which text each person actually signed.
 export const AGREEMENT_VERSION = '2026-08-v2'
+
+// ── Disciplines ─────────────────────────────────────────────────────────────
+//
+// The credit line is theirs to pick, not the spreadsheet's to guess: exactly
+// one choice, from a closed list. Closed because this is a consent record and
+// free text would make "what did they agree to be printed as" unanswerable;
+// wide because the Directory spans the whole industry and nobody should have
+// to file themselves under an adjacent job.
+export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
+  { label: 'Image', roles: [
+    'Photographer', 'Documentary Photographer', 'Fashion Photographer', 'Portrait Photographer',
+    'Street Photographer', 'Photojournalist', 'Retoucher', 'Photo Editor',
+  ]},
+  { label: 'Film & Motion', roles: [
+    'Director', 'Filmmaker', 'Director of Photography', 'Cinematographer', 'Video Editor',
+    'Colourist', 'Animator', 'Motion Designer', 'VFX Artist', '3D Artist', 'Videographer',
+    'Documentary Filmmaker', 'Music Video Director',
+  ]},
+  { label: 'Style', roles: [
+    'Stylist', 'Fashion Stylist', 'Costume Designer', 'Wardrobe Stylist', 'Fashion Designer',
+    'Textile Designer', 'Footwear Designer', 'Jewellery Designer', 'Milliner', 'Tailor',
+    'Pattern Cutter', 'Creative Consultant',
+  ]},
+  { label: 'Hair, Makeup & Body', roles: [
+    'Hair Stylist', 'Barber', 'Makeup Artist', 'Special Effects Makeup Artist', 'Nail Artist',
+    'Groomer', 'Tattoo Artist', 'Body Artist',
+  ]},
+  { label: 'Design & Art Direction', roles: [
+    'Creative Director', 'Art Director', 'Graphic Designer', 'Type Designer', 'Illustrator',
+    'Print Designer', 'Book Designer', 'Brand Designer', 'Product Designer', 'Industrial Designer',
+    'Furniture Designer', 'Interior Designer', 'Architect', 'Set Designer', 'Production Designer',
+    'Prop Stylist', 'Florist',
+  ]},
+  { label: 'Digital & Technology', roles: [
+    'Creative Technologist', 'Web Designer', 'UX Designer', 'UI Designer', 'Developer',
+    'Game Designer', 'AI Artist', 'Digital Artist', 'XR Artist',
+  ]},
+  { label: 'Words', roles: [
+    'Writer', 'Journalist', 'Editor', 'Author', 'Copywriter', 'Poet', 'Screenwriter',
+    'Playwright', 'Critic', 'Editor-in-Chief',
+  ]},
+  { label: 'Sound & Music', roles: [
+    'Musician', 'Producer (Music)', 'Composer', 'Sound Designer', 'Sound Engineer', 'DJ',
+    'Rapper', 'Singer', 'Songwriter', 'Audio Engineer',
+  ]},
+  { label: 'Production', roles: [
+    'Producer', 'Executive Producer', 'Creative Producer', 'Line Producer', 'Production Manager',
+    'Casting Director', 'Location Scout', 'Talent Manager', 'Agent', 'Production Company',
+  ]},
+  { label: 'Performance', roles: [
+    'Model', 'Actor', 'Dancer', 'Choreographer', 'Performer', 'Comedian', 'Presenter',
+    'Movement Director',
+  ]},
+  { label: 'Art', roles: [
+    'Artist', 'Painter', 'Sculptor', 'Ceramicist', 'Printmaker', 'Mixed Media Artist',
+    'Collage Artist', 'Curator', 'Gallerist',
+  ]},
+  { label: 'Culture & Craft', roles: [
+    'Chef', 'Food Stylist', 'Skater', 'Athlete', 'Archivist', 'Collector', 'Publisher',
+    'Educator', 'Community Organiser', 'Founder', 'Entrepreneur',
+  ]},
+]
+
+export const CREDIT_ROLES: string[] = CREDIT_ROLE_GROUPS.flatMap((g) => g.roles)
+
+export const isCreditRole = (v: string | null | undefined): boolean =>
+  !!v && CREDIT_ROLES.includes(v)
 
 const emailRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 export const isValidEmail = (v: string | null | undefined): boolean =>
@@ -137,12 +210,13 @@ export function creditOutcomeEmail(opts: {
   name: string
   confirmed: boolean
   creditAs?: string | null
+  discipline?: string | null
 }): { subject: string; text: string; html: string } {
   const first = opts.name.trim().split(/\s+/)[0] || 'there'
 
   if (opts.confirmed) {
     const subject = `${first}, your place in The Outlander Directory is confirmed`
-    const credit = opts.creditAs?.trim()
+    const credit = [opts.creditAs?.trim(), opts.discipline?.trim()].filter(Boolean).join(', ')
     const text = [
       `Hi ${first},`,
       '',
@@ -213,9 +287,15 @@ export async function sendCreditInvite(opts: {
   }
 
   const live = isSendingLive()
-  const recipient = live ? opts.to.trim() : TEST_INBOX
+  const intended = opts.to.trim()
+  // In test mode, an allowlisted address gets the real email exactly as a
+  // contributor would, so the flow can be experienced, not just inspected.
+  // Everyone else redirects to the test inbox with the intent in the subject.
+  const passthrough = TEST_ALLOWED_RECIPIENTS.includes(intended.toLowerCase())
+  const recipient = live || passthrough ? intended : TEST_INBOX
   const mail = creditInviteEmail(opts)
-  const subject = live ? mail.subject : `[TEST — would go to ${opts.to.trim()}] ${mail.subject}`
+  const subject =
+    live || passthrough ? mail.subject : `[TEST — would go to ${intended}] ${mail.subject}`
 
   await sendMail({
     to: recipient,
@@ -239,14 +319,18 @@ export async function sendCreditOutcome(opts: {
   name: string
   confirmed: boolean
   creditAs?: string | null
+  discipline?: string | null
 }): Promise<CreditSendResult> {
   if (!isMailConfigured()) throw new Error('Mail is not configured.')
   if (!isValidEmail(opts.to)) throw new Error(`"${opts.to}" is not a valid email address.`)
 
   const live = isSendingLive()
-  const recipient = live ? opts.to.trim() : TEST_INBOX
+  const intended = opts.to.trim()
+  const passthrough = TEST_ALLOWED_RECIPIENTS.includes(intended.toLowerCase())
+  const recipient = live || passthrough ? intended : TEST_INBOX
   const mail = creditOutcomeEmail(opts)
-  const subject = live ? mail.subject : `[TEST — would go to ${opts.to.trim()}] ${mail.subject}`
+  const subject =
+    live || passthrough ? mail.subject : `[TEST — would go to ${intended}] ${mail.subject}`
 
   await sendMail({ to: recipient, subject, text: mail.text, html: mail.html })
   return { sentTo: recipient, isTest: !live }

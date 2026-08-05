@@ -33,6 +33,7 @@ interface CreditRow {
   openedAt: string | null;
   respondedAt: string | null;
   confirmedName: string | null;
+  confirmedRole: string | null;
   confirmedInstagram: string | null;
   confirmedEmail: string | null;
   address: Record<string, string> | null;
@@ -325,7 +326,9 @@ export default function CreditConsentPanel() {
                       </span>
                     )}
                   </span>
-                  <span className="truncate text-muted-foreground">{r.role ?? "—"}</span>
+                  <span className="truncate text-muted-foreground">
+                    {isConfirmed ? (r.confirmedRole ?? r.role ?? "—") : (r.role ?? "—")}
+                  </span>
                   <span className="flex min-w-0 items-center gap-1.5">
                     {editingEmail?.id === r.id ? (
                       <form
@@ -423,6 +426,7 @@ export default function CreditConsentPanel() {
                         {r.status === "CONFIRMED" ? (
                           <>
                             <DetailRow k="Credit as" v={r.confirmedName ?? "—"} strong />
+                            <DetailRow k="Discipline" v={r.confirmedRole ?? "—"} strong />
                             <DetailRow k="Handle" v={r.confirmedInstagram ? `@${r.confirmedInstagram}` : "—"} />
                             <DetailRow k="Email" v={r.confirmedEmail ?? "—"} />
                             {r.address && (

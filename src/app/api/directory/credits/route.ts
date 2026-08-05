@@ -35,7 +35,7 @@ export const GET = withAuth(async () => {
         instagram: true, email: true, tier: true, status: true,
         sentAt: true, sentTo: true, isTest: true, emailError: true,
         openedAt: true, respondedAt: true,
-        confirmedName: true, confirmedInstagram: true, confirmedEmail: true,
+        confirmedName: true, confirmedRole: true, confirmedInstagram: true, confirmedEmail: true,
         // The address is included here — this endpoint is staff-auth'd and the
         // response drawer is where delivery details are read. It goes no
         // further: not to the public endpoint, not into the printed export.

@@ -4,7 +4,9 @@ import {
   AGREEMENT_SUMMARY,
   AGREEMENT_TERMS,
   AGREEMENT_VERSION,
+  CREDIT_ROLE_GROUPS,
   agreementFullText,
+  isCreditRole,
   isValidEmail,
   sendCreditOutcome,
 } from '@/lib/credit-consent'
@@ -67,6 +69,9 @@ export async function GET(
         summary: AGREEMENT_SUMMARY,
         terms: AGREEMENT_TERMS,
       },
+      // The closed list the discipline picker renders. Served with the page so
+      // the form and the server can never disagree about what is pickable.
+      roleGroups: CREDIT_ROLE_GROUPS,
     })
   } catch (err) {
     console.error('GET /api/credit/[token]', err)
@@ -157,6 +162,15 @@ export async function POST(
       if (confirmedEmail && !isValidEmail(confirmedEmail)) {
         return NextResponse.json({ error: 'That email doesn’t look right.' }, { status: 400 })
       }
+      // Exactly one discipline, and only from the list. Free text here would
+      // make "what did they agree to be printed as" unanswerable.
+      const confirmedRole = String(body.role ?? '').trim()
+      if (!isCreditRole(confirmedRole)) {
+        return NextResponse.json(
+          { error: 'Please choose your discipline from the list.' },
+          { status: 400 }
+        )
+      }
 
       // Address is optional and stored verbatim as its own object. Trimmed,
       // capped, and never echoed back out of this endpoint.
@@ -174,6 +188,7 @@ export async function POST(
           respondedAt: new Date(),
           printConsent: true,
           confirmedName: confirmedName.slice(0, 200),
+          confirmedRole,
           confirmedInstagram:
             String(body.instagram ?? '').trim().replace(/^@+/, '').slice(0, 100) || null,
           confirmedEmail: confirmedEmail || null,
@@ -187,6 +202,7 @@ export async function POST(
           name: confirmedName,
           confirmed: true,
           creditAs: confirmedName,
+          discipline: confirmedRole,
         }).catch((e) => console.error('credit confirm receipt failed', e))
       }
       return NextResponse.json({ ok: true, confirmed: true })

@@ -1100,6 +1100,10 @@ model CreditRequest {
 
   // ── Their response ──
   confirmedName      String?
+  // Their discipline, picked by them from the closed list in credit-consent.ts.
+  // One choice only. This is the credit line, so it is theirs to pick, not the
+  // spreadsheet's to guess.
+  confirmedRole      String?
   confirmedInstagram String?
   confirmedEmail     String?
   // PRIVATE. Delivery only. { line1, line2, city, region, postcode, country }
