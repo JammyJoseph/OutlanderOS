@@ -292,6 +292,25 @@ two budget systems still sit outside it.
 - [ ] **Schedule the sync.** Runs on a button today. Once installed, a daily run via the
       existing sync engine (`SyncStatus` source `shopifyOrders`) would keep it warm.
 
+## 1f. Print credit consent (built 2026-08-05)
+
+- [x] ~~Contributor credit-confirmation flow in the Print Directory~~ — one tokenised
+      public page per person (`/credit/[token]`, same pattern as crew invoices): plain-English
+      confidentiality agreement → reveal of what the Directory is → confirm name / handle /
+      email / address → consent recorded with agreement version and timestamp. Address is
+      delivery-only: staff response drawer only, never the public payload, never print.
+      Admin panel under Directory → Print Directory → Name credits: sheet import (235 people,
+      41 bad emails surfaced as fixable), status tracking, per-row and bulk send.
+      **Sends are structurally test-only until `CREDIT_SEND_LIVE=true` is set on prod** —
+      every email redirects to silver@outlandermag.com with the intended recipient in the
+      subject. Mailchimp rejected: transactional needs the paid Mandrill add-on; the existing
+      SMTP mailer already does per-recipient tokens from our own domain.
+- [ ] **Lawyer pass on the agreement copy** before the real sendout (`AGREEMENT_VERSION`
+      bumps if it changes, so signed versions stay attributable).
+- [ ] **Fix the 41 bad emails** in the panel (inline edit) — `*`, bio links, missing TLDs.
+- [ ] **Go live**: set `CREDIT_SEND_LIVE=true` on prod, reset any test-status rows, send.
+- [ ] Reminder pass for non-responders (remindedAt exists; no scheduled job yet).
+
 ## 1g. Held until TLS (see ROADMAP Phase 1b)
 
 Neither is technically blocked. Both are held because shipping them over

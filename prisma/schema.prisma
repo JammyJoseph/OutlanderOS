@@ -160,6 +160,7 @@ model Contact {
   clientCampaigns Campaign[]       @relation("ClientContact")
   productionCrew  ProductionCrew[]
   eventGuests     EventGuest[]
+  creditRequests  CreditRequest[]
 }
 
 // Caches Instagram scrape results so the same handle isn't re-scraped within 24h.
@@ -1055,6 +1056,67 @@ model SyncLog {
   meta        Json?
 
   @@index([source, startedAt])
+}
+
+// ===== PRINT CREDIT CONSENT =====
+//
+// One row per person we intend to credit in the printed directory. The token is
+// the credential for a public confirmation page (same pattern as invoices):
+// they read the agreement, accept it, confirm how their name should appear, and
+// grant or decline print consent. The row then IS the audit trail — which
+// agreement version they accepted, when, and exactly what they approved.
+//
+// The postal address is collected for one purpose: shipping a contributor copy.
+// It is never printed, never shown in the directory UI outside the response
+// drawer, and never leaves this table.
+model CreditRequest {
+  id        String   @id @default(cuid())
+  // Linked directory contact, when one matches. The sheet is the source for the
+  // send; the link lets the directory show confirmation state later.
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  token String @unique
+
+  // ── Prefill — what we believe today, from the sheet ──
+  name      String
+  role      String? // "Photographer"
+  instagram String?
+  email     String? // null = imported without an email; cannot send until set
+  tier      Int?
+
+  // ── Lifecycle ──
+  // DRAFT → SENT → OPENED → CONFIRMED | DECLINED. FAILED when the send errored.
+  status      String    @default("DRAFT")
+  sentAt      DateTime?
+  // Where the email actually went. In test mode this is the test inbox, not
+  // `email` — recorded so a test send can never masquerade as a real one.
+  sentTo      String?
+  isTest      Boolean   @default(false)
+  emailError  String?
+  openedAt    DateTime?
+  respondedAt DateTime?
+  remindedAt  DateTime?
+
+  // ── Their response ──
+  confirmedName      String?
+  confirmedInstagram String?
+  confirmedEmail     String?
+  // PRIVATE. Delivery only. { line1, line2, city, region, postcode, country }
+  address            Json?
+  // Which version of the agreement text they accepted, and when. If the copy
+  // ever changes, this says exactly what each person signed.
+  agreementVersion   String?
+  agreementAcceptedAt DateTime?
+  printConsent       Boolean?
+  declineNote        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([email])
+  @@index([contactId])
 }
 
 // ===== SHOPIFY SALES =====

@@ -1,0 +1,171 @@
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
+import {
+  AGREEMENT_SUMMARY,
+  AGREEMENT_TERMS,
+  AGREEMENT_VERSION,
+  isValidEmail,
+} from '@/lib/credit-consent'
+
+// Public — the token is the credential, exactly like /api/invoice/[token].
+// Contributors are not OutlanderOS users. Consequences:
+//
+//  • The GET returns only this person's own prefill — never the list, never
+//    anyone else's status, never the address (they're typing it, not reading it).
+//  • Acceptance is recorded server-side as its own action, so "they accepted
+//    the agreement" never depends on whether they finished the form.
+//  • One submission per link. A confirmed credit is a signed record; letting a
+//    later visit overwrite it would make the audit trail worthless.
+
+const select = {
+  name: true,
+  role: true,
+  instagram: true,
+  email: true,
+  status: true,
+  agreementAcceptedAt: true,
+  respondedAt: true,
+  confirmedName: true,
+  printConsent: true,
+} as const
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
+) {
+  const { token } = await params
+  try {
+    const req = await prisma.creditRequest.findUnique({ where: { token }, select })
+    if (!req) {
+      return NextResponse.json({ error: 'This link isn’t valid.' }, { status: 404 })
+    }
+
+    // First sight of the page. Only ever moves SENT → OPENED, so a later visit
+    // can't regress a CONFIRMED row.
+    if (req.status === 'SENT') {
+      await prisma.creditRequest.update({
+        where: { token },
+        data: { status: 'OPENED', openedAt: new Date() },
+      })
+    }
+
+    return NextResponse.json({
+      request: {
+        name: req.name,
+        role: req.role,
+        instagram: req.instagram,
+        email: req.email,
+        accepted: !!req.agreementAcceptedAt,
+        responded: !!req.respondedAt,
+        confirmedName: req.confirmedName,
+        printConsent: req.printConsent,
+      },
+      agreement: {
+        version: AGREEMENT_VERSION,
+        summary: AGREEMENT_SUMMARY,
+        terms: AGREEMENT_TERMS,
+      },
+    })
+  } catch (err) {
+    console.error('GET /api/credit/[token]', err)
+    return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 })
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
+) {
+  const { token } = await params
+  try {
+    const req = await prisma.creditRequest.findUnique({ where: { token } })
+    if (!req) {
+      return NextResponse.json({ error: 'This link isn’t valid.' }, { status: 404 })
+    }
+    if (req.respondedAt) {
+      return NextResponse.json(
+        { error: 'This credit has already been submitted. Email us if something needs changing.' },
+        { status: 409 }
+      )
+    }
+
+    const body = await request.json().catch(() => ({}) as Record<string, unknown>)
+    const action = String(body.action ?? '')
+
+    if (action === 'accept') {
+      // Recorded even if they never finish the form — the fact they accepted
+      // the confidentiality terms stands on its own.
+      await prisma.creditRequest.update({
+        where: { token },
+        data: {
+          agreementAcceptedAt: req.agreementAcceptedAt ?? new Date(),
+          agreementVersion: req.agreementVersion ?? AGREEMENT_VERSION,
+        },
+      })
+      return NextResponse.json({ ok: true })
+    }
+
+    if (action === 'decline') {
+      await prisma.creditRequest.update({
+        where: { token },
+        data: {
+          status: 'DECLINED',
+          respondedAt: new Date(),
+          printConsent: false,
+          declineNote: String(body.note ?? '').slice(0, 2000) || null,
+        },
+      })
+      return NextResponse.json({ ok: true, declined: true })
+    }
+
+    if (action === 'submit') {
+      if (!req.agreementAcceptedAt) {
+        return NextResponse.json(
+          { error: 'Please accept the agreement first.' },
+          { status: 400 }
+        )
+      }
+
+      const confirmedName = String(body.name ?? '').trim()
+      if (!confirmedName) {
+        return NextResponse.json(
+          { error: 'Please confirm the name you want credited.' },
+          { status: 400 }
+        )
+      }
+      const confirmedEmail = String(body.email ?? '').trim()
+      if (confirmedEmail && !isValidEmail(confirmedEmail)) {
+        return NextResponse.json({ error: 'That email doesn’t look right.' }, { status: 400 })
+      }
+
+      // Address is optional and stored verbatim as its own object. Trimmed,
+      // capped, and never echoed back out of this endpoint.
+      const rawAddr = (body.address ?? {}) as Record<string, unknown>
+      const addr = Object.fromEntries(
+        ['line1', 'line2', 'city', 'region', 'postcode', 'country']
+          .map((k) => [k, String(rawAddr[k] ?? '').trim().slice(0, 200)])
+          .filter(([, v]) => v)
+      )
+
+      await prisma.creditRequest.update({
+        where: { token },
+        data: {
+          status: 'CONFIRMED',
+          respondedAt: new Date(),
+          printConsent: true,
+          confirmedName: confirmedName.slice(0, 200),
+          confirmedInstagram:
+            String(body.instagram ?? '').trim().replace(/^@+/, '').slice(0, 100) || null,
+          confirmedEmail: confirmedEmail || null,
+          address: Object.keys(addr).length > 0 ? addr : undefined,
+        },
+      })
+      return NextResponse.json({ ok: true, confirmed: true })
+    }
+
+    return NextResponse.json({ error: 'Unknown action.' }, { status: 400 })
+  } catch (err) {
+    console.error('POST /api/credit/[token]', err)
+    return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 })
+  }
+}

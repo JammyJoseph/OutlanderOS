@@ -25,6 +25,8 @@ export function proxy(request: NextRequest) {
   // Public: invoice submission. Crew aren't OutlanderOS users, so the token in
   // the URL is the credential — see api/invoice/[token]/route.ts.
   if (pathname.startsWith('/invoice/')) return NextResponse.next()
+  // Public: contributor credit confirmation — same token-is-credential pattern.
+  if (pathname.startsWith('/credit/')) return NextResponse.next()
   // Static assets only. This used to be `pathname.includes('.')`, which let any
   // path containing a period skip the auth check entirely (`/finance/x.y` walked
   // straight past this gate). Match real asset extensions instead.

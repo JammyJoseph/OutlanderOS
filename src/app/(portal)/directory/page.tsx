@@ -1,5 +1,6 @@
 "use client";
 
+import CreditConsentPanel from "@/components/directory/CreditConsentPanel";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -334,6 +335,8 @@ function Directory() {
   // so there's no pagination. `contactsTotal` is kept for the dashboard stat.
   const [contactsTotal, setContactsTotal] = useState(0);
 
+  // Print Directory sub-view: the tier filing vs the credit-consent tracker.
+  const [printTab, setPrintTab] = useState<"tiers" | "credits">("tiers");
   const setView = useCallback(
     (v: View) => router.push(v === "dashboard" ? "/directory" : `/directory?view=${v}`),
     [router]
@@ -952,12 +955,36 @@ function Directory() {
             onConvert={convertRadar}
           />
         ) : view === "print" ? (
-          <PrintDirectory
-            contacts={printContacts}
-            onFile={fileContact}
-            onEdit={(c) => setEditing(c)}
-            onBrowse={() => setView("contacts")}
-          />
+          <div className="space-y-4">
+            <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 w-fit">
+              <button
+                onClick={() => setPrintTab("tiers")}
+                className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  printTab === "tiers" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Tiers
+              </button>
+              <button
+                onClick={() => setPrintTab("credits")}
+                className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  printTab === "credits" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Name credits
+              </button>
+            </div>
+            {printTab === "credits" ? (
+              <CreditConsentPanel />
+            ) : (
+              <PrintDirectory
+                contacts={printContacts}
+                onFile={fileContact}
+                onEdit={(c) => setEditing(c)}
+                onBrowse={() => setView("contacts")}
+              />
+            )}
+          </div>
         ) : (
           <SplitPanel
             contacts={displayedContacts}
