@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useCallback, useEffect, useState } from "react";
+import { useLockLightTheme } from "./useLockLightTheme";
 import { Loader2, Check, Lock } from "lucide-react";
 
 // Public credit-confirmation page. Contributors aren't OutlanderOS users, so
@@ -38,6 +39,10 @@ export default function CreditConfirmPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = use(params);
+  // Contributors get the printed-page look regardless of any theme stored in
+  // this browser. A staff member with the OS in dark mode opens this page too,
+  // and the dark safety net would turn bg-white near-black under black type.
+  useLockLightTheme();
   const [data, setData] = useState<CreditData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -450,7 +455,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     // lockup. This page is Outlander to 244 industry people, not OutlanderOS —
     // the wordmark is set live in AtGambit (the same face the printed logo is
     // set in) so it stays sharp at every size and needs no asset.
-    <div className="min-h-screen bg-white px-5 py-14 text-black">
+    <div className="min-h-screen bg-white px-5 py-14 text-black" style={{ colorScheme: "light" }}>
       <div className="mx-auto max-w-xl">
         <p
           className="mb-12 text-4xl tracking-tight text-black"

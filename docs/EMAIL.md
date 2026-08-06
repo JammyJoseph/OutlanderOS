@@ -15,7 +15,7 @@ SMTP_PORT=587
 SMTP_USER=submit@outlandermag.com
 SMTP_PASS=<16-character app password>
 MAIL_FROM="Outlander Magazine <submit@outlandermag.com>"
-MAIL_REPLY_TO=silver@outlandermag.com   # optional; defaults to SMTP_USER
+MAIL_REPLY_TO=submit@outlandermag.com   # optional; defaults to SMTP_USER
 ```
 
 **Configured live on prod 2026-08-05** with an app password for the
