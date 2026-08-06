@@ -17,10 +17,14 @@ import { sendMail, isMailConfigured } from '@/lib/mailer'
 export const TEST_INBOX = 'silver@outlandermag.com'
 
 // The ONLY addresses a test-mode email may actually reach. Everyone else's
-// sends redirect to the test inbox. Quinn is here so he can experience the
-// real flow end to end while the system is still not live; widening this list
-// is a code change, on purpose, so it shows up in review like any other.
-export const TEST_ALLOWED_RECIPIENTS = ['silver@outlandermag.com', 'q@outlandermag.com']
+// sends redirect to the test inbox. All three are Outlander staff, testing the
+// flow end to end while the system is not yet live; widening this list is a
+// code change, on purpose, so it shows up in review like any other.
+export const TEST_ALLOWED_RECIPIENTS = [
+  'silver@outlandermag.com',
+  'q@outlandermag.com',
+  'luke@outlandermag.com',
+]
 
 export const isSendingLive = () => process.env.CREDIT_SEND_LIVE === 'true'
 
