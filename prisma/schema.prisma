@@ -31,6 +31,10 @@ model User {
   // login; hasSeenWelcome gates the one-time welcome screen after that.
   mustChangePassword Boolean @default(false)
   hasSeenWelcome     Boolean @default(false)
+  // Smart-tip ids this user has dismissed. On the user, not localStorage, so
+  // "got it" survives browsers and devices. Guardrail dialogs are deliberately
+  // NOT in here — they fire every time their condition is met.
+  seenTips           Json    @default("[]")
 
   resetToken       String?   @unique
   resetTokenExpiry DateTime?

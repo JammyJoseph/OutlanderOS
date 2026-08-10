@@ -311,6 +311,26 @@ two budget systems still sit outside it.
 - [ ] **Go live**: set `CREDIT_SEND_LIVE=true` on prod, reset any test-status rows, send.
 - [ ] Reminder pass for non-responders (remindedAt exists; no scheduled job yet).
 
+## 1h. Smart tips (built 2026-08-06)
+
+- [x] ~~Smart-tip system~~ — two mechanisms, deliberately distinct. Passive tips
+      (`src/lib/smart-tips.ts` registry + `<SmartTip id/>`): dismissible once per user,
+      stored on `User.seenTips` so "got it" follows people across devices; API validates
+      ids against the registry. Guardrails: interstitials that fire EVERY time a suspect
+      action happens, never dismissible-forever. Adding a tip = one registry entry + one
+      component drop.
+- [x] ~~Paid-shoot guardrail~~ — creating a production with billing PAID interjects:
+      deals tracked in Commercial land in Production with budget allocated from the deal
+      and the IO linked. Offers "Track it in Commercial instead" / "create here anyway".
+- [x] Seeded tips: paid-via-Commercial (productions list), roster ordering (call sheet
+      editor), budget-vs-actuals discipline (cost tracking view).
+- [ ] **The wrap endpoint has no UI.** `POST /api/productions/[id]/wrap` (crew invoice
+      emails, built with the invoice flow) has no button anywhere in the front end — found
+      while placing a wrap tip. Add a Wrap action on the production page once shoot dates
+      pass, then a smart tip pointing at it.
+- [ ] More tip candidates as workflows land: distribution reconciliation reading, credit
+      test-mode reminder for new staff, Shopify CSV backfill.
+
 ## 1g. Held until TLS (see ROADMAP Phase 1b)
 
 Neither is technically blocked. Both are held because shipping them over

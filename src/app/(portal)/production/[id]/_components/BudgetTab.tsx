@@ -1,5 +1,6 @@
 "use client";
 
+import SmartTip from "@/components/SmartTip";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useConfirm } from "@/components/ui/confirm-provider";
@@ -1031,10 +1032,15 @@ export default function BudgetTab({
         </div>
         {/* Cost-tracking context — this view is for after the shoot wraps */}
         {view === "actuals" && (
-          <div className="px-5 py-2 border-b border-border bg-muted/30 dark:bg-white/[0.02] text-[11px] text-muted-foreground">
-            Cost tracking compares actual invoiced spend against the budget. Fill this in after the
-            shoot wraps, once invoices are submitted — it isn&apos;t part of building the budget.
-          </div>
+          <>
+            <div className="px-5 py-2 border-b border-border bg-muted/30 dark:bg-white/[0.02] text-[11px] text-muted-foreground">
+              Cost tracking compares actual invoiced spend against the budget. Fill this in after the
+              shoot wraps, once invoices are submitted — it isn&apos;t part of building the budget.
+            </div>
+            <div className="px-5 pt-3">
+              <SmartTip id="budget-cost-tracking" />
+            </div>
+          </>
         )}
         {view === "budget" && (
           <div className="px-5 py-2 border-b border-border bg-muted/30 dark:bg-white/[0.02] text-[11px] text-muted-foreground">

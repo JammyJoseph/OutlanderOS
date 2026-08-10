@@ -1,5 +1,6 @@
 "use client";
 
+import SmartTip from "@/components/SmartTip";
 import { useEffect, useRef, useState } from "react";
 import {
   Clock, MapPin, Cloud, Camera, Users, Coffee, Paperclip, FileText,
@@ -712,6 +713,7 @@ export function CallSheetEditor(p: EditorProps) {
           </div>
         }
       >
+        <SmartTip id="callsheet-roster-order" className="mb-3" />
         <PeopleTable
           people={p.crew}
           setPeople={(v) => p.setCrew(v as CrewMember[])}

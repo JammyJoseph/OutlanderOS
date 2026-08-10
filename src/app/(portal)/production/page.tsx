@@ -16,8 +16,10 @@ import {
   Archive,
   ArchiveRestore,
   Search,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
+import SmartTip from "@/components/SmartTip";
 import { STRANDS, strandOf, strandIsDerived, type Strand } from "@/lib/production-strand";
 import { useSearchParams, useRouter } from "next/navigation";
 import { isValidUrl } from "@/lib/validation";
@@ -367,6 +369,8 @@ function ProductionInner() {
             </button>
           </div>
         </div>
+
+        <SmartTip id="productions-paid-via-commercial" className="mb-4" />
 
         {/* Loading */}
         {loading && (
@@ -1170,6 +1174,11 @@ function CreateProjectModal({
   const [shootDates, setShootDates] = useState<string[]>([""]);
   const [status, setStatus] = useState<ProductionStatus>("DRAFT");
   const [billing, setBilling] = useState<"EDITORIAL" | "PAID">("EDITORIAL");
+  // The paid-shoot guardrail. Deliberately NOT a dismissible tip: the second
+  // paid shoot created outside Commercial is exactly as unlinked as the first,
+  // so this interjects every time. One extra click for the rare legitimate
+  // case; a missing deal, IO and budget trail for the common mistake.
+  const [confirmPaid, setConfirmPaid] = useState(false);
   const [figmaUrl, setFigmaUrl] = useState("");
   const [budget, setBudget] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -1178,6 +1187,10 @@ function CreateProjectModal({
     e.preventDefault();
     setError(null);
     if (!title.trim()) return;
+    if (billing === "PAID" && !confirmPaid) {
+      setConfirmPaid(true);
+      return;
+    }
     if (budget && (Number.isNaN(Number(budget)) || Number(budget) < 0)) {
       setError("Budget must be a number of 0 or more.");
       return;
@@ -1241,7 +1254,57 @@ function CreateProjectModal({
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleCreate} className="px-6 py-5 space-y-4">
+        {confirmPaid ? (
+          <div className="px-6 py-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-600" />
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Set up a paid shoot here?
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                  Paid shoots normally start as deals in the Commercial pipeline. When the deal
+                  closes, the production is created automatically with its budget allocated from
+                  the deal and the IO linked, so invoicing and cost tracking join up on their own.
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                  Creating it directly here means no deal behind it, no IO, and a budget that
+                  finance can&rsquo;t trace to a signed agreement.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Link
+                href="/commercial"
+                className="inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 dark:bg-gray-100 dark:text-gray-900"
+              >
+                Track it in Commercial instead
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  const form = document.getElementById("new-project-form") as HTMLFormElement | null;
+                  form?.requestSubmit();
+                }}
+                className="inline-flex items-center justify-center rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                {creating ? "Creating…" : "I know, create it here anyway"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmPaid(false)}
+                className="inline-flex items-center justify-center px-3 py-2.5 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        ) : null}
+        <form
+          id="new-project-form"
+          onSubmit={handleCreate}
+          className={confirmPaid ? "hidden" : "px-6 py-5 space-y-4"}
+        >
           <div>
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5">
               Project Name <span className="text-red-400">*</span>
