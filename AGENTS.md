@@ -119,10 +119,17 @@ cd /var/www/outlanderos
 git checkout -- package-lock.json   # server npm installs rewrite it and block the pull
 git pull origin main                # DO NOT pipe this — see below
 npm install
-export DATABASE_URL="postgresql://outlanderos:test123@127.0.0.1:5432/outlanderos"
+# Read the URL from .env.local — NEVER hardcode the password. It was rotated in
+# Aug 2026 and a stale hardcoded URL made `migrate deploy` fail while the chain
+# carried on, shipping code that queried a column prod didn't have.
+export DATABASE_URL="$(grep '^DATABASE_URL' .env.local | cut -d= -f2-)"
 npx prisma migrate deploy && npx prisma generate   # NOT db push — migrations are live
 export NODE_OPTIONS="--max-old-space-size=3584" && npm run build && pm2 restart outlanderos
 git log --oneline -1                # confirm this matches what you pushed
+psql "$DATABASE_URL" -t -c 'select migration_name from "_prisma_migrations" order by finished_at desc limit 1;'
+#                                   ^ confirm the newest migration actually applied — do not
+#                                     trust `tail`ed migrate output, same masking family as
+#                                     the piped pull below
 ```
 
 **Never pipe `git pull` into `tail` inside an `&&` chain.** A pipeline's exit status is
