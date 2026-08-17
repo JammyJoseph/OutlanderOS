@@ -12,7 +12,7 @@ import type {
 import {
   CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
   emptyCallSheetLocation, resolveUnitCall, sortByTime,
-  sortRosterByCallThenRole, sortByRolePriority, findTalent, isPrincipalTalent, sortSchedule,
+  sortRosterByCallThenRole, findTalent, isPrincipalTalent, sortSchedule,
   scheduleCategoryHex,
 } from "./types";
 import { withDerivedBuffers } from "./day-schedule";
@@ -195,7 +195,7 @@ export function CallSheetDocument({
     locationLng, locations, shotStyle, deliverables, figmaUrl, weatherData, schedule,
     shotlist, crew, talent, crewManualOrder, talentManualOrder, catering, documents,
     notesGeneral, notesSafety, notesParking, header, clientTeam, agencyTeam,
-    productionCompany, callTimes, productionMobiles, movementOrder, equipment,
+    productionCompany, callTimes, movementOrder, equipment,
   } = data;
 
   // Default every section visible unless an explicit toggle map says otherwise.
@@ -368,16 +368,27 @@ export function CallSheetDocument({
   // is read here regardless of where storage put them. Hierarchy order unless
   // someone arranged the list by hand — a hand-built order prints exactly as
   // arranged, or screen and paper would disagree.
-  const rosterFiltered = everyone.filter(
-    (c) =>
-      (c.role || c.name) &&
-      !shownNames.has(norm(c.name)) &&
-      !(c.email && shownEmails.has(norm(c.email)))
+  // The split is presentational, derived from the role: the roster stays ONE
+  // list, and the sheet shows the talent family (talent, models, cast, plus
+  // their assists and managers) as its own block above the crew. The principal
+  // appears in the Talent block even though the header calls them out — the
+  // callout is a summary, not the block a producer scans on the day.
+  const isTalentFamily = (role: string | null | undefined) =>
+    /\b(talent|model|cast|actor|actress)\b/i.test(role || "");
+
+  const withRows = (list: typeof everyone) =>
+    crewManualOrder || talentManualOrder ? list : sortRosterByCallThenRole(list, unitCall);
+
+  const talentBlock = withRows(everyone.filter((c) => (c.role || c.name) && isTalentFamily(c.role)));
+  const crewBlock = withRows(
+    everyone.filter(
+      (c) =>
+        (c.role || c.name) &&
+        !isTalentFamily(c.role) &&
+        !shownNames.has(norm(c.name)) &&
+        !(c.email && shownEmails.has(norm(c.email)))
+    )
   );
-  const rosterRows =
-    crewManualOrder || talentManualOrder
-      ? rosterFiltered
-      : sortRosterByCallThenRole(rosterFiltered, unitCall);
 
   const facts: [string, string][] = [];
   if (clientName) facts.push(["Client", clientName]);
@@ -730,12 +741,32 @@ export function CallSheetDocument({
           </Section>
         )}
 
-        {/* ── Cast & Crew — the one roster ──
-            Everyone on the shoot, one table. This replaced two separate lists
-            (crew and "talent") that were the same shape and used
-            interchangeably, which meant two tables, two orderings and a header
-            that could disagree with both. */}
-        {(show("crew") || show("talent")) && rosterRows.length > 0 && (
+        {/* ── Talent — the people being shot, plus the people they bring ── */}
+        {show("talent") && talentBlock.length > 0 && (
+          <Section title="Talent">
+            <GridTable
+              columns={[
+                { label: "Name", width: "27%" },
+                { label: "Role", width: "24%" },
+                { label: "Call", width: "13%", nowrap: true },
+                { label: "Phone", width: "18%" },
+                { label: "Email", width: "18%" },
+              ]}
+              rows={talentBlock.map((t) => [
+                <Bold key="n">{t.name}</Bold>,
+                t.role,
+                <CallCell key="c" person={t} unitCall={unitCall} />,
+                redacted ? REDACTED : <PhoneLink phone={t.phone} />,
+                redacted ? "" : <EmailLink email={t.email} />,
+              ])}
+            />
+          </Section>
+        )}
+
+        {/* ── Cast & Crew — everyone else on the roster, with their contacts.
+            This table IS the contact list: the separate Production Mobiles
+            block was the same phones printed twice, and died of redundancy. ── */}
+        {show("crew") && crewBlock.length > 0 && (
           <Section title="Cast &amp; Crew">
             <GridTable
               columns={[
@@ -745,14 +776,13 @@ export function CallSheetDocument({
                 { label: "Phone", width: "21%" },
                 { label: "Email", width: "21%" },
               ]}
-              rows={rosterRows
-                .map((c) => [
-                  c.role,
-                  <Bold key="n">{c.name}</Bold>,
-                  <CallCell key="c" person={c} unitCall={unitCall} />,
-                  redacted ? REDACTED : <PhoneLink phone={c.phone} />,
-                  redacted ? "" : <EmailLink email={c.email} />,
-                ])}
+              rows={crewBlock.map((c) => [
+                c.role,
+                <Bold key="n">{c.name}</Bold>,
+                <CallCell key="c" person={c} unitCall={unitCall} />,
+                redacted ? REDACTED : <PhoneLink phone={c.phone} />,
+                redacted ? "" : <EmailLink email={c.email} />,
+              ])}
             />
             <p style={{ margin: "10px 0 0", fontSize: "9px", color: MUTED, lineHeight: 1.5 }}>
               On-set contact for all queries: {producerName || "the Producer"}
@@ -781,45 +811,6 @@ export function CallSheetDocument({
             />
           </Section>
         )}
-
-        {/* ── Production mobiles — derived, not typed twice ──
-            The numbers to ring on the day come from the people already on the
-            sheet: anyone in the crew, cast or agency lists with a phone, in
-            production-hierarchy order, topped up with any legacy rows typed
-            into the old separate table. One entry point (the person's row),
-            one list here, nothing to keep in sync. */}
-        {(() => {
-          const seen = new Set<string>();
-          const derived = [
-            ...sortByRolePriority([...crew, ...talent].filter((m) => (m.phone || "").trim())),
-            ...agencyTeam.filter((m) => (m.phone || "").trim()),
-            ...productionMobiles.filter((m) => (m.phone || "").trim()),
-          ]
-            .filter((m) => {
-              const key = (m.phone || m.name || "").replace(/\s+/g, "");
-              if (!key || seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            })
-            .slice(0, 8);
-          if (!show("productionMobiles") || derived.length === 0) return null;
-          return (
-            <Section title="Production Mobiles">
-              <GridTable
-                columns={[
-                  { label: "Role", width: "30%" },
-                  { label: "Name", width: "34%" },
-                  { label: "Phone", width: "36%" },
-                ]}
-                rows={derived.map((m) => [
-                  m.role,
-                  <Bold key="n">{m.name}</Bold>,
-                  redacted ? REDACTED : <PhoneLink phone={m.phone} />,
-                ])}
-              />
-            </Section>
-          );
-        })()}
 
         {/* ── Production company ── */}
         {show("productionCompany") &&
