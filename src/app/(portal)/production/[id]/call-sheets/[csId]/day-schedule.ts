@@ -2,23 +2,25 @@
 // Day-schedule parser — paste a comprehensive timing breakdown, get a clean,
 // structured run of the day.
 //
-// Producers write schedules minute-by-minute, in text, and the formats vary by
-// where the text came from. This understands all of them in one paste:
+// Producers write schedules minute-by-minute, in text, and the dialects vary.
+// This understands all of them in one paste:
 //
-//   1. Slash lines (how a producer types it):
-//        10:00 / Look 1 Photo / Barbican 1 / 2 Hero, 1 Product Detail, 2 BTS
-//      Segments are time / activity / [location] / [notes] — the location is
-//      recognised, not positional, because half the lines don't have one.
+//   1. Slash lines:   10:00 / Look 1 Photo / Barbican 1 / 2 Hero, 1 Detail
+//   2. Dash lines:    10:00 - LOOK 1 / LOCATION 1 - PHOTO & VIDEO
+//      Either separator after the time; segments are activity / [location] /
+//      [notes], with the location recognised rather than positional.
 //
-//   2. Indented sub-lines, two kinds:
-//        60 mins / Crew prep              → duration + category for the block above
-//        09:55 / Talent to Location 1 / 5 mins  → its own minor row between key timings
+//   3. Indented sub-lines, three kinds:
+//        60 mins / Setup                → ONE under a block: its duration and
+//                                         category, nothing more
+//        30 mins / Photo                → SEVERAL under a block: segments of
+//        10 mins / Video                  the block. The block's duration is
+//        5 mins / Walk back to glam      their sum, and each becomes its own
+//                                         minute-by-minute row with a start
+//                                         time derived from the block's start
+//        09:55 / Talent travel / 5 mins → a timed sub-point, kept as written
 //
-//   3. Table pastes (copying a schedule grid out of a doc or sheet gives
-//      tab-separated lines):  08:00 <TAB> 60 min <TAB> CREW CALL <TAB> notes
-//
-//   4. Legacy plain lines ("08:00 Crew Call") — the format the old importer
-//      accepted keeps working.
+//   4. Table pastes (tab-separated) and the legacy "08:00 Crew Call" lines.
 //
 // Call-time rows (crew call, talent call, wrap…) are ALSO emitted as CallTimes
 // entries but stay in the schedule: the Call Times block is the at-a-glance
@@ -49,10 +51,21 @@ function parseTime(line: string): { time: string; rest: string } | null {
   if (h > 23 || min > 59) return null
   return {
     time: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`,
-    // "08:00 / Crew Call" leaves a leading separator on the remainder — the
-    // split below only breaks on slashes with whitespace on BOTH sides.
-    rest: line.slice(m[0].length).replace(/^[/|\u00b7-]\s*/, ''),
+    // "08:00 / Crew Call" and "08:00 - CREW CALL" both leave a leading
+    // separator on the remainder — the split below only breaks on separators
+    // with whitespace on BOTH sides.
+    rest: line.slice(m[0].length).replace(/^[/|·-]\s*/, ''),
   }
+}
+
+const timeToMins = (t: string): number | null => {
+  const m = t.match(/^(\d{2}):(\d{2})$/)
+  return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : null
+}
+
+const minsToTime = (mins: number): string => {
+  const clamped = ((mins % 1440) + 1440) % 1440
+  return `${String(Math.floor(clamped / 60)).padStart(2, '0')}:${String(clamped % 60).padStart(2, '0')}`
 }
 
 export function parseDurationMins(text: string): number | null {
@@ -63,13 +76,18 @@ export function parseDurationMins(text: string): number | null {
 }
 
 // Does a segment read as a place rather than a sentence? Short, no sentence
-// punctuation, and not an obvious status phrase. Wrong guesses land in the
-// preview where they're one click to fix, so this favours simplicity.
+// punctuation, and not an obvious status or activity phrase. Wrong guesses
+// land in the preview where they're one click to fix.
 function looksLikeLocation(seg: string): boolean {
   const s = seg.trim()
   if (!s || s.length > 34) return false
   if (/[,.;!?]/.test(s)) return false
-  if (/\b(complete|done|ready|final|checks?|capture|shoot|arrivals?|arrive|into|prep|set ?up|call)\b/i.test(s)) return false
+  if (
+    /\b(complete|done|ready|final|checks?|capture|shoot|arrivals?|arrive|into|prep|set ?up|call|photo|video)\b/i.test(
+      s
+    )
+  )
+    return false
   // "Look 2" after a look-change row is the look, not a place.
   if (/^look\s*\d+$/i.test(s)) return false
   return true
@@ -82,6 +100,11 @@ function splitSegments(rest: string): string[] {
   return rest.split(/\s+\/\s+|\s+\|\s+/).map((s) => s.trim()).filter(Boolean)
 }
 
+interface PendingSub {
+  dur: number
+  label: string
+}
+
 export function parseDaySchedule(raw: string): ParsedDaySchedule {
   const text = (raw || '').replace(/\r\n/g, '\n')
   const callTimes: CallTimeRow[] = []
@@ -89,25 +112,55 @@ export function parseDaySchedule(raw: string): ParsedDaySchedule {
   if (!text.trim()) return { callTimes, schedule }
 
   let lastMajor: ScheduleItem | null = null
+  let pendingSubs: PendingSub[] = []
+
+  // Resolve the buffered duration lines under a block. One line is the
+  // producer annotating the block ("60 mins / Setup"); several are the block's
+  // internal segments — the block's duration becomes their sum, and each gets
+  // its own row with a start time walked forward from the block's start, which
+  // is what turns the shorthand into an actual minute-by-minute.
+  function flushSubs() {
+    if (!lastMajor || pendingSubs.length === 0) {
+      pendingSubs = []
+      return
+    }
+    if (pendingSubs.length === 1) {
+      const sub = pendingSubs[0]
+      lastMajor.durationMins = sub.dur
+      const labelled = sub.label ? inferScheduleCategory(sub.label) : null
+      if (labelled) lastMajor.category = labelled
+    } else {
+      lastMajor.durationMins = pendingSubs.reduce((s, x) => s + x.dur, 0)
+      let clock = timeToMins(lastMajor.time)
+      for (const sub of pendingSubs) {
+        schedule.push({
+          time: clock != null ? minsToTime(clock) : '',
+          description: sub.label || '—',
+          notes: '',
+          durationMins: sub.dur,
+          category: sub.label ? inferScheduleCategory(sub.label) : null,
+          location: null,
+          minor: true,
+        })
+        if (clock != null) clock += sub.dur
+      }
+    }
+    pendingSubs = []
+  }
 
   for (const rawLine of text.split('\n')) {
     if (!rawLine.trim()) continue
-    const indented = /^[\s ]/.test(rawLine)
-    const line = rawLine.replace(/^[\s ]*[-*•]?\s*/, '')
+    const indented = /^[\s ]/.test(rawLine)
+    const line = rawLine.replace(/^[\s ]*[-*•]?\s*/, '')
 
     const timed = parseTime(line)
 
-    // ── Duration sub-line: "60 mins / Crew prep" ──
+    // ── Untimed sub-line: "60 mins / Setup" — buffered until the block ends ──
     if (!timed) {
       const segs = splitSegments(line)
       const dur = segs.length > 0 ? parseDurationMins(segs[0]) : null
       if (dur != null && lastMajor) {
-        lastMajor.durationMins = dur
-        // The sub-line's label ("60 mins / Crew prep") is the producer saying
-        // what kind of time this is — it beats anything guessed from notes.
-        const label = segs.slice(1).join(' · ')
-        const labelled = label ? inferScheduleCategory(label) : null
-        if (labelled) lastMajor.category = labelled
+        pendingSubs.push({ dur, label: segs.slice(1).join(' · ') })
         continue
       }
       // A plain untimed line: notes continuation for the block above.
@@ -118,6 +171,9 @@ export function parseDaySchedule(raw: string): ParsedDaySchedule {
     }
 
     // ── Timed line ──
+    // A new major block closes the previous one's buffer first.
+    if (!indented) flushSubs()
+
     const segs = splitSegments(timed.rest)
     if (segs.length === 0) continue
 
@@ -152,7 +208,13 @@ export function parseDaySchedule(raw: string): ParsedDaySchedule {
     }
 
     for (const seg of restSegs) {
-      if (!item.location && looksLikeLocation(seg)) {
+      // "LOCATION 1 - PHOTO & VIDEO": the dash splits a place from what
+      // happens there.
+      const dashSplit = !item.location && seg.includes(' - ') ? seg.split(/\s+-\s+/) : null
+      if (dashSplit && dashSplit.length >= 2 && looksLikeLocation(dashSplit[0])) {
+        item.location = dashSplit[0].trim()
+        item.notes = [item.notes, dashSplit.slice(1).join(' - ').trim()].filter(Boolean).join(' · ')
+      } else if (!item.location && looksLikeLocation(seg)) {
         item.location = seg
       } else {
         item.notes = [item.notes, seg].filter(Boolean).join(' · ')
@@ -183,5 +245,6 @@ export function parseDaySchedule(raw: string): ParsedDaySchedule {
     if (!indented) lastMajor = item
   }
 
+  flushSubs()
   return { callTimes, schedule }
 }

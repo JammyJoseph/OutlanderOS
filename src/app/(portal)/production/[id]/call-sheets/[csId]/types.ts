@@ -50,7 +50,7 @@ export function inferScheduleCategory(text: string): string | null {
   if (!t.trim()) return null;
   if (/\bwrap\b/.test(t)) return "WRAP";
   if (/\b(lunch|breakfast|dinner|catering|meal)\b/.test(t)) return "MEAL";
-  if (/\b(travel|transit|move (?:to|talent|crew)|departure)\b/.test(t)) return "TRAVEL";
+  if (/\b(travel|transit|move (?:to|talent|crew)|departure|walk|arriv(?:e|al)s?)\b/.test(t)) return "TRAVEL";
   if (/\b(video|motion|film(?:ing)?)\b/.test(t)) return "VIDEO";
   if (/\bphoto(?:graphy|grapher)?s?\b/.test(t)) return "PHOTO";
   if (/\b(glam|hmua?|hair|make[- ]?up|grooming)\b/.test(t)) return "GLAM";
