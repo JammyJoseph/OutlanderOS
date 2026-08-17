@@ -258,7 +258,10 @@ export function CallSheetDocument({
   // The person actually labelled as talent — not simply the first row. See
   // findTalent: a whole unit is often entered into one list, and taking [0]
   // named whoever was typed first.
-  const t0 = findTalent(talent);
+  // Everyone on the shoot, wherever storage put them — old sheets carry rows
+  // in both columns until their next Finish migrates them.
+  const everyone = [...crew, ...talent];
+  const t0 = findTalent(everyone);
 
   const callTimeRows: { time: string; label: string }[] = [
     { time: unitCall || "TBC", label: "Unit Call" },
@@ -281,7 +284,7 @@ export function CallSheetDocument({
   // explicit talent line — a hand-entered row is someone's decision and must
   // not be doubled up.
   const talentAlreadyListed = departmentRows.some((r) => /\b(talent|cast)\b/i.test(r.label || ""));
-  const principals = talent.filter(
+  const principals = everyone.filter(
     (t) => isPrincipalTalent(t.role) && ((t.name || "").trim() || t.callTime)
   );
 
@@ -318,11 +321,22 @@ export function CallSheetDocument({
 
   // ── Shoot details: left facts, right key people + weather ──
   const creative = agencyTeam.find((a) => (a.name || "").trim());
+  // The producer callouts fall back to the roster, so the header can never
+  // disagree with the crew list. The Production Company fields stay as an
+  // override for the case where the named producer isn't on the sheet.
+  const execProducerName =
+    (productionCompany.execProducer || "").trim() ||
+    everyone.find((c) => /\bexec(?:utive)?\s+producer\b/i.test(c.role || ""))?.name ||
+    "";
+  const producerName =
+    (productionCompany.producer || "").trim() ||
+    everyone.find(
+      (c) => /\bproducer\b/i.test(c.role || "") && !/\bexec/i.test(c.role || "")
+    )?.name ||
+    "";
   const people: { label: string; name: string; phone?: string; email?: string }[] = [];
-  if (productionCompany.execProducer)
-    people.push({ label: "Exec Producer", name: productionCompany.execProducer });
-  if (productionCompany.producer)
-    people.push({ label: "Producer", name: productionCompany.producer });
+  if (execProducerName) people.push({ label: "Exec Producer", name: execProducerName });
+  if (producerName) people.push({ label: "Producer", name: producerName });
   if (creative)
     people.push({
       label: creative.role || "Creative",
@@ -345,31 +359,25 @@ export function CallSheetDocument({
   // Match on name or email; Shoot Details takes priority.
   const norm = (s?: string) => (s || "").trim().toLowerCase();
   const shownNames = new Set(
-    [productionCompany.execProducer, productionCompany.producer, creative?.name, t0?.name]
-      .map(norm)
-      .filter(Boolean)
+    [execProducerName, producerName, creative?.name, t0?.name].map(norm).filter(Boolean)
   );
   const shownEmails = new Set(
     [creative?.email, t0?.email].map(norm).filter(Boolean)
   );
-  // In production-hierarchy order — Producer / Director / DOP / … at the top,
-  // department by department, rather than the order rows were added.
-  // A hand-built order is printed exactly as arranged — re-sorting it here
-  // would mean the sheet on screen and the sheet on paper disagree.
-  const crewFiltered = crew.filter(
+  // ONE roster: old sheets may still carry rows in both columns, so the union
+  // is read here regardless of where storage put them. Hierarchy order unless
+  // someone arranged the list by hand — a hand-built order prints exactly as
+  // arranged, or screen and paper would disagree.
+  const rosterFiltered = everyone.filter(
     (c) =>
       (c.role || c.name) &&
       !shownNames.has(norm(c.name)) &&
       !(c.email && shownEmails.has(norm(c.email)))
   );
-  const contactCrew = crewManualOrder
-    ? crewFiltered
-    : sortRosterByCallThenRole(crewFiltered, unitCall);
-
-  const talentFiltered = talent.filter((t) => t.role || t.name);
-  const talentRows = talentManualOrder
-    ? talentFiltered
-    : sortRosterByCallThenRole(talentFiltered, unitCall);
+  const rosterRows =
+    crewManualOrder || talentManualOrder
+      ? rosterFiltered
+      : sortRosterByCallThenRole(rosterFiltered, unitCall);
 
   const facts: [string, string][] = [];
   if (clientName) facts.push(["Client", clientName]);
@@ -722,9 +730,13 @@ export function CallSheetDocument({
           </Section>
         )}
 
-        {/* ── Contacts — crew / talent ── */}
-        {show("crew") && contactCrew.length > 0 && (
-          <Section title="Contacts — Crew / Talent">
+        {/* ── Cast & Crew — the one roster ──
+            Everyone on the shoot, one table. This replaced two separate lists
+            (crew and "talent") that were the same shape and used
+            interchangeably, which meant two tables, two orderings and a header
+            that could disagree with both. */}
+        {(show("crew") || show("talent")) && rosterRows.length > 0 && (
+          <Section title="Cast &amp; Crew">
             <GridTable
               columns={[
                 { label: "Role", width: "24%" },
@@ -733,7 +745,7 @@ export function CallSheetDocument({
                 { label: "Phone", width: "21%" },
                 { label: "Email", width: "21%" },
               ]}
-              rows={contactCrew
+              rows={rosterRows
                 .map((c) => [
                   c.role,
                   <Bold key="n">{c.name}</Bold>,
@@ -743,31 +755,10 @@ export function CallSheetDocument({
                 ])}
             />
             <p style={{ margin: "10px 0 0", fontSize: "9px", color: MUTED, lineHeight: 1.5 }}>
-              On-set contact for all queries: {productionCompany.producer || "the Producer"}
-              {productionCompany.producer ? " (Producer)" : ""}. Roles marked &ldquo;c/o
+              On-set contact for all queries: {producerName || "the Producer"}
+              {producerName ? " (Producer)" : ""}. Roles marked &ldquo;c/o
               Outlander&rdquo; are reached via the Producer.
             </p>
-          </Section>
-        )}
-
-        {/* ── Talent (dedicated list, if present) ── */}
-        {show("talent") && talentRows.length > 0 && (
-          <Section title="Cast &amp; Crew">
-            <GridTable
-              columns={[
-                { label: "Name", width: "30%" },
-                { label: "Role", width: "26%" },
-                { label: "Call", width: "14%", nowrap: true },
-                { label: "Contact", width: "30%" },
-              ]}
-              rows={talentRows
-                .map((t) => [
-                  <Bold key="n">{t.name}</Bold>,
-                  t.role,
-                  <CallCell key="c" person={t} unitCall={unitCall} />,
-                  redacted ? REDACTED : <ContactCell phone={t.phone} email={t.email} />,
-                ])}
-            />
           </Section>
         )}
 

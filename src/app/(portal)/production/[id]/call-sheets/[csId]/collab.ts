@@ -91,17 +91,23 @@ export function sheetToState(s: CallSheet): SheetState {
     shotStyle: isObj(s.shotStyle) ? { ...emptyShotStyle(), ...s.shotStyle } : emptyShotStyle(),
     weatherData: s.weatherData ?? null,
     shotlist: Array.isArray(s.shotlist) ? s.shotlist : [],
+    // ONE roster. The crew/talent split was two identically-shaped lists used
+    // interchangeably (whole units were typed into "talent"), so loading merges
+    // talent into crew and the next save writes the merged list back with
+    // talent emptied — a one-time migration that happens by opening the sheet.
     // Canonicalising through sortRoster is what keeps two editors from fighting
     // over row order — but it must not run on a list someone has arranged by
     // hand, or the next autosave silently throws the arrangement away.
-    crew: s.crewManualOrder
-      ? (Array.isArray(s.crew) ? s.crew : [])
-      : sortRoster(Array.isArray(s.crew) ? s.crew : [], unitCall),
-    talent: s.talentManualOrder
-      ? (Array.isArray(s.talent) ? s.talent : [])
-      : sortRoster(Array.isArray(s.talent) ? s.talent : [], unitCall),
-    crewManualOrder: !!s.crewManualOrder,
-    talentManualOrder: !!s.talentManualOrder,
+    crew: (() => {
+      const merged = [
+        ...(Array.isArray(s.crew) ? s.crew : []),
+        ...(Array.isArray(s.talent) ? s.talent : []),
+      ]
+      return s.crewManualOrder || s.talentManualOrder ? merged : sortRoster(merged, unitCall)
+    })(),
+    talent: [],
+    crewManualOrder: !!s.crewManualOrder || !!s.talentManualOrder,
+    talentManualOrder: false,
     catering: migrateCatering(s.cateringDetails, s.notes),
     documents: Array.isArray(s.documents) ? s.documents : [],
     notesGeneral: s.productionNotes || "",

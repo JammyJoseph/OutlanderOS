@@ -276,9 +276,9 @@ export function CallSheetEditor(p: EditorProps) {
         )}
       </Section>
 
-      {/* 2. Unit List (Crew) */}
+      {/* 2. Cast & Crew — the one roster */}
       <Section
-        title="Unit List (Crew)"
+        title="Cast &amp; Crew"
         icon={<Users size={15} className={iconCls} />}
         action={
           <div className="flex items-center gap-3">
@@ -319,7 +319,7 @@ export function CallSheetEditor(p: EditorProps) {
           people={p.crew}
           setPeople={(v) => p.setCrew(v as CrewMember[])}
           unitCallTime={p.unitCallTime}
-          addLabel="Add Crew"
+          addLabel="Add Person"
           rolePresets={CREW_ROLE_PRESETS}
           sortBy="role"
           manualOrder={p.crewManualOrder}
@@ -327,36 +327,7 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 3. Talent */}
-      <Section
-        title="Cast &amp; Crew"
-        icon={<Users size={15} className={iconCls} />}
-        action={
-          <a
-            href="/directory"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          >
-            <ContactIcon size={12} /> Browse Directory
-          </a>
-        }
-      >
-        <PeopleTable
-          people={p.talent}
-          setPeople={(v) => p.setTalent(v as TalentMember[])}
-          unitCallTime={p.unitCallTime}
-          addLabel="Add Person"
-          rolePresets={CREW_ROLE_PRESETS}
-          // In practice this list holds the whole unit, not just cast, so it
-          // gets the same hierarchy ordering as the crew list.
-          sortBy="role"
-          manualOrder={p.talentManualOrder}
-          setManualOrder={p.setTalentManualOrder}
-        />
-      </Section>
-
-      {/* 4. Client Team */}
+      {/* 3. Client Team */}
       <Section
         title="Client Team"
         icon={<Briefcase size={15} className={iconCls} />}
@@ -381,7 +352,7 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 5. Agency Team */}
+      {/* 4. Agency Team */}
       <Section
         title="Agency Team (Outlander)"
         icon={<Users size={15} className={iconCls} />}
@@ -399,7 +370,7 @@ export function CallSheetEditor(p: EditorProps) {
         <AgencyTeamTable rows={p.agencyTeam} setRows={p.setAgencyTeam} />
       </Section>
 
-      {/* 6. Production Company */}
+      {/* 5. Production Company */}
       <Section title="Production Company" icon={<Building2 size={15} className={iconCls} />}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
@@ -445,17 +416,17 @@ export function CallSheetEditor(p: EditorProps) {
         </div>
       </Section>
 
-      {/* 7. Catering */}
+      {/* 6. Catering */}
       <Section title="Catering" icon={<Coffee size={15} className={iconCls} />}>
         <CateringEditor catering={p.catering} setCatering={p.setCatering} rosterCount={rosterCount} />
       </Section>
 
-      {/* 8. Locations */}
+      {/* 7. Locations */}
       <Section title="Locations" icon={<MapPin size={15} className={iconCls} />}>
         <LocationsEditor locations={p.locations} setLocations={p.setLocations} />
       </Section>
 
-      {/* 9. Movement Order — stops derived from the ordered locations above */}
+      {/* 8. Movement Order — stops derived from the ordered locations above */}
       <Section title="Movement Order" icon={<Route size={15} className={iconCls} />}>
         <MovementOrderEditor
           movementOrder={p.movementOrder}
@@ -467,7 +438,7 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 10. Weather — uses the first location's coordinates */}
+      {/* 9. Weather — uses the first location's coordinates */}
       <Section title="Weather" icon={<Cloud size={15} className={iconCls} />}>
         <WeatherEditor
           lat={p.locations[0]?.lat ?? p.locationLat}
@@ -478,7 +449,7 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 11. Schedule & Call Times — merged input, split output */}
+      {/* 10. Schedule & Call Times — merged input, split output */}
       <Section title="Schedule & Call Times" icon={<Clock size={15} className={iconCls} />}>
         <div className="space-y-4">
           {/* Unit Call — the master time everyone on the sheet inherits. */}
@@ -738,7 +709,7 @@ export function CallSheetEditor(p: EditorProps) {
         </div>
       </Section>
 
-      {/* 12. Shotlist */}
+      {/* 11. Shotlist */}
       <Section title="Shotlist" icon={<Camera size={15} className={iconCls} />}>
         <ShotlistEditor
           shotlist={p.shotlist}
@@ -755,23 +726,29 @@ export function CallSheetEditor(p: EditorProps) {
         <CallSheetDeliverables productionId={p.production.id} />
       </Section>
 
-      {/* 13. Equipment (Phase 4E — standard departments, directory suppliers, kit templates) */}
+      {/* 12. Equipment (Phase 4E — standard departments, directory suppliers, kit templates) */}
       <Section title="Equipment" icon={<Aperture size={15} className={iconCls} />}>
         <EquipmentEditor equipment={p.equipment} setEquipment={p.setEquipment} />
       </Section>
 
-      {/* 14. Documents */}
+      {/* 13. Documents */}
       <Section title="Documents" icon={<Paperclip size={15} className={iconCls} />}>
         <DocumentsEditor documents={p.documents} setDocuments={p.setDocuments} />
       </Section>
 
-      {/* 15. Notes */}
+      {/* 14. Notes */}
       <Section title="Notes" icon={<FileText size={15} className={iconCls} />}>
         <div className="space-y-3">
           {[
             { label: "Production Notes", value: p.notesGeneral, set: p.setNotesGeneral, ph: "General production notes..." },
             { label: "Safety Notes", value: p.notesSafety, set: p.setNotesSafety, ph: "Safety briefing, hazards..." },
-            { label: "Parking Instructions", value: p.notesParking, set: p.setNotesParking, ph: "Parking details..." },
+            // Parking used to be typed here AND per location AND in the
+            // movement order. It belongs on the location it applies to — the
+            // standalone field only renders when a legacy sheet already has
+            // text in it, so nothing already written is hidden.
+            ...(p.notesParking.trim()
+              ? [{ label: "Parking Instructions (legacy — prefer the location rows)", value: p.notesParking, set: p.setNotesParking, ph: "Parking details..." }]
+              : []),
           ].map(({ label, value, set, ph }) => (
             <div key={label}>
               <label className={labelCls}>{label}</label>
@@ -787,7 +764,7 @@ export function CallSheetEditor(p: EditorProps) {
         </div>
       </Section>
 
-      {/* 16. Conduct Policy (auto-included, read-only) */}
+      {/* 15. Conduct Policy (auto-included, read-only) */}
       <Section title="Conduct Policy" icon={<Shield size={15} className={iconCls} />}>
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
           Auto-included on every call sheet — not editable.
@@ -795,7 +772,7 @@ export function CallSheetEditor(p: EditorProps) {
         <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{CONDUCT_POLICY}</p>
       </Section>
 
-      {/* 17. Confidentiality Notice (auto-included, read-only) */}
+      {/* 16. Confidentiality Notice (auto-included, read-only) */}
       <Section title="Confidentiality Notice" icon={<Lock size={15} className={iconCls} />}>
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
           Auto-included on every call sheet — not editable.
