@@ -13,6 +13,7 @@ import {
   CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
   emptyCallSheetLocation, resolveUnitCall, sortByTime,
   sortRosterByCallThenRole, findTalent, isPrincipalTalent, sortSchedule,
+  scheduleCategoryHex,
 } from "./types";
 import {
   journeyStats, formatJourneySummary,
@@ -566,19 +567,69 @@ export function CallSheetDocument({
           </table>
         </Section>
 
-        {/* ── Run of the day (schedule) ── */}
+        {/* ── Day schedule ──
+            The minute-by-minute run: time and duration on the left, the
+            activity with its category colour, location bold before the notes.
+            Sub-points (minor rows) sit lighter and indented, exactly as they
+            were pasted. Colour is a small dot that must survive print, not a
+            row highlight — this is a hairline monochrome document. */}
         {show("schedule") && schedule.some((s) => s.time || s.description) && (
-          <Section title="Run of the Day">
-            <GridTable
-              columns={[
-                { label: "Time", width: "14%", nowrap: true },
-                { label: "Activity — Location", width: "48%" },
-                { label: "Notes", width: "38%" },
-              ]}
-              rows={sortSchedule(schedule)
-                .filter((s) => s.time || s.description)
-                .map((s) => [<Bold key="t">{s.time}</Bold>, <Bold key="a">{s.description}</Bold>, s.notes])}
-            />
+          <Section title="Day Schedule">
+            <table style={tableStyle}>
+              <colgroup>
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "30%" }} />
+                <col style={{ width: "50%" }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Time</th>
+                  <th style={thStyle}>Duration</th>
+                  <th style={thStyle}>Activity</th>
+                  <th style={thStyle}>Location / Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortSchedule(schedule)
+                  .filter((s) => s.time || s.description)
+                  .map((s, i) => {
+                    const minor = !!s.minor;
+                    const dim: React.CSSProperties = minor ? { color: MUTED, fontSize: "12px" } : {};
+                    return (
+                      <tr key={i}>
+                        <td style={{ ...cellStyle, whiteSpace: "nowrap", ...dim }}>
+                          <span style={{ fontWeight: minor ? 400 : 700 }}>{s.time || "—"}</span>
+                        </td>
+                        <td style={{ ...cellStyle, whiteSpace: "nowrap", color: MUTED, fontSize: "12px" }}>
+                          {s.durationMins != null ? `${s.durationMins} min` : ""}
+                        </td>
+                        <td style={{ ...cellStyle, ...dim, paddingLeft: minor ? "14px" : 0 }}>
+                          <span
+                            style={{
+                              display: "inline-block",
+                              width: "7px",
+                              height: "7px",
+                              borderRadius: "99px",
+                              background: s.category ? scheduleCategoryHex(s.category) : HAIR,
+                              marginRight: "7px",
+                              verticalAlign: "1px",
+                              printColorAdjust: "exact",
+                              WebkitPrintColorAdjust: "exact",
+                            }}
+                          />
+                          <span style={{ fontWeight: minor ? 400 : 700 }}>{s.description}</span>
+                        </td>
+                        <td style={{ ...cellStyle, ...dim }}>
+                          {s.location ? <Bold>{s.location}</Bold> : null}
+                          {s.location && s.notes ? ". " : null}
+                          {s.notes || (s.location ? "" : "—")}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
           </Section>
         )}
 

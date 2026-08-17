@@ -1,6 +1,7 @@
 "use client";
 
 import SmartTip from "@/components/SmartTip";
+import { parseDaySchedule } from "./day-schedule";
 import { useEffect, useRef, useState } from "react";
 import {
   Clock, MapPin, Cloud, Camera, Users, Coffee, Paperclip, FileText,
@@ -17,7 +18,7 @@ import type {
 import {
   AGENCY_TEAM_ROLES, CLIENT_TEAM_ROLES, CONDUCT_POLICY, CONFIDENTIALITY_NOTICE,
   CREW_ROLE_PRESETS, defaultCallTimes, EQUIPMENT_CATEGORIES,
-  KIT_TEMPLATES, parseSchedule, sortCallTimes, sortSchedule,
+  KIT_TEMPLATES, sortCallTimes, sortSchedule, SCHEDULE_CATEGORIES, scheduleCategoryHex,
 } from "./types";
 import { Section, AddButton, DeleteButton, inputCls, smallInputCls, labelCls } from "./shared";
 import { PeopleTable } from "./shared";
@@ -474,9 +475,18 @@ export function CallSheetEditor(p: EditorProps) {
           </p>
 
           <ScheduleImporter
-            onParsed={({ callTimes, schedule }) => {
-              if (callTimes.length) p.setCallTimes(sortCallTimes([...p.callTimes, ...callTimes]));
-              if (schedule.length) p.setSchedule(sortSchedule([...p.schedule, ...schedule]));
+            hasExisting={p.schedule.length > 0}
+            onParsed={({ callTimes, schedule, replace }) => {
+              if (callTimes.length) {
+                p.setCallTimes(
+                  replace ? sortCallTimes(callTimes) : sortCallTimes([...p.callTimes, ...callTimes])
+                );
+              }
+              if (schedule.length) {
+                p.setSchedule(
+                  replace ? sortSchedule(schedule) : sortSchedule([...p.schedule, ...schedule])
+                );
+              }
             }}
           />
 
@@ -564,9 +574,9 @@ export function CallSheetEditor(p: EditorProps) {
               }}
               className={`grid ${
                 p.locations.length > 0
-                  ? "grid-cols-[20px_100px_1fr_1fr_130px_32px]"
-                  : "grid-cols-[20px_100px_1fr_1fr_32px]"
-              } gap-2 items-center rounded-lg transition-colors ${
+                  ? "grid-cols-[20px_92px_60px_1fr_1fr_108px_130px_32px]"
+                  : "grid-cols-[20px_92px_60px_1fr_1fr_108px_32px]"
+              } gap-2 items-center rounded-lg transition-colors ${item.minor ? "pl-4 opacity-80" : ""} ${
                 dragOverIndex === i && dragIndex !== null && dragIndex !== i
                   ? "bg-red-50/70 dark:bg-red-900/30 ring-1 ring-[#A93B2E]/30"
                   : dragIndex === i
@@ -584,6 +594,23 @@ export function CallSheetEditor(p: EditorProps) {
                   p.setSchedule(p.schedule.map((s, j) => (j === i ? { ...s, time: e.target.value } : s)))
                 }
                 onBlur={() => p.setSchedule(sortSchedule(p.schedule))}
+                className={smallInputCls}
+              />
+              <input
+                type="number"
+                min="0"
+                value={item.durationMins ?? ""}
+                onChange={(e) =>
+                  p.setSchedule(
+                    p.schedule.map((s, j) =>
+                      j === i
+                        ? { ...s, durationMins: e.target.value === "" ? null : Number(e.target.value) }
+                        : s
+                    )
+                  )
+                }
+                placeholder="min"
+                title="Duration in minutes"
                 className={smallInputCls}
               />
               <input
@@ -606,6 +633,32 @@ export function CallSheetEditor(p: EditorProps) {
                 placeholder="Notes"
                 className={smallInputCls}
               />
+              <div className="flex items-center gap-1">
+                <span
+                  className="inline-block h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: scheduleCategoryHex(item.category) }}
+                  title="Category colour"
+                />
+                <select
+                  value={item.category ?? ""}
+                  onChange={(e) =>
+                    p.setSchedule(
+                      p.schedule.map((s, j) =>
+                        j === i ? { ...s, category: e.target.value || null } : s
+                      )
+                    )
+                  }
+                  className={smallInputCls}
+                  title="Category — drives the colour coding"
+                >
+                  <option value="">— type —</option>
+                  {SCHEDULE_CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {p.locations.length > 0 && (
                 <select
                   value={item.locationRef ?? ""}
@@ -809,17 +862,22 @@ export function CallSheetEditor(p: EditorProps) {
 // run-of-day schedule blocks (see parseSchedule). Output stays split.
 function ScheduleImporter({
   onParsed,
+  hasExisting,
 }: {
-  onParsed: (r: { callTimes: CallTimeRow[]; schedule: ScheduleItem[] }) => void;
+  onParsed: (r: { callTimes: CallTimeRow[]; schedule: ScheduleItem[]; replace: boolean }) => void;
+  hasExisting: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [raw, setRaw] = useState("");
+  // Pasting a full day usually means "this IS the schedule" — appending it
+  // onto an existing one silently doubles the day.
+  const [replace, setReplace] = useState(true);
+
+  const preview = raw.trim() ? parseDaySchedule(raw) : null;
 
   function run() {
-    if (!raw.trim()) return;
-    const parsed = parseSchedule(raw);
-    if (parsed.callTimes.length === 0 && parsed.schedule.length === 0) return;
-    onParsed(parsed);
+    if (!preview || (preview.callTimes.length === 0 && preview.schedule.length === 0)) return;
+    onParsed({ ...preview, replace: hasExisting ? replace : false });
     setRaw("");
     setOpen(false);
   }
@@ -836,22 +894,54 @@ function ScheduleImporter({
       {open && (
         <div className="mt-3 space-y-2">
           <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
-            One entry per line, starting with a time — e.g.{" "}
-            <span className="font-mono">08:00 Crew Call</span>,{" "}
-            <span className="font-mono">08:30 Talent Call</span>,{" "}
-            <span className="font-mono">09:00 Breakfast &amp; setup</span>,{" "}
-            <span className="font-mono">18:00 Wrap</span>. Call times are detected
-            automatically; everything else becomes a schedule block.
+            Paste the whole day, minute by minute. Main lines:{" "}
+            <span className="font-mono">time / activity / location / notes</span>. Indent a line
+            under a block for its duration (<span className="font-mono">60 mins / Crew prep</span>)
+            or a sub-point (<span className="font-mono">09:55 / Talent to Location 1 / 5 mins</span>).
+            Rows pasted from a table (tab-separated) work too. Durations, locations and
+            colour-coded categories are picked up automatically; call times feed the Call Times
+            block as well.
           </p>
           <textarea
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             placeholder={
-              "08:00 Crew Call\n08:30 Talent Call\n09:00 HMU & styling\n10:00 Main Unit Call — first setup\n13:00 Lunch\n18:00 Wrap"
+              "08:00 / Crew Call / Crew arrival, equipment prep and lighting checks\n 60 mins / Crew prep\n\n09:00 / Talent Call / HMUA, styling and Look 1 prep\n 55 mins / Glam + styling\n 09:55 / Talent to Location 1 / 5 mins\n\n10:00 / Look 1 Photo / Barbican 1 / 2 Hero, 1 Product Detail, 2 BTS\n 30 mins / Photography\n\n15:30 / Wrap / Shoot complete"
             }
-            rows={7}
+            rows={10}
             className={`${inputCls} resize-y font-mono text-xs`}
           />
+          {preview && preview.schedule.length > 0 && (
+            <div className="rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                {preview.schedule.length} row{preview.schedule.length === 1 ? "" : "s"} parsed
+                {preview.callTimes.length > 0 ? ` · ${preview.callTimes.length} call time(s) detected` : ""}
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {preview.schedule.slice(0, 24).map((r, i) => (
+                  <span
+                    key={i}
+                    className={`inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[10px] ${
+                      r.minor ? "text-gray-400 dark:text-gray-500" : "text-gray-600 dark:text-gray-300"
+                    }`}
+                  >
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full"
+                      style={{ background: scheduleCategoryHex(r.category) }}
+                    />
+                    {r.time} {r.description.slice(0, 22)}
+                    {r.durationMins != null ? ` · ${r.durationMins}m` : ""}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {hasExisting && (
+            <label className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+              <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
+              Replace the current schedule (untick to append)
+            </label>
+          )}
           <div className="flex items-center gap-2">
             <button
               onClick={run}

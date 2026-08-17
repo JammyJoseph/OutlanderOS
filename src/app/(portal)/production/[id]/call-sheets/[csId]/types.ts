@@ -7,6 +7,57 @@ export interface ScheduleItem {
   // Name of the CallSheetLocation this block happens at. Optional/back-compat —
   // when set, the movement order auto-inserts a travel leg on location changes.
   locationRef?: string;
+  // ── Day-schedule fields (all optional, so old sheets read unchanged) ──
+  // How long the block runs. Shown beside the time and used to sanity-read the
+  // day; not enforced against the next row's start.
+  durationMins?: number | null;
+  // One of SCHEDULE_CATEGORIES' ids — drives the colour coding. Free rows
+  // without one render neutral.
+  category?: string | null;
+  // Free-text location for this block ("Barbican 1"). Distinct from
+  // locationRef, which must name a CallSheetLocation.
+  location?: string | null;
+  // A sub-point between key timings ("09:55 Talent to Location 1, 5 mins").
+  // Renders lighter and indented, on screen and in print.
+  minor?: boolean;
+}
+
+// ── Day-schedule categories ─────────────────────────────────────────────────
+// The colour coding. Muted, print-legible tones — the sheet is a hairline
+// monochrome document, so colour is a small accent that must survive print,
+// not a highlighter pen.
+export const SCHEDULE_CATEGORIES: { id: string; label: string; hex: string }[] = [
+  { id: "CREW", label: "Crew / prep", hex: "#52525b" },
+  { id: "TALENT", label: "Talent", hex: "#0e7490" },
+  { id: "GLAM", label: "Glam / HMUA", hex: "#be185d" },
+  { id: "STYLING", label: "Styling", hex: "#b45309" },
+  { id: "PHOTO", label: "Photography", hex: "#1a7f4b" },
+  { id: "VIDEO", label: "Video", hex: "#5b21b6" },
+  { id: "TRAVEL", label: "Travel", hex: "#0369a1" },
+  { id: "MEAL", label: "Meals", hex: "#92400e" },
+  { id: "WRAP", label: "Wrap", hex: "#111111" },
+  { id: "OTHER", label: "Other", hex: "#6b7280" },
+];
+
+export const scheduleCategoryHex = (id: string | null | undefined): string =>
+  SCHEDULE_CATEGORIES.find((c) => c.id === id)?.hex ?? "#6b7280";
+
+// Guess the category from the words people actually write. Order matters:
+// "Talent travel" is travel, "Look 1 Photo" is photography not styling, and
+// "Talent Call / Glam" is glam time even though it names the talent.
+export function inferScheduleCategory(text: string): string | null {
+  const t = (text || "").toLowerCase();
+  if (!t.trim()) return null;
+  if (/\bwrap\b/.test(t)) return "WRAP";
+  if (/\b(lunch|breakfast|dinner|catering|meal)\b/.test(t)) return "MEAL";
+  if (/\b(travel|transit|move (?:to|talent|crew)|departure)\b/.test(t)) return "TRAVEL";
+  if (/\b(video|motion|film(?:ing)?)\b/.test(t)) return "VIDEO";
+  if (/\bphoto(?:graphy|grapher)?s?\b/.test(t)) return "PHOTO";
+  if (/\b(glam|hmua?|hair|make[- ]?up|grooming)\b/.test(t)) return "GLAM";
+  if (/\b(styling|wardrobe|fitting|look[- ]?\d*\s*change|change)\b/.test(t)) return "STYLING";
+  if (/\b(crew (?:call|prep)|prep|set[- ]?up|equipment|derig|pack[- ]?down)\b/.test(t)) return "CREW";
+  if (/\btalent\b/.test(t)) return "TALENT";
+  return null;
 }
 
 export interface CrewMember {
