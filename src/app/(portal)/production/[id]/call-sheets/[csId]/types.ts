@@ -35,6 +35,7 @@ export const SCHEDULE_CATEGORIES: { id: string; label: string; hex: string }[] =
   { id: "VIDEO", label: "Video", hex: "#5b21b6" },
   { id: "TRAVEL", label: "Travel", hex: "#0369a1" },
   { id: "MEAL", label: "Meals", hex: "#92400e" },
+  { id: "BUFFER", label: "Buffer", hex: "#a1a1aa" },
   { id: "WRAP", label: "Wrap", hex: "#111111" },
   { id: "OTHER", label: "Other", hex: "#6b7280" },
 ];

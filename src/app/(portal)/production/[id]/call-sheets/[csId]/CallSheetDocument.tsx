@@ -15,6 +15,9 @@ import {
   sortRosterByCallThenRole, findTalent, isPrincipalTalent, sortSchedule,
   scheduleCategoryHex,
 } from "./types";
+import { withDerivedBuffers } from "./day-schedule";
+import {
+} from "./types";
 import {
   journeyStats, formatJourneySummary,
   parseTime, googleMapsSearchUrl, wazeUrl, buildGoogleMapsRouteUrl, buildGpx,
@@ -591,11 +594,21 @@ export function CallSheetDocument({
                 </tr>
               </thead>
               <tbody>
-                {sortSchedule(schedule)
-                  .filter((s) => s.time || s.description)
-                  .map((s, i) => {
+                {withDerivedBuffers(
+                  sortSchedule(schedule).filter((s) => s.time || s.description)
+                ).map((s, i) => {
                     const minor = !!s.minor;
-                    const dim: React.CSSProperties = minor ? { color: MUTED, fontSize: "12px" } : {};
+                    const isBuffer = s.synthetic === "buffer";
+                    const isOverrun = s.synthetic === "overrun";
+                    const dim: React.CSSProperties = minor
+                      ? {
+                          color: isOverrun ? "#b42318" : MUTED,
+                          fontSize: "12px",
+                          fontStyle: isBuffer || isOverrun ? "italic" : "normal",
+                          printColorAdjust: "exact",
+                          WebkitPrintColorAdjust: "exact",
+                        }
+                      : {};
                     return (
                       <tr key={i}>
                         <td style={{ ...cellStyle, whiteSpace: "nowrap", ...dim }}>
@@ -611,7 +624,11 @@ export function CallSheetDocument({
                               width: "7px",
                               height: "7px",
                               borderRadius: "99px",
-                              background: s.category ? scheduleCategoryHex(s.category) : HAIR,
+                              background: isOverrun
+                                ? "#b42318"
+                                : s.category
+                                  ? scheduleCategoryHex(s.category)
+                                  : HAIR,
                               marginRight: "7px",
                               verticalAlign: "1px",
                               printColorAdjust: "exact",

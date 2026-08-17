@@ -248,3 +248,85 @@ export function parseDaySchedule(raw: string): ParsedDaySchedule {
   flushSubs()
   return { callTimes, schedule }
 }
+
+// ── Derived buffers and overruns ────────────────────────────────────────────
+//
+// Unaccounted time between blocks, computed at render time and never stored.
+// Storing buffer rows would strand them stale the moment someone edits a time;
+// deriving them means the day always adds up against what's actually written.
+//
+// For each timed block with a duration, the gap to the next timed block is
+// either a BUFFER (positive slack, shown as its own row so it reads as owned
+// time rather than a silent hole) or an OVERRUN (the block runs past the next
+// start — the thing a timekeeper most needs to see before it happens on set).
+// Blocks without a duration make the gap unknowable, so nothing is invented.
+
+export type DayRow = ScheduleItem & { synthetic?: 'buffer' | 'overrun' }
+
+export function withDerivedBuffers(sorted: ScheduleItem[]): DayRow[] {
+  const out: DayRow[] = []
+
+  // Majors carry the occupancy; minors live inside their block's span.
+  const majors = sorted.filter((s) => !s.minor && s.time)
+
+  for (let i = 0; i < sorted.length; i++) {
+    const item = sorted[i]
+    out.push(item)
+
+    if (item.minor || !item.time || item.durationMins == null) continue
+    const mi = majors.indexOf(item)
+    const next = mi >= 0 ? majors[mi + 1] : undefined
+    if (!next) continue
+
+    const start = timeToMins(item.time)
+    const nextStart = timeToMins(next.time)
+    if (start == null || nextStart == null) continue
+
+    // A block occupies until the later of its own span and its trailing
+    // minors' — an explicit "09:55 / Talent travel / 5 mins" sub-point fills
+    // the slot it names, and flagging it as unaccounted would be crying wolf.
+    let endsAt = start + item.durationMins
+    for (let j = i + 1; j < sorted.length && sorted[j].minor; j++) {
+      const m = sorted[j]
+      const mStart = m.time ? timeToMins(m.time) : null
+      if (mStart != null && m.durationMins != null) {
+        endsAt = Math.max(endsAt, mStart + m.durationMins)
+      }
+    }
+    const gap = nextStart - endsAt
+    if (gap === 0) continue
+
+    // Emit after the block's minors so the row sits where the time actually is.
+    let insertAfter = i
+    while (insertAfter + 1 < sorted.length && sorted[insertAfter + 1].minor) insertAfter++
+    while (out[out.length - 1] !== sorted[insertAfter]) {
+      out.push(sorted[++i])
+    }
+
+    if (gap > 0) {
+      out.push({
+        time: minsToTime(endsAt),
+        description: 'Buffer',
+        notes: `${gap} min unaccounted before ${next.description || next.time}`,
+        durationMins: gap,
+        category: 'BUFFER',
+        location: null,
+        minor: true,
+        synthetic: 'buffer',
+      })
+    } else {
+      out.push({
+        time: next.time,
+        description: 'Overrun',
+        notes: `${item.description || 'the block above'} runs ${-gap} min past this start`,
+        durationMins: -gap,
+        category: null,
+        location: null,
+        minor: true,
+        synthetic: 'overrun',
+      })
+    }
+  }
+
+  return out
+}
