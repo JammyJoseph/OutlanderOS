@@ -12,7 +12,7 @@ import type {
 import {
   CONDUCT_POLICY, CONFIDENTIALITY_NOTICE, effectiveCallTime,
   emptyCallSheetLocation, resolveUnitCall, sortByTime,
-  sortRosterByCallThenRole, findTalent, isPrincipalTalent, sortSchedule,
+  sortRosterByCallThenRole, sortByRolePriority, findTalent, isPrincipalTalent, sortSchedule,
   scheduleCategoryHex,
 } from "./types";
 import { withDerivedBuffers } from "./day-schedule";
@@ -791,25 +791,44 @@ export function CallSheetDocument({
           </Section>
         )}
 
-        {/* ── Production mobiles ── */}
-        {show("productionMobiles") && productionMobiles.some((m) => m.role || m.name) && (
-          <Section title="Production Mobiles">
-            <GridTable
-              columns={[
-                { label: "Role", width: "30%" },
-                { label: "Name", width: "34%" },
-                { label: "Phone", width: "36%" },
-              ]}
-              rows={productionMobiles
-                .filter((m) => m.role || m.name)
-                .map((m) => [
+        {/* ── Production mobiles — derived, not typed twice ──
+            The numbers to ring on the day come from the people already on the
+            sheet: anyone in the crew, cast or agency lists with a phone, in
+            production-hierarchy order, topped up with any legacy rows typed
+            into the old separate table. One entry point (the person's row),
+            one list here, nothing to keep in sync. */}
+        {(() => {
+          const seen = new Set<string>();
+          const derived = [
+            ...sortByRolePriority([...crew, ...talent].filter((m) => (m.phone || "").trim())),
+            ...agencyTeam.filter((m) => (m.phone || "").trim()),
+            ...productionMobiles.filter((m) => (m.phone || "").trim()),
+          ]
+            .filter((m) => {
+              const key = (m.phone || m.name || "").replace(/\s+/g, "");
+              if (!key || seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
+            .slice(0, 8);
+          if (!show("productionMobiles") || derived.length === 0) return null;
+          return (
+            <Section title="Production Mobiles">
+              <GridTable
+                columns={[
+                  { label: "Role", width: "30%" },
+                  { label: "Name", width: "34%" },
+                  { label: "Phone", width: "36%" },
+                ]}
+                rows={derived.map((m) => [
                   m.role,
                   <Bold key="n">{m.name}</Bold>,
                   redacted ? REDACTED : <PhoneLink phone={m.phone} />,
                 ])}
-            />
-          </Section>
-        )}
+              />
+            </Section>
+          );
+        })()}
 
         {/* ── Production company ── */}
         {show("productionCompany") &&

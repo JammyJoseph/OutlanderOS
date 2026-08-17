@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Clock, MapPin, Cloud, Camera, Users, Coffee, Paperclip, FileText,
   GripVertical, UserPlus, Contact as ContactIcon, Building2, Briefcase,
-  Phone, Shield, Lock, Route, Aperture, RefreshCw, Check, Plus, Package,
+  Shield, Lock, Route, Aperture, RefreshCw, Check, Plus, Package,
   ChevronDown, ChevronRight, X, Wand2,
 } from "lucide-react";
 import type {
@@ -276,7 +276,87 @@ export function CallSheetEditor(p: EditorProps) {
         )}
       </Section>
 
-      {/* 2. Client Team */}
+      {/* 2. Unit List (Crew) */}
+      <Section
+        title="Unit List (Crew)"
+        icon={<Users size={15} className={iconCls} />}
+        action={
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            >
+              <ContactIcon size={13} /> Import Directory
+            </button>
+            {(p.production.teamMembers ?? []).length > 0 && (
+              <button
+                onClick={importTeam}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              >
+                <UserPlus size={13} /> Import Team
+              </button>
+            )}
+            <button
+              onClick={syncDirectory}
+              disabled={syncing || p.crew.length === 0}
+              className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E] disabled:opacity-40"
+              title="Save crew to the Directory with this production as a credit"
+            >
+              {syncing ? (
+                <RefreshCw size={13} className="animate-spin" />
+              ) : synced ? (
+                <Check size={13} className="text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <RefreshCw size={13} />
+              )}
+              {synced ? "Saved" : "Save to Directory"}
+            </button>
+          </div>
+        }
+      >
+        <SmartTip id="callsheet-roster-order" className="mb-3" />
+        <PeopleTable
+          people={p.crew}
+          setPeople={(v) => p.setCrew(v as CrewMember[])}
+          unitCallTime={p.unitCallTime}
+          addLabel="Add Crew"
+          rolePresets={CREW_ROLE_PRESETS}
+          sortBy="role"
+          manualOrder={p.crewManualOrder}
+          setManualOrder={p.setCrewManualOrder}
+        />
+      </Section>
+
+      {/* 3. Talent */}
+      <Section
+        title="Cast &amp; Crew"
+        icon={<Users size={15} className={iconCls} />}
+        action={
+          <a
+            href="/directory"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+          >
+            <ContactIcon size={12} /> Browse Directory
+          </a>
+        }
+      >
+        <PeopleTable
+          people={p.talent}
+          setPeople={(v) => p.setTalent(v as TalentMember[])}
+          unitCallTime={p.unitCallTime}
+          addLabel="Add Person"
+          rolePresets={CREW_ROLE_PRESETS}
+          // In practice this list holds the whole unit, not just cast, so it
+          // gets the same hierarchy ordering as the crew list.
+          sortBy="role"
+          manualOrder={p.talentManualOrder}
+          setManualOrder={p.setTalentManualOrder}
+        />
+      </Section>
+
+      {/* 4. Client Team */}
       <Section
         title="Client Team"
         icon={<Briefcase size={15} className={iconCls} />}
@@ -301,7 +381,7 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 3. Agency Team */}
+      {/* 5. Agency Team */}
       <Section
         title="Agency Team (Outlander)"
         icon={<Users size={15} className={iconCls} />}
@@ -319,7 +399,7 @@ export function CallSheetEditor(p: EditorProps) {
         <AgencyTeamTable rows={p.agencyTeam} setRows={p.setAgencyTeam} />
       </Section>
 
-      {/* 4. Production Company */}
+      {/* 6. Production Company */}
       <Section title="Production Company" icon={<Building2 size={15} className={iconCls} />}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
@@ -365,54 +445,17 @@ export function CallSheetEditor(p: EditorProps) {
         </div>
       </Section>
 
-      {/* 6. Production Mobiles */}
-      <Section title="Production Mobiles" icon={<Phone size={15} className={iconCls} />}>
-        <div className="space-y-2">
-          {p.productionMobiles.map((row, i) => (
-            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_32px] gap-2 items-center">
-              <input
-                type="text"
-                value={row.role}
-                onChange={(e) =>
-                  p.setProductionMobiles(p.productionMobiles.map((r, j) => (j === i ? { ...r, role: e.target.value } : r)))
-                }
-                placeholder="Role (e.g. 1st AD)"
-                className={smallInputCls}
-              />
-              <input
-                type="text"
-                value={row.name}
-                onChange={(e) =>
-                  p.setProductionMobiles(p.productionMobiles.map((r, j) => (j === i ? { ...r, name: e.target.value } : r)))
-                }
-                placeholder="Name"
-                className={smallInputCls}
-              />
-              <input
-                type="tel"
-                value={row.phone}
-                onChange={(e) =>
-                  p.setProductionMobiles(p.productionMobiles.map((r, j) => (j === i ? { ...r, phone: e.target.value } : r)))
-                }
-                placeholder="Phone"
-                className={smallInputCls}
-              />
-              <DeleteButton onClick={() => p.setProductionMobiles(p.productionMobiles.filter((_, j) => j !== i))} />
-            </div>
-          ))}
-          <AddButton
-            label="Add Contact"
-            onClick={() => p.setProductionMobiles([...p.productionMobiles, { role: "", name: "", phone: "" }])}
-          />
-        </div>
+      {/* 7. Catering */}
+      <Section title="Catering" icon={<Coffee size={15} className={iconCls} />}>
+        <CateringEditor catering={p.catering} setCatering={p.setCatering} rosterCount={rosterCount} />
       </Section>
 
-      {/* 7. Locations */}
+      {/* 8. Locations */}
       <Section title="Locations" icon={<MapPin size={15} className={iconCls} />}>
         <LocationsEditor locations={p.locations} setLocations={p.setLocations} />
       </Section>
 
-      {/* 8. Movement Order — stops derived from the ordered locations above */}
+      {/* 9. Movement Order — stops derived from the ordered locations above */}
       <Section title="Movement Order" icon={<Route size={15} className={iconCls} />}>
         <MovementOrderEditor
           movementOrder={p.movementOrder}
@@ -424,7 +467,7 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 9. Weather — uses the first location's coordinates */}
+      {/* 10. Weather — uses the first location's coordinates */}
       <Section title="Weather" icon={<Cloud size={15} className={iconCls} />}>
         <WeatherEditor
           lat={p.locations[0]?.lat ?? p.locationLat}
@@ -435,7 +478,7 @@ export function CallSheetEditor(p: EditorProps) {
         />
       </Section>
 
-      {/* 10. Schedule & Call Times — merged input, split output */}
+      {/* 11. Schedule & Call Times — merged input, split output */}
       <Section title="Schedule & Call Times" icon={<Clock size={15} className={iconCls} />}>
         <div className="space-y-4">
           {/* Unit Call — the master time everyone on the sheet inherits. */}
@@ -695,7 +738,7 @@ export function CallSheetEditor(p: EditorProps) {
         </div>
       </Section>
 
-      {/* 11. Shotlist */}
+      {/* 12. Shotlist */}
       <Section title="Shotlist" icon={<Camera size={15} className={iconCls} />}>
         <ShotlistEditor
           shotlist={p.shotlist}
@@ -712,118 +755,17 @@ export function CallSheetEditor(p: EditorProps) {
         <CallSheetDeliverables productionId={p.production.id} />
       </Section>
 
-      {/* 12. Conduct Policy (auto-included, read-only) */}
-      <Section title="Conduct Policy" icon={<Shield size={15} className={iconCls} />}>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-          Auto-included on every call sheet — not editable.
-        </p>
-        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{CONDUCT_POLICY}</p>
-      </Section>
-
-      {/* 13. Confidentiality Notice (auto-included, read-only) */}
-      <Section title="Confidentiality Notice" icon={<Lock size={15} className={iconCls} />}>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-          Auto-included on every call sheet — not editable.
-        </p>
-        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{CONFIDENTIALITY_NOTICE}</p>
-      </Section>
-
-      {/* 14. Unit List (Crew) */}
-      <Section
-        title="Unit List (Crew)"
-        icon={<Users size={15} className={iconCls} />}
-        action={
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setPickerOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            >
-              <ContactIcon size={13} /> Import Directory
-            </button>
-            {(p.production.teamMembers ?? []).length > 0 && (
-              <button
-                onClick={importTeam}
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              >
-                <UserPlus size={13} /> Import Team
-              </button>
-            )}
-            <button
-              onClick={syncDirectory}
-              disabled={syncing || p.crew.length === 0}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#A93B2E] disabled:opacity-40"
-              title="Save crew to the Directory with this production as a credit"
-            >
-              {syncing ? (
-                <RefreshCw size={13} className="animate-spin" />
-              ) : synced ? (
-                <Check size={13} className="text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <RefreshCw size={13} />
-              )}
-              {synced ? "Saved" : "Save to Directory"}
-            </button>
-          </div>
-        }
-      >
-        <SmartTip id="callsheet-roster-order" className="mb-3" />
-        <PeopleTable
-          people={p.crew}
-          setPeople={(v) => p.setCrew(v as CrewMember[])}
-          unitCallTime={p.unitCallTime}
-          addLabel="Add Crew"
-          rolePresets={CREW_ROLE_PRESETS}
-          sortBy="role"
-          manualOrder={p.crewManualOrder}
-          setManualOrder={p.setCrewManualOrder}
-        />
-      </Section>
-
-      {/* 15. Talent */}
-      <Section
-        title="Cast &amp; Crew"
-        icon={<Users size={15} className={iconCls} />}
-        action={
-          <a
-            href="/directory"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          >
-            <ContactIcon size={12} /> Browse Directory
-          </a>
-        }
-      >
-        <PeopleTable
-          people={p.talent}
-          setPeople={(v) => p.setTalent(v as TalentMember[])}
-          unitCallTime={p.unitCallTime}
-          addLabel="Add Person"
-          rolePresets={CREW_ROLE_PRESETS}
-          // In practice this list holds the whole unit, not just cast, so it
-          // gets the same hierarchy ordering as the crew list.
-          sortBy="role"
-          manualOrder={p.talentManualOrder}
-          setManualOrder={p.setTalentManualOrder}
-        />
-      </Section>
-
-      {/* 16. Catering */}
-      <Section title="Catering" icon={<Coffee size={15} className={iconCls} />}>
-        <CateringEditor catering={p.catering} setCatering={p.setCatering} rosterCount={rosterCount} />
-      </Section>
-
-      {/* 17. Equipment (Phase 4E — standard departments, directory suppliers, kit templates) */}
+      {/* 13. Equipment (Phase 4E — standard departments, directory suppliers, kit templates) */}
       <Section title="Equipment" icon={<Aperture size={15} className={iconCls} />}>
         <EquipmentEditor equipment={p.equipment} setEquipment={p.setEquipment} />
       </Section>
 
-      {/* 18. Documents */}
+      {/* 14. Documents */}
       <Section title="Documents" icon={<Paperclip size={15} className={iconCls} />}>
         <DocumentsEditor documents={p.documents} setDocuments={p.setDocuments} />
       </Section>
 
-      {/* 19. Notes */}
+      {/* 15. Notes */}
       <Section title="Notes" icon={<FileText size={15} className={iconCls} />}>
         <div className="space-y-3">
           {[
@@ -843,6 +785,22 @@ export function CallSheetEditor(p: EditorProps) {
             </div>
           ))}
         </div>
+      </Section>
+
+      {/* 16. Conduct Policy (auto-included, read-only) */}
+      <Section title="Conduct Policy" icon={<Shield size={15} className={iconCls} />}>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+          Auto-included on every call sheet — not editable.
+        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{CONDUCT_POLICY}</p>
+      </Section>
+
+      {/* 17. Confidentiality Notice (auto-included, read-only) */}
+      <Section title="Confidentiality Notice" icon={<Lock size={15} className={iconCls} />}>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+          Auto-included on every call sheet — not editable.
+        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{CONFIDENTIALITY_NOTICE}</p>
       </Section>
 
       {pickerOpen && (
