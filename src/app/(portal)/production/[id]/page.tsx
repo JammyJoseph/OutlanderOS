@@ -14,6 +14,7 @@ import TeamTab from "./_components/TeamTab";
 import CreativeTab from "./_components/CreativeTab";
 import TimelineTab from "./_components/TimelineTab";
 import CallSheetsTab from "./_components/CallSheetsTab";
+import WorkflowsTab from "./_components/WorkflowsTab";
 import DeliverablesTab from "./_components/DeliverablesTab";
 import { useUser } from "@/components/user-context";
 import { useConfirm } from "@/components/ui/confirm-provider";
@@ -444,6 +445,7 @@ export default function ProjectDetail() {
               refresh={refresh}
             />
           )}
+          {tab === "workflows" && <WorkflowsTab productionId={production.id} />}
           {tab === "callsheets" && (
             <CallSheetsTab
               production={production}

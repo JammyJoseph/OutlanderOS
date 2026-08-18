@@ -7,6 +7,7 @@ import {
   Palette,
   CalendarRange,
   ClipboardList,
+  ListChecks,
   Package,
 } from "lucide-react";
 
@@ -17,7 +18,8 @@ export type TabKey =
   | "creative"
   | "timeline"
   | "callsheets"
-  | "deliverables";
+  | "deliverables"
+  | "workflows";
 
 interface Props {
   active: TabKey;
@@ -29,6 +31,7 @@ const TABS: { key: TabKey; label: string; Icon: React.ComponentType<{ size?: num
   { key: "overview", label: "Overview", Icon: LayoutDashboard },
   { key: "budget", label: "Budget", Icon: Wallet },
   { key: "team", label: "Team", Icon: Users },
+  { key: "workflows", label: "Workflows", Icon: ListChecks },
   { key: "creative", label: "Creative", Icon: Palette },
   { key: "timeline", label: "Timeline", Icon: CalendarRange },
   { key: "callsheets", label: "Call Sheets", Icon: ClipboardList },

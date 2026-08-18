@@ -542,6 +542,7 @@ model Production {
   linkedTasks      Task[]                  @relation("productionLinkedTasks")
   costLines        CostLine[]              @relation("productionCostLines")
   invoices         InvoiceSubmission[]     @relation("productionInvoices")
+  workflows ProductionWorkflow[]
 }
 
 // Shareable internal deep-link to a production. Any signed-in Outlander user
@@ -1060,6 +1061,33 @@ model SyncLog {
   meta        Json?
 
   @@index([source, startedAt])
+}
+
+// ===== PRODUCTION WORKFLOWS =====
+//
+// One row per person being walked through a production conversation. The track
+// TEMPLATES (steps, guides, email copy) live in src/lib/production-workflows.ts;
+// this table holds only the progress: which steps are done, when, by whom.
+// The current step is derived — first template step not in `steps`.
+model ProductionWorkflow {
+  id           String     @id @default(cuid())
+  productionId String
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  name      String
+  role      String?
+  email     String?
+  // TALENT | CREATIVE | CREW — which conversation this person gets.
+  track     String  @default("CREW")
+  contactId String? // loose link to the Directory, no FK churn
+  // [{ id: stepId, doneAt: iso, by: userName }] — the audit of the walk-through.
+  steps     Json    @default("[]")
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productionId])
 }
 
 // ===== PRINT CREDIT CONSENT =====

@@ -331,6 +331,21 @@ two budget systems still sit outside it.
 - [ ] More tip candidates as workflows land: distribution reconciliation reading, credit
       test-mode reminder for new staff, Shopify CSV backfill.
 
+## 1i. Production workflows (built 2026-08-18)
+
+- [x] ~~Per-person step-by-step production workflows~~ — Workflows tab on every
+      production. Three tracks defined in code (`src/lib/production-workflows.ts`):
+      Talent (reach-out → budget → contract → sizes → dietary → schedule → unit base),
+      Creative lead (reach-out → rate → contract → brief → deliverables → schedule → kit),
+      Crew (availability → rate → details → call sheet). Each step carries a novice-proof
+      guide, an info-to-collect checklist, and a copy-pastable email rendered from the
+      production's real data ({{placeholders}}; missing details render as visible
+      [x needed] gaps, never silence). Progress stored per person (`ProductionWorkflow`),
+      current step derived. Emails are deliberately copy/mailto, not auto-send.
+- [ ] Wire step completion into /me tasks (surface "next step due" on the dashboard).
+- [ ] Track copy pass by someone who produces regularly — the templates are v1.
+- [ ] Possible later: per-step attachments (agreement PDFs) once DocuSign lands.
+
 ## 1g. Held until TLS (see ROADMAP Phase 1b)
 
 Neither is technically blocked. Both are held because shipping them over
