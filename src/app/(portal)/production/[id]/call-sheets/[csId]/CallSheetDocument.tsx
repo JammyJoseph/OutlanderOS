@@ -272,10 +272,20 @@ export function CallSheetDocument({
   // saying the same thing, so those are dropped to avoid a duplicate line.
   const isUnitRow = (d: string) => /^\s*(main\s+)?unit\s+call\s*$/i.test(d || "");
   const isWrapRow = (d: string) => /\bwrap\b/i.test(d || "");
+  // A "Crew Call" row at the unit call time IS the unit call — printing both
+  // reads as two separate calls. A crew call at a different time is a genuine
+  // department call and stays.
+  const isCrewCallRow = (d: string) => /^\s*crew\s+call\s*$/i.test(d || "");
   const departmentRows =
     show("callTimes")
       ? callTimes
-          .filter((c) => (c.time || c.department) && !isUnitRow(c.department) && !isWrapRow(c.department))
+          .filter(
+            (c) =>
+              (c.time || c.department) &&
+              !isUnitRow(c.department) &&
+              !isWrapRow(c.department) &&
+              !(isCrewCallRow(c.department) && (c.time || "").trim() === (unitCall || "").trim())
+          )
           .map((c) => ({ time: c.time || "TBC", label: c.department }))
       : [];
 
@@ -312,7 +322,13 @@ export function CallSheetDocument({
   // of the block.
   callTimeRows.push(...sortByTime([...departmentRows, ...talentRowsForCalls], (r) => r.time));
 
-  callTimeRows.push({ time: wrapTime || "TBC", label: "Wrap" });
+  // A hand-entered WRAP row in the call-times table is someone's decision and
+  // wins over the sheet's own wrap field — the two have disagreed on real
+  // sheets (15:00 field vs a 15:15 row matching the schedule).
+  const explicitWrap = show("callTimes")
+    ? callTimes.find((c) => isWrapRow(c.department) && (c.time || "").trim())
+    : undefined;
+  callTimeRows.push({ time: explicitWrap?.time?.trim() || wrapTime || "TBC", label: "Wrap" });
 
   // Hero subtitle: date · job number only (location deliberately omitted).
   const heroBits = [formattedDate, jobNumber ? `Job ${jobNumber}` : ""]
@@ -321,6 +337,7 @@ export function CallSheetDocument({
 
   // ── Shoot details: left facts, right key people + weather ──
   const creative = agencyTeam.find((a) => (a.name || "").trim());
+  const norm = (s?: string) => (s || "").trim().toLowerCase();
   // The producer callouts fall back to the roster, so the header can never
   // disagree with the crew list. The Production Company fields stay as an
   // override for the case where the named producer isn't on the sheet.
@@ -334,9 +351,37 @@ export function CallSheetDocument({
       (c) => /\bproducer\b/i.test(c.role || "") && !/\bexec/i.test(c.role || "")
     )?.name ||
     "";
-  const people: { label: string; name: string; phone?: string; email?: string }[] = [];
-  if (execProducerName) people.push({ label: "Exec Producer", name: execProducerName });
-  if (producerName) people.push({ label: "Producer", name: producerName });
+  // Producer / exec producer contacts come from their roster row, so the
+  // callout carries a reachable number, not just a name. keepContact marks the
+  // production contacts every version must show — a client copy with no way to
+  // reach production is a dead document.
+  const rosterByName = (name: string) =>
+    name ? everyone.find((c) => norm(c.name) === norm(name)) : undefined;
+  const execRow = rosterByName(execProducerName);
+  const producerRow = rosterByName(producerName);
+  const people: {
+    label: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    keepContact?: boolean;
+  }[] = [];
+  if (execProducerName)
+    people.push({
+      label: "Exec Producer",
+      name: execProducerName,
+      phone: execRow?.phone,
+      email: execRow?.email,
+      keepContact: true,
+    });
+  if (producerName)
+    people.push({
+      label: "Producer",
+      name: producerName,
+      phone: producerRow?.phone,
+      email: producerRow?.email,
+      keepContact: true,
+    });
   if (creative)
     people.push({
       label: creative.role || "Creative",
@@ -357,7 +402,6 @@ export function CallSheetDocument({
   // People already surfaced in Shoot Details (Exec Producer / Producer /
   // Creative / Talent) must not repeat in the Contacts — Crew / Talent table.
   // Match on name or email; Shoot Details takes priority.
-  const norm = (s?: string) => (s || "").trim().toLowerCase();
   const shownNames = new Set(
     [execProducerName, producerName, creative?.name, t0?.name].map(norm).filter(Boolean)
   );
@@ -375,6 +419,18 @@ export function CallSheetDocument({
   // callout is a summary, not the block a producer scans on the day.
   const isTalentFamily = (role: string | null | undefined) =>
     /\b(talent|model|cast|actor|actress)\b/i.test(role || "");
+
+  // The production contacts the client copy must never mask: producers, ADs
+  // and production managers. Everyone on any version of the sheet needs a way
+  // to reach production — that's the whole point of the document.
+  const isProductionContact = (role: string | null | undefined) => {
+    const r = (role || "").trim();
+    return (
+      /\b(producer|production\s+manager|assistant\s+director)\b/i.test(r) ||
+      /^a\.?d\.?$/i.test(r) ||
+      /\b(1st|2nd|3rd|first|second|third)\s+a\.?d\.?\b/i.test(r)
+    );
+  };
 
   const withRows = (list: typeof everyone) =>
     crewManualOrder || talentManualOrder ? list : sortRosterByCallThenRole(list, unitCall);
@@ -542,7 +598,15 @@ export function CallSheetDocument({
                     label={p.label}
                     value={p.name}
                     contact={
-                      !redacted ? <QuickLinks phone={p.phone} email={p.email} /> : undefined
+                      // Production contacts print their real number and email
+                      // on every version — a Call/Email button is useless on
+                      // paper. Everyone else keeps the compact links, hidden
+                      // on the client copy.
+                      p.keepContact && (p.phone || p.email) ? (
+                        <ContactCell phone={p.phone} email={p.email} />
+                      ) : !redacted && !p.keepContact ? (
+                        <QuickLinks phone={p.phone} email={p.email} />
+                      ) : undefined
                     }
                   />
                 ))
@@ -776,18 +840,22 @@ export function CallSheetDocument({
                 { label: "Phone", width: "21%" },
                 { label: "Email", width: "21%" },
               ]}
-              rows={crewBlock.map((c) => [
-                c.role,
-                <Bold key="n">{c.name}</Bold>,
-                <CallCell key="c" person={c} unitCall={unitCall} />,
-                redacted ? REDACTED : <PhoneLink phone={c.phone} />,
-                redacted ? "" : <EmailLink email={c.email} />,
-              ])}
+              rows={crewBlock.map((c) => {
+                const mask = redacted && !isProductionContact(c.role);
+                return [
+                  c.role,
+                  <Bold key="n">{c.name}</Bold>,
+                  <CallCell key="c" person={c} unitCall={unitCall} />,
+                  mask ? REDACTED : <PhoneLink phone={c.phone} />,
+                  mask ? "" : <EmailLink email={c.email} />,
+                ];
+              })}
             />
             <p style={{ margin: "10px 0 0", fontSize: "9px", color: MUTED, lineHeight: 1.5 }}>
               On-set contact for all queries: {producerName || "the Producer"}
-              {producerName ? " (Producer)" : ""}. Roles marked &ldquo;c/o
-              Outlander&rdquo; are reached via the Producer.
+              {producerName ? " (Producer)" : ""}
+              {producerRow?.phone ? ` · ${producerRow.phone}` : ""}. Roles marked
+              &ldquo;c/o Outlander&rdquo; are reached via the Producer.
             </p>
           </Section>
         )}
@@ -806,7 +874,10 @@ export function CallSheetDocument({
                 .map((a) => [
                   a.role,
                   <Bold key="n">{a.name}</Bold>,
-                  redacted ? REDACTED : <ContactCell phone={a.phone} email={a.email} />,
+                  // Agency people are the client's own colleagues — their
+                  // contacts stay visible on the client copy (the share modal
+                  // has always promised this).
+                  <ContactCell key="ct" phone={a.phone} email={a.email} />,
                 ])}
             />
           </Section>

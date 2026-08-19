@@ -52,6 +52,15 @@ export default function CallSheetPage() {
   const [saved, setSaved] = useState(false);
   const [mode, setMode] = useState<Mode>("editor");
   const [showShare, setShowShare] = useState(false);
+  // Which version window.print captures: the preview normally shows the full
+  // crew document; picking "Download client PDF" flips it to the redacted
+  // client copy just for the print, and afterprint flips it back.
+  const [printVariant, setPrintVariant] = useState<"crew" | "client">("crew");
+  useEffect(() => {
+    const reset = () => setPrintVariant("crew");
+    window.addEventListener("afterprint", reset);
+    return () => window.removeEventListener("afterprint", reset);
+  }, []);
   // Snapshot of the production deliverables so they render on the preview /
   // printed / PDF call sheet (the editor keeps the live, editable copy). The
   // public share views fetch these server-side; the in-app views need them here.
@@ -457,7 +466,9 @@ export default function CallSheetPage() {
 
         {/* Preview — the live document, exactly as it will be shared / printed.
             What you see here IS the PDF (window.print captures this node). */}
-        {mode === "preview" && <CallSheetDocument data={viewData} />}
+        {mode === "preview" && (
+          <CallSheetDocument data={viewData} redacted={printVariant === "client"} />
+        )}
       </div>
 
       {showShare && (
@@ -467,6 +478,13 @@ export default function CallSheetPage() {
           clientShareToken={sheet.clientShareToken}
           clientContact={sheet.production.campaign?.billingContact ?? null}
           onClose={() => setShowShare(false)}
+          onDownloadPdf={(variant) => {
+            // Close the popup first so it never lands in the printout, switch
+            // the preview to the chosen version, then print it underneath.
+            setShowShare(false);
+            setPrintVariant(variant);
+            setTimeout(() => window.print(), 120);
+          }}
         />
       )}
     </div>
@@ -517,12 +535,14 @@ function ShareModal({
   clientShareToken,
   clientContact,
   onClose,
+  onDownloadPdf,
 }: {
   data: CallSheetViewData;
   shareToken: string | null;
   clientShareToken: string | null;
   clientContact: ClientContactRef | null;
   onClose: () => void;
+  onDownloadPdf: (variant: "crew" | "client") => void;
 }) {
   const [copied, setCopied] = useState<CopyKey | null>(null);
   // Non-null once an "Email …" row is picked — the popup swaps the options list
@@ -544,13 +564,6 @@ function ShareModal({
     copyToClipboard(text);
     setCopied(key);
     setTimeout(() => setCopied((c) => (c === key ? null : c)), 2000);
-  }
-
-  // Close the popup first so it never lands in the printout, then print the
-  // preview (the CallSheetDocument) underneath.
-  function downloadPdf() {
-    onClose();
-    setTimeout(() => window.print(), 60);
   }
 
   return (
@@ -589,9 +602,15 @@ function ShareModal({
             <div className="p-5 space-y-2.5">
               <ShareRow
                 icon={<FileDown size={16} />}
-                title="Download PDF"
-                subtitle="Print the call sheet exactly as previewed"
-                onClick={downloadPdf}
+                title="Download crew PDF"
+                subtitle="Full contact details, exactly as previewed"
+                onClick={() => onDownloadPdf("crew")}
+              />
+              <ShareRow
+                icon={<FileDown size={16} />}
+                title="Download client PDF"
+                subtitle="Crew contacts masked — producer and AD details stay visible"
+                onClick={() => onDownloadPdf("client")}
               />
               <ShareRow
                 icon={<MessageSquareText size={16} />}
