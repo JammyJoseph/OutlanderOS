@@ -31,7 +31,15 @@ interface CreditData {
     terms: { heading: string; body: string }[];
   };
   roleGroups: { label: string; roles: string[] }[];
+  // Characters this person's description may run to, or null when their tier
+  // isn't asked for one. The page never computes this — it's the server's rule.
+  bioLimit: number | null;
 }
+
+// Counted the same way the server counts it: code points, so an emoji or an
+// accent costs one character, not two. Kept local rather than imported from
+// lib/credit-consent because that module pulls in the mailer.
+const charCount = (v: string) => [...v].length;
 
 export default function CreditConfirmPage({
   params,
@@ -54,6 +62,7 @@ export default function CreditConfirmPage({
   const [role, setRole] = useState("");
   const [instagram, setInstagram] = useState("");
   const [email, setEmail] = useState("");
+  const [bio, setBio] = useState("");
   const [addr, setAddr] = useState({ line1: "", line2: "", city: "", region: "", postcode: "", country: "" });
   const [agree, setAgree] = useState(false);
   const [declining, setDeclining] = useState(false);
@@ -119,7 +128,7 @@ export default function CreditConfirmPage({
     setBusy(true);
     setError(null);
     try {
-      await post({ action: "submit", name, role, instagram, email, address: addr, agree });
+      await post({ action: "submit", name, role, instagram, email, bio, address: addr, agree });
       setStage("done");
     } catch (err) {
       setError(String((err as Error).message));
@@ -286,6 +295,12 @@ export default function CreditConfirmPage({
   }
 
   // ── Stage 2: the reveal + the form ──
+  // Over-limit text is left on screen rather than truncated as they type:
+  // seeing what has to go is how someone chooses which words to lose.
+  const bioLimit = data!.bioLimit;
+  const bioCount = charCount(bio);
+  const over = bioLimit !== null && bioCount > bioLimit;
+
   return (
     <Shell>
       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">
@@ -337,6 +352,39 @@ export default function CreditConfirmPage({
             One choice. This is the credit line, so pick the word you want next to your name.
           </p>
         </Field>
+
+        {bioLimit !== null && (
+          <Field label="In your own words, what do you do?" required>
+            <textarea
+              required
+              value={bio}
+              onChange={(e) => setBio(e.target.value.replace(/\n/g, " "))}
+              rows={2}
+              placeholder="Photographer documenting London skate culture since 2014."
+              className={`w-full resize-none rounded-lg border px-3 py-2.5 text-sm ${
+                over ? "border-red-400 bg-red-50" : "border-gray-300"
+              }`}
+            />
+            <div className="mt-1 flex items-start justify-between gap-3">
+              <p className="text-xs text-gray-500">
+                One line, printed beside your name. Who you are and what you make.
+              </p>
+              <p
+                className={`shrink-0 text-xs tabular-nums ${
+                  over ? "font-semibold text-red-600" : "text-gray-400"
+                }`}
+              >
+                {bioCount}/{bioLimit}
+              </p>
+            </div>
+            {over && (
+              <p className="mt-1 text-xs text-red-600">
+                {bioCount - bioLimit} character{bioCount - bioLimit === 1 ? "" : "s"} over. It has
+                to fit the printed line, so the cut is yours to choose.
+              </p>
+            )}
+          </Field>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Instagram handle">
@@ -418,7 +466,7 @@ export default function CreditConfirmPage({
 
         <button
           type="submit"
-          disabled={busy || !agree}
+          disabled={busy || !agree || over}
           className="inline-flex items-center gap-2 rounded-xl bg-black px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40"
         >
           {busy && <Loader2 size={14} className="animate-spin" />}

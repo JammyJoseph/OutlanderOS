@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
 import { parseCsv } from '@/lib/shopify-csv'
 import {
+  bioLimitForTier,
   isSendingLive,
   isValidEmail,
   newCreditToken,
@@ -35,7 +36,8 @@ export const GET = withAuth(async () => {
         instagram: true, email: true, tier: true, status: true,
         sentAt: true, sentTo: true, isTest: true, emailError: true,
         openedAt: true, respondedAt: true,
-        confirmedName: true, confirmedRole: true, confirmedInstagram: true, confirmedEmail: true,
+        confirmedName: true, confirmedRole: true, confirmedBio: true,
+        confirmedInstagram: true, confirmedEmail: true,
         // The address is included here — this endpoint is staff-auth'd and the
         // response drawer is where delivery details are read. It goes no
         // further: not to the public endpoint, not into the printed export.
@@ -49,7 +51,9 @@ export const GET = withAuth(async () => {
     return NextResponse.json({
       sendingLive: isSendingLive(),
       testInbox: TEST_INBOX,
-      rows,
+      // The description limit travels with the row so the panel never has to
+      // restate the tier rule — one definition, in credit-consent.ts.
+      rows: rows.map((r) => ({ ...r, bioLimit: bioLimitForTier(r.tier) })),
       summary: {
         total: rows.length,
         draft: count('DRAFT'),

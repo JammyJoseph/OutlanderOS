@@ -34,6 +34,10 @@ interface CreditRow {
   respondedAt: string | null;
   confirmedName: string | null;
   confirmedRole: string | null;
+  confirmedBio: string | null;
+  // Characters this person's description may run to — 90 at tier 1, 75 at
+  // tier 2, null when their tier is never asked. Derived server-side.
+  bioLimit: number | null;
   confirmedInstagram: string | null;
   confirmedEmail: string | null;
   address: Record<string, string> | null;
@@ -427,6 +431,18 @@ export default function CreditConsentPanel() {
                           <>
                             <DetailRow k="Credit as" v={r.confirmedName ?? "—"} strong />
                             <DetailRow k="Discipline" v={r.confirmedRole ?? "—"} strong />
+                            {r.bioLimit !== null && (
+                              <DetailRow
+                                k={`Description (${r.bioLimit} max)`}
+                                v={
+                                  r.confirmedBio
+                                    ? `${r.confirmedBio}  ·  ${[...r.confirmedBio].length} chars`
+                                    : "— none given"
+                                }
+                                strong={!!r.confirmedBio}
+                                bad={!r.confirmedBio}
+                              />
+                            )}
                             <DetailRow k="Handle" v={r.confirmedInstagram ? `@${r.confirmedInstagram}` : "—"} />
                             <DetailRow k="Email" v={r.confirmedEmail ?? "—"} />
                             {r.address && (
@@ -444,7 +460,14 @@ export default function CreditConsentPanel() {
                             )}
                           </>
                         ) : (
-                          <p className="text-xs text-muted-foreground">No response yet.</p>
+                          <>
+                            <p className="text-xs text-muted-foreground">No response yet.</p>
+                            <p className="text-xs text-muted-foreground">
+                              {r.bioLimit !== null
+                                ? `Tier ${r.tier} — will be asked for a ${r.bioLimit}-character description.`
+                                : "No description asked at this tier."}
+                            </p>
+                          </>
                         )}
                         {r.status === "DRAFT" && (
                           <button

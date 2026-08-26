@@ -1136,6 +1136,13 @@ model CreditRequest {
   // One choice only. This is the credit line, so it is theirs to pick, not the
   // spreadsheet's to guess.
   confirmedRole      String?
+  // Their own one-line description of what they do and who they are, written by
+  // them and printed beside the credit. Length is capped by tier — see
+  // bioLimitForTier() in credit-consent.ts — because the printed entry is a
+  // fixed size on the page: tier 1 gets 90 characters, tier 2 gets 75, and
+  // tier 3 is never asked. Nullable: tier 3, untiered rows, and anyone who
+  // signed before this existed have none.
+  confirmedBio       String?
   confirmedInstagram String?
   confirmedEmail     String?
   // PRIVATE. Delivery only. { line1, line2, city, region, postcode, country }

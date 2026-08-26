@@ -305,6 +305,14 @@ two budget systems still sit outside it.
       every email redirects to silver@outlandermag.com with the intended recipient in the
       subject. Mailchimp rejected: transactional needs the paid Mandrill add-on; the existing
       SMTP mailer already does per-recipient tokens from our own domain.
+- [x] ~~**Tiered self-descriptions**~~ (2026-08-26) — tier 1 contributors are asked for a
+      90-character line about what they do and who they are, tier 2 for 75. Tier 3 and untiered
+      people are not asked, because their printed entry has no room for one and collecting
+      something we won't print is the one thing this flow must never do. The limit is derived
+      from the row's tier server-side (`bioLimitForTier()`), never taken from the request; the
+      page shows a live counter and blocks submission while over, rather than truncating
+      mid-word. `AGREEMENT_VERSION` bumped to `2026-08-v3` — the description is printed, so the
+      signed text now names it.
 - [ ] **Lawyer pass on the agreement copy** before the real sendout (`AGREEMENT_VERSION`
       bumps if it changes, so signed versions stay attributable).
 - [ ] **Fix the 41 bad emails** in the panel (inline edit) — `*`, bio links, missing TLDs.

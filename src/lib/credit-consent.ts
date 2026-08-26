@@ -32,7 +32,32 @@ export const newCreditToken = () => randomBytes(32).toString('hex')
 
 // Bumped whenever the agreement copy materially changes. Stored on the request
 // at acceptance, so we always know which text each person actually signed.
-export const AGREEMENT_VERSION = '2026-08-v2'
+export const AGREEMENT_VERSION = '2026-08-v3'
+
+// ── The description, and why its length is a rule and not a suggestion ──────
+//
+// Tier 1 and tier 2 entries carry a one-line description of the person beside
+// their credit. Tier 1 gets 90 characters, tier 2 gets 75. These are not
+// arbitrary: the printed entry is a fixed measure on the page, and a line that
+// overruns doesn't get smaller type, it gets cut — so the cut has to happen
+// here, while the person writing it can still choose which words survive.
+//
+// Tier 3 and untiered people are not asked at all. Their entry is name, handle
+// and discipline, so a description would be collected and never printed, and
+// asking for something we won't use is the one thing this flow must never do.
+//
+// The limit is derived from the row's tier server-side, never from the request.
+// A public endpoint that took the client's word for its own character budget
+// would be no limit at all.
+export const BIO_LIMIT_BY_TIER: Record<number, number> = { 1: 90, 2: 75 }
+
+export function bioLimitForTier(tier: number | null | undefined): number | null {
+  return (tier != null && BIO_LIMIT_BY_TIER[tier]) || null
+}
+
+// Counted in code points, not UTF-16 units, so an emoji or an accented
+// character costs one — the same count the contributor sees on the page.
+export const charCount = (v: string): number => [...v].length
 
 // ── Disciplines ─────────────────────────────────────────────────────────────
 //
@@ -127,7 +152,7 @@ export const AGREEMENT_TERMS: { heading: string; body: string }[] = [
   },
   {
     heading: 'What we will print',
-    body: 'With your consent, Issue 02 will credit you by the name, Instagram handle and discipline you confirm on the next page: in the printed magazine, in all print runs and reprints of Issue 02, and in faithful digital reproductions of its pages. Nothing else about you is printed.',
+    body: 'With your consent, Issue 02 will credit you by the name, Instagram handle and discipline you confirm on the next page, and — where the next page asks you for one — the short description of your work that you write there, in your own words. That is what appears in the printed magazine, in all print runs and reprints of Issue 02, and in faithful digital reproductions of its pages. Nothing else about you is printed.',
   },
   {
     heading: 'What stays private',

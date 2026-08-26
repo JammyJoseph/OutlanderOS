@@ -6,6 +6,8 @@ import {
   AGREEMENT_VERSION,
   CREDIT_ROLE_GROUPS,
   agreementFullText,
+  bioLimitForTier,
+  charCount,
   isCreditRole,
   isValidEmail,
   sendCreditOutcome,
@@ -26,6 +28,9 @@ const select = {
   role: true,
   instagram: true,
   email: true,
+  // Not shown to them, and not theirs to change — it decides how many
+  // characters their description gets.
+  tier: true,
   status: true,
   agreementAcceptedAt: true,
   respondedAt: true,
@@ -64,6 +69,10 @@ export async function GET(
         confirmedName: req.confirmedName,
         printConsent: req.printConsent,
       },
+      // How many characters this person's description may run to, or null if
+      // their tier isn't asked for one. The tier itself is deliberately not
+      // sent — nobody needs to learn they were filed as a 2.
+      bioLimit: bioLimitForTier(req.tier),
       agreement: {
         version: AGREEMENT_VERSION,
         summary: AGREEMENT_SUMMARY,
@@ -172,6 +181,30 @@ export async function POST(
         )
       }
 
+      // The description, capped by the row's own tier. Required where it is
+      // asked for, because the printed entry has a space for it and a blank
+      // one means chasing this person again later; ignored entirely where it
+      // isn't, so a crafted request can't store text we would never print.
+      const bioLimit = bioLimitForTier(req.tier)
+      let confirmedBio: string | null = null
+      if (bioLimit) {
+        confirmedBio = String(body.bio ?? '').trim().replace(/\s+/g, ' ')
+        if (!confirmedBio) {
+          return NextResponse.json(
+            { error: 'Please add a short line about what you do.' },
+            { status: 400 }
+          )
+        }
+        if (charCount(confirmedBio) > bioLimit) {
+          return NextResponse.json(
+            {
+              error: `That description is ${charCount(confirmedBio)} characters — the limit is ${bioLimit}.`,
+            },
+            { status: 400 }
+          )
+        }
+      }
+
       // Address is optional and stored verbatim as its own object. Trimmed,
       // capped, and never echoed back out of this endpoint.
       const rawAddr = (body.address ?? {}) as Record<string, unknown>
@@ -189,6 +222,7 @@ export async function POST(
           printConsent: true,
           confirmedName: confirmedName.slice(0, 200),
           confirmedRole,
+          confirmedBio,
           confirmedInstagram:
             String(body.instagram ?? '').trim().replace(/^@+/, '').slice(0, 100) || null,
           confirmedEmail: confirmedEmail || null,
