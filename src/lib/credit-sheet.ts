@@ -1,11 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// The live credit sheet.
+// The live credit sheet — two tabs, rewritten whenever a credit is signed.
 //
-// The designer needs one URL that is always current, not a CSV re-exported
-// every time somebody confirms. So OutlanderOS owns a Google Sheet and rewrites
-// it whenever a credit is signed.
+//   Tracker  every person on the list, whether they have answered or not, with
+//            a tick box for who has. This is the working view: who to chase,
+//            what they confirmed, where the gaps are.
+//   Credits  only the signed ones, only the columns that print. This is what
+//            the designer needs and nothing else.
 //
-// Four decisions worth knowing:
+// Both live in one file because one URL is easier to hand over than two, and
+// because the print view has to be derivable from the tracker at a glance —
+// if they disagree, the tracker is right.
+//
+// Five decisions worth knowing:
 //
 //  1. **It writes with one person's Google grant, remembered on the row.** A
 //     contributor confirming their credit is an anonymous request — there is no
@@ -13,33 +19,63 @@
 //     reused. If they disconnect Google, syncing stops and says so rather than
 //     reaching for somebody else's Drive.
 //
-//  2. **The sheet is created private.** Pre-announcement, the contributor list
-//     *is* the confidential part of Issue 02, and every contributor has signed
-//     an agreement to keep it quiet — publishing a link-shared sheet of their
-//     names would be us breaking the side of the deal we wrote. Share it with
-//     the designer explicitly, from Drive.
+//  2. **Rewrite, never append.** Both tabs are projections of the ledger: rows
+//     below the header are cleared and rewritten each time, so a withdrawn
+//     credit actually leaves and a corrected name actually changes. An
+//     append-only sheet would print somebody who pulled out.
 //
-//  3. **Rewrite, never append.** The sheet is a projection of the ledger: rows
-//     A2:F are cleared and rewritten each time, so a credit withdrawn before
-//     print actually leaves it. An append-only sheet would print somebody who
-//     pulled out. Only those columns are touched, so the designer's own
-//     formatting, filters and notes elsewhere survive.
+//  3. **Confirmed values win, and gaps stay visible.** Each cell shows what the
+//     contributor confirmed; where they haven't answered, it shows what the
+//     sheet believed, and where nobody knows, it stays empty. A blank
+//     description is information — it is the thing still outstanding.
 //
-//  4. **Sheets needs its own scope.** A token holding only `auth/drive` — however
-//     broad that sounds — gets 403 "insufficient authentication scopes" from
-//     both the Sheets API *and* Drive's own upload endpoint if the grant is
-//     actually the older `drive.readonly`. Hence `auth/spreadsheets` in
-//     GOOGLE_USER_SCOPES, and hence a 403 here is reported as "reconnect
-//     Google", never as a server fault.
+//  4. **Postal addresses are never written here.** The agreement promises the
+//     address is used for delivery and never shared, and this file gets shared.
+//     Emails are included: chasing 35 people with no usable address is the
+//     work this tab exists to support.
+//
+//  5. **Sheets needs its own scope.** A token holding only `auth/drive` gets
+//     403 "insufficient authentication scopes", so `auth/spreadsheets` is in
+//     GOOGLE_USER_SCOPES and a 403 here is reported as "reconnect Google",
+//     never as a server fault.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { google } from 'googleapis'
+import { google, type sheets_v4 } from 'googleapis'
 import prisma from '@/lib/prisma'
+import { bioLimitForTier } from '@/lib/credit-consent'
 import { createUserOAuthClient, getUserGoogleTokens } from '@/lib/google-user-auth'
 
 const SHEET_TITLE = 'Outlander Directory — Issue 02 credits'
-const TAB = 'Credits'
-const HEADERS = ['Tier', 'Name in print', 'Discipline', 'Instagram', 'Description', 'Characters']
+const PRINT_TAB = 'Credits'
+const TRACKER_TAB = 'Tracker'
+
+const PRINT_HEADERS = ['Tier', 'Name in print', 'Discipline', 'Instagram', 'Description', 'Characters']
+const TRACKER_HEADERS = [
+  'Submitted',
+  'Status',
+  'Tier',
+  'Name in print',
+  'Discipline',
+  'Instagram',
+  'Description',
+  'Characters',
+  'Limit',
+  'Email',
+  'Invited',
+  'Opened',
+  'Confirmed',
+]
+
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: 'Not sent',
+  QUEUED: 'Queued',
+  SENDING: 'Sending',
+  SENT: 'Sent',
+  OPENED: 'Opened',
+  CONFIRMED: 'Confirmed',
+  DECLINED: 'Declined',
+  FAILED: 'Send failed',
+}
 
 export class GoogleNotConnectedError extends Error {
   constructor(message = 'That account has not connected Google, or the connection has expired.') {
@@ -71,9 +107,6 @@ async function sheetsFor(userId: string) {
   try {
     tokens = await getUserGoogleTokens(userId)
   } catch (err) {
-    // getUserGoogleTokens throws on invalid_grant — a revoked or expired
-    // refresh token. That is a reconnect, not a server fault, and it must not
-    // surface as an unhandled 500 (ROADMAP 10.3).
     throw (
       asConnectionProblem(err) ??
       new GoogleNotConnectedError(
@@ -88,30 +121,142 @@ async function sheetsFor(userId: string) {
   return google.sheets({ version: 'v4', auth: client })
 }
 
-/** The printable payload, and only that. No email, no postal address. */
-async function printableRows(): Promise<string[][]> {
-  const rows = await prisma.creditRequest.findMany({
-    where: { status: 'CONFIRMED', printConsent: true },
+const stamp = (d: Date | null) =>
+  d
+    ? new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+        .format(d)
+        .replace(',', '')
+    : ''
+
+async function ledger() {
+  return prisma.creditRequest.findMany({
+    orderBy: [{ tier: 'asc' }, { name: 'asc' }],
     select: {
       tier: true,
       name: true,
+      role: true,
+      instagram: true,
+      email: true,
+      status: true,
+      sentAt: true,
+      openedAt: true,
+      respondedAt: true,
+      printConsent: true,
       confirmedName: true,
       confirmedRole: true,
-      confirmedInstagram: true,
       confirmedBio: true,
+      confirmedInstagram: true,
+      confirmedEmail: true,
+    },
+  })
+}
+
+type Row = Awaited<ReturnType<typeof ledger>>[number]
+
+/** Confirmed value if they gave one, otherwise what the sheet believed. */
+const best = (confirmed: string | null, prefill: string | null) =>
+  (confirmed ?? '') || (prefill ?? '')
+
+function trackerRow(r: Row): (string | number | boolean)[] {
+  const limit = bioLimitForTier(r.tier)
+  const bio = r.confirmedBio ?? ''
+  return [
+    // Ticked when they have answered at all — a decline is a submission, and
+    // "who still hasn't replied" is the question this column exists to answer.
+    // Whether they said yes is the Status column's job.
+    r.respondedAt !== null,
+    STATUS_LABEL[r.status] ?? r.status,
+    r.tier ?? '',
+    best(r.confirmedName, r.name),
+    best(r.confirmedRole, r.role),
+    (() => {
+      const h = best(r.confirmedInstagram, r.instagram)
+      return h ? `@${h}` : ''
+    })(),
+    bio,
+    bio ? [...bio].length : '',
+    limit ?? '—',
+    best(r.confirmedEmail, r.email),
+    stamp(r.sentAt),
+    stamp(r.openedAt),
+    stamp(r.respondedAt),
+  ]
+}
+
+function printRow(r: Row): (string | number)[] {
+  const bio = r.confirmedBio ?? ''
+  return [
+    r.tier ?? '',
+    r.confirmedName ?? r.name,
+    r.confirmedRole ?? '',
+    r.confirmedInstagram ? `@${r.confirmedInstagram}` : '',
+    bio,
+    bio ? [...bio].length : '',
+  ]
+}
+
+/**
+ * Makes sure both tabs exist, with a frozen header, a bold header row and tick
+ * boxes down the Submitted column. Idempotent — a sheet created before the
+ * tracker existed gains it on the next sync rather than needing to be rebuilt.
+ */
+async function ensureTabs(sheets: sheets_v4.Sheets, spreadsheetId: string) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId })
+  const have = new Map(
+    (meta.data.sheets ?? []).map((s) => [s.properties?.title ?? '', s.properties?.sheetId ?? 0])
+  )
+  const missing = [TRACKER_TAB, PRINT_TAB].filter((t) => !have.has(t))
+  if (missing.length === 0) return have
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: missing.map((title) => ({
+        addSheet: { properties: { title, gridProperties: { frozenRowCount: 1 } } },
+      })),
     },
   })
 
-  return rows
-    .sort((a, b) => (a.tier ?? 9) - (b.tier ?? 9) || a.name.localeCompare(b.name))
-    .map((r) => [
-      r.tier != null ? String(r.tier) : '',
-      r.confirmedName ?? r.name,
-      r.confirmedRole ?? '',
-      r.confirmedInstagram ? `@${r.confirmedInstagram}` : '',
-      r.confirmedBio ?? '',
-      r.confirmedBio ? String([...r.confirmedBio].length) : '',
-    ])
+  const after = await sheets.spreadsheets.get({ spreadsheetId })
+  const ids = new Map(
+    (after.data.sheets ?? []).map((s) => [s.properties?.title ?? '', s.properties?.sheetId ?? 0])
+  )
+
+  // Bold headers on both tabs, and real tick boxes on the tracker's first
+  // column. Applied once at creation: reapplying on every sync would fight
+  // whatever the designer does to the file.
+  const requests: sheets_v4.Schema$Request[] = []
+  for (const title of missing) {
+    const sheetId = ids.get(title)
+    if (sheetId == null) continue
+    requests.push({
+      repeatCell: {
+        range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+        cell: { userEnteredFormat: { textFormat: { bold: true } } },
+        fields: 'userEnteredFormat.textFormat.bold',
+      },
+    })
+    if (title === TRACKER_TAB) {
+      requests.push({
+        setDataValidation: {
+          range: { sheetId, startRowIndex: 1, startColumnIndex: 0, endColumnIndex: 1 },
+          rule: { condition: { type: 'BOOLEAN' }, strict: true },
+        },
+      })
+    }
+  }
+  if (requests.length > 0) {
+    await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } })
+  }
+  return ids
 }
 
 export async function getCreditSheet() {
@@ -133,15 +278,9 @@ export async function createCreditSheet(userId: string) {
     created = await sheets.spreadsheets.create({
       requestBody: {
         properties: { title: SHEET_TITLE },
-        sheets: [
-          {
-            properties: {
-              title: TAB,
-              // The header stays put however far the designer scrolls.
-              gridProperties: { frozenRowCount: 1 },
-            },
-          },
-        ],
+        sheets: [TRACKER_TAB, PRINT_TAB].map((title) => ({
+          properties: { title, gridProperties: { frozenRowCount: 1 } },
+        })),
       },
     })
   } catch (err) {
@@ -167,37 +306,55 @@ export async function createCreditSheet(userId: string) {
 }
 
 /**
- * Rewrites the sheet from the ledger. Best effort by design when called after a
+ * Rewrites both tabs from the ledger. Best effort by design when called after a
  * contributor confirms: the signature is already recorded, and a Google outage
  * must never fail the submission that triggered it. Failures land on
  * `lastError` for the panel to show.
  */
-export async function syncCreditSheet(): Promise<{ synced: boolean; rows?: number; error?: string }> {
+export async function syncCreditSheet(): Promise<{
+  synced: boolean
+  rows?: number
+  confirmed?: number
+  error?: string
+}> {
   const sheet = await getCreditSheet()
   if (!sheet) return { synced: false, error: 'No sheet has been created yet.' }
 
   try {
     const sheets = await sheetsFor(sheet.ownerUserId)
-    const values = await printableRows()
+    await ensureTabs(sheets, sheet.spreadsheetId)
 
-    // Clear before writing: fewer confirmed credits than last time has to mean
-    // fewer rows in the sheet, not stale ones left below the new bottom.
-    await sheets.spreadsheets.values.clear({
+    const rows = await ledger()
+    const confirmed = rows.filter((r) => r.status === 'CONFIRMED' && r.printConsent)
+
+    // Clear below the headers first: fewer rows than last time has to mean
+    // fewer rows in the sheet, not stale ones left under the new bottom.
+    await sheets.spreadsheets.values.batchClear({
       spreadsheetId: sheet.spreadsheetId,
-      range: `${TAB}!A2:F`,
+      requestBody: { ranges: [`${TRACKER_TAB}!A2:M`, `${PRINT_TAB}!A2:F`] },
     })
-    await sheets.spreadsheets.values.update({
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: sheet.spreadsheetId,
-      range: `${TAB}!A1`,
-      valueInputOption: 'RAW',
-      requestBody: { values: [HEADERS, ...values] },
+      requestBody: {
+        valueInputOption: 'RAW',
+        data: [
+          {
+            range: `${TRACKER_TAB}!A1`,
+            values: [TRACKER_HEADERS, ...rows.map(trackerRow)],
+          },
+          {
+            range: `${PRINT_TAB}!A1`,
+            values: [PRINT_HEADERS, ...confirmed.map(printRow)],
+          },
+        ],
+      },
     })
 
     await prisma.creditSheet.update({
       where: { id: 'singleton' },
-      data: { lastSyncedAt: new Date(), rowsWritten: values.length, lastError: null },
+      data: { lastSyncedAt: new Date(), rowsWritten: confirmed.length, lastError: null },
     })
-    return { synced: true, rows: values.length }
+    return { synced: true, rows: rows.length, confirmed: confirmed.length }
   } catch (err) {
     const connection = asConnectionProblem(err)
     const message = (connection ?? (err as Error)).message.slice(0, 400)

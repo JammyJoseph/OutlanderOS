@@ -378,9 +378,10 @@ export default function CreditConsentPanel() {
             <p className="mt-2 text-xs text-muted-foreground">
               {data.sheet.rowsWritten} confirmed credit{data.sheet.rowsWritten === 1 ? "" : "s"} in it
               {data.sheet.lastSyncedAt ? `, last written ${fmt(data.sheet.lastSyncedAt)}` : ""}. It
-              rewrites itself whenever somebody confirms. Names, disciplines, handles and
-              descriptions only — no emails, no addresses. Only columns A&ndash;F are touched,
-              so your own notes and filters elsewhere in the file survive.
+              rewrites itself whenever somebody confirms. Two tabs:{' '}
+              <b>Tracker</b> — everyone, with a tick box for who has answered — and{' '}
+              <b>Credits</b>, just the signed ones in the columns that print. Postal addresses
+              are never written to it.
             </p>
           ) : (
             <p className="mt-2 max-w-2xl text-xs text-muted-foreground">
