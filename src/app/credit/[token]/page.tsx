@@ -371,15 +371,25 @@ export default function CreditConfirmPage({
             <option value="" disabled>
               Choose one
             </option>
-            {data!.roleGroups.map((g) => (
-              <optgroup key={g.label} label={g.label}>
-                {g.roles.map((r2) => (
+            {data!.roleGroups.map((g) =>
+              // An unlabelled group is a plain list — a heading with nothing to
+              // head reads as a bug on a page contributors only see once.
+              g.label ? (
+                <optgroup key={g.label} label={g.label}>
+                  {g.roles.map((r2) => (
+                    <option key={r2} value={r2}>
+                      {r2}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : (
+                g.roles.map((r2) => (
                   <option key={r2} value={r2}>
                     {r2}
                   </option>
-                ))}
-              </optgroup>
-            ))}
+                ))
+              )
+            )}
           </select>
           <p className="mt-1 text-xs text-gray-500">
             One choice. This is the credit line, so pick the word you want next to your name.

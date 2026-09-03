@@ -63,62 +63,42 @@ export const charCount = (v: string): number => [...v].length
 //
 // The credit line is theirs to pick, not the spreadsheet's to guess: exactly
 // one choice, from a closed list. Closed because this is a consent record and
-// free text would make "what did they agree to be printed as" unanswerable;
-// wide because the Directory spans the whole industry and nobody should have
-// to file themselves under an adjacent job.
+// free text would make "what did they agree to be printed as" unanswerable.
+//
+// Twenty options, set by the print team on 2026-09-03, replacing an earlier
+// 125-role list that spanned the whole industry. The Directory's pages are laid
+// out by discipline, so the list has to match the sections that exist on paper —
+// an option nobody can print is a promise we can't keep. Adding one is a code
+// change on purpose: it shows up in review, and it makes somebody check the
+// layout has room for it.
 export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
-  { label: 'Image', roles: [
-    'Photographer', 'Documentary Photographer', 'Fashion Photographer', 'Portrait Photographer',
-    'Street Photographer', 'Photojournalist', 'Retoucher', 'Photo Editor',
-  ]},
-  { label: 'Film & Motion', roles: [
-    'Director', 'Filmmaker', 'Director of Photography', 'Cinematographer', 'Video Editor',
-    'Colourist', 'Animator', 'Motion Designer', 'VFX Artist', '3D Artist', 'Videographer',
-    'Documentary Filmmaker', 'Music Video Director',
-  ]},
-  { label: 'Style', roles: [
-    'Stylist', 'Fashion Stylist', 'Costume Designer', 'Wardrobe Stylist', 'Fashion Designer',
-    'Textile Designer', 'Footwear Designer', 'Jewellery Designer', 'Milliner', 'Tailor',
-    'Pattern Cutter', 'Creative Consultant',
-  ]},
-  { label: 'Hair, Makeup & Body', roles: [
-    'Hair Stylist', 'Barber', 'Makeup Artist', 'Special Effects Makeup Artist', 'Nail Artist',
-    'Groomer', 'Tattoo Artist', 'Body Artist',
-  ]},
-  { label: 'Design & Art Direction', roles: [
-    'Creative Director', 'Art Director', 'Graphic Designer', 'Type Designer', 'Illustrator',
-    'Print Designer', 'Book Designer', 'Brand Designer', 'Product Designer', 'Industrial Designer',
-    'Furniture Designer', 'Interior Designer', 'Architect', 'Set Designer', 'Production Designer',
-    'Prop Stylist', 'Florist',
-  ]},
-  { label: 'Digital & Technology', roles: [
-    'Creative Technologist', 'Web Designer', 'UX Designer', 'UI Designer', 'Developer',
-    'Game Designer', 'AI Artist', 'Digital Artist', 'XR Artist',
-  ]},
-  { label: 'Words', roles: [
-    'Writer', 'Journalist', 'Editor', 'Author', 'Copywriter', 'Poet', 'Screenwriter',
-    'Playwright', 'Critic', 'Editor-in-Chief',
-  ]},
-  { label: 'Sound & Music', roles: [
-    'Musician', 'Producer (Music)', 'Composer', 'Sound Designer', 'Sound Engineer', 'DJ',
-    'Rapper', 'Singer', 'Songwriter', 'Audio Engineer',
-  ]},
-  { label: 'Production', roles: [
-    'Producer', 'Executive Producer', 'Creative Producer', 'Line Producer', 'Production Manager',
-    'Casting Director', 'Location Scout', 'Talent Manager', 'Agent', 'Production Company',
-  ]},
-  { label: 'Performance', roles: [
-    'Model', 'Actor', 'Dancer', 'Choreographer', 'Performer', 'Comedian', 'Presenter',
-    'Movement Director',
-  ]},
-  { label: 'Art', roles: [
-    'Artist', 'Painter', 'Sculptor', 'Ceramicist', 'Printmaker', 'Mixed Media Artist',
-    'Collage Artist', 'Curator', 'Gallerist',
-  ]},
-  { label: 'Culture & Craft', roles: [
-    'Chef', 'Food Stylist', 'Skater', 'Athlete', 'Archivist', 'Collector', 'Publisher',
-    'Educator', 'Community Organiser', 'Founder', 'Entrepreneur',
-  ]},
+  {
+    // One unlabelled group: twenty options render as a plain list, and an
+    // <optgroup> around all of them would be a heading with nothing to head.
+    label: '',
+    roles: [
+      'Director',
+      'Photographer',
+      'Videographer',
+      'DOP',
+      'Camera Department',
+      'Gaffer / Lighting',
+      'Graphic Designer',
+      'Motion Designer',
+      '3D / CGI Artist',
+      'Makeup Artist',
+      'Hair Stylist',
+      'HMUA',
+      'Stylist',
+      'Art Department',
+      'Producer',
+      'Movement Director',
+      'Creative Agency',
+      'Production Agency',
+      'Florist',
+      'Content Creator',
+    ],
+  },
 ]
 
 export const CREDIT_ROLES: string[] = CREDIT_ROLE_GROUPS.flatMap((g) => g.roles)

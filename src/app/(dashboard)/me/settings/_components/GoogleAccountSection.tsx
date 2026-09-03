@@ -23,6 +23,12 @@ export function GoogleAccountSection() {
     ? null
     : { connected: !!user?.googleConnected, email: user?.googleEmail ?? null }
   const [codeInput, setCodeInput] = useState('')
+  // A connected account still needs a way to re-grant: scopes get added (Drive
+  // read-write, then Sheets) and an old grant keeps working for everything
+  // except the new thing, which fails with a 403 nobody can interpret. Without
+  // this, the only route was Disconnect first — which throws away a working
+  // refresh token before you know the new consent will succeed.
+  const [reconnecting, setReconnecting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
@@ -97,6 +103,50 @@ export function GoogleAccountSection() {
     }
   }
 
+  // Used by both states, so the instructions can never drift apart.
+  const connectSteps = (
+    <div className="space-y-4">
+      <ol className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
+        <li>1. Click the button — a Google consent screen opens in a new tab.</li>
+        <li>
+          2. Grant access. Google then sends you to a <code>localhost</code> page that{' '}
+          <strong>will not load</strong> — that is expected, not a failure.
+        </li>
+        <li>3. Copy the whole URL out of that page&rsquo;s address bar and paste it below.</li>
+      </ol>
+
+      <button
+        onClick={startConnect}
+        disabled={busy}
+        className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-semibold hover:brightness-95 disabled:opacity-50"
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        Open the Google consent screen
+      </button>
+
+      <div>
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          Paste the URL (or just the code)
+        </label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            className={INPUT_CLS}
+            placeholder="http://localhost:3000/api/google/callback?code=..."
+            value={codeInput}
+            onChange={(e) => setCodeInput(e.target.value)}
+          />
+          <button
+            onClick={submitCode}
+            disabled={busy}
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+          >
+            Finish connecting
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <section className="mb-6 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
       <div className="flex items-start gap-3">
@@ -130,51 +180,37 @@ export function GoogleAccountSection() {
                 <div className="text-xs text-emerald-700 dark:text-emerald-300">Connected</div>
               </div>
             </div>
-            <button
-              onClick={disconnect}
-              disabled={busy}
-              className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
-            >
-              Disconnect
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => {
+                  setReconnecting(true)
+                  void startConnect()
+                }}
+                disabled={busy}
+                className="rounded-xl bg-[#111111] px-4 py-2 text-sm font-semibold text-white hover:brightness-95 disabled:opacity-50 dark:bg-white dark:text-black"
+              >
+                Reconnect
+              </button>
+              <button
+                onClick={disconnect}
+                disabled={busy}
+                className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+              >
+                Disconnect
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <ol className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
-              <li>1. Click Connect Google Account — a Google consent screen opens in a new tab.</li>
-              <li>2. Grant access. Google redirects you to a page showing an authorization code.</li>
-              <li>3. Copy that code and paste it below, then click Finish connecting.</li>
-            </ol>
+          connectSteps
+        )}
 
-            <button
-              onClick={startConnect}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-semibold hover:brightness-95 disabled:opacity-50"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Connect Google Account
-            </button>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Authorization code
-              </label>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  className={INPUT_CLS}
-                  placeholder="Paste your authorization code here"
-                  value={codeInput}
-                  onChange={(e) => setCodeInput(e.target.value)}
-                />
-                <button
-                  onClick={submitCode}
-                  disabled={busy}
-                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
-                >
-                  Finish connecting
-                </button>
-              </div>
-            </div>
+        {status?.connected && reconnecting && (
+          <div className="mt-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">
+              Re-granting keeps you connected the whole way through — the existing connection
+              stays live until the new one replaces it.
+            </p>
+            {connectSteps}
           </div>
         )}
 
