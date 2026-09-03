@@ -142,17 +142,17 @@ export const isValidEmail = (v: string | null | undefined): boolean =>
 
 export const AGREEMENT_SUMMARY = [
   'Outlander Magazine is building something new for Issue 02: a printed Directory, a curated index of the people who actually make this culture. Photographers, stylists, producers, directors. You are one of them.',
-  'Before we print anything, we confirm every credit with the person it belongs to. This page does three things: it tells you what the Directory is, it asks you to confirm exactly how your name should appear, and it asks your permission to print it.',
+  'Before we print anything, we confirm every credit with the person it belongs to. There are three parts to this: what the Directory is, how your name should appear, and your permission to print it.',
 ].join('\n\n')
 
 export const AGREEMENT_TERMS: { heading: string; body: string }[] = [
   {
     heading: 'What you are agreeing to see',
-    body: 'The Directory is part of Outlander Magazine Issue 02, which has not been announced. By continuing past this page you agree to keep what you learn about the issue, including its contents, contributors and timing, confidential until Outlander publicly announces it or it goes on sale, whichever comes first.',
+    body: 'The Directory is part of Outlander Magazine Issue 02, which has not been announced. By continuing you agree to keep what you learn about the issue, including its contents, contributors and timing, confidential until Outlander publicly announces it or it goes on sale, whichever comes first.',
   },
   {
     heading: 'What we will print',
-    body: 'With your consent, Issue 02 will credit you by the name, Instagram handle and discipline you confirm on the next page, and — where the next page asks you for one — the short description of your work that you write there, in your own words. That is what appears in the printed magazine, in all print runs and reprints of Issue 02, and in faithful digital reproductions of its pages. Nothing else about you is printed.',
+    body: 'With your consent, Issue 02 will credit you by the name, Instagram handle and discipline you confirm when you continue, and — where you are asked for one — the short description of your work that you write in your own words. That is what appears in the printed magazine, in all print runs and reprints of Issue 02, and in faithful digital reproductions of its pages. Nothing else about you is printed.',
   },
   {
     heading: 'What stays private',
@@ -183,6 +183,121 @@ export function agreementFullText(): string {
   ].join('\n\n')
 }
 
+// ── Two hostnames, one app ────────────────────────────────────────────────────
+//
+// outlanderdirectory.com serves the contributor pages and nothing else; the
+// system itself answers on os.outlanderdirectory.com. That split is enforced in
+// nginx, not here — but the invite has to carry the public hostname, because a
+// link built from the staff host would drop 239 photographers on a login
+// screen. NEXTAUTH_URL stays pointed at the staff host: it drives the auth
+// cookie's Secure flag and the OAuth redirect URIs.
+//
+// Unset, links fall back to whatever host generated them, which is what keeps
+// local testing working.
+export function creditPublicBase(): string | null {
+  const v = (process.env.CREDIT_PUBLIC_URL ?? '').trim()
+  return v ? v.replace(/\/+$/, '') : null
+}
+
+export function creditLink(opts: { fallbackBase: string; token: string }): string {
+  return `${creditPublicBase() ?? opts.fallbackBase}/credit/${opts.token}`
+}
+
+// ── The deadline ─────────────────────────────────────────────────────────────
+//
+// Issue 02 goes to print, so confirmations have an end. After it passes the
+// public page closes itself and the endpoint refuses a submission — a credit
+// that arrives after the pages are laid out cannot be honoured, and accepting
+// it silently would be a promise we can't keep.
+//
+// Overridable with CREDIT_DEADLINE (an ISO timestamp) so an extension is a
+// restart rather than a deploy.
+const DEADLINE_DEFAULT = '2026-09-06T23:59:59+01:00' // Sunday, end of day, London
+
+export function submissionDeadline(): Date {
+  const raw = (process.env.CREDIT_DEADLINE ?? '').trim()
+  if (raw) {
+    const d = new Date(raw)
+    if (!Number.isNaN(d.getTime())) return d
+  }
+  return new Date(DEADLINE_DEFAULT)
+}
+
+export function isSubmissionOpen(at: Date = new Date()): boolean {
+  return at.getTime() <= submissionDeadline().getTime()
+}
+
+/** "Sunday 6 September at 23:59" — London, for copy on the page and in email. */
+export function deadlineLabel(): string {
+  const d = submissionDeadline()
+  const day = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(d)
+  const time = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(d)
+  return `${day} at ${time}`
+}
+
+// ── Pacing the sendout ──────────────────────────────────────────────────────
+//
+// Gmail will take 2,000 recipients a day, so 239 is nowhere near the ceiling.
+// The ceiling is not the problem: 239 near-identical messages leaving one
+// mailbox inside a few minutes is what gets the sender filtered, and a filtered
+// invite is a contributor who never appears in the Directory. So invites are
+// spread across a rate the receiving end reads as a person sending email.
+//
+// Slots also stay inside working hours. A 3am invite from a magazine you have
+// not heard from before is read as spam by humans as well as filters.
+export const SEND_WINDOW = { startHour: 9, endHour: 19 } // Europe/London
+export const DEFAULT_PER_HOUR = 20
+
+/**
+ * Even slots at `perHour`, skipping to the next window when a day fills up.
+ * Returns one Date per index, in order.
+ */
+export function sendSlots(count: number, perHour: number, from = new Date()): Date[] {
+  const gapMs = Math.round(3_600_000 / Math.max(1, Math.min(120, perHour)))
+  const out: Date[] = []
+  let cursor = new Date(Math.max(from.getTime(), Date.now()))
+  cursor = nextOpenMoment(cursor)
+  for (let i = 0; i < count; i++) {
+    out.push(new Date(cursor))
+    cursor = nextOpenMoment(new Date(cursor.getTime() + gapMs))
+  }
+  return out
+}
+
+// London hours from a UTC clock without pulling in a date library: the offset
+// is read back off the formatted local hour, so BST and GMT both land right.
+function londonHour(d: Date): number {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/London',
+      hour: '2-digit',
+      hour12: false,
+    }).format(d)
+  )
+}
+
+function nextOpenMoment(d: Date): Date {
+  let cur = new Date(d)
+  for (let guard = 0; guard < 48; guard++) {
+    const h = londonHour(cur)
+    if (h >= SEND_WINDOW.startHour && h < SEND_WINDOW.endHour) return cur
+    // Before the window opens, wait for it; after it closes, wait for tomorrow.
+    cur = new Date(cur.getTime() + 60 * 60 * 1000)
+    cur.setUTCMinutes(0, 0, 0)
+  }
+  return cur
+}
+
 // ── Email ───────────────────────────────────────────────────────────────────
 
 export function creditInviteEmail(opts: {
@@ -204,7 +319,8 @@ export function creditInviteEmail(opts: {
     '',
     `Before it goes to print, we'd like to get a few details exactly right, and we need your sign-off.`,
     '',
-    'It takes about two minutes:',
+    `It takes about two minutes, and we need it back by ${deadlineLabel()} — after that the pages are laid out and we can't add anyone.`,
+    '',
     opts.link,
     '',
     'The link is personal to you, so please don’t forward it. The page explains everything once you’re in.',
@@ -223,7 +339,7 @@ export function creditInviteEmail(opts: {
     <p style="margin:22px 0 0">
       <a href="${opts.link}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:500">Confirm your credit</a>
     </p>
-    <p style="margin:20px 0 0;font-size:13px;color:#6b6b6b">Takes about two minutes. The link is personal to you, so please don&rsquo;t forward it. The page explains everything once you&rsquo;re in.</p>
+    <p style="margin:20px 0 0;font-size:13px;color:#6b6b6b">Takes about two minutes, and we need it back by <strong style="color:#141414">${deadlineLabel()}</strong> &mdash; after that the pages are laid out and we can&rsquo;t add anyone. The link is personal to you, so please don&rsquo;t forward it.</p>
     <p style="margin:14px 0 0;font-size:13px;color:#6b6b6b">If anything looks wrong, just reply to this email.</p>
     <p style="margin:26px 0 40px;font-size:13px;color:#9a9a9a">Outlander Magazine</p>
   </div>`

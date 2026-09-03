@@ -4,12 +4,20 @@ import { withAuth } from '@/lib/auth'
 import { parseCsv } from '@/lib/shopify-csv'
 import {
   bioLimitForTier,
+  creditLink,
+  creditPublicBase,
+  deadlineLabel,
+  DEFAULT_PER_HOUR,
+  isSubmissionOpen,
+  submissionDeadline,
   isSendingLive,
   isValidEmail,
   newCreditToken,
   sendCreditInvite,
+  sendSlots,
   TEST_INBOX,
 } from '@/lib/credit-consent'
+import { drainDue, ensureDripWorker } from '@/lib/credit-drip'
 
 // Staff-side of the credit consent flow. One route, explicit actions:
 //
@@ -19,6 +27,10 @@ import {
 //   POST {action:"add", name, email, ...} → one person, typed in by hand
 //   POST {action:"update", id, ...} → fix a row's email/name before sending
 //   POST {action:"delete", id}      → remove a row that shouldn't exist
+//   POST {action:"schedule", ids, perHour}  → pace invites across working hours
+//   POST {action:"unschedule", ids}         → take them back off the queue
+//   POST {action:"drain"}                   → send whatever is already due, now
+//   GET  ?export=designer                   → the printable payload as CSV
 //
 // The send action carries no "test" parameter, deliberately. Test vs live is
 // decided by the environment (CREDIT_SEND_LIVE), never by the caller — see
@@ -27,13 +39,21 @@ import {
 const DEFAULT_SHEET =
   'https://docs.google.com/spreadsheets/d/1mxaRkhdruo9A_v-V7UEX9QxZ2UPS0J25Ef22OGqPqZc/export?format=csv'
 
-export const GET = withAuth(async () => {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
+    // The paced sendout runs in this process. Starting it here means a server
+    // that never opens the panel never runs a timer, and opening the panel is
+    // enough to pick a schedule back up after a restart.
+    const proto = request.headers.get('x-forwarded-proto') ?? 'http'
+    const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+    ensureDripWorker(process.env.NEXTAUTH_URL || `${proto}://${host}`)
+
     const rows = await prisma.creditRequest.findMany({
       orderBy: [{ tier: 'asc' }, { name: 'asc' }],
       select: {
         id: true, contactId: true, token: true, name: true, role: true,
         instagram: true, email: true, tier: true, status: true,
+        scheduledFor: true,
         sentAt: true, sentTo: true, isTest: true, emailError: true,
         openedAt: true, respondedAt: true,
         confirmedName: true, confirmedRole: true, confirmedBio: true,
@@ -47,10 +67,67 @@ export const GET = withAuth(async () => {
       },
     })
 
+    // The designer needs one flat list of what actually prints — and nothing
+    // else. No email, no postal address: those exist for delivery, and a file
+    // that travels between companies should not carry them.
+    if (request.nextUrl.searchParams.get('export') === 'designer') {
+      const printable = rows
+        .filter((r) => r.status === 'CONFIRMED' && r.printConsent)
+        .sort((a, b) => (a.tier ?? 9) - (b.tier ?? 9) || a.name.localeCompare(b.name))
+      const cell = (v: unknown) => {
+        const t = v == null ? '' : String(v)
+        return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t
+      }
+      const csv = [
+        ['Tier', 'Name in print', 'Discipline', 'Instagram', 'Description', 'Characters'].join(','),
+        ...printable.map((r) =>
+          [
+            r.tier ?? '',
+            r.confirmedName ?? r.name,
+            r.confirmedRole ?? '',
+            r.confirmedInstagram ? `@${r.confirmedInstagram}` : '',
+            r.confirmedBio ?? '',
+            r.confirmedBio ? [...r.confirmedBio].length : '',
+          ]
+            .map(cell)
+            .join(',')
+        ),
+      ].join('\n')
+      return new NextResponse(csv, {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="outlander-directory-credits.csv"`,
+        },
+      })
+    }
+
     const count = (s: string) => rows.filter((r) => r.status === s).length
+    const queuedRows = rows.filter((r) => r.status === 'QUEUED' || r.status === 'SENDING')
+    const nextDue = queuedRows
+      .map((r) => r.scheduledFor)
+      .filter((d): d is Date => !!d)
+      .sort((a, b) => a.getTime() - b.getTime())[0]
     return NextResponse.json({
       sendingLive: isSendingLive(),
       testInbox: TEST_INBOX,
+      // Null means invites carry whatever host generated them rather than the
+      // public domain — the panel says so out loud.
+      publicBase: creditPublicBase(),
+      deadline: {
+        at: submissionDeadline().toISOString(),
+        label: deadlineLabel(),
+        open: isSubmissionOpen(),
+      },
+      defaultPerHour: DEFAULT_PER_HOUR,
+      queue: {
+        queued: queuedRows.length,
+        nextDue: nextDue ? nextDue.toISOString() : null,
+        lastOf: queuedRows
+          .map((r) => r.scheduledFor)
+          .filter((d): d is Date => !!d)
+          .sort((a, b) => b.getTime() - a.getTime())[0]
+          ?.toISOString() ?? null,
+      },
       // The description limit travels with the row so the panel never has to
       // restate the tier rule — one definition, in credit-consent.ts.
       rows: rows.map((r) => ({ ...r, bioLimit: bioLimitForTier(r.tier) })),
@@ -60,6 +137,7 @@ export const GET = withAuth(async () => {
         sent: count('SENT'),
         opened: count('OPENED'),
         confirmed: count('CONFIRMED'),
+        queued: queuedRows.length,
         declined: count('DECLINED'),
         failed: count('FAILED'),
         unsendable: rows.filter((r) => !isValidEmail(r.email)).length,
@@ -186,7 +264,7 @@ export const POST = withAuth(async (request: NextRequest) => {
             to: row.email ?? '',
             name: row.name,
             role: row.role,
-            link: `${base}/credit/${row.token}`,
+            link: creditLink({ fallbackBase: base, token: row.token }),
           })
           await prisma.creditRequest.update({
             where: { id: row.id },
@@ -196,6 +274,7 @@ export const POST = withAuth(async (request: NextRequest) => {
               sentTo: result.sentTo,
               isTest: result.isTest,
               emailError: null,
+              scheduledFor: null,
               remindedAt: row.sentAt ? new Date() : null,
             },
           })
@@ -210,6 +289,61 @@ export const POST = withAuth(async (request: NextRequest) => {
         }
       }
       return NextResponse.json({ ok: true, sent, failures, live: isSendingLive() })
+    }
+
+    // ── Pace a sendout ──
+    // Nothing is emailed here. Each invite is stamped with the moment it is due
+    // and the worker takes it from there, so a rate can be changed, paused, or
+    // resumed after a restart without anybody watching a tab.
+    if (action === 'schedule') {
+      const ids = Array.isArray(body.ids) ? body.ids.map(String) : []
+      if (ids.length === 0) return NextResponse.json({ error: 'Nothing selected.' }, { status: 400 })
+      const perHour = Math.max(1, Math.min(120, Number(body.perHour) || DEFAULT_PER_HOUR))
+
+      // Only rows that can actually be sent: a signed or declined response is
+      // final, and a row without a valid address would just fail on its slot.
+      const rows = await prisma.creditRequest.findMany({
+        where: { id: { in: ids }, status: { in: ['DRAFT', 'FAILED', 'QUEUED'] } },
+        orderBy: [{ tier: 'asc' }, { name: 'asc' }],
+      })
+      const sendable = rows.filter((r) => isValidEmail(r.email))
+      const slots = sendSlots(sendable.length, perHour)
+
+      for (let i = 0; i < sendable.length; i++) {
+        await prisma.creditRequest.update({
+          where: { id: sendable[i].id },
+          data: { status: 'QUEUED', scheduledFor: slots[i], emailError: null },
+        })
+      }
+      return NextResponse.json({
+        ok: true,
+        queued: sendable.length,
+        skipped: rows.length - sendable.length,
+        perHour,
+        firstAt: slots[0]?.toISOString() ?? null,
+        lastAt: slots[slots.length - 1]?.toISOString() ?? null,
+      })
+    }
+
+    if (action === 'unschedule') {
+      const ids = Array.isArray(body.ids) ? body.ids.map(String) : []
+      const where = ids.length > 0 ? { id: { in: ids }, status: 'QUEUED' } : { status: 'QUEUED' }
+      const done = await prisma.creditRequest.updateMany({
+        where,
+        data: { status: 'DRAFT', scheduledFor: null },
+      })
+      return NextResponse.json({ ok: true, paused: done.count })
+    }
+
+    // Sends whatever is already due, without waiting for the next tick. Used by
+    // the panel's "send due now" button and to prove a schedule works.
+    if (action === 'drain') {
+      const proto = request.headers.get('x-forwarded-proto') ?? 'http'
+      const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+      const base = process.env.NEXTAUTH_URL || `${proto}://${host}`
+      const max = Math.max(1, Math.min(25, Number(body.max) || 5))
+      const result = await drainDue(base, max)
+      return NextResponse.json({ ok: true, ...result, live: isSendingLive() })
     }
 
     // ── Add one person by hand ──

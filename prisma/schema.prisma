@@ -1118,8 +1118,15 @@ model CreditRequest {
   tier      Int?
 
   // ── Lifecycle ──
-  // DRAFT → SENT → OPENED → CONFIRMED | DECLINED. FAILED when the send errored.
+  // DRAFT → QUEUED → SENDING → SENT → OPENED → CONFIRMED | DECLINED.
+  // FAILED when the send errored. QUEUED/SENDING exist because the sendout is
+  // paced over hours: 239 near-identical emails in one burst is what gets a
+  // mailbox filtered, so each invite carries the moment it is due.
   status      String    @default("DRAFT")
+  // When this invite is due to leave. Null = not scheduled. The drip worker
+  // claims rows whose slot has passed; progress lives here rather than in a
+  // browser tab, so closing the laptop doesn't stop the sendout.
+  scheduledFor DateTime?
   sentAt      DateTime?
   // Where the email actually went. In test mode this is the test inbox, not
   // `email` — recorded so a test send can never masquerade as a real one.

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Loader2, RefreshCw, Send, Check, X, AlertTriangle, Lock,
   ChevronDown, ChevronUp, Pencil, Trash2, Copy, FlaskConical, UserPlus, BadgeCheck,
+  CalendarClock, PauseCircle, Download,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ interface CreditRow {
   email: string | null;
   tier: number | null;
   status: string;
+  scheduledFor: string | null;
   sentAt: string | null;
   sentTo: string | null;
   isTest: boolean;
@@ -50,10 +52,15 @@ interface CreditRow {
 interface Payload {
   sendingLive: boolean;
   testInbox: string;
+  /** The public host invites point at. Null = links carry this host instead. */
+  publicBase: string | null;
+  defaultPerHour: number;
+  deadline: { at: string; label: string; open: boolean };
+  queue: { queued: number; nextDue: string | null; lastOf: string | null };
   rows: CreditRow[];
   summary: {
     total: number; draft: number; sent: number; opened: number;
-    confirmed: number; declined: number; failed: number; unsendable: number;
+    confirmed: number; queued: number; declined: number; failed: number; unsendable: number;
   };
 }
 
@@ -61,6 +68,8 @@ const emailOk = (v: string | null) => !!v && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   DRAFT: { label: "Not sent", cls: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
+  QUEUED: { label: "Queued", cls: "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300" },
+  SENDING: { label: "Sending", cls: "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200" },
   SENT: { label: "Sent", cls: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
   OPENED: { label: "Opened", cls: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
   CONFIRMED: { label: "Confirmed", cls: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
@@ -68,7 +77,7 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   FAILED: { label: "Send failed", cls: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
 };
 
-type Filter = "all" | "unsent" | "awaiting" | "confirmed" | "declined" | "problems";
+type Filter = "all" | "unsent" | "queued" | "awaiting" | "confirmed" | "declined" | "problems";
 
 export default function CreditConsentPanel() {
   const [data, setData] = useState<Payload | null>(null);
@@ -81,6 +90,7 @@ export default function CreditConsentPanel() {
   const [editingEmail, setEditingEmail] = useState<{ id: string; value: string } | null>(null);
   const [adding, setAdding] = useState(false);
   const [addForm, setAddForm] = useState({ name: "", email: "", role: "", instagram: "", tier: "" });
+  const [perHour, setPerHour] = useState(20);
 
   const load = useCallback(async () => {
     try {
@@ -132,6 +142,9 @@ export default function CreditConsentPanel() {
     if (!data) return [];
     switch (filter) {
       case "unsent": return data.rows.filter((r) => r.status === "DRAFT" && emailOk(r.email));
+      case "queued": return data.rows
+        .filter((r) => r.status === "QUEUED" || r.status === "SENDING")
+        .sort((a, b) => (a.scheduledFor ?? "").localeCompare(b.scheduledFor ?? ""));
       case "awaiting": return data.rows.filter((r) => r.status === "SENT" || r.status === "OPENED");
       case "confirmed": return data.rows.filter((r) => r.status === "CONFIRMED");
       case "declined": return data.rows.filter((r) => r.status === "DECLINED");
@@ -186,14 +199,125 @@ export default function CreditConsentPanel() {
 
       {/* ── Summary ── */}
       {s && (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-8">
           <Tile label="People" value={s.total} onClick={() => setFilter("all")} active={filter === "all"} />
           <Tile label="Not sent" value={s.draft} onClick={() => setFilter("unsent")} active={filter === "unsent"} />
+          <Tile label="Queued" value={s.queued} onClick={() => setFilter("queued")} active={filter === "queued"} />
           <Tile label="Awaiting" value={s.sent + s.opened} onClick={() => setFilter("awaiting")} active={filter === "awaiting"} />
           <Tile label="Confirmed" value={s.confirmed} tone="good" onClick={() => setFilter("confirmed")} active={filter === "confirmed"} />
           <Tile label="Declined" value={s.declined} tone={s.declined > 0 ? "bad" : undefined} onClick={() => setFilter("declined")} active={filter === "declined"} />
           <Tile label="Failed" value={s.failed} tone={s.failed > 0 ? "bad" : undefined} onClick={() => setFilter("problems")} active={filter === "problems"} />
           <Tile label="Bad email" value={s.unsendable} tone={s.unsendable > 0 ? "warn" : undefined} onClick={() => setFilter("problems")} active={false} />
+        </div>
+      )}
+
+      {/* ── The sendout ──
+          Pacing is the whole point: 239 near-identical emails out of one Gmail
+          mailbox in five minutes is what gets a sender filtered, and a filtered
+          invite is a contributor who never appears in the Directory. Nothing
+          here sends immediately — it stamps each invite with the moment it is
+          due, and the server works through them. */}
+      {data && (
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h3 className="text-sm font-semibold text-foreground">Sendout</h3>
+            <p className="text-xs text-muted-foreground">
+              {data.deadline.open ? (
+                <>Confirmations close <span className="font-medium text-foreground">{data.deadline.label}</span></>
+              ) : (
+                <span className="font-medium text-red-600 dark:text-red-400">
+                  Closed {data.deadline.label} — the queue is holding and the public page is shut
+                </span>
+              )}
+            </p>
+          </div>
+
+          {!data.publicBase && (
+            <p className="mt-2.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-900/25 dark:text-amber-200">
+              <b>CREDIT_PUBLIC_URL isn&rsquo;t set</b>, so invites will carry whichever host you
+              opened this page on. Set it to the public domain before a real sendout, or 239
+              people get a link to the staff system.
+            </p>
+          )}
+
+          {data.queue.queued > 0 ? (
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+              <span className="text-foreground">
+                <b className="tabular-nums">{data.queue.queued}</b> waiting to go out
+              </span>
+              {data.queue.nextDue && (
+                <span className="text-muted-foreground">Next at {fmt(data.queue.nextDue)}</span>
+              )}
+              {data.queue.lastOf && (
+                <span className="text-muted-foreground">Last at {fmt(data.queue.lastOf)}</span>
+              )}
+              {data.queue.lastOf && data.queue.lastOf > data.deadline.at && (
+                <span className="font-medium text-red-600 dark:text-red-400">
+                  The tail of this queue lands after the deadline — raise the rate
+                </span>
+              )}
+              <button
+                onClick={() => act("pause", { action: "unschedule" }, (d) =>
+                  setNotice(`Paused — ${d.paused} invite${d.paused === 1 ? "" : "s"} taken off the queue.`)
+                )}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50"
+              >
+                {busy === "pause" ? <Loader2 size={11} className="animate-spin" /> : <PauseCircle size={12} />}
+                Pause the queue
+              </button>
+              <button
+                onClick={() => act("drain", { action: "drain" }, (d) =>
+                  setNotice(
+                    d.closed
+                      ? "Holding — the deadline has passed, so nothing was sent."
+                      : `${d.sent} sent now${d.failed ? `, ${d.failed} failed` : ""}.`
+                  )
+                )}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50"
+              >
+                {busy === "drain" ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                Send anything due now
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <label className="text-xs text-muted-foreground">
+                <span className="mb-1 block font-semibold uppercase tracking-wide">Rate</span>
+                <select
+                  value={perHour}
+                  onChange={(e) => setPerHour(Number(e.target.value))}
+                  className="rounded-lg border border-border bg-background px-2.5 py-2 text-sm text-foreground"
+                >
+                  <option value={10}>10 an hour — one every 6 min</option>
+                  <option value={20}>20 an hour — one every 3 min</option>
+                  <option value={30}>30 an hour — one every 2 min</option>
+                  <option value={60}>60 an hour — one a minute</option>
+                </select>
+              </label>
+              <button
+                onClick={() =>
+                  act("schedule", { action: "schedule", ids: sendableUnsent, perHour }, (d) =>
+                    setNotice(
+                      `${d.queued} invite${d.queued === 1 ? "" : "s"} queued at ${d.perHour}/hour — ` +
+                      `first ${fmt(String(d.firstAt))}, last ${fmt(String(d.lastAt))}` +
+                      `${d.skipped ? ` · ${d.skipped} skipped for a bad address` : ""}.`
+                    )
+                  )
+                }
+                disabled={busy !== null || sendableUnsent.length === 0 || !data.deadline.open}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
+              >
+                {busy === "schedule" ? <Loader2 size={14} className="animate-spin" /> : <CalendarClock size={14} />}
+                Queue {sendableUnsent.length} unsent
+              </button>
+              <p className="max-w-md text-xs text-muted-foreground">
+                Spread across 09:00–19:00 London, resuming the next morning if a day fills up.
+                Closing this page doesn&rsquo;t stop it — the schedule lives on the server.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -209,6 +333,14 @@ export default function CreditConsentPanel() {
           {busy === "import" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           {data?.rows.length ? "Re-import sheet" : "Import from sheet"}
         </button>
+        <a
+          href="/api/directory/credits?export=designer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          title="Confirmed credits only — no emails, no addresses"
+        >
+          <Download size={14} />
+          Export for the designer
+        </a>
         <button
           onClick={() => setAdding((v) => !v)}
           disabled={busy !== null}
@@ -217,21 +349,6 @@ export default function CreditConsentPanel() {
           <UserPlus size={14} />
           Add person
         </button>
-        {sendableUnsent.length > 0 && (
-          <button
-            onClick={() => act("sendAll", { action: "send", ids: sendableUnsent }, (d) => {
-              const fails = (d.failures as unknown[])?.length ?? 0;
-              setNotice(
-                `${d.sent} invite${d.sent === 1 ? "" : "s"} ${data?.sendingLive ? "sent" : `sent to ${data?.testInbox} (test mode)`}${fails ? ` · ${fails} failed` : ""}.`
-              );
-            })}
-            disabled={busy !== null}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
-          >
-            {busy === "sendAll" ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-            Send all unsent ({sendableUnsent.length})
-          </button>
-        )}
       </div>
 
       {adding && (
@@ -369,7 +486,14 @@ export default function CreditConsentPanel() {
                       </>
                     )}
                   </span>
-                  <span className="text-xs text-muted-foreground">{r.tier ? `Tier ${r.tier}` : "—"}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {r.tier ? `Tier ${r.tier}` : "—"}
+                    {r.scheduledFor && (r.status === "QUEUED" || r.status === "SENDING") && (
+                      <span className="block text-[11px] text-violet-700 dark:text-violet-300">
+                        {fmt(r.scheduledFor)}
+                      </span>
+                    )}
+                  </span>
                   <span>
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${meta.cls}`}>
                       {meta.label}
@@ -419,6 +543,7 @@ export default function CreditConsentPanel() {
                   <div className="border-t border-border bg-muted/40 px-4 py-3 text-sm">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
+                        {r.scheduledFor && <DetailRow k="Due" v={fmt(r.scheduledFor)} />}
                         <DetailRow k="Sent" v={r.sentAt ? `${fmt(r.sentAt)} → ${r.sentTo}${r.isTest ? " (test)" : ""}` : "not yet"} />
                         <DetailRow k="Opened" v={r.openedAt ? fmt(r.openedAt) : "—"} />
                         <DetailRow k="Agreement" v={r.agreementAcceptedAt ? `accepted ${fmt(r.agreementAcceptedAt)} · ${r.agreementVersion}` : "not accepted"} />

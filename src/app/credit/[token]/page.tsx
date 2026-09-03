@@ -34,6 +34,9 @@ interface CreditData {
   // Characters this person's description may run to, or null when their tier
   // isn't asked for one. The page never computes this — it's the server's rule.
   bioLimit: number | null;
+  // Issue 02 goes to print, so confirmations end. `open` is the server's call,
+  // not a comparison this page makes against the visitor's own clock.
+  deadline: { at: string; label: string; open: boolean };
 }
 
 // Counted the same way the server counts it: code points, so an emoji or an
@@ -56,7 +59,9 @@ export default function CreditConfirmPage({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // agreement → form → done | declined
-  const [stage, setStage] = useState<"agreement" | "form" | "done" | "declined">("agreement");
+  const [stage, setStage] = useState<"agreement" | "form" | "done" | "declined" | "closed">(
+    "agreement"
+  );
 
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -87,6 +92,7 @@ export default function CreditConfirmPage({
       setInstagram((r.instagram ?? "").replace(/^@+/, ""));
       setEmail(r.email ?? "");
       if (r.responded) setStage(r.printConsent ? "done" : "declined");
+      else if (!d.deadline?.open) setStage("closed");
       else if (r.accepted) setStage("form");
     } catch {
       setError("Something went wrong loading this page.");
@@ -221,6 +227,28 @@ export default function CreditConfirmPage({
     );
   }
 
+  // ── Closed ──
+  // Deliberately not a dead end: someone who opens their link on Monday should
+  // be told who to talk to, not just that they are late.
+  if (stage === "closed") {
+    return (
+      <Shell>
+        <h1 className="font-serif text-2xl text-black">The Directory has closed</h1>
+        <p className="mt-4 text-sm leading-relaxed text-gray-600">
+          Confirmations for Issue 02 closed on {data!.deadline.label}, and the pages are now
+          being laid out. We&rsquo;re sorry to have missed you{first ? `, ${first}` : ""}.
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-gray-600">
+          If you&rsquo;d still like to be in it, email{" "}
+          <a href="mailto:silver@outlandermag.com" className="underline">
+            silver@outlandermag.com
+          </a>{" "}
+          and we&rsquo;ll tell you honestly whether there&rsquo;s still room.
+        </p>
+      </Shell>
+    );
+  }
+
   // ── Stage 1: the agreement ──
   if (stage === "agreement") {
     return (
@@ -251,7 +279,12 @@ export default function CreditConfirmPage({
 
         {error && <p className="mt-5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <p className="mt-8 text-sm text-black">
+          Please confirm by <strong>{data!.deadline.label}</strong>. After that the pages are laid
+          out and we can&rsquo;t add anyone.
+        </p>
+
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
           <button
             onClick={accept}
             disabled={busy}
@@ -463,6 +496,10 @@ export default function CreditConfirmPage({
         </label>
 
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+        <p className="text-xs text-gray-500">
+          Confirmations close {data!.deadline.label}.
+        </p>
 
         <button
           type="submit"

@@ -313,6 +313,21 @@ two budget systems still sit outside it.
       page shows a live counter and blocks submission while over, rather than truncating
       mid-word. `AGREEMENT_VERSION` bumped to `2026-08-v3` — the description is printed, so the
       signed text now names it.
+- [x] ~~**Paced sendout + submission deadline**~~ (2026-09-03) — invites are queued, not
+      blasted: `scheduledFor` per row, spread across 09:00–19:00 London at a chosen rate, sent
+      by an in-process worker (`src/lib/credit-drip.ts`) that claims each row conditionally so
+      nothing sends twice and resumes after a restart. The old "send all unsent" button is gone
+      — 239 near-identical messages out of one Gmail mailbox in five minutes is what gets a
+      sender filtered, and a filtered invite is a contributor who never appears in the issue.
+      Confirmations close at a deadline (`CREDIT_DEADLINE`, default Sunday 2026-09-06 23:59
+      London): the public page shows it, closes itself afterwards with a route back to email,
+      the endpoint answers 410, and the queue holds rather than sending an invite nobody can
+      act on. Plus a designer export (`?export=designer`) — tier, name, discipline, handle,
+      description, character count, and deliberately no email or postal address, because that
+      file leaves the company.
+- [ ] **Reminder pass for non-responders** — `remindedAt` exists and the queue can now pace a
+      second wave; needs a "queue a reminder to everyone still unanswered" action and copy that
+      doesn't read like the first email.
 - [ ] **Lawyer pass on the agreement copy** before the real sendout (`AGREEMENT_VERSION`
       bumps if it changes, so signed versions stay attributable).
 - [ ] **Fix the 41 bad emails** in the panel (inline edit) — `*`, bio links, missing TLDs.

@@ -8,6 +8,9 @@ import {
   agreementFullText,
   bioLimitForTier,
   charCount,
+  deadlineLabel,
+  isSubmissionOpen,
+  submissionDeadline,
   isCreditRole,
   isValidEmail,
   sendCreditOutcome,
@@ -73,6 +76,12 @@ export async function GET(
       // their tier isn't asked for one. The tier itself is deliberately not
       // sent — nobody needs to learn they were filed as a 2.
       bioLimit: bioLimitForTier(req.tier),
+      // Shown on the page while it's open, and the reason it closes.
+      deadline: {
+        at: submissionDeadline().toISOString(),
+        label: deadlineLabel(),
+        open: isSubmissionOpen(),
+      },
       agreement: {
         version: AGREEMENT_VERSION,
         summary: AGREEMENT_SUMMARY,
@@ -107,6 +116,19 @@ export async function POST(
 
     const body = await request.json().catch(() => ({}) as Record<string, unknown>)
     const action = String(body.action ?? '')
+
+    // Past the deadline nothing can be recorded: the pages are laid out and a
+    // credit we accept but cannot print is worse than one we decline to take.
+    // 410 rather than 400 — the link was valid, the window has closed.
+    if (!isSubmissionOpen() && action !== 'accept') {
+      return NextResponse.json(
+        {
+          error: `Confirmations closed on ${deadlineLabel()}. Email silver@outlandermag.com and we will see what is still possible.`,
+          closed: true,
+        },
+        { status: 410 }
+      )
+    }
 
     if (action === 'accept') {
       // Recorded even if they never finish the form — the fact they accepted
