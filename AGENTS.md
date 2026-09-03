@@ -88,6 +88,23 @@ npx prisma migrate deploy
   table, *or adding a `@unique` column*. If you ever fall back to it, reproduce against the
   local DB first rather than discovering it mid-deploy.
 
+## Redirects from API routes
+
+**Never build a redirect from `request.url` in a route handler.** Behind nginx it
+resolves to the address the app listens on, not the hostname the browser asked for, and
+the forwarded scheme gets stapled to it — `NextResponse.redirect(new URL('/x',
+request.url))` produced `https://localhost:3000/x` and an `ERR_SSL_PROTOCOL_ERROR` page
+at the end of a *successful* Google OAuth connection (fixed 2026-09-03 in
+`api/google/callback`). Emit a relative `Location` instead:
+
+```ts
+new NextResponse(null, { status: 307, headers: { Location: '/me/settings' } })
+```
+
+The browser resolves it against the URL it actually requested, so it is right on every
+hostname including local dev. `proxy.ts` has never had this problem because middleware
+normalises its redirects to relative paths.
+
 ## Styling
 
 Live theme is **Paper Standard** (light). `.dark` class-remap in `globals.css` is a
