@@ -204,9 +204,43 @@ function printRow(r: Row): (string | number)[] {
 }
 
 /**
- * Makes sure both tabs exist, with a frozen header, a bold header row and tick
- * boxes down the Submitted column. Idempotent — a sheet created before the
- * tracker existed gains it on the next sync rather than needing to be rebuilt.
+ * Turns the Submitted column into actual tick boxes.
+ *
+ * `showCustomUi` is the difference between a checkbox and the words TRUE and
+ * FALSE — a boolean validation without it validates fine and looks like a
+ * spreadsheet nobody styled. Applied on every sync rather than at creation, so
+ * a sheet made before this existed heals itself and someone clearing formatting
+ * by hand doesn't permanently lose the boxes.
+ */
+async function ensureTickBoxes(
+  sheets: sheets_v4.Sheets,
+  spreadsheetId: string,
+  trackerSheetId: number
+) {
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          setDataValidation: {
+            range: {
+              sheetId: trackerSheetId,
+              startRowIndex: 1,
+              startColumnIndex: 0,
+              endColumnIndex: 1,
+            },
+            rule: { condition: { type: 'BOOLEAN' }, strict: true, showCustomUi: true },
+          },
+        },
+      ],
+    },
+  })
+}
+
+/**
+ * Makes sure both tabs exist, with a frozen header and a bold header row.
+ * Idempotent — a sheet created before the tracker existed gains it on the next
+ * sync rather than needing to be rebuilt.
  */
 async function ensureTabs(sheets: sheets_v4.Sheets, spreadsheetId: string) {
   const meta = await sheets.spreadsheets.get({ spreadsheetId })
@@ -244,14 +278,6 @@ async function ensureTabs(sheets: sheets_v4.Sheets, spreadsheetId: string) {
         fields: 'userEnteredFormat.textFormat.bold',
       },
     })
-    if (title === TRACKER_TAB) {
-      requests.push({
-        setDataValidation: {
-          range: { sheetId, startRowIndex: 1, startColumnIndex: 0, endColumnIndex: 1 },
-          rule: { condition: { type: 'BOOLEAN' }, strict: true },
-        },
-      })
-    }
   }
   if (requests.length > 0) {
     await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } })
@@ -322,7 +348,9 @@ export async function syncCreditSheet(): Promise<{
 
   try {
     const sheets = await sheetsFor(sheet.ownerUserId)
-    await ensureTabs(sheets, sheet.spreadsheetId)
+    const tabIds = await ensureTabs(sheets, sheet.spreadsheetId)
+    const trackerId = tabIds.get(TRACKER_TAB)
+    if (trackerId != null) await ensureTickBoxes(sheets, sheet.spreadsheetId, trackerId)
 
     const rows = await ledger()
     const confirmed = rows.filter((r) => r.status === 'CONFIRMED' && r.printConsent)
