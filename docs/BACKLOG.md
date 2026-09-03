@@ -340,6 +340,22 @@ two budget systems still sit outside it.
       than adding `spreadsheets`, which would invalidate every grant and force the team to
       reconnect. A revoked grant returns 409 "reconnect Google" instead of ROADMAP 10.3's
       unhandled 500.
+- [x] ~~**Final list applied, roles cut to twenty**~~ (2026-09-03) — the sendout list is now the
+      233 people on the print team's final PDF: 6 rows removed, 3 added, 90 cleaned. The
+      cleanups matter more than the prune: 40 rows held a URL where a handle belongs (15
+      recoverable from instagram.com links, 25 were itsnova.com agency profiles and are not
+      Instagram at all, so they are now blank for the contributor to fill in), 38 held the
+      sheet's literal `*` as an email, 30 got a discipline mapped onto the new list, and 4 names
+      carried a trailing comma that would have printed. Merge rules were deliberately
+      one-directional — a tier or a valid address in the database is never overwritten with
+      nothing — after a first pass would have destroyed ten good addresses the PDF renders as
+      junk. `pg_dump` of the table taken first, kept at
+      `/root/creditrequest-before-prune-*.sql`. Staff test rows (silver@, luke@, q@) are
+      protected from the prune by address.
+- [ ] **35 people on the list have no usable email** and cannot be asked at all. Some are
+      recoverable by hand (`info@faysalhassan` is missing a TLD, `robotheppell @gmail . com` has
+      spaces in it, several list only an Instagram or a contact-form URL); the rest need
+      chasing another way.
 - [ ] **Lawyer pass on the agreement copy** before the real sendout (`AGREEMENT_VERSION`
       bumps if it changes, so signed versions stay attributable).
 - [ ] **Fix the 41 bad emails** in the panel (inline edit) — `*`, bio links, missing TLDs.
