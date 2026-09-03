@@ -5,7 +5,7 @@
 // every time somebody confirms. So OutlanderOS owns a Google Sheet and rewrites
 // it whenever a credit is signed.
 //
-// Three decisions worth knowing:
+// Four decisions worth knowing:
 //
 //  1. **It writes with one person's Google grant, remembered on the row.** A
 //     contributor confirming their credit is an anonymous request — there is no
@@ -19,26 +19,18 @@
 //     names would be us breaking the side of the deal we wrote. Share it with
 //     the designer explicitly, from Drive.
 //
-//  3. **Rewrite, never append.** The sheet is a projection of the ledger, so it
-//     is cleared and rewritten each time. A withdrawn credit has to be able to
-//     disappear from it; an append-only sheet would print somebody who pulled
-//     out.
+//  3. **Rewrite, never append.** The sheet is a projection of the ledger: rows
+//     A2:F are cleared and rewritten each time, so a credit withdrawn before
+//     print actually leaves it. An append-only sheet would print somebody who
+//     pulled out. Only those columns are touched, so the designer's own
+//     formatting, filters and notes elsewhere survive.
 //
-// Scope note, learned the hard way: the **Sheets** API refuses the broad
-// `auth/drive` scope for spreadsheets.create — it answers 403 "insufficient
-// authentication scopes" and wants `auth/spreadsheets`. Adding that scope would
-// invalidate every existing grant and make the whole team reconnect through the
-// copy-the-code-out-of-a-broken-redirect flow, for one sheet.
-//
-// So this goes through the **Drive** API instead, which the existing scope does
-// cover: Drive creates a Google Sheet from a CSV upload, and a media update
-// replaces that sheet's contents in place, keeping the same file id and URL.
-// The designer's link never changes.
-//
-// The tradeoff, and it is a real one: replacing contents resets manual
-// formatting — column widths, frozen rows, colour. Filter views and comments
-// survive. The sheet is generated output, so treat it as read-only; anything
-// hand-formatted will be flattened on the next signature.
+//  4. **Sheets needs its own scope.** A token holding only `auth/drive` — however
+//     broad that sounds — gets 403 "insufficient authentication scopes" from
+//     both the Sheets API *and* Drive's own upload endpoint if the grant is
+//     actually the older `drive.readonly`. Hence `auth/spreadsheets` in
+//     GOOGLE_USER_SCOPES, and hence a 403 here is reported as "reconnect
+//     Google", never as a server fault.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { google } from 'googleapis'
@@ -46,6 +38,7 @@ import prisma from '@/lib/prisma'
 import { createUserOAuthClient, getUserGoogleTokens } from '@/lib/google-user-auth'
 
 const SHEET_TITLE = 'Outlander Directory — Issue 02 credits'
+const TAB = 'Credits'
 const HEADERS = ['Tier', 'Name in print', 'Discipline', 'Instagram', 'Description', 'Characters']
 
 export class GoogleNotConnectedError extends Error {
@@ -55,7 +48,25 @@ export class GoogleNotConnectedError extends Error {
   }
 }
 
-async function driveFor(userId: string) {
+/** A missing scope and a revoked grant are the same instruction: reconnect. */
+function asConnectionProblem(err: unknown): GoogleNotConnectedError | null {
+  const e = err as { code?: number; status?: number; message?: string }
+  const code = e?.code ?? e?.status
+  const message = String(e?.message ?? '')
+  if (code === 403 && /insufficient authentication scopes/i.test(message)) {
+    return new GoogleNotConnectedError(
+      'Your Google connection predates the Sheets permission. Reconnect Google in Settings → Google Account, then try again.'
+    )
+  }
+  if (code === 401 || /invalid_grant/i.test(message)) {
+    return new GoogleNotConnectedError(
+      'Google rejected the stored credentials. Reconnect Google in Settings → Google Account.'
+    )
+  }
+  return null
+}
+
+async function sheetsFor(userId: string) {
   let tokens
   try {
     tokens = await getUserGoogleTokens(userId)
@@ -63,21 +74,18 @@ async function driveFor(userId: string) {
     // getUserGoogleTokens throws on invalid_grant — a revoked or expired
     // refresh token. That is a reconnect, not a server fault, and it must not
     // surface as an unhandled 500 (ROADMAP 10.3).
-    throw new GoogleNotConnectedError(
-      `Google refused the stored credentials (${String((err as Error).message).slice(0, 120)}). Reconnect Google in Settings.`
+    throw (
+      asConnectionProblem(err) ??
+      new GoogleNotConnectedError(
+        `Google refused the stored credentials (${String((err as Error).message).slice(0, 120)}).`
+      )
     )
   }
   if (!tokens) throw new GoogleNotConnectedError()
 
   const client = createUserOAuthClient()
   client.setCredentials({ access_token: tokens.accessToken })
-  return google.drive({ version: 'v3', auth: client })
-}
-
-/** The sheet body as CSV, which is what Drive converts into a spreadsheet. */
-function csvFor(rows: string[][]): string {
-  const cell = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
-  return [HEADERS, ...rows].map((r) => r.map(cell).join(',')).join('\n')
+  return google.sheets({ version: 'v4', auth: client })
 }
 
 /** The printable payload, and only that. No email, no postal address. */
@@ -112,60 +120,77 @@ export async function getCreditSheet() {
 
 /**
  * Creates the sheet in the acting user's Drive and records them as its owner.
- * Idempotent: if one already exists, it is returned untouched — a second sheet
- * would mean two links and one of them silently going stale.
+ * Idempotent: if one already exists it is returned untouched — a second sheet
+ * would mean two links, and one of them silently going stale.
  */
 export async function createCreditSheet(userId: string) {
   const existing = await getCreditSheet()
   if (existing) return existing
 
-  const drive = await driveFor(userId)
-  // Uploading CSV with the spreadsheet mimeType makes Drive convert it, so the
-  // file is a real Google Sheet from the first write rather than an attachment.
-  const created = await drive.files.create({
-    requestBody: { name: SHEET_TITLE, mimeType: 'application/vnd.google-apps.spreadsheet' },
-    media: { mimeType: 'text/csv', body: csvFor(await printableRows()) },
-    fields: 'id, webViewLink',
-  })
+  const sheets = await sheetsFor(userId)
+  let created
+  try {
+    created = await sheets.spreadsheets.create({
+      requestBody: {
+        properties: { title: SHEET_TITLE },
+        sheets: [
+          {
+            properties: {
+              title: TAB,
+              // The header stays put however far the designer scrolls.
+              gridProperties: { frozenRowCount: 1 },
+            },
+          },
+        ],
+      },
+    })
+  } catch (err) {
+    throw asConnectionProblem(err) ?? err
+  }
 
-  const spreadsheetId = created.data.id
+  const spreadsheetId = created.data.spreadsheetId
   if (!spreadsheetId) throw new Error('Google created no spreadsheet id.')
 
-  const row = await prisma.creditSheet.create({
+  await prisma.creditSheet.create({
     data: {
       id: 'singleton',
       spreadsheetId,
       spreadsheetUrl:
-        created.data.webViewLink ?? `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
+        created.data.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
       ownerUserId: userId,
     },
   })
 
-  await syncCreditSheet()
-  return prisma.creditSheet.findUnique({ where: { id: row.id } })
+  const first = await syncCreditSheet()
+  if (!first.synced) throw new Error(first.error ?? 'The sheet was made but the first write failed.')
+  return getCreditSheet()
 }
 
 /**
- * Rewrites the sheet from the ledger. Best effort by design: called after a
- * contributor confirms, and a Google outage must never fail the submission that
- * triggered it — the signature is the thing that matters and it is already
- * recorded. Failures land on `lastError` for the panel to show.
+ * Rewrites the sheet from the ledger. Best effort by design when called after a
+ * contributor confirms: the signature is already recorded, and a Google outage
+ * must never fail the submission that triggered it. Failures land on
+ * `lastError` for the panel to show.
  */
 export async function syncCreditSheet(): Promise<{ synced: boolean; rows?: number; error?: string }> {
   const sheet = await getCreditSheet()
   if (!sheet) return { synced: false, error: 'No sheet has been created yet.' }
 
   try {
-    const drive = await driveFor(sheet.ownerUserId)
+    const sheets = await sheetsFor(sheet.ownerUserId)
     const values = await printableRows()
 
-    // A media update replaces the whole file, which is exactly the semantics
-    // wanted: the sheet is a projection of the ledger, so a credit withdrawn
-    // since the last write has to actually leave it. Same file id, same URL.
-    await drive.files.update({
-      fileId: sheet.spreadsheetId,
-      media: { mimeType: 'text/csv', body: csvFor(values) },
-      fields: 'id',
+    // Clear before writing: fewer confirmed credits than last time has to mean
+    // fewer rows in the sheet, not stale ones left below the new bottom.
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: sheet.spreadsheetId,
+      range: `${TAB}!A2:F`,
+    })
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: sheet.spreadsheetId,
+      range: `${TAB}!A1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [HEADERS, ...values] },
     })
 
     await prisma.creditSheet.update({
@@ -174,7 +199,8 @@ export async function syncCreditSheet(): Promise<{ synced: boolean; rows?: numbe
     })
     return { synced: true, rows: values.length }
   } catch (err) {
-    const message = String((err as Error).message).slice(0, 400)
+    const connection = asConnectionProblem(err)
+    const message = (connection ?? (err as Error)).message.slice(0, 400)
     await prisma.creditSheet
       .update({ where: { id: 'singleton' }, data: { lastError: message } })
       .catch(() => {})

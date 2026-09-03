@@ -21,6 +21,13 @@ export const GOOGLE_USER_SCOPES = [
   // old drive.readonly scope. Users connected before this change must reconnect
   // — Google only grants the new scope on a fresh consent (prompt=consent).
   'https://www.googleapis.com/auth/drive',
+  // Sheets is its own scope: the Sheets API answers 403 "insufficient
+  // authentication scopes" to a token holding only auth/drive, however broad
+  // that sounds. Needed for the live credit sheet the print designer works
+  // from. Anyone connected before this line must reconnect — and as of
+  // 2026-09-03 every existing grant was still on the pre-upgrade
+  // `drive.readonly` anyway, so nobody loses anything by reconnecting once.
+  'https://www.googleapis.com/auth/spreadsheets',
 ]
 
 export function createUserOAuthClient() {
