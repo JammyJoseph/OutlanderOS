@@ -8,6 +8,22 @@ import { createUserOAuthClient } from '@/lib/google-user-auth'
 import { setToken } from '@/lib/token-store'
 
 
+// Redirects here are RELATIVE on purpose.
+//
+// NextResponse.redirect(new URL(path, request.url)) looked right and sent
+// people to https://localhost:3000 — behind nginx, `request.url` resolves to
+// the address the app is listening on, not the hostname the browser asked for.
+// The tokens were already stored by then, so the only symptom was a browser
+// error page at the end of a successful connection: the worst kind of bug,
+// because it says "broken" when it means "done".
+//
+// A relative Location is resolved by the browser against the URL it actually
+// requested, which is always the right host — the same reason the login bounces
+// in proxy.ts have never had this problem.
+function back(path: string) {
+  return new NextResponse(null, { status: 307, headers: { Location: path } })
+}
+
 // Single Google OAuth callback for both flows:
 //  - App-level: `state` is an account label (e.g. "primary"); tokens go to the
 //    shared token store.
@@ -21,7 +37,7 @@ export async function GET(request: NextRequest) {
   const state = request.nextUrl.searchParams.get('state') || 'primary'
 
   if (!code) {
-    return NextResponse.redirect(new URL('/settings?error=no_code', request.url))
+    return back('/me/settings?google_error=no_code')
   }
 
   // Per-user flow: a valid JWT state identifies who is connecting.
@@ -39,9 +55,7 @@ export async function GET(request: NextRequest) {
       const { tokens } = await client.getToken(code)
 
       if (!tokens.access_token || !tokens.refresh_token) {
-        return NextResponse.redirect(
-          new URL('/me/settings?google_error=no_refresh_token', request.url)
-        )
+        return back('/me/settings?google_error=no_refresh_token')
       }
 
       // Identify which Google account was connected.
@@ -60,12 +74,10 @@ export async function GET(request: NextRequest) {
         },
       })
 
-      return NextResponse.redirect(new URL('/me/settings?google_connected=1', request.url))
+      return back('/me/settings?google_connected=1')
     } catch (err) {
       console.error('GET /api/google/callback (per-user)', err)
-      return NextResponse.redirect(
-        new URL('/me/settings?google_error=exchange_failed', request.url)
-      )
+      return back('/me/settings?google_error=exchange_failed')
     }
   }
 
@@ -81,13 +93,13 @@ export async function GET(request: NextRequest) {
       connected_at: new Date().toISOString(),
     })
 
-    const response = NextResponse.redirect(new URL('/settings?connected=' + state, request.url))
+    const response = back('/admin/settings?connected=' + encodeURIComponent(state))
     response.cookies.set('google_' + state + '_token', 'connected', {
       httpOnly: false,
       maxAge: 60 * 60 * 24 * 365,
     })
     return response
   } catch {
-    return NextResponse.redirect(new URL('/settings?error=auth_failed', request.url))
+    return back('/admin/settings?error=auth_failed')
   }
 }
