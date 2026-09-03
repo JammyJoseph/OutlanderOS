@@ -154,6 +154,10 @@ export const POST = withAuth(async (request: NextRequest) => {
     const body = await request.json().catch(() => ({}) as Record<string, unknown>)
     const action = String(body.action ?? '')
 
+    const wProto = request.headers.get('x-forwarded-proto') ?? 'http'
+    const wHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+    ensureDripWorker(process.env.NEXTAUTH_URL || `${wProto}://${wHost}`)
+
     // ── Import from the sheet ──
     if (action === 'import') {
       const url = String(body.sheetUrl ?? DEFAULT_SHEET)
