@@ -204,19 +204,31 @@ function printRow(r: Row): (string | number)[] {
 }
 
 /**
- * Turns the Submitted column into actual tick boxes.
+ * Turns the Submitted column into actual tick boxes, over exactly the rows that
+ * have somebody in them.
  *
- * `showCustomUi` is the difference between a checkbox and the words TRUE and
- * FALSE — a boolean validation without it validates fine and looks like a
- * spreadsheet nobody styled. Applied on every sync rather than at creation, so
- * a sheet made before this existed heals itself and someone clearing formatting
- * by hand doesn't permanently lose the boxes.
+ * Two things bite here, both of which fail quietly:
+ *
+ *  * `showCustomUi` is the difference between a checkbox and the words TRUE and
+ *    FALSE. Without it the validation is correct and the column looks like a
+ *    spreadsheet nobody styled.
+ *  * **The range must be bounded.** `setDataValidation` over a range with no
+ *    `endRowIndex` returns success and does nothing — the reply is an empty
+ *    object either way, so there is no error to notice. Reading the cells back
+ *    is the only way to know it worked.
+ *
+ * Bounded to the real rows rather than the whole column, so the sheet doesn't
+ * carry 700 tickable boxes belonging to nobody; validation below the data is
+ * cleared for when the list shrinks. Applied on every sync so a sheet made
+ * before this existed heals itself.
  */
 async function ensureTickBoxes(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
-  trackerSheetId: number
+  trackerSheetId: number,
+  dataRows: number
 ) {
+  const lastRow = dataRows + 1 // header occupies row 1
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
     requestBody: {
@@ -226,10 +238,23 @@ async function ensureTickBoxes(
             range: {
               sheetId: trackerSheetId,
               startRowIndex: 1,
+              endRowIndex: lastRow,
               startColumnIndex: 0,
               endColumnIndex: 1,
             },
             rule: { condition: { type: 'BOOLEAN' }, strict: true, showCustomUi: true },
+          },
+        },
+        {
+          // No rule = clear it, for rows that used to hold somebody.
+          setDataValidation: {
+            range: {
+              sheetId: trackerSheetId,
+              startRowIndex: lastRow,
+              endRowIndex: lastRow + 500,
+              startColumnIndex: 0,
+              endColumnIndex: 1,
+            },
           },
         },
       ],
@@ -349,9 +374,6 @@ export async function syncCreditSheet(): Promise<{
   try {
     const sheets = await sheetsFor(sheet.ownerUserId)
     const tabIds = await ensureTabs(sheets, sheet.spreadsheetId)
-    const trackerId = tabIds.get(TRACKER_TAB)
-    if (trackerId != null) await ensureTickBoxes(sheets, sheet.spreadsheetId, trackerId)
-
     const rows = await ledger()
     const confirmed = rows.filter((r) => r.status === 'CONFIRMED' && r.printConsent)
 
@@ -377,6 +399,11 @@ export async function syncCreditSheet(): Promise<{
         ],
       },
     })
+
+    const trackerId = tabIds.get(TRACKER_TAB)
+    if (trackerId != null) {
+      await ensureTickBoxes(sheets, sheet.spreadsheetId, trackerId, rows.length)
+    }
 
     await prisma.creditSheet.update({
       where: { id: 'singleton' },
