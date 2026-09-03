@@ -180,6 +180,7 @@ export default function LoginPage() {
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+              autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username"
               className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all"
               placeholder="you@outlandermag.com" />
           </div>
@@ -211,6 +212,9 @@ export default function LoginPage() {
                   type="email"
                   value={forgotEmail}
                   onChange={e => setForgotEmail(e.target.value)}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="you@outlandermag.com"
                   className="w-full px-3 py-2 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all"
                 />

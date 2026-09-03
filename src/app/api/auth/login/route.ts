@@ -13,7 +13,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
   }
 
-  const user = await prisma.user.findUnique({ where: { email } })
+  // Normalised the same way every other lookup does it. Addresses are stored
+  // lowercase, so "Silver@..." — which is what a phone's keyboard offers by
+  // default — missed the row entirely and came back as "Invalid credentials",
+  // indistinguishable from a wrong password. A pasted address with a trailing
+  // space did the same.
+  const user = await prisma.user.findUnique({
+    where: { email: String(email).trim().toLowerCase() },
+  })
   if (!user) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
   }
