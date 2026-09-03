@@ -95,3 +95,31 @@ tail -50 /root/.pm2/logs/outlanderos-error.log
   and *degraded*, not application errors.
 - **Single point of failure** at every layer: one box, one pm2 process, database on the same
   machine, OAuth tokens in a local `.tokens.json`.
+
+## Hostnames and TLS (from 2026-09-03)
+
+| URL | Serves |
+|---|---|
+| `https://os.outlanderdirectory.com` | the whole system — this is where staff sign in |
+| `https://outlanderdirectory.com` | contributor credit pages only; everything else 302s to outlandermag.com |
+| `http://204.168.245.185` | 301 to the staff host. Do not use it: `NEXTAUTH_URL` is https, so the session cookie is `Secure` and a browser will not send it back over plain http — signing in there looks like a wrong password |
+
+Let's Encrypt covers all three names on one certificate (expires 2026-12-02,
+certbot's timer renews it). nginx config lives in `deploy/nginx/` in this repo;
+the public/staff split is an nginx allowlist, not an app-level guard, so a new
+page in the wrong route group cannot leak onto the public hostname.
+
+`NEXTAUTH_URL` must stay on the **staff** host — it drives the auth cookie's
+Secure flag and the OAuth redirect URIs. `CREDIT_PUBLIC_URL` carries the public
+host into invite links. If it is unset, invites point at whichever host built
+them, which for a real sendout means 239 people getting a link to the staff
+login. The credits panel warns about this in red.
+
+## Reading the app's logs
+
+**Use `/root/.pm2/logs/outlanderos-out-0.log` and `-error-0.log`.** The
+un-suffixed `outlanderos-out.log` / `outlanderos-error.log` are stale from July
+2026 — pm2 appends the instance id for the process as it is actually running,
+and `ecosystem.config.js` names the files without it. Tailing the wrong file
+shows a July boot and no current activity, which reads exactly like a feature
+that failed to start. Confirm with `pm2 describe outlanderos | grep "log path"`.
