@@ -18,6 +18,12 @@ import {
   TEST_INBOX,
 } from '@/lib/credit-consent'
 import { drainDue, ensureDripWorker } from '@/lib/credit-drip'
+import {
+  createCreditSheet,
+  getCreditSheet,
+  GoogleNotConnectedError,
+  syncCreditSheet,
+} from '@/lib/credit-sheet'
 
 // Staff-side of the credit consent flow. One route, explicit actions:
 //
@@ -31,6 +37,8 @@ import { drainDue, ensureDripWorker } from '@/lib/credit-drip'
 //   POST {action:"unschedule", ids}         → take them back off the queue
 //   POST {action:"drain"}                   → send whatever is already due, now
 //   GET  ?export=designer                   → the printable payload as CSV
+//   POST {action:"sheet-create"}            → make the live Google Sheet
+//   POST {action:"sheet-sync"}              → rewrite it from the ledger now
 //
 // The send action carries no "test" parameter, deliberately. Test vs live is
 // decided by the environment (CREDIT_SEND_LIVE), never by the caller — see
@@ -119,6 +127,8 @@ export const GET = withAuth(async (request: NextRequest) => {
         open: isSubmissionOpen(),
       },
       defaultPerHour: DEFAULT_PER_HOUR,
+      // The designer's live sheet, or null before anyone has made it.
+      sheet: await getCreditSheet(),
       queue: {
         queued: queuedRows.length,
         nextDue: nextDue ? nextDue.toISOString() : null,
@@ -149,7 +159,7 @@ export const GET = withAuth(async (request: NextRequest) => {
   }
 })
 
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withAuth(async (request: NextRequest, _context, user) => {
   try {
     const body = await request.json().catch(() => ({}) as Record<string, unknown>)
     const action = String(body.action ?? '')
@@ -348,6 +358,31 @@ export const POST = withAuth(async (request: NextRequest) => {
       const max = Math.max(1, Math.min(25, Number(body.max) || 5))
       const result = await drainDue(base, max)
       return NextResponse.json({ ok: true, ...result, live: isSendingLive() })
+    }
+
+    // ── The designer's live sheet ──
+    // Created in the acting user's Drive, with their grant remembered for every
+    // later write: a contributor confirming their credit has no session to
+    // borrow tokens from.
+    if (action === 'sheet-create') {
+      try {
+        const sheet = await createCreditSheet(user.userId)
+        return NextResponse.json({ ok: true, sheet })
+      } catch (err) {
+        // A missing or revoked Google grant is a reconnect, not a fault.
+        if (err instanceof GoogleNotConnectedError) {
+          return NextResponse.json({ error: err.message }, { status: 409 })
+        }
+        throw err
+      }
+    }
+
+    if (action === 'sheet-sync') {
+      const result = await syncCreditSheet()
+      if (!result.synced) {
+        return NextResponse.json({ error: result.error ?? 'Sync failed.' }, { status: 502 })
+      }
+      return NextResponse.json({ ok: true, ...result })
     }
 
     // ── Add one person by hand ──

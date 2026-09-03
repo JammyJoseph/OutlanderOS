@@ -328,6 +328,18 @@ two budget systems still sit outside it.
 - [ ] **Reminder pass for non-responders** — `remindedAt` exists and the queue can now pace a
       second wave; needs a "queue a reminder to everyone still unanswered" action and copy that
       doesn't read like the first email.
+- [x] ~~**Live designer sheet**~~ (2026-09-03) — a Google Sheet OutlanderOS owns and rewrites
+      from the ledger every time a credit is signed, so the designer keeps one URL instead of
+      chasing a CSV. Created in the setup user's Drive with their OAuth grant, which is stored
+      on `CreditSheet.ownerUserId` because a contributor confirming their credit is an anonymous
+      request with no session to borrow tokens from. Cleared and rewritten rather than appended,
+      so a withdrawn credit can actually leave. Made **private** — pre-announcement the
+      contributor list is the confidential part of Issue 02 and every contributor signed an
+      agreement to that effect, so link-sharing it would breach our own terms; share it from
+      Drive deliberately. Uses the existing full-Drive scope (the Sheets API accepts it) rather
+      than adding `spreadsheets`, which would invalidate every grant and force the team to
+      reconnect. A revoked grant returns 409 "reconnect Google" instead of ROADMAP 10.3's
+      unhandled 500.
 - [ ] **Lawyer pass on the agreement copy** before the real sendout (`AGREEMENT_VERSION`
       bumps if it changes, so signed versions stay attributable).
 - [ ] **Fix the 41 bad emails** in the panel (inline edit) — `*`, bio links, missing TLDs.

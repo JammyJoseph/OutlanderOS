@@ -15,6 +15,7 @@ import {
   isValidEmail,
   sendCreditOutcome,
 } from '@/lib/credit-consent'
+import { syncCreditSheetInBackground } from '@/lib/credit-sheet'
 
 // Public — the token is the credential, exactly like /api/invoice/[token].
 // Contributors are not OutlanderOS users. Consequences:
@@ -251,6 +252,11 @@ export async function POST(
           address: Object.keys(addr).length > 0 ? addr : undefined,
         },
       })
+      // The designer's sheet is a projection of this table, so a new signature
+      // rewrites it. Fire-and-forget on purpose: the credit is already recorded,
+      // and a Google outage must never fail the submission that triggered it.
+      syncCreditSheetInBackground()
+
       const receiptTo = confirmedEmail || req.email
       if (isValidEmail(receiptTo)) {
         void sendCreditOutcome({

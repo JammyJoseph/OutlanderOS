@@ -1858,3 +1858,25 @@ model RolloutMilestone {
 
   @@index([planId])
 }
+
+/// The live Google Sheet of confirmed print credits — one row, because there is
+/// one sheet. It exists so the designer can be handed a URL once instead of a
+/// CSV every time somebody confirms.
+///
+/// `ownerUserId` is load-bearing: the sheet is created in that person's Drive
+/// with that person's OAuth grant, and every later write uses it too. A
+/// contributor confirming their credit triggers a write, and there is no user in
+/// that request — so the grant has to be remembered rather than derived. If the
+/// owner disconnects Google, syncing stops with `lastError` saying so; it does
+/// not silently fall back to somebody else's Drive.
+model CreditSheet {
+  id             String    @id @default("singleton")
+  spreadsheetId  String
+  spreadsheetUrl String
+  ownerUserId    String
+  lastSyncedAt   DateTime?
+  lastError      String?
+  rowsWritten    Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}

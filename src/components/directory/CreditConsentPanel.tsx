@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Loader2, RefreshCw, Send, Check, X, AlertTriangle, Lock,
   ChevronDown, ChevronUp, Pencil, Trash2, Copy, FlaskConical, UserPlus, BadgeCheck,
-  CalendarClock, PauseCircle, Download,
+  CalendarClock, PauseCircle, Download, Table2, RotateCw, ExternalLink,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -57,6 +57,12 @@ interface Payload {
   defaultPerHour: number;
   deadline: { at: string; label: string; open: boolean };
   queue: { queued: number; nextDue: string | null; lastOf: string | null };
+  sheet: {
+    spreadsheetUrl: string;
+    lastSyncedAt: string | null;
+    lastError: string | null;
+    rowsWritten: number;
+  } | null;
   rows: CreditRow[];
   summary: {
     total: number; draft: number; sent: number; opened: number;
@@ -317,6 +323,77 @@ export default function CreditConsentPanel() {
                 Closing this page doesn&rsquo;t stop it — the schedule lives on the server.
               </p>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── The designer's live sheet ──
+          One URL the designer keeps, rewritten from the ledger every time a
+          credit is signed. Created private: pre-announcement the contributor
+          list IS the confidential part of Issue 02, and every contributor has
+          signed an agreement to keep it quiet. */}
+      {data && (
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Table2 size={14} className="text-muted-foreground" />
+              Designer&rsquo;s sheet
+            </h3>
+            {data.sheet ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={data.sheet.spreadsheetUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                >
+                  <ExternalLink size={11} /> Open the sheet
+                </a>
+                <button
+                  onClick={() => act("sheet-sync", { action: "sheet-sync" }, (d) =>
+                    setNotice(`Sheet rewritten — ${d.rows} confirmed credit${d.rows === 1 ? "" : "s"}.`)
+                  )}
+                  disabled={busy !== null}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50"
+                >
+                  {busy === "sheet-sync" ? <Loader2 size={11} className="animate-spin" /> : <RotateCw size={11} />}
+                  Rewrite now
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => act("sheet-create", { action: "sheet-create" }, () =>
+                  setNotice("Sheet created in your Google Drive. Share it with the designer from there.")
+                )}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
+              >
+                {busy === "sheet-create" ? <Loader2 size={14} className="animate-spin" /> : <Table2 size={14} />}
+                Create it in my Drive
+              </button>
+            )}
+          </div>
+
+          {data.sheet ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {data.sheet.rowsWritten} confirmed credit{data.sheet.rowsWritten === 1 ? "" : "s"} in it
+              {data.sheet.lastSyncedAt ? `, last written ${fmt(data.sheet.lastSyncedAt)}` : ""}. It
+              rewrites itself whenever somebody confirms. Names, disciplines, handles and
+              descriptions only — no emails, no addresses.
+            </p>
+          ) : (
+            <p className="mt-2 max-w-2xl text-xs text-muted-foreground">
+              A single Google Sheet the designer can keep open, rewritten from here every time a
+              credit is signed. It&rsquo;s made in your own Drive with your Google connection and
+              stays private until you share it — the contributor list is the confidential part of
+              Issue 02, and they&rsquo;ve each signed an agreement saying so.
+            </p>
+          )}
+
+          {data.sheet?.lastError && (
+            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/25 dark:text-red-300">
+              Last write failed: {data.sheet.lastError}
+            </p>
           )}
         </div>
       )}
