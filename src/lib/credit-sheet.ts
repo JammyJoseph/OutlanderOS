@@ -24,9 +24,21 @@
 //     disappear from it; an append-only sheet would print somebody who pulled
 //     out.
 //
-// Scope note: this uses the existing full-Drive scope in GOOGLE_USER_SCOPES,
-// which the Sheets API accepts. Adding the narrower `spreadsheets` scope would
-// invalidate every existing grant and force the whole team to reconnect.
+// Scope note, learned the hard way: the **Sheets** API refuses the broad
+// `auth/drive` scope for spreadsheets.create — it answers 403 "insufficient
+// authentication scopes" and wants `auth/spreadsheets`. Adding that scope would
+// invalidate every existing grant and make the whole team reconnect through the
+// copy-the-code-out-of-a-broken-redirect flow, for one sheet.
+//
+// So this goes through the **Drive** API instead, which the existing scope does
+// cover: Drive creates a Google Sheet from a CSV upload, and a media update
+// replaces that sheet's contents in place, keeping the same file id and URL.
+// The designer's link never changes.
+//
+// The tradeoff, and it is a real one: replacing contents resets manual
+// formatting — column widths, frozen rows, colour. Filter views and comments
+// survive. The sheet is generated output, so treat it as read-only; anything
+// hand-formatted will be flattened on the next signature.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { google } from 'googleapis'
@@ -34,7 +46,6 @@ import prisma from '@/lib/prisma'
 import { createUserOAuthClient, getUserGoogleTokens } from '@/lib/google-user-auth'
 
 const SHEET_TITLE = 'Outlander Directory — Issue 02 credits'
-const TAB = 'Credits'
 const HEADERS = ['Tier', 'Name in print', 'Discipline', 'Instagram', 'Description', 'Characters']
 
 export class GoogleNotConnectedError extends Error {
@@ -44,7 +55,7 @@ export class GoogleNotConnectedError extends Error {
   }
 }
 
-async function sheetsFor(userId: string) {
+async function driveFor(userId: string) {
   let tokens
   try {
     tokens = await getUserGoogleTokens(userId)
@@ -60,7 +71,13 @@ async function sheetsFor(userId: string) {
 
   const client = createUserOAuthClient()
   client.setCredentials({ access_token: tokens.accessToken })
-  return google.sheets({ version: 'v4', auth: client })
+  return google.drive({ version: 'v3', auth: client })
+}
+
+/** The sheet body as CSV, which is what Drive converts into a spreadsheet. */
+function csvFor(rows: string[][]): string {
+  const cell = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
+  return [HEADERS, ...rows].map((r) => r.map(cell).join(',')).join('\n')
 }
 
 /** The printable payload, and only that. No email, no postal address. */
@@ -102,23 +119,16 @@ export async function createCreditSheet(userId: string) {
   const existing = await getCreditSheet()
   if (existing) return existing
 
-  const sheets = await sheetsFor(userId)
-  const created = await sheets.spreadsheets.create({
-    requestBody: {
-      properties: { title: SHEET_TITLE },
-      sheets: [
-        {
-          properties: {
-            title: TAB,
-            // The header stays visible however far the designer scrolls.
-            gridProperties: { frozenRowCount: 1, columnCount: HEADERS.length },
-          },
-        },
-      ],
-    },
+  const drive = await driveFor(userId)
+  // Uploading CSV with the spreadsheet mimeType makes Drive convert it, so the
+  // file is a real Google Sheet from the first write rather than an attachment.
+  const created = await drive.files.create({
+    requestBody: { name: SHEET_TITLE, mimeType: 'application/vnd.google-apps.spreadsheet' },
+    media: { mimeType: 'text/csv', body: csvFor(await printableRows()) },
+    fields: 'id, webViewLink',
   })
 
-  const spreadsheetId = created.data.spreadsheetId
+  const spreadsheetId = created.data.id
   if (!spreadsheetId) throw new Error('Google created no spreadsheet id.')
 
   const row = await prisma.creditSheet.create({
@@ -126,7 +136,7 @@ export async function createCreditSheet(userId: string) {
       id: 'singleton',
       spreadsheetId,
       spreadsheetUrl:
-        created.data.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
+        created.data.webViewLink ?? `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
       ownerUserId: userId,
     },
   })
@@ -146,20 +156,16 @@ export async function syncCreditSheet(): Promise<{ synced: boolean; rows?: numbe
   if (!sheet) return { synced: false, error: 'No sheet has been created yet.' }
 
   try {
-    const sheets = await sheetsFor(sheet.ownerUserId)
+    const drive = await driveFor(sheet.ownerUserId)
     const values = await printableRows()
 
-    // Clear first: this is a projection, so a credit withdrawn since the last
-    // write has to actually leave the sheet.
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId: sheet.spreadsheetId,
-      range: `${TAB}!A2:F`,
-    })
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: sheet.spreadsheetId,
-      range: `${TAB}!A1`,
-      valueInputOption: 'RAW',
-      requestBody: { values: [HEADERS, ...values] },
+    // A media update replaces the whole file, which is exactly the semantics
+    // wanted: the sheet is a projection of the ledger, so a credit withdrawn
+    // since the last write has to actually leave it. Same file id, same URL.
+    await drive.files.update({
+      fileId: sheet.spreadsheetId,
+      media: { mimeType: 'text/csv', body: csvFor(values) },
+      fields: 'id',
     })
 
     await prisma.creditSheet.update({

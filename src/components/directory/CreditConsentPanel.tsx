@@ -379,7 +379,8 @@ export default function CreditConsentPanel() {
               {data.sheet.rowsWritten} confirmed credit{data.sheet.rowsWritten === 1 ? "" : "s"} in it
               {data.sheet.lastSyncedAt ? `, last written ${fmt(data.sheet.lastSyncedAt)}` : ""}. It
               rewrites itself whenever somebody confirms. Names, disciplines, handles and
-              descriptions only — no emails, no addresses.
+              descriptions only — no emails, no addresses. Treat it as read-only: a rewrite
+              replaces the contents, so hand formatting will be flattened.
             </p>
           ) : (
             <p className="mt-2 max-w-2xl text-xs text-muted-foreground">
