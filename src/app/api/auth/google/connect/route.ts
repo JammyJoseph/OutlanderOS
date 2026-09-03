@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret } from "@/lib/jwt-secret"
 import { withAuth } from '@/lib/auth'
-import { createUserOAuthClient, GOOGLE_USER_SCOPES } from '@/lib/google-user-auth'
+import {
+  createUserOAuthClient,
+  googleRedirectIsHosted,
+  GOOGLE_USER_SCOPES,
+} from '@/lib/google-user-auth'
 
 
 // Generates the Google OAuth consent URL for the signed-in user. The `state`
@@ -18,5 +22,8 @@ export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
     state,
   })
 
-  return NextResponse.json({ authUrl })
+  // `hosted` decides what the settings page asks of the user: with a registered
+  // hosted redirect the connection completes itself, and asking anyone to copy
+  // a code out of a URL bar would be theatre.
+  return NextResponse.json({ authUrl, hosted: googleRedirectIsHosted() })
 })

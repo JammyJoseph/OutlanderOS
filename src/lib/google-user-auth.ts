@@ -4,14 +4,32 @@ import prisma from '@/lib/prisma'
 // Per-user Google OAuth. Each team member connects their own Google account;
 // Gmail / Calendar / Drive access uses that individual's tokens.
 
-// Per-user OAuth reuses the registered /api/google/callback redirect — the same
-// path google-client.ts uses — pinned to localhost. The user's browser can't
-// reach localhost (the app runs on a remote host), so Google's redirect lands on
-// a "connection refused" page; the user copies the authorization code from the
-// URL bar and pastes it into Settings → Google Account, which exchanges it
-// server-side via /api/auth/google/exchange. The /api/google/callback handler
-// also accepts the per-user JWT state directly, so the flow works either way.
-export const GOOGLE_USER_REDIRECT_URI = 'http://localhost:3000/api/google/callback'
+// Where Google sends someone back to after they consent.
+//
+// The registered URI has always been http://localhost:3000/api/google/callback,
+// from before this app had a hostname. A user's browser cannot reach localhost —
+// the app runs on a remote box — so consent ends on a connection-refused page
+// and the person has to copy the authorization code out of a broken URL bar.
+// That is why connecting Google has always felt broken: it is.
+//
+// The cure is one line in Google Cloud Console, not code: add
+// https://os.outlanderdirectory.com/api/google/callback to the OAuth client's
+// authorised redirect URIs. Then set GOOGLE_REDIRECT_URI to it and consent
+// lands back on our own callback, which already completes the connection on its
+// own (see api/google/callback/route.ts).
+//
+// It is an env var rather than derived from NEXTAUTH_URL on purpose: a redirect
+// URI Google doesn't recognise fails the whole flow with redirect_uri_mismatch,
+// so the switch has to happen after the console entry exists, not on deploy.
+export function googleUserRedirectUri(): string {
+  const explicit = (process.env.GOOGLE_REDIRECT_URI ?? '').trim()
+  return explicit || 'http://localhost:3000/api/google/callback'
+}
+
+/** True when consent will land back on us instead of a dead localhost page. */
+export function googleRedirectIsHosted(): boolean {
+  return !googleUserRedirectUri().includes('localhost')
+}
 
 export const GOOGLE_USER_SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
@@ -34,7 +52,7 @@ export function createUserOAuthClient() {
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    GOOGLE_USER_REDIRECT_URI
+    googleUserRedirectUri()
   )
 }
 

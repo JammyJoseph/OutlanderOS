@@ -29,6 +29,11 @@ export function GoogleAccountSection() {
   // this, the only route was Disconnect first — which throws away a working
   // refresh token before you know the new consent will succeed.
   const [reconnecting, setReconnecting] = useState(false)
+  // Null until the first connect attempt tells us. True means Google will send
+  // the user back to our own callback, which finishes the job — so there is no
+  // code to paste and nothing to explain.
+  const [hosted, setHosted] = useState<boolean | null>(null)
+  const [waiting, setWaiting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
@@ -46,7 +51,23 @@ export function GoogleAccountSection() {
         setMessage({ kind: 'err', text: json.error || 'Could not start Google connect' })
         return
       }
+      setHosted(!!json.hosted)
       window.open(json.authUrl, '_blank', 'noopener,noreferrer')
+
+      // Hosted flow: the callback writes the tokens itself, so watch for the
+      // connection appearing rather than asking for a code. Gives up after two
+      // minutes so a abandoned consent doesn't spin forever.
+      if (json.hosted) {
+        setWaiting(true)
+        const started = Date.now()
+        const poll = window.setInterval(async () => {
+          await loadStatus()
+          if (Date.now() - started > 120_000) {
+            window.clearInterval(poll)
+            setWaiting(false)
+          }
+        }, 3000)
+      }
     } finally {
       setBusy(false)
     }
@@ -103,17 +124,33 @@ export function GoogleAccountSection() {
     }
   }
 
+  // Stop polling the moment the connection lands.
+  if (waiting && status?.connected) setWaiting(false)
+
   // Used by both states, so the instructions can never drift apart.
   const connectSteps = (
     <div className="space-y-4">
-      <ol className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
-        <li>1. Click the button — a Google consent screen opens in a new tab.</li>
-        <li>
-          2. Grant access. Google then sends you to a <code>localhost</code> page that{' '}
-          <strong>will not load</strong> — that is expected, not a failure.
-        </li>
-        <li>3. Copy the whole URL out of that page&rsquo;s address bar and paste it below.</li>
-      </ol>
+      {hosted === false && (
+        <ol className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
+          <li>1. Click the button — a Google consent screen opens in a new tab.</li>
+          <li>
+            2. Grant access. Google then sends you to a <code>localhost</code> page that{' '}
+            <strong>will not load</strong> — that is expected, not a failure.
+          </li>
+          <li>3. Copy the whole URL out of that page&rsquo;s address bar and paste it below.</li>
+        </ol>
+      )}
+      {hosted === true && (
+        <p className="text-xs text-gray-600 dark:text-gray-400">
+          Approve the permissions in the tab that opened. You&rsquo;ll come straight back here
+          and this will say Connected — nothing to copy.
+        </p>
+      )}
+      {waiting && (
+        <p className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Waiting for Google…
+        </p>
+      )}
 
       <button
         onClick={startConnect}
@@ -124,7 +161,7 @@ export function GoogleAccountSection() {
         Open the Google consent screen
       </button>
 
-      <div>
+      <div className={hosted === true ? 'hidden' : undefined}>
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
           Paste the URL (or just the code)
         </label>
