@@ -84,6 +84,7 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       'Camera Department',
       'Gaffer / Lighting',
       'Graphic Designer',
+      'Illustrator',
       'Motion Designer',
       '3D / CGI Artist',
       'Makeup Artist',
