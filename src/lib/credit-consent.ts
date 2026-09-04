@@ -207,7 +207,39 @@ export function isSubmissionOpen(at: Date = new Date()): boolean {
   return at.getTime() <= submissionDeadline().getTime()
 }
 
-/** "Sunday 6 September at 23:59" — London, for copy on the page and in email. */
+/** "Sunday 6 September at 23:59" — London, for the page and the staff panel. */
+/**
+ * The same moment written without a colon, for email.
+ *
+ * "23:59" reads as machine output in a sentence, and the whole point of the
+ * invite is that it sounds like a person wrote it. A deadline at the very end
+ * of a day is described as the end of that day; any other time gets a spoken
+ * clock ("9pm", "5.30pm").
+ */
+export function deadlineLabelSpoken(): string {
+  const d = submissionDeadline()
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  }).formatToParts(d)
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? ''
+  const date = `${get('weekday')} ${get('day')} ${get('month')}`
+  const hour = Number(get('hour'))
+  const minute = Number(get('minute'))
+
+  if (hour === 23 && minute >= 55) return `the end of ${date}`
+
+  const suffix = hour >= 12 ? 'pm' : 'am'
+  const h12 = hour % 12 === 0 ? 12 : hour % 12
+  const clock = minute === 0 ? `${h12}${suffix}` : `${h12}.${String(minute).padStart(2, '0')}${suffix}`
+  return `${date} at ${clock}`
+}
+
 export function deadlineLabel(): string {
   const d = submissionDeadline()
   const day = new Intl.DateTimeFormat('en-GB', {
@@ -295,11 +327,11 @@ export function creditInviteEmail(opts: {
   const text = [
     `Hi ${first},`,
     '',
-    `We're reaching out because we would love to feature you in the next issue of Outlander Magazine, in something we're building called The Outlander Directory: a printed, curated index of the people shaping this culture.`,
+    `We're reaching out because we would love to feature you in the next issue of Outlander Magazine, in something we're building called The Outlander Directory. It's a printed, curated index of the people shaping this culture.`,
     '',
     `Before it goes to print, we'd like to get a few details exactly right, and we need your sign-off.`,
     '',
-    `It takes about two minutes, and we need it back by ${deadlineLabel()} — after that the pages are laid out and we can't add anyone.`,
+    `It takes about two minutes, and we need it back by ${deadlineLabelSpoken()}. After that the pages are laid out and we can't add anyone.`,
     '',
     opts.link,
     '',
@@ -314,12 +346,12 @@ export function creditInviteEmail(opts: {
   <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#141414;font-size:15px;line-height:1.6">
     <p style="margin:28px 0 0;letter-spacing:.14em;font-size:11px;font-weight:700;color:#9a9a9a">OUTLANDER MAGAZINE</p>
     <p style="margin:22px 0 0">Hi ${escapeHtml(first)},</p>
-    <p style="margin:14px 0 0">We&rsquo;re reaching out because we would love to feature you in the next issue of Outlander Magazine, in something we&rsquo;re building called The Outlander Directory: a printed, curated index of the people shaping this culture.</p>
+    <p style="margin:14px 0 0">We&rsquo;re reaching out because we would love to feature you in the next issue of Outlander Magazine, in something we&rsquo;re building called The Outlander Directory. It&rsquo;s a printed, curated index of the people shaping this culture.</p>
     <p style="margin:14px 0 0">Before it goes to print, we&rsquo;d like to get a few details exactly right, and we need your sign-off.</p>
     <p style="margin:22px 0 0">
       <a href="${opts.link}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:500">Confirm your credit</a>
     </p>
-    <p style="margin:20px 0 0;font-size:13px;color:#6b6b6b">Takes about two minutes, and we need it back by <strong style="color:#141414">${deadlineLabel()}</strong> &mdash; after that the pages are laid out and we can&rsquo;t add anyone. The link is personal to you, so please don&rsquo;t forward it.</p>
+    <p style="margin:20px 0 0;font-size:13px;color:#6b6b6b">Takes about two minutes, and we need it back by <strong style="color:#141414">${deadlineLabelSpoken()}</strong>. After that the pages are laid out and we can&rsquo;t add anyone. The link is personal to you, so please don&rsquo;t forward it.</p>
     <p style="margin:14px 0 0;font-size:13px;color:#6b6b6b">If anything looks wrong, just reply to this email.</p>
     <p style="margin:26px 0 40px;font-size:13px;color:#9a9a9a">Outlander Magazine</p>
   </div>`
@@ -368,7 +400,7 @@ export function creditOutcomeEmail(opts: {
   const text = [
     `Hi ${first},`,
     '',
-    'Confirming your choice: you will not appear in The Outlander Directory, and we will not print your name in Issue 02.',
+    'Confirming your choice. You will not appear in The Outlander Directory, and we will not print your name in Issue 02.',
     '',
     'If you change your mind before we go to print, reply to this email and we will put you back in.',
     '',
@@ -378,7 +410,7 @@ export function creditOutcomeEmail(opts: {
   <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#141414;font-size:15px;line-height:1.6">
     <p style="margin:28px 0 0;letter-spacing:.14em;font-size:11px;font-weight:700;color:#9a9a9a">OUTLANDER MAGAZINE</p>
     <p style="margin:22px 0 0">Hi ${escapeHtml(first)},</p>
-    <p style="margin:14px 0 0">Confirming your choice: you will not appear in The Outlander Directory, and we will not print your name in Issue 02.</p>
+    <p style="margin:14px 0 0">Confirming your choice. You will not appear in The Outlander Directory, and we will not print your name in Issue 02.</p>
     <p style="margin:14px 0 0;font-size:13px;color:#6b6b6b">If you change your mind before we go to print, reply to this email and we will put you back in.</p>
     <p style="margin:26px 0 40px;font-size:13px;color:#9a9a9a">Outlander Magazine</p>
   </div>`

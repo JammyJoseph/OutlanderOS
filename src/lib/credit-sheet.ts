@@ -29,10 +29,13 @@
 //     sheet believed, and where nobody knows, it stays empty. A blank
 //     description is information — it is the thing still outstanding.
 //
-//  4. **Postal addresses are never written here.** The agreement promises the
-//     address is used for delivery and never shared, and this file gets shared.
-//     Emails are included: chasing 35 people with no usable address is the
-//     work this tab exists to support.
+//  4. **The Tracker holds delivery addresses; the Credits tab does not.** Asked
+//     for on 2026-09-03, and worth being clear-eyed about: the agreement tells
+//     contributors their address is used for delivery and never shared, and a
+//     Google Sheet is shared per FILE, not per tab. So anyone given this link
+//     can read all 236 addresses. Hand the designer the panel's CSV export
+//     instead, which carries no contact details at all — or share this file
+//     only inside the company.
 //
 //  5. **Sheets needs its own scope.** A token holding only `auth/drive` gets
 //     403 "insufficient authentication scopes", so `auth/spreadsheets` is in
@@ -64,7 +67,17 @@ const TRACKER_HEADERS = [
   'Invited',
   'Opened',
   'Confirmed',
+  'Address 1',
+  'Address 2',
+  'City',
+  'Region',
+  'Postcode',
+  'Country',
 ]
+
+// A2:S covers the thirteen tracking columns plus the six address ones. Getting
+// this wrong leaves stale cells to the right of every rewrite.
+const TRACKER_RANGE = 'A2:S'
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: 'Not sent',
@@ -150,6 +163,7 @@ async function ledger() {
       openedAt: true,
       respondedAt: true,
       printConsent: true,
+      address: true,
       confirmedName: true,
       confirmedRole: true,
       confirmedBio: true,
@@ -188,7 +202,17 @@ function trackerRow(r: Row): (string | number | boolean)[] {
     stamp(r.sentAt),
     stamp(r.openedAt),
     stamp(r.respondedAt),
+    // Delivery address, exactly as they typed it. Empty for everyone who has
+    // not answered, and for anyone who chose not to give one.
+    ...addressCells(r.address),
   ]
+}
+
+/** The address JSON spread into its own columns, so it can be mail-merged. */
+function addressCells(address: unknown): string[] {
+  const a = (address ?? {}) as Record<string, unknown>
+  const cell = (k: string) => (typeof a[k] === 'string' ? (a[k] as string) : '')
+  return [cell('line1'), cell('line2'), cell('city'), cell('region'), cell('postcode'), cell('country')]
 }
 
 function printRow(r: Row): (string | number)[] {
@@ -381,7 +405,7 @@ export async function syncCreditSheet(): Promise<{
     // fewer rows in the sheet, not stale ones left under the new bottom.
     await sheets.spreadsheets.values.batchClear({
       spreadsheetId: sheet.spreadsheetId,
-      requestBody: { ranges: [`${TRACKER_TAB}!A2:M`, `${PRINT_TAB}!A2:F`] },
+      requestBody: { ranges: [`${TRACKER_TAB}!${TRACKER_RANGE}`, `${PRINT_TAB}!A2:F`] },
     })
     await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: sheet.spreadsheetId,
