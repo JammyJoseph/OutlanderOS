@@ -325,9 +325,18 @@ two budget systems still sit outside it.
       act on. Plus a designer export (`?export=designer`) — tier, name, discipline, handle,
       description, character count, and deliberately no email or postal address, because that
       file leaves the company.
-- [ ] **Reminder pass for non-responders** — `remindedAt` exists and the queue can now pace a
-      second wave; needs a "queue a reminder to everyone still unanswered" action and copy that
-      doesn't read like the first email.
+- [x] ~~**Reminder pass for non-responders**~~ (2026-09-04) — `remindAt` per row, paced by the
+      same worker. The selection happens at send time, not schedule time: a row is skipped if
+      it has been answered since, so "everyone who still hasn't done it by Saturday" means
+      Saturday. A failed reminder records the error without marking the row FAILED, because the
+      invite did arrive and losing that would make the tracker lie. 147 scheduled for
+      2026-09-05 09:00 London, one a minute.
+- [x] ~~**Problem and Reminder columns on the tracker**~~ (2026-09-04) — third and fourth, so a
+      row needing a human is findable in a list of 236. Names the three failures that were
+      previously invisible: no usable address (never queued, so absent from every sending
+      count), a failed send, and a bounced reminder against a row whose status still reads Sent.
+- [x] ~~Cleared 12 junk `*` Instagram handles~~ that would have printed as `@*`. None had been
+      confirmed, so nothing reached the print tab.
 - [x] ~~**Live designer sheet**~~ (2026-09-03) — a Google Sheet OutlanderOS owns and rewrites
       from the ledger every time a credit is signed, so the designer keeps one URL instead of
       chasing a CSV. Created in the setup user's Drive with their OAuth grant, which is stored
