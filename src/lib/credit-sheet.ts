@@ -182,13 +182,29 @@ async function ledger() {
 
 type Row = Awaited<ReturnType<typeof ledger>>[number]
 
-/** Confirmed value if they gave one, otherwise what the sheet believed. */
-const best = (confirmed: string | null, prefill: string | null) =>
-  (confirmed ?? '') || (prefill ?? '')
+/**
+ * A value the contributor confirmed, or our own guess in brackets.
+ *
+ * The fallback used to be silent, and it read as consent: 234 rows showed a
+ * discipline while only 57 people had actually chosen one, because an
+ * unanswered row displayed the discipline WE imported from the sheet. The tick
+ * box said otherwise, but a filled cell is more persuasive than an empty one
+ * next to it, and it misled twice before this changed.
+ *
+ * Brackets mean provisional. No brackets means they told us.
+ */
+const best = (confirmed: string | null, prefill: string | null, answered: boolean): string => {
+  const theirs = (confirmed ?? '').trim()
+  if (theirs) return theirs
+  const ours = (prefill ?? '').trim()
+  if (!ours) return ''
+  return answered ? ours : `(${ours})`
+}
 
 function trackerRow(r: Row): (string | number | boolean)[] {
   const limit = bioLimitForTier(r.tier)
   const bio = r.confirmedBio ?? ''
+  const answered = r.respondedAt !== null
   return [
     // Ticked when they have answered at all — a decline is a submission, and
     // "who still hasn't replied" is the question this column exists to answer.
@@ -198,16 +214,21 @@ function trackerRow(r: Row): (string | number | boolean)[] {
     problemWith(r),
     reminderState(r),
     r.tier ?? '',
-    best(r.confirmedName, r.name),
-    best(r.confirmedRole, r.role),
+    // The name is our record either way and rarely changes, so it stays plain.
+    // The three fields that imply consent do not.
+    (r.confirmedName ?? '').trim() || r.name,
+    best(r.confirmedRole, r.role, answered),
     (() => {
-      const h = best(r.confirmedInstagram, r.instagram)
-      return h ? `@${h}` : ''
+      const theirs = (r.confirmedInstagram ?? '').trim()
+      if (theirs) return `@${theirs}`
+      const ours = (r.instagram ?? '').trim()
+      if (!ours) return ''
+      return answered ? `@${ours}` : `(@${ours})`
     })(),
     bio,
     bio ? [...bio].length : '',
     limit ?? '—',
-    best(r.confirmedEmail, r.email),
+    best(r.confirmedEmail, r.email, answered),
     stamp(r.sentAt),
     stamp(r.openedAt),
     stamp(r.respondedAt),
