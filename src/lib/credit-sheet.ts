@@ -56,6 +56,10 @@ const PRINT_HEADERS = ['Tier', 'Name in print', 'Discipline', 'Instagram', 'Desc
 const TRACKER_HEADERS = [
   'Submitted',
   'Status',
+  // Sits third, before anything you have to scroll for, because a row that
+  // needs a human is the only kind worth finding in a list of 236.
+  'Problem',
+  'Reminder',
   'Tier',
   'Name in print',
   'Discipline',
@@ -75,9 +79,9 @@ const TRACKER_HEADERS = [
   'Country',
 ]
 
-// A2:S covers the thirteen tracking columns plus the six address ones. Getting
+// A2:U covers the fifteen tracking columns plus the six address ones. Getting
 // this wrong leaves stale cells to the right of every rewrite.
-const TRACKER_RANGE = 'A2:S'
+const TRACKER_RANGE = 'A2:U'
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: 'Not sent',
@@ -164,6 +168,9 @@ async function ledger() {
       respondedAt: true,
       printConsent: true,
       address: true,
+      emailError: true,
+      remindAt: true,
+      remindedAt: true,
       confirmedName: true,
       confirmedRole: true,
       confirmedBio: true,
@@ -188,6 +195,8 @@ function trackerRow(r: Row): (string | number | boolean)[] {
     // Whether they said yes is the Status column's job.
     r.respondedAt !== null,
     STATUS_LABEL[r.status] ?? r.status,
+    problemWith(r),
+    reminderState(r),
     r.tier ?? '',
     best(r.confirmedName, r.name),
     best(r.confirmedRole, r.role),
@@ -206,6 +215,31 @@ function trackerRow(r: Row): (string | number | boolean)[] {
     // not answered, and for anyone who chose not to give one.
     ...addressCells(r.address),
   ]
+}
+
+/**
+ * What is wrong with this row, in words, or empty when nothing is.
+ *
+ * Three things hide otherwise. Someone with no address is never queued and so
+ * never appears in a failure count, which makes them invisible in every number
+ * that measures sending. A send that failed leaves a status nobody filters for.
+ * And a reminder that bounced records an error against a row whose status still
+ * reads Sent, quite correctly, because the first email did arrive.
+ */
+function problemWith(r: Row): string {
+  const emailOk = !!r.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email)
+  if (!emailOk) return 'No usable email address, cannot be invited'
+  if (r.status === 'FAILED') return `Send failed. ${r.emailError ?? 'no error recorded'}`
+  if (r.emailError) return r.emailError
+  return ''
+}
+
+/** Whether a nudge is coming, already went, or is not applicable. */
+function reminderState(r: Row): string {
+  if (r.respondedAt) return ''
+  if (r.remindAt) return `Due ${stamp(r.remindAt)}`
+  if (r.remindedAt) return `Sent ${stamp(r.remindedAt)}`
+  return ''
 }
 
 /** The address JSON spread into its own columns, so it can be mail-merged. */

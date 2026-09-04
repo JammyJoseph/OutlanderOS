@@ -1127,6 +1127,11 @@ model CreditRequest {
   // claims rows whose slot has passed; progress lives here rather than in a
   // browser tab, so closing the laptop doesn't stop the sendout.
   scheduledFor DateTime?
+  // When a reminder is due. Set for everyone still unanswered when a reminder
+  // pass is scheduled; the worker skips anyone who has answered in the
+  // meantime, so "who hasn't done it" is decided at send time rather than at
+  // scheduling time. Cleared once sent.
+  remindAt     DateTime?
   sentAt      DateTime?
   // Where the email actually went. In test mode this is the test inbox, not
   // `email` — recorded so a test send can never masquerade as a real one.

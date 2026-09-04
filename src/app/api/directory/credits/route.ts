@@ -17,7 +17,7 @@ import {
   sendSlots,
   TEST_INBOX,
 } from '@/lib/credit-consent'
-import { drainDue, ensureDripWorker } from '@/lib/credit-drip'
+import { drainDue, drainDueReminders, ensureDripWorker } from '@/lib/credit-drip'
 import {
   createCreditSheet,
   getCreditSheet,
@@ -36,6 +36,8 @@ import {
 //   POST {action:"schedule", ids, perHour}  → pace invites across working hours
 //   POST {action:"unschedule", ids}         → take them back off the queue
 //   POST {action:"drain"}                   → send whatever is already due, now
+//   POST {action:"remind", perHour, startAt} → pace a reminder pass to the unanswered
+//   POST {action:"unremind"}                → cancel the pending reminder pass
 //   GET  ?export=designer                   → the printable payload as CSV
 //   POST {action:"sheet-create"}            → make the live Google Sheet
 //   POST {action:"sheet-sync"}              → rewrite it from the ledger now
@@ -61,7 +63,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       select: {
         id: true, contactId: true, token: true, name: true, role: true,
         instagram: true, email: true, tier: true, status: true,
-        scheduledFor: true,
+        scheduledFor: true, remindAt: true, remindedAt: true,
         sentAt: true, sentTo: true, isTest: true, emailError: true,
         openedAt: true, respondedAt: true,
         confirmedName: true, confirmedRole: true, confirmedBio: true,
@@ -129,6 +131,16 @@ export const GET = withAuth(async (request: NextRequest) => {
       defaultPerHour: DEFAULT_PER_HOUR,
       // The designer's live sheet, or null before anyone has made it.
       sheet: await getCreditSheet(),
+      reminders: {
+        pending: rows.filter((r) => r.remindAt).length,
+        nextAt:
+          rows
+            .map((r) => r.remindAt)
+            .filter((d): d is Date => !!d)
+            .sort((a, b) => a.getTime() - b.getTime())[0]
+            ?.toISOString() ?? null,
+        alreadySent: rows.filter((r) => r.remindedAt).length,
+      },
       queue: {
         queued: queuedRows.length,
         nextDue: nextDue ? nextDue.toISOString() : null,
@@ -349,6 +361,48 @@ export const POST = withAuth(async (request: NextRequest, _context, user) => {
       return NextResponse.json({ ok: true, paused: done.count })
     }
 
+    // ── A reminder pass ──
+    // Stamps every currently-unanswered invite with a slot. Who actually gets
+    // one is decided when the slot comes up, not now: anyone who answers in
+    // between is skipped, which is what "whoever hasn't done it by then" means.
+    if (action === 'remind') {
+      const perHour = Math.max(1, Math.min(120, Number(body.perHour) || DEFAULT_PER_HOUR))
+      const startAt = body.startAt ? new Date(String(body.startAt)) : new Date()
+      if (Number.isNaN(startAt.getTime())) {
+        return NextResponse.json({ error: 'That start time is not a date.' }, { status: 400 })
+      }
+
+      const waiting = await prisma.creditRequest.findMany({
+        where: { status: { in: ['SENT', 'OPENED'] }, respondedAt: null },
+        orderBy: [{ tier: 'asc' }, { name: 'asc' }],
+        select: { id: true, email: true },
+      })
+      const sendable = waiting.filter((r) => isValidEmail(r.email))
+      const slots = sendSlots(sendable.length, perHour, startAt)
+
+      for (let i = 0; i < sendable.length; i++) {
+        await prisma.creditRequest.update({
+          where: { id: sendable[i].id },
+          data: { remindAt: slots[i] },
+        })
+      }
+      return NextResponse.json({
+        ok: true,
+        scheduled: sendable.length,
+        perHour,
+        firstAt: slots[0]?.toISOString() ?? null,
+        lastAt: slots[slots.length - 1]?.toISOString() ?? null,
+      })
+    }
+
+    if (action === 'unremind') {
+      const done = await prisma.creditRequest.updateMany({
+        where: { remindAt: { not: null } },
+        data: { remindAt: null },
+      })
+      return NextResponse.json({ ok: true, cancelled: done.count })
+    }
+
     // Sends whatever is already due, without waiting for the next tick. Used by
     // the panel's "send due now" button and to prove a schedule works.
     if (action === 'drain') {
@@ -357,7 +411,14 @@ export const POST = withAuth(async (request: NextRequest, _context, user) => {
       const base = process.env.NEXTAUTH_URL || `${proto}://${host}`
       const max = Math.max(1, Math.min(25, Number(body.max) || 5))
       const result = await drainDue(base, max)
-      return NextResponse.json({ ok: true, ...result, live: isSendingLive() })
+      const reminders = await drainDueReminders(base, max)
+      return NextResponse.json({
+        ok: true,
+        ...result,
+        reminded: reminders.sent,
+        remindersFailed: reminders.failed,
+        live: isSendingLive(),
+      })
     }
 
     // ── The designer's live sheet ──

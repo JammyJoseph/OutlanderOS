@@ -363,6 +363,54 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
+/**
+ * The nudge, for people who were invited and haven't answered.
+ *
+ * Written short on purpose. A second email that re-explains the whole thing
+ * reads as a mailshot; one that assumes they remember reads as a person
+ * following up. It also names the way out, because someone who does not want to
+ * be in the Directory should be able to say so in one click rather than by
+ * ignoring us twice.
+ *
+ * No em dashes and no colons, same as the invite.
+ */
+export function creditReminderEmail(opts: {
+  name: string
+  link: string
+}): { subject: string; text: string; html: string } {
+  const first = opts.name.trim().split(/\s+/)[0] || 'there'
+  const subject = `${first}, still time to confirm your Outlander Directory credit`
+
+  const text = [
+    `Hi ${first},`,
+    '',
+    `A quick nudge on the email we sent about The Outlander Directory in Issue 02 of Outlander Magazine. We still have a place for you and we have not heard back yet.`,
+    '',
+    `It takes about two minutes and we need it by ${deadlineLabelSpoken()}, after which the pages are laid out.`,
+    '',
+    opts.link,
+    '',
+    `If you would rather not be included, there is a button on that page to tell us so, and that is completely fine.`,
+    '',
+    'Outlander Magazine',
+  ].join('\n')
+
+  const html = `
+  <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#141414;font-size:15px;line-height:1.6">
+    <p style="margin:28px 0 0;letter-spacing:.14em;font-size:11px;font-weight:700;color:#9a9a9a">OUTLANDER MAGAZINE</p>
+    <p style="margin:22px 0 0">Hi ${escapeHtml(first)},</p>
+    <p style="margin:14px 0 0">A quick nudge on the email we sent about The Outlander Directory in Issue 02 of Outlander Magazine. We still have a place for you and we have not heard back yet.</p>
+    <p style="margin:22px 0 0">
+      <a href="${opts.link}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:500">Confirm your credit</a>
+    </p>
+    <p style="margin:20px 0 0;font-size:13px;color:#6b6b6b">It takes about two minutes and we need it by <strong style="color:#141414">${deadlineLabelSpoken()}</strong>, after which the pages are laid out.</p>
+    <p style="margin:14px 0 0;font-size:13px;color:#6b6b6b">If you would rather not be included, there is a button on that page to tell us so, and that is completely fine.</p>
+    <p style="margin:26px 0 40px;font-size:13px;color:#9a9a9a">Outlander Magazine</p>
+  </div>`
+
+  return { subject, text, html }
+}
+
 export function creditOutcomeEmail(opts: {
   name: string
   confirmed: boolean
@@ -461,6 +509,34 @@ export async function sendCreditInvite(opts: {
     html: mail.html,
   })
 
+  return { sentTo: recipient, isTest: !live }
+}
+
+/**
+ * Sends the reminder, behind the same live/test gate as the invite so a
+ * reminder can never escape a test environment either.
+ */
+export async function sendCreditReminder(opts: {
+  to: string
+  name: string
+  link: string
+}): Promise<CreditSendResult> {
+  if (!isMailConfigured()) {
+    throw new Error('Mail is not configured on this server (SMTP_* variables).')
+  }
+  if (!isValidEmail(opts.to)) {
+    throw new Error(`"${opts.to}" is not a valid email address.`)
+  }
+
+  const live = isSendingLive()
+  const intended = opts.to.trim()
+  const passthrough = TEST_ALLOWED_RECIPIENTS.includes(intended.toLowerCase())
+  const recipient = live || passthrough ? intended : TEST_INBOX
+  const mail = creditReminderEmail(opts)
+  const subject =
+    live || passthrough ? mail.subject : `[TEST — would go to ${intended}] ${mail.subject}`
+
+  await sendMail({ to: recipient, subject, text: mail.text, html: mail.html })
   return { sentTo: recipient, isTest: !live }
 }
 

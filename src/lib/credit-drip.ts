@@ -20,7 +20,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import prisma from '@/lib/prisma'
-import { creditLink, isSendingLive, isSubmissionOpen, sendCreditInvite } from '@/lib/credit-consent'
+import {
+  creditLink,
+  isSendingLive,
+  isSubmissionOpen,
+  sendCreditInvite,
+  sendCreditReminder,
+} from '@/lib/credit-consent'
 
 const TICK_MS = 60_000
 // Per tick, not per hour. The schedule sets the real rate; this only stops one
@@ -102,6 +108,67 @@ export async function drainDue(baseUrl: string, max = MAX_PER_TICK): Promise<Dri
 }
 
 /**
+ * Sends reminders that have come due.
+ *
+ * The selection that matters happens HERE, not when the pass was scheduled: a
+ * row is skipped if it has been answered since, so "everyone who still hasn't
+ * done it" means at the moment of sending. Scheduling stamps all 150; by
+ * Saturday morning most of them may have answered and will be passed over
+ * silently.
+ *
+ * A failed reminder does not mark the row FAILED. They already received the
+ * invite, and losing their delivered status because a nudge bounced would make
+ * the tracker lie about the thing that matters.
+ */
+export async function drainDueReminders(baseUrl: string, max = MAX_PER_TICK): Promise<DripResult> {
+  if (!isSubmissionOpen()) return { sent: 0, failed: 0, due: 0, closed: true }
+
+  const due = await prisma.creditRequest.findMany({
+    where: {
+      remindAt: { lte: new Date() },
+      respondedAt: null,
+      status: { in: ['SENT', 'OPENED'] },
+    },
+    orderBy: { remindAt: 'asc' },
+    take: max,
+  })
+
+  let sent = 0
+  let failed = 0
+
+  for (const row of due) {
+    // Claim by clearing the slot, conditional on it still being set and the
+    // person still not having answered.
+    const claim = await prisma.creditRequest.updateMany({
+      where: { id: row.id, remindAt: { not: null }, respondedAt: null },
+      data: { remindAt: null },
+    })
+    if (claim.count !== 1) continue
+
+    try {
+      await sendCreditReminder({
+        to: row.email ?? '',
+        name: row.name,
+        link: creditLink({ fallbackBase: baseUrl, token: row.token }),
+      })
+      await prisma.creditRequest.update({
+        where: { id: row.id },
+        data: { remindedAt: new Date(), emailError: null },
+      })
+      sent++
+    } catch (err) {
+      await prisma.creditRequest.update({
+        where: { id: row.id },
+        data: { emailError: `Reminder failed. ${String((err as Error).message).slice(0, 400)}` },
+      })
+      failed++
+    }
+  }
+
+  return { sent, failed, due: due.length }
+}
+
+/**
  * Starts the ticker once per process. Called lazily from the credits route, so
  * no work happens on a server that never opens the panel.
  */
@@ -131,6 +198,16 @@ export function ensureDripWorker(baseUrl: string): void {
       }
     } catch (err) {
       console.error('[credit-drip] tick failed', err)
+    }
+    try {
+      const reminders = await drainDueReminders(baseUrl)
+      if (reminders.sent > 0 || reminders.failed > 0) {
+        console.log(
+          `[credit-drip] reminded ${reminders.sent}, failed ${reminders.failed}${isSendingLive() ? '' : ' (test mode)'}`
+        )
+      }
+    } catch (err) {
+      console.error('[credit-drip] reminder tick failed', err)
     }
   }
 
