@@ -1885,3 +1885,25 @@ model CreditSheet {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
+
+/// A scheduled reminder wave.
+///
+/// One row per pass, not per person, because the whole point is that WHO gets
+/// chased is decided when the pass fires. A pass due Sunday morning stamps
+/// slots for whoever is still unanswered on Sunday morning — anyone who
+/// confirms on Saturday is simply never in it. Storing per-person slots ahead
+/// of time would freeze a list that is supposed to shrink.
+///
+/// `ranAt` makes it fire once. The worker claims a pass conditionally, so two
+/// ticks landing together cannot double-stamp it.
+model CreditReminderPass {
+  id             String    @id @default(cuid())
+  dueAt          DateTime
+  perHour        Int       @default(60)
+  label          String?
+  ranAt          DateTime?
+  scheduledCount Int       @default(0)
+  createdAt      DateTime  @default(now())
+
+  @@index([dueAt, ranAt])
+}

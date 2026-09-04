@@ -17,7 +17,7 @@ import {
   sendSlots,
   TEST_INBOX,
 } from '@/lib/credit-consent'
-import { drainDue, drainDueReminders, ensureDripWorker } from '@/lib/credit-drip'
+import { drainDue, drainDueReminders, ensureDripWorker, runDuePasses } from '@/lib/credit-drip'
 import {
   createCreditSheet,
   getCreditSheet,
@@ -131,6 +131,10 @@ export const GET = withAuth(async (request: NextRequest) => {
       defaultPerHour: DEFAULT_PER_HOUR,
       // The designer's live sheet, or null before anyone has made it.
       sheet: await getCreditSheet(),
+      reminderPasses: await prisma.creditReminderPass.findMany({
+        orderBy: { dueAt: 'asc' },
+        select: { id: true, dueAt: true, perHour: true, label: true, ranAt: true, scheduledCount: true },
+      }),
       reminders: {
         pending: rows.filter((r) => r.remindAt).length,
         nextAt:
@@ -367,40 +371,46 @@ export const POST = withAuth(async (request: NextRequest, _context, user) => {
     // between is skipped, which is what "whoever hasn't done it by then" means.
     if (action === 'remind') {
       const perHour = Math.max(1, Math.min(120, Number(body.perHour) || DEFAULT_PER_HOUR))
-      const startAt = body.startAt ? new Date(String(body.startAt)) : new Date()
-      if (Number.isNaN(startAt.getTime())) {
+      const at = body.startAt ? new Date(String(body.startAt)) : new Date()
+      if (Number.isNaN(at.getTime())) {
         return NextResponse.json({ error: 'That start time is not a date.' }, { status: 400 })
       }
 
-      const waiting = await prisma.creditRequest.findMany({
-        where: { status: { in: ['SENT', 'OPENED'] }, respondedAt: null },
-        orderBy: [{ tier: 'asc' }, { name: 'asc' }],
-        select: { id: true, email: true },
+      // Records a pass, not a list. Who receives it is worked out when it
+      // fires, so a pass set now for Sunday chases whoever is still silent on
+      // Sunday rather than whoever is silent today.
+      const pass = await prisma.creditReminderPass.create({
+        data: { dueAt: at, perHour, label: String(body.label ?? '').slice(0, 60) || null },
       })
-      const sendable = waiting.filter((r) => isValidEmail(r.email))
-      const slots = sendSlots(sendable.length, perHour, startAt)
 
-      for (let i = 0; i < sendable.length; i++) {
-        await prisma.creditRequest.update({
-          where: { id: sendable[i].id },
-          data: { remindAt: slots[i] },
-        })
-      }
+      // Due already? Expand it now rather than waiting up to a minute.
+      const fired = at.getTime() <= Date.now() ? await runDuePasses() : { ran: 0, scheduled: 0 }
+
+      const pending = await prisma.creditRequest.count({
+        where: { status: { in: ['SENT', 'OPENED'] }, respondedAt: null },
+      })
       return NextResponse.json({
         ok: true,
-        scheduled: sendable.length,
+        passId: pass.id,
+        dueAt: at.toISOString(),
         perHour,
-        firstAt: slots[0]?.toISOString() ?? null,
-        lastAt: slots[slots.length - 1]?.toISOString() ?? null,
+        firedNow: fired.ran > 0,
+        queuedNow: fired.scheduled,
+        currentlyUnanswered: pending,
       })
     }
 
     if (action === 'unremind') {
-      const done = await prisma.creditRequest.updateMany({
+      const cleared = await prisma.creditRequest.updateMany({
         where: { remindAt: { not: null } },
         data: { remindAt: null },
       })
-      return NextResponse.json({ ok: true, cancelled: done.count })
+      const passes = await prisma.creditReminderPass.deleteMany({ where: { ranAt: null } })
+      return NextResponse.json({
+        ok: true,
+        cancelled: cleared.count,
+        passesCancelled: passes.count,
+      })
     }
 
     // Sends whatever is already due, without waiting for the next tick. Used by

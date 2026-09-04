@@ -26,6 +26,7 @@ import {
   isSubmissionOpen,
   sendCreditInvite,
   sendCreditReminder,
+  sendSlots,
 } from '@/lib/credit-consent'
 
 const TICK_MS = 60_000
@@ -105,6 +106,71 @@ export async function drainDue(baseUrl: string, max = MAX_PER_TICK): Promise<Dri
   }
 
   return { sent, failed, due: due.length }
+}
+
+/**
+ * Expands any reminder pass whose time has come into per-person slots.
+ *
+ * This is the step that makes "chase whoever still hasn't done it on Sunday
+ * morning" mean Sunday morning. The pass holds no list; when it fires it looks
+ * at who is unanswered right then and paces them out. Someone who confirms on
+ * Saturday is never in it, and nobody has to remember to prune a list.
+ *
+ * Rows that already have a pending slot are left alone, so overlapping passes
+ * cannot queue two nudges for the same person.
+ */
+export async function runDuePasses(): Promise<{ ran: number; scheduled: number }> {
+  if (!isSubmissionOpen()) return { ran: 0, scheduled: 0 }
+
+  const due = await prisma.creditReminderPass.findMany({
+    where: { dueAt: { lte: new Date() }, ranAt: null },
+    orderBy: { dueAt: 'asc' },
+  })
+
+  let ran = 0
+  let scheduled = 0
+
+  for (const pass of due) {
+    // Claim it before doing any work: two ticks arriving together must not
+    // both expand the same pass.
+    const claim = await prisma.creditReminderPass.updateMany({
+      where: { id: pass.id, ranAt: null },
+      data: { ranAt: new Date() },
+    })
+    if (claim.count !== 1) continue
+    ran++
+
+    const waiting = await prisma.creditRequest.findMany({
+      where: {
+        status: { in: ['SENT', 'OPENED'] },
+        respondedAt: null,
+        remindAt: null,
+        email: { not: null },
+      },
+      orderBy: [{ tier: 'asc' }, { name: 'asc' }],
+      select: { id: true, email: true },
+    })
+    const sendable = waiting.filter((r) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email ?? ''))
+    const slots = sendSlots(sendable.length, pass.perHour)
+
+    for (let i = 0; i < sendable.length; i++) {
+      await prisma.creditRequest.update({
+        where: { id: sendable[i].id },
+        data: { remindAt: slots[i] },
+      })
+    }
+
+    await prisma.creditReminderPass.update({
+      where: { id: pass.id },
+      data: { scheduledCount: sendable.length },
+    })
+    scheduled += sendable.length
+    console.log(
+      `[credit-drip] reminder pass ${pass.label ?? pass.id} fired, ${sendable.length} queued at ${pass.perHour}/hour`
+    )
+  }
+
+  return { ran, scheduled }
 }
 
 /**
@@ -198,6 +264,11 @@ export function ensureDripWorker(baseUrl: string): void {
       }
     } catch (err) {
       console.error('[credit-drip] tick failed', err)
+    }
+    try {
+      await runDuePasses()
+    } catch (err) {
+      console.error('[credit-drip] reminder pass expansion failed', err)
     }
     try {
       const reminders = await drainDueReminders(baseUrl)
