@@ -78,6 +78,15 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
     label: '',
     roles: [
       'Director',
+      // The director titles sit together, directly under Director. A
+      // contributor who calls himself a creative director reported that
+      // "Director" was not on the list when it was the very first option — he
+      // was looking for his own title, not the generic one, and stopped
+      // reading. Grouping them here is the fix for that, not more options
+      // buried further down.
+      'Creative Director',
+      'Art Director',
+      'Casting Director',
       'Photographer',
       'Videographer',
       'DOP',
