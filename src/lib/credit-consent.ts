@@ -96,6 +96,9 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       // to get past the form, and spent her printed description asking for
       // this option instead.
       'Colourist',
+      // Camera, then grade, then sound. Named as the sheet names it, which also
+      // means the one person filed under it gets a preselected picker.
+      'Sound Design',
       'Gaffer / Lighting',
       'Graphic Designer',
       'Illustrator',
