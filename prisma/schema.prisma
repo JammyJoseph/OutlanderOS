@@ -1900,6 +1900,15 @@ model CreditReminderPass {
   id             String    @id @default(cuid())
   dueAt          DateTime
   perHour        Int       @default(60)
+  /// "reminder" nudges whoever is still silent. "roundup" emails staff a
+  /// status report instead. Both are the same shape of thing — something the
+  /// server should do at a stated time, decided from the data as it stands
+  /// then — so they share the claim-once machinery rather than growing a
+  /// second scheduler beside it.
+  kind           String    @default("reminder")
+  /// Comma separated, for a roundup. Null for a reminder, which addresses
+  /// the contributors it selects.
+  recipients     String?
   label          String?
   ranAt          DateTime?
   scheduledCount Int       @default(0)

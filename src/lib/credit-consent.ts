@@ -95,6 +95,10 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       // absence was not cosmetic: one colourist filed herself as a 3D artist
       // to get past the form, and spent her printed description asking for
       // this option instead.
+      // The post chain in order: cut, grade, sound. Editor was the missing
+      // first link, and its absence left a film editor choosing between
+      // Motion Designer and Director, both of which are somebody else's job.
+      'Editor',
       'Colourist',
       // Camera, then grade, then sound. Named as the sheet names it, which also
       // means the one person filed under it gets a preselected picker.

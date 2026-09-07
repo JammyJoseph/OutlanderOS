@@ -20,6 +20,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import prisma from '@/lib/prisma'
+import { sendRoundup } from '@/lib/credit-roundup'
 import {
   creditLink,
   isSendingLive,
@@ -120,10 +121,14 @@ export async function drainDue(baseUrl: string, max = MAX_PER_TICK): Promise<Dri
  * cannot queue two nudges for the same person.
  */
 export async function runDuePasses(): Promise<{ ran: number; scheduled: number }> {
-  if (!isSubmissionOpen()) return { ran: 0, scheduled: 0 }
-
+  // Reminders stop at the deadline. Roundups do not: a report on a sendout that
+  // has just closed is the most useful one anybody gets.
   const due = await prisma.creditReminderPass.findMany({
-    where: { dueAt: { lte: new Date() }, ranAt: null },
+    where: {
+      dueAt: { lte: new Date() },
+      ranAt: null,
+      ...(isSubmissionOpen() ? {} : { kind: 'roundup' }),
+    },
     orderBy: { dueAt: 'asc' },
   })
 
@@ -139,6 +144,20 @@ export async function runDuePasses(): Promise<{ ran: number; scheduled: number }
     })
     if (claim.count !== 1) continue
     ran++
+
+    // A roundup reports rather than sends. Its failure is logged and does not
+    // stop the reminders that share this tick.
+    if (pass.kind === 'roundup') {
+      const result = await sendRoundup((pass.recipients ?? '').split(','))
+      await prisma.creditReminderPass.update({
+        where: { id: pass.id },
+        data: { scheduledCount: result.sent ? 1 : 0 },
+      })
+      console.log(
+        `[credit-drip] roundup ${pass.label ?? pass.id} ${result.sent ? 'sent to ' + (result.to ?? []).join(', ') : 'FAILED ' + result.error}`
+      )
+      continue
+    }
 
     const waiting = await prisma.creditRequest.findMany({
       where: {

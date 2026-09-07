@@ -400,6 +400,38 @@ export const POST = withAuth(async (request: NextRequest, _context, user) => {
       })
     }
 
+    // ── A scheduled staff roundup ──
+    if (action === 'roundup') {
+      const at = body.at ? new Date(String(body.at)) : new Date()
+      if (Number.isNaN(at.getTime())) {
+        return NextResponse.json({ error: 'That time is not a date.' }, { status: 400 })
+      }
+      const recipients: string[] = Array.isArray(body.recipients)
+        ? (body.recipients as unknown[]).map((r) => String(r))
+        : String(body.recipients ?? '').split(',')
+      const clean = recipients.map((r) => r.trim()).filter((r) => isValidEmail(r))
+      if (clean.length === 0) {
+        return NextResponse.json({ error: 'No valid recipients.' }, { status: 400 })
+      }
+
+      const pass = await prisma.creditReminderPass.create({
+        data: {
+          dueAt: at,
+          kind: 'roundup',
+          recipients: clean.join(','),
+          label: String(body.label ?? '').slice(0, 60) || 'roundup',
+        },
+      })
+      const fired = at.getTime() <= Date.now() ? await runDuePasses() : { ran: 0 }
+      return NextResponse.json({
+        ok: true,
+        passId: pass.id,
+        dueAt: at.toISOString(),
+        recipients: clean,
+        firedNow: fired.ran > 0,
+      })
+    }
+
     if (action === 'unremind') {
       const cleared = await prisma.creditRequest.updateMany({
         where: { remindAt: { not: null } },
