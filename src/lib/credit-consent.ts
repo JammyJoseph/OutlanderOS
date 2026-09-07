@@ -100,9 +100,19 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       // Motion Designer and Director, both of which are somebody else's job.
       'Editor',
       'Colourist',
+      // Retouching is the stills equivalent of grading and was missing for the
+      // same reason grading was, which is that the sheet's disciplines came
+      // from how people describe their output rather than their craft.
+      'Retoucher',
+      // "CGI/Effects" was somebody's own words for their work and had no
+      // option; 3D / CGI Artist reads as modelling, not compositing.
+      'VFX Artist',
       // Camera, then grade, then sound. Named as the sheet names it, which also
       // means the one person filed under it gets a preselected picker.
       'Sound Design',
+      // Sound design and scoring are not the same job, and the person who does
+      // one is rarely the person who does the other.
+      'Composer / Music',
       'Gaffer / Lighting',
       'Graphic Designer',
       'Illustrator',
@@ -118,6 +128,9 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       'Movement Director',
       'Creative Agency',
       'Production Agency',
+      // The company-shaped options sit together. A post house is credited as a
+      // house, the way a film lab is, and neither is an individual craft.
+      'Post Production Studio',
       'Florist',
       'Content Creator',
     ],
