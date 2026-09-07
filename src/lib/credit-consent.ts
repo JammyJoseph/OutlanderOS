@@ -228,6 +228,21 @@ export function isSubmissionOpen(at: Date = new Date()): boolean {
  */
 export function deadlineLabelSpoken(): string {
   const d = submissionDeadline()
+  // A deadline that falls today is "midnight tonight". Naming the date instead
+  // makes a reader work out whether today is that date, which is exactly the
+  // wrong amount of effort in a last-call email.
+  const today = (x: Date) =>
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', dateStyle: 'short' }).format(x)
+  if (today(d) === today(new Date())) {
+    const h = Number(
+      new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London',
+        hour: '2-digit',
+        hour12: false,
+      }).format(d)
+    )
+    if (h === 23) return 'midnight tonight'
+  }
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
     weekday: 'long',
