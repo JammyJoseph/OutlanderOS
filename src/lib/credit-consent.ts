@@ -91,6 +91,11 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       'Videographer',
       'DOP',
       'Camera Department',
+      // Grading is its own craft and seven people on the list do it. Its
+      // absence was not cosmetic: one colourist filed herself as a 3D artist
+      // to get past the form, and spent her printed description asking for
+      // this option instead.
+      'Colourist',
       'Gaffer / Lighting',
       'Graphic Designer',
       'Illustrator',
@@ -102,6 +107,7 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       'Stylist',
       'Art Department',
       'Producer',
+      'Executive Producer',
       'Movement Director',
       'Creative Agency',
       'Production Agency',
