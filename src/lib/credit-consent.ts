@@ -131,6 +131,10 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       // The company-shaped options sit together. A post house is credited as a
       // house, the way a film lab is, and neither is an individual craft.
       'Post Production Studio',
+      // A lab, not a post house. Named the way the lab on the list names its
+      // own service, with the spaced slash the rest of these options use, so
+      // its prefill matches an option exactly and the picker arrives chosen.
+      'Film Dev / Printing',
       'Florist',
       'Content Creator',
     ],
