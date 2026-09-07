@@ -87,9 +87,21 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       'Creative Director',
       'Art Director',
       'Casting Director',
+      // Assistant directing is its own department and one person on the list
+      // wrote it as their discipline, so it sits with the director titles it
+      // belongs to rather than under the camera catch-all.
+      '1st AD',
       'Photographer',
       'Videographer',
       'DOP',
+      // The camera crew, specific before the catch-all. "Camera Department"
+      // covered all of these the way "Art Department" covered set design, which
+      // is to say it covered them by not naming them. Two people described
+      // themselves as camera operators and one as a focus puller, none of whom
+      // had an option that said so.
+      'Camera Operator',
+      'AC / Focus Puller',
+      'Grip',
       'Camera Department',
       // Grading is its own craft and seven people on the list do it. Its
       // absence was not cosmetic: one colourist filed herself as a 3D artist
@@ -122,6 +134,9 @@ export const CREDIT_ROLE_GROUPS: { label: string; roles: string[] }[] = [
       'Hair Stylist',
       'HMUA',
       'Stylist',
+      // Same shape of omission as the camera roles. Somebody's discipline came
+      // in as "Set Design" and Art Department was the nearest thing on offer.
+      'Set Designer',
       'Art Department',
       'Producer',
       'Executive Producer',
@@ -322,7 +337,16 @@ export function deadlineLabel(): string {
 //
 // Slots also stay inside working hours. A 3am invite from a magazine you have
 // not heard from before is read as spam by humans as well as filters.
-export const SEND_WINDOW = { startHour: 9, endHour: 19 } // Europe/London
+//
+// The window closes at 23 rather than 19 because the deadline is midnight, and
+// the window silently outranks the schedule: nextOpenMoment pushes any slot
+// past closing to 09:00 the NEXT day, by which point isSubmissionOpen() is
+// false and drainDueReminders refuses to send. A 22:00 final call would have
+// queued 70-odd people for tomorrow morning and delivered nothing at all, with
+// no error anywhere. 23 is the last hour that can still reach someone before
+// the pages are laid out, and a late email on the night of a deadline they were
+// already told about reads as a courtesy rather than as spam.
+export const SEND_WINDOW = { startHour: 9, endHour: 23 } // Europe/London
 export const DEFAULT_PER_HOUR = 20
 
 /**
