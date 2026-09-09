@@ -29,13 +29,15 @@
 //     sheet believed, and where nobody knows, it stays empty. A blank
 //     description is information — it is the thing still outstanding.
 //
-//  4. **The Tracker holds delivery addresses; the Credits tab does not.** Asked
-//     for on 2026-09-03, and worth being clear-eyed about: the agreement tells
-//     contributors their address is used for delivery and never shared, and a
-//     Google Sheet is shared per FILE, not per tab. So anyone given this link
-//     can read all 236 addresses. Hand the designer the panel's CSV export
-//     instead, which carries no contact details at all — or share this file
-//     only inside the company.
+//  4. **Both tabs now carry contact details, so this file is internal.** The
+//     Tracker holds delivery addresses (asked for 2026-09-03) and the Credits
+//     tab holds email (asked for 2026-09-09). Worth being clear-eyed about: the
+//     agreement tells contributors their address is used for delivery and never
+//     shared, and a Google Sheet is shared per FILE, not per tab, so anyone
+//     given this link can read every address and every email on the list.
+//     Neither tab is safe to hand outside the company any more. For an outside
+//     designer, use the panel's CSV export, which carries the print fields and
+//     no contact details at all.
 //
 //  5. **Sheets needs its own scope.** A token holding only `auth/drive` gets
 //     403 "insufficient authentication scopes", so `auth/spreadsheets` is in
@@ -52,7 +54,22 @@ const SHEET_TITLE = 'Outlander Directory — Issue 02 credits'
 const PRINT_TAB = 'Credits'
 const TRACKER_TAB = 'Tracker'
 
-const PRINT_HEADERS = ['Tier', 'Name in print', 'Discipline', 'Instagram', 'Description', 'Characters']
+// Email sits last, after everything that prints, so the six print columns stay
+// together and read left to right as the entry itself. Asked for 2026-09-09.
+const PRINT_HEADERS = [
+  'Tier',
+  'Name in print',
+  'Discipline',
+  'Instagram',
+  'Description',
+  'Characters',
+  'Email',
+]
+
+// Seven columns. Named rather than inlined because this was a bare 'A2:F' when
+// the tab had six, and the clear range not matching the write range is the
+// failure that leaves a dead column standing after every sync.
+const PRINT_RANGE = 'A2:G'
 const TRACKER_HEADERS = [
   'Submitted',
   'Status',
@@ -279,6 +296,10 @@ function printRow(r: Row): (string | number)[] {
     r.confirmedInstagram ? `@${r.confirmedInstagram}` : '',
     bio,
     bio ? [...bio].length : '',
+    // The address they confirmed, falling back to the one we invited. They are
+    // usually the same; where they differ, the one they typed is the one they
+    // want to be reached on.
+    r.confirmedEmail ?? r.email ?? '',
   ]
 }
 
@@ -460,7 +481,7 @@ export async function syncCreditSheet(): Promise<{
     // fewer rows in the sheet, not stale ones left under the new bottom.
     await sheets.spreadsheets.values.batchClear({
       spreadsheetId: sheet.spreadsheetId,
-      requestBody: { ranges: [`${TRACKER_TAB}!${TRACKER_RANGE}`, `${PRINT_TAB}!A2:F`] },
+      requestBody: { ranges: [`${TRACKER_TAB}!${TRACKER_RANGE}`, `${PRINT_TAB}!${PRINT_RANGE}`] },
     })
     await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: sheet.spreadsheetId,
