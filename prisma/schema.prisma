@@ -1168,6 +1168,15 @@ model CreditRequest {
   agreementAcceptedAt DateTime?
   printConsent       Boolean?
   declineNote        String?
+  // An extension for this person alone. Null means they follow CREDIT_DEADLINE
+  // like everybody else; a date here replaces it for this row only.
+  //
+  // Exists because the deadline used to be one environment value, so letting a
+  // single latecomer back in reopened the form for everyone still unanswered.
+  // That happened twice. The second time somebody else submitted through the
+  // gap within fifteen minutes, which was a happy accident rather than a plan.
+  // A date in the past closes one person early without touching anyone else.
+  submitUntil        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

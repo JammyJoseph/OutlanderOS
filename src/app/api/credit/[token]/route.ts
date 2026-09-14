@@ -8,9 +8,9 @@ import {
   agreementFullText,
   bioLimitForTier,
   charCount,
-  deadlineLabel,
-  isSubmissionOpen,
-  submissionDeadline,
+  deadlineLabelFor,
+  isSubmissionOpenFor,
+  deadlineFor,
   isCreditRole,
   isValidEmail,
   sendCreditOutcome,
@@ -40,6 +40,9 @@ const select = {
   respondedAt: true,
   confirmedName: true,
   printConsent: true,
+  // Their own extension, if they were given one. Without this in the select the
+  // per-person gate silently falls back to the shared deadline for everybody.
+  submitUntil: true,
 } as const
 
 export async function GET(
@@ -79,9 +82,9 @@ export async function GET(
       bioLimit: bioLimitForTier(req.tier),
       // Shown on the page while it's open, and the reason it closes.
       deadline: {
-        at: submissionDeadline().toISOString(),
-        label: deadlineLabel(),
-        open: isSubmissionOpen(),
+        at: deadlineFor(req).toISOString(),
+        label: deadlineLabelFor(req),
+        open: isSubmissionOpenFor(req),
       },
       agreement: {
         version: AGREEMENT_VERSION,
@@ -121,10 +124,10 @@ export async function POST(
     // Past the deadline nothing can be recorded: the pages are laid out and a
     // credit we accept but cannot print is worse than one we decline to take.
     // 410 rather than 400 — the link was valid, the window has closed.
-    if (!isSubmissionOpen() && action !== 'accept') {
+    if (!isSubmissionOpenFor(req) && action !== 'accept') {
       return NextResponse.json(
         {
-          error: `Confirmations closed on ${deadlineLabel()}. Email silver@outlandermag.com and we will see what is still possible.`,
+          error: `Confirmations closed on ${deadlineLabelFor(req)}. Email silver@outlandermag.com and we will see what is still possible.`,
           closed: true,
         },
         { status: 410 }

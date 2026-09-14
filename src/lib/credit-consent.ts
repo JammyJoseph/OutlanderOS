@@ -310,8 +310,41 @@ export function deadlineLabelSpoken(): string {
   return `${date} at ${clock}`
 }
 
+/**
+ * One person's deadline. Their own `submitUntil` if they have been given one,
+ * otherwise the shared CREDIT_DEADLINE.
+ *
+ * This exists because the deadline was a single environment value, so letting
+ * one latecomer finish reopened the form for everyone still unanswered. It
+ * happened twice; the second time another contributor submitted through the gap
+ * inside fifteen minutes. Nothing was harmed, but "one exception" should not
+ * mean "open to thirty-seven people and hope".
+ *
+ * Only the contributor's own page reads this. Reminders and roundups still ask
+ * isSubmissionOpen(), because those are about the sendout as a whole, and a
+ * single extended row should not restart the chasing machinery for everybody.
+ */
+export interface HasOwnDeadline {
+  submitUntil?: Date | null
+}
+
+export function deadlineFor(row: HasOwnDeadline): Date {
+  return row.submitUntil ?? submissionDeadline()
+}
+
+export function isSubmissionOpenFor(row: HasOwnDeadline, at: Date = new Date()): boolean {
+  return at.getTime() <= deadlineFor(row).getTime()
+}
+
+export function deadlineLabelFor(row: HasOwnDeadline): string {
+  return formatDeadline(deadlineFor(row))
+}
+
 export function deadlineLabel(): string {
-  const d = submissionDeadline()
+  return formatDeadline(submissionDeadline())
+}
+
+function formatDeadline(d: Date): string {
   const day = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
     weekday: 'long',
