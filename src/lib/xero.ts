@@ -37,6 +37,30 @@ const CONNECTION_ID = 'singleton'
 /** Refresh this far before real expiry, so a long request can't straddle it. */
 const REFRESH_SKEW_MS = 120_000
 
+/**
+ * Custom Connection tokens are minted WITHOUT a `scope` parameter, deliberately.
+ *
+ * Xero's docs show `scope` on the client_credentials request, and narrowing it
+ * is what you would want: this app is configured with full write access to
+ * accounting plus payroll employees, payruns, payslips and timesheets — which is
+ * to say employee salaries — along with projects, files and assets. None of that
+ * is touched here.
+ *
+ * It does not work. Sending any scope this app holds returns
+ * `invalid_scope: No valid scopes remaining after filtering for grant type`,
+ * and sending one it does not hold returns a different error again
+ * (`Client credentials scope validation failed`). Omitting the parameter returns
+ * a working token. Tested against the live app, every scope individually and in
+ * combination — do not "fix" this by adding the parameter back.
+ *
+ * The likely cause is that the connection is not yet authorised against an
+ * organisation, so no scope is actually active to survive the filter. If that
+ * turns out to be it, this is worth revisiting once the connection is live.
+ *
+ * Until then, least privilege has to be enforced where Xero's own documentation
+ * says to configure it: on the app in the developer portal.
+ */
+
 // Read-only today. Write scopes (accounting.transactions) arrive with the
 // write-back phase; asking for them now would mean re-consenting then anyway,
 // and a token that can only read is a smaller thing to lose.
