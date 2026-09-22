@@ -44,3 +44,16 @@ export const GET = withAdminDb(async (_request, _context, user) => {
     })
   }
 })
+
+// Drops the stored connection.
+//
+// The Disconnect button used to call `setXeroConnected(false)` and nothing
+// else — it changed a variable in the browser. The tokens stayed in storage,
+// the sync worker carried on using them, and a page refresh put the green
+// "Connected" pill straight back. A control that reports success while doing
+// nothing is worse than no control.
+export const DELETE = withAdminDb(async () => {
+  const { disconnectXero } = await import('@/lib/xero')
+  await disconnectXero()
+  return NextResponse.json({ ok: true, connected: false })
+})

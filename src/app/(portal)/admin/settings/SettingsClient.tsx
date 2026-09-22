@@ -70,9 +70,18 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
   const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/xero/data')
+    // /api/xero/status, not /api/xero/data — the latter runs eight queries to
+    // answer one boolean, and this fires on every visit to Settings.
+    fetch('/api/xero/status')
       .then(r => r.json())
-      .then(d => setXeroConnected(d.connected === true))
+      .then(d => {
+        setXeroConnected(d.connected === true)
+        setXeroDetail(
+          d.connected
+            ? d.organisation ?? null
+            : d.error ?? null
+        )
+      })
       .catch(() => {})
   }, []);
 
@@ -81,6 +90,8 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
     billing: initialBilling,
   });
   const [xeroConnected, setXeroConnected] = useState(initialXeroConnected);
+  // Organisation name when connected, the reason when not.
+  const [xeroDetail, setXeroDetail] = useState<string | null>(null);
   const [connectedSheets, setConnectedSheets] = useState<ConnectedSheet[]>([]);
   const [sheetUrl, setSheetUrl] = useState("");
   const [sheetLabel, setSheetLabel] = useState("");
@@ -356,7 +367,9 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Xero</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Accounting, P&amp;L &amp; invoices</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {xeroDetail ?? "Accounting, P&amp;L & invoices"}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -367,7 +380,17 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                     <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Connected</span>
                   </div>
                   <button
-                    onClick={() => setXeroConnected(false)}
+                    onClick={async () => {
+                      if (!confirm('Disconnect Xero? Finance figures will stop updating until it is reconnected.')) return
+                      try {
+                        const res = await fetch('/api/xero/connect', { method: 'DELETE' })
+                        if (!res.ok) throw new Error(String(res.status))
+                        setXeroConnected(false)
+                        setBanner({ type: 'success', message: 'Xero disconnected.' })
+                      } catch {
+                        setBanner({ type: 'error', message: 'Could not disconnect Xero.' })
+                      }
+                    }}
                     className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                   >
                     Disconnect
@@ -376,7 +399,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
               ) : (
                 <Button
                   size="sm"
-                  onClick={() => router.push('/api/xero/connect')}
+                  onClick={() => { window.location.href = '/api/xero/connect' }}
                   className="bg-[#111111] text-white dark:bg-white dark:text-black"
                 >
                   <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
