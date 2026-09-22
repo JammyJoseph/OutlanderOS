@@ -81,12 +81,46 @@ and should collapse into the ledger next. See `docs/BACKLOG.md` §1b.
 | **Google Drive** | ✅ Solid | Query escaping, idempotent folder creation, self-healing subfolders, pagination, purpose-built `DriveFolderAccessError`. Per-production per-user folders. No retry/backoff; uploads buffer fully in memory. |
 | **OpenWeather** | ✅ Wired | Excellent degradation — returns 200 with `unavailable: true` rather than failing the page. Public call-sheet endpoint correctly scoped to stored coords. |
 | **Anthropic** | ✅ Wired | Shot-list/deliverables parser (`claude-sonnet-4-6`, regex fallback) and think-tank reports (`claude-opus-4-7`, fails clean). Both models are a generation behind current. |
-| **Xero** | ⚠️ Partial | **Three** implementations of the same API, all live. Redirect URI hardcoded to `localhost:3000` — cannot complete OAuth in prod. Global not per-user, and `/api/xero/connect` is not admin-gated. |
+| **Xero** | ✅ Rebuilt (needs consent) | One client (`xero.ts`). Redirect derived from `NEXTAUTH_URL`; tokens encrypted in Postgres; admin-gated connect with CSRF state. Reads served from a local mirror, synced every 15 min. **Nobody has consented yet** — see the mirror section below. |
 | **Google (other)** | ⚠️ Fragmented | See below. |
 | **RSS / think-tank** | ⚠️ Partial | The only integration using `retry.ts`. But ingest is manual-trigger only — no cron exists anywhere. N+1 dedupe. |
 | **Telegram** | ❌ Dead | 42 lines, zero importers. |
 | **Slack** | ❌ Dead | Dependency + env vars, zero code references. |
 | **MOSS, Wize** | ❌ Not started | Disabled UI frames only. |
+
+## The Xero mirror
+
+Xero is the ledger of record for actuals. OutlanderOS owns intent — what a cost
+is *for*, and what is expected to happen. Nine `Xero*` tables are a read-through
+cache of Xero's half of that split, filled by `src/lib/xero-sync.ts` every 15
+minutes and on demand.
+
+Nothing in the app calls Xero live any more. Three reasons:
+
+1. **Rate limits.** 60 calls/minute and 5,000/day per org. One render of the
+   nine-tab finance dashboard used to be a dozen live calls.
+2. **Xero being down must not mean the portal is down.** A mirror degrades to
+   "stale, and here is the timestamp" — `/api/xero/status` carries `sync.freshAsOf`.
+3. **Joins.** Reconciling a Xero bill against a `CostLine` is a SQL join once
+   both sides are in one database, and an N+1 of HTTP calls otherwise.
+
+`XeroConnection` holds one row, id `singleton`. The access and refresh tokens are
+AES-256-GCM sealed under a key derived from `NEXTAUTH_SECRET` (`src/lib/secret-box.ts`),
+so **rotating `NEXTAUTH_SECRET` invalidates them and Xero must be re-consented.**
+Expiry is a `DateTime`, not a number — the previous store wrote milliseconds and
+compared seconds, so its refresh never fired once.
+
+Money in these tables is **integer pence**. `CostLine.amount` and the other
+existing money columns are still `Float`, which cannot represent £0.10 and will
+produce penny variances the moment it is reconciled against Xero. Migrating them
+is its own job — see `docs/BACKLOG.md` §1b.
+
+`xero-finance.ts` keeps the exported signatures it had when it made live calls,
+so its six callers were not touched; they simply stopped talking to the internet.
+Its `getXeroProfitAndLoss` is **invoice-derived accrual, ex VAT** — it excludes
+manual journals and bank transactions not raised against an invoice, and so will
+not tie exactly to Xero's own P&L report. That is deliberate: it is the figure
+that reconciles against the `CostLine` ledger, which is also built from invoices.
 
 ### The Google problem
 

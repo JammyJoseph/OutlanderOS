@@ -126,9 +126,16 @@ two budget systems still sit outside it.
       Timberland, Sorel, MCM, Penhaligons, Bulgari, Armani, Balmain — each with an "IO Signed?"
       flag that the IO maker already models. Tag deals to an issue and the revenue side gets
       the same red thread as the cost side.
-- [ ] **Backfill Xero account codes** once Xero is reconnected (§2). Every `CostLine` has
-      `accountCode` / `trackingCategory` waiting. `section` is the natural thing to map onto a
-      real tracking option.
+- [ ] **Backfill Xero account codes** — now unblocked (§2 done 2026-09-22). The chart of
+      accounts lands in `XeroAccount` and tracking options in `XeroTrackingOption` as soon
+      as somebody consents; `section` is the natural thing to map onto a real tracking
+      option. Every `CostLine` has `accountCode` / `trackingCategory` waiting and empty.
+- [ ] 🔴 **Money is `Float` across the ledger.** `CostLine.amount`, `InsertionOrder.totalNet`,
+      `Campaign.value` and friends. Float cannot represent £0.10 exactly, so reconciling
+      against Xero to the penny will produce phantom 1p variances nobody can trace. The
+      new `Xero*` tables use integer pence and do not inherit the problem; migrating the
+      existing columns is a careful, separate job and the single biggest correctness risk
+      in the schema. `scripts/check-xero-units.ts` demonstrates the failure.
 - [ ] Finance P&L view over the unfiltered ledger — `totalsByAccount()` in `cost-ledger.ts`
       exists and is unused. Uncoded rows deliberately surface rather than hide.
 
@@ -444,25 +451,22 @@ incompatible ways and most of its surface is dead code.**
       only one that refreshes properly). Retire the `.tokens.json` app-level client and the
       service account. Delete or finish `google-client.ts` (5 exported functions, zero
       callers), `drive-search.ts` (zero importers), `getUserGmail` (zero callers).
-- [ ] 🔴 **Xero is dead in production right now, and cannot be revived without a code fix.**
-      Verified 2026-07-27: a Xero token exists in `.tokens.json`, but `/api/xero/data`
-      returns `{"connected":false,"error":"Token expired — please reconnect Xero in
-      Settings"}`. Reconnecting runs the OAuth flow, whose redirect URI is hardcoded to
-      `http://localhost:3000/api/xero/callback` (`xero-client.ts:5`), so **the flow cannot
-      complete from the production URL.** Every finance figure sourced from Xero is
-      therefore stale or absent, and the account codes / tracking categories needed for
-      budget coding can't be fetched at all.
-      Also found: `expires_at` is written in **milliseconds** where the refresh check reads
-      **seconds** (`.tokens.json` shows year 58292), so the proactive refresh never fires —
-      the connection only ever dies rather than renewing.
-      Same hardcoded-localhost bug in `google-user-auth.ts:14`, which is why connecting
-      Google makes users copy an auth code out of a connection-refused URL bar. Derive both
-      from `NEXTAUTH_URL`.
-- [ ] **Collapse three Xero clients into one** (`xero-finance.ts` is the best). Delete
-      `xero-api.ts` and the report half of `xero-client.ts`; they duplicate token refresh
-      almost verbatim. Also: admin-gate `/api/xero/connect` (any authenticated user can
-      currently overwrite the org-wide Xero token), and fix `getXeroBankSummary` mapping
-      `reportingCode` into a field called `balance`.
+- [x] ~~🔴 **Xero is dead in production**~~ — **fixed 2026-09-22.** All four causes
+      addressed: the redirect URI now derives from `NEXTAUTH_URL` (it was the literal
+      `http://localhost:3000/api/xero/callback`, so consent could not complete from prod
+      and the connection could never be revived); `expiresAt` is a `DateTime` rather than
+      a number written in ms and read as seconds; tokens moved out of `.tokens.json` into
+      `XeroConnection`, AES-256-GCM encrypted, written conditionally so a concurrent
+      refresh cannot persist a spent grant; and the three clients became one.
+      **Still needs a human:** register `https://os.outlanderdirectory.com/api/xero/callback`
+      on the Xero app, then an admin hits `/api/xero/connect` once. Until then the portal
+      serves zeros with `connected: false` rather than failing.
+- [x] ~~**Collapse three Xero clients into one**~~ — **done 2026-09-22.** `xero-api.ts`
+      and `xero-client.ts` deleted; `xero.ts` is the only one. `/api/xero/connect` is
+      admin-gated via `isAdminInDb` (not `withAdmin` — the JWT bakes `role` in at login)
+      and carries a CSRF state cookie. `getXeroBankSummary`'s `reportingCode`-into-`balance`
+      bug is gone: balances come from the BankSummary report's closing balance, which means
+      **every bank figure the dashboard has ever shown was a chart-of-accounts label.**
 - [ ] **Handle revoked Google grants gracefully.** `getUserGoogleTokens` throws on
       `invalid_grant`, and `withAuth` (`auth.ts:145-155`) doesn't wrap the handler — so a
       revoked token is an unhandled 500 instead of a "reconnect Google" prompt.

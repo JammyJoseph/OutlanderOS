@@ -49,9 +49,9 @@ Until this lands, every staff login sends the password in the clear, and the
 
 | # | Item | Blocked by | Effort |
 |---|---|---|---|
-| 1.1 | Derive OAuth redirect URIs from `NEXTAUTH_URL` — `xero-client.ts:5` and `google-user-auth.ts:14` are hardcoded to `localhost:3000` | 0.1 | 1 h |
-| 1.2 | Fix the Xero token-expiry units bug — `expires_at` is written in ms and read as seconds, so the proactive refresh never fires and the connection only ever dies | — | 30 min |
-| 1.3 | Reconnect Xero (currently dead: token expired, and OAuth can't complete from prod) | 1.1, 1.2 | 15 min |
+| 1.1 | ~~Derive OAuth redirect URIs from `NEXTAUTH_URL`~~ — **Xero done 2026-09-22**; `google-user-auth.ts` uses an explicit env var by design | — | ✅ |
+| 1.2 | ~~Fix the Xero token-expiry units bug~~ — **done 2026-09-22.** `expiresAt` is a `DateTime`; there is no unit to get wrong | — | ✅ |
+| 1.3 | **Reconnect Xero** — code is ready and deployed. Needs the callback URL registered on the Xero app, then one admin click | 1.1, 1.2 | **You, 10 min** |
 | 1.4 | Reconnect Google — the current flow makes users copy an auth code out of a connection-refused URL bar | 1.1 | 15 min |
 | 1.5 | Set `GOOGLE_SERVICE_ACCOUNT_EMAIL` on prod, or finish moving off the service account. Directory Sheets import throws hard today | — | 30 min |
 
@@ -106,17 +106,17 @@ no data of its own: people come from Team, times and locations from Call Sheets.
 
 ## Phase 2 — Xero: the coding backbone
 
-This is what turns the ledger from a budget tool into a P&L. Nothing here works
-until Xero is actually connected.
+The spine landed 2026-09-22 (one client, encrypted tokens, nine mirror tables,
+15-minute sync). Everything below is now blocked only on somebody consenting.
 
 | # | Item | Blocked by | Effort |
 |---|---|---|---|
-| 2.1 | Pull the real chart of accounts + tracking categories | 1.3 | 2 h |
+| 2.1 | ~~Pull the real chart of accounts + tracking categories~~ — **built**; `syncAccounts` / `syncTracking` fill on first sync | 1.3 | ✅ |
 | 2.2 | Account-code picker on cost lines; map print `section` onto a Xero tracking option | 2.1 | 1 d |
 | 2.3 | Backfill `accountCode` / `trackingCategory` on the 202 existing CostLines | 2.2 | 4 h |
-| 2.4 | Collapse three Xero clients into one (`xero-finance.ts` is the best); delete `xero-api.ts` | — | 1 d |
-| 2.5 | Admin-gate `/api/xero/connect` — any authenticated user can currently overwrite the org-wide token | — | 15 min |
-| 2.6 | Fix `getXeroBankSummary` mapping `reportingCode` into a field called `balance` | — | 15 min |
+| 2.4 | ~~Collapse three Xero clients into one~~ — **done 2026-09-22** | — | ✅ |
+| 2.5 | ~~Admin-gate `/api/xero/connect`~~ — **done 2026-09-22**, via `isAdminInDb` + CSRF state | — | ✅ |
+| 2.6 | ~~Fix `getXeroBankSummary` mapping `reportingCode` into `balance`~~ — **done 2026-09-22** | — | ✅ |
 | 2.7 | Invoice ingestion → match to `CostLine.invoiceRef`, mark paid | 2.1 | 3 d |
 | 2.8 | **Finance P&L over the unfiltered ledger.** `totalsByAccount()` already exists and is unused | 2.3 | 2 d |
 | 2.9 | Reconciliation check: ledger ACTUAL total vs Xero for the same period and code. If these disagree you have two sets of books | 2.7 | 1 d |
