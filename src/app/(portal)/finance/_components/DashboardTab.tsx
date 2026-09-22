@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Flag, Landmark } from 'lucide-react'
-import KPICard from './KPICard'
-import { StatusBadge, XeroStatusDot, XeroDisconnectedBanner, ErrorBox, TabSkeleton, BudgetBar } from './FinanceBits'
+import PositionPanel from './PositionPanel'
+import { StatusBadge, XeroDisconnectedBanner, ErrorBox, TabSkeleton, BudgetBar } from './FinanceBits'
 import {
   useFinanceFetch,
   fmtGBP,
@@ -138,30 +138,12 @@ export default function DashboardTab() {
 
   return (
     <div className="space-y-5">
-      <XeroStatusDot connected={connected} error={o.xeroError} organisation={o.organisation} />
-
-      {/* Headline KPIs */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KPICard
-          label="Outstanding Receivables"
-          value={connected ? fmtGBP(o.outstandingReceivables) : '—'}
-          accent="positive"
-          sub={connected ? `${o.receivableCount} invoices · ${fmtGBP(o.overdueReceivables)} overdue` : 'Requires Xero'}
-        />
-        <KPICard
-          label="Outstanding Payables"
-          value={connected ? fmtGBP(o.outstandingPayables) : '—'}
-          accent="negative"
-          sub={connected ? `${o.payableCount} bills in Xero` : 'Requires Xero'}
-        />
-        <KPICard
-          label="Pending Approval"
-          value={String(o.pendingApprovals)}
-          accent={o.pendingApprovals > 0 ? 'amber' : 'default'}
-          sub={o.flaggedCount > 0 ? `${o.flaggedCount} flagged` : 'Supplier invoices'}
-        />
-        <KPICard label="Active Projects" value={String(o.activeProjects)} sub="With budget set" />
-      </div>
+      {/* The money position, every figure labelled with where it came from.
+          This replaces the old four-card KPI row, which showed Xero actuals and
+          OutlanderOS forecasts in identical type — the exact confusion this
+          panel exists to remove. Connection state lives in its own banner
+          inside the panel, so XeroStatusDot is redundant here too. */}
+      <PositionPanel />
 
       {!connected && <XeroDisconnectedBanner message={`Xero is disconnected${o.xeroError ? ` (${o.xeroError})` : ''} — receivables, payables and P&L are unavailable.`} />}
 
