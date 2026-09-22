@@ -378,6 +378,20 @@ async function doRefresh(): Promise<XeroContext> {
  * The tenant is discovered once from /connections and kept. A Custom Connection
  * is bound to exactly one organisation, so it cannot drift.
  */
+/**
+ * A Custom Connection is bound to exactly one organisation, so its tenant id is
+ * a constant. Setting XERO_TENANT_ID skips the /connections lookup entirely.
+ *
+ * Worth having because that lookup is unexpectedly fragile on this grant type:
+ * /connections answers 400 "Xero-User-Id and/or Xero-Tenant-Id header must be
+ * supplied" — it wants the very id you are calling it to discover. Supplying the
+ * id from configuration removes a chicken-and-egg that has no clean solution.
+ */
+function configuredTenantId(): string | null {
+  const id = (process.env.XERO_TENANT_ID ?? '').trim()
+  return id || null
+}
+
 async function getCustomConnectionContext(): Promise<XeroContext> {
   const conn = await prisma.xeroConnection.findUnique({ where: { id: CONNECTION_ID } })
   if (conn && conn.mode === 'CUSTOM' && conn.expiresAt.getTime() - REFRESH_SKEW_MS > Date.now()) {
@@ -389,6 +403,32 @@ async function getCustomConnectionContext(): Promise<XeroContext> {
   }
 
   const token = await postToken(new URLSearchParams({ grant_type: 'client_credentials' }))
+
+  const fixed = configuredTenantId()
+  if (fixed) {
+    const row = {
+      mode: 'CUSTOM',
+      tenantId: fixed,
+      tenantName: process.env.XERO_TENANT_NAME?.trim() || 'Xero organisation',
+      accessTokenEnc: encrypt(token.access_token),
+      refreshTokenEnc: null,
+      expiresAt: new Date(Date.now() + token.expires_in * 1000),
+      scopes: token.scope ?? null,
+      lastError: null,
+      lastRefreshAt: new Date(),
+    }
+    await prisma.xeroConnection.upsert({
+      where: { id: CONNECTION_ID },
+      create: { id: CONNECTION_ID, ...row },
+      update: { ...row, refreshCount: { increment: 1 } },
+    })
+    return {
+      accessToken: token.access_token,
+      tenantId: fixed,
+      tenantName: row.tenantName,
+    }
+  }
+
   const tenants = await listTenants(token.access_token)
   if (!tenants.length) {
     // The credentials authenticate but reach no organisation. This is the
@@ -505,6 +545,20 @@ export async function xeroGet<T = Record<string, unknown>>(
         .updateMany({ where: { id: CONNECTION_ID }, data: { expiresAt: new Date(0) } })
         .catch(() => {})
       continue
+    }
+    if (res.status === 403 && xeroMode() === 'CUSTOM') {
+      // Xero answers 403 with an EMPTY body here, which tells the reader
+      // nothing. On a Custom Connection whose token authenticates and whose
+      // /connections record exists, this is almost always the paid Custom
+      // Connection subscription being inactive or fully allocated — the
+      // connection record survives, the data access does not.
+      throw new XeroDisconnectedError(
+        'Xero refused access to the organisation (403). The Custom Connection is recognised ' +
+          'but not permitted to read data, which normally means the organisation has no active ' +
+          'Custom Connection subscription, or every connection in it is already allocated. ' +
+          'Check Connected Apps inside the Xero organisation.',
+        true
+      )
     }
     if (res.status >= 500) {
       if (attempt++ >= retries) {
