@@ -49,44 +49,44 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contacts        Contact[]
-  campaigns       Campaign[]       @relation("CampaignCreator")
-  assignedDeals   Campaign[]       @relation("CampaignAssignee")
-  productions     Production[]     @relation("ProductionLead")
-  editorialPieces EditorialPiece[] @relation("Writer")
-  deadlines       Deadline[]       @relation("userDeadlines")
-  assignedTasks   Task[]           @relation("assignedTasks")
-  createdTasks    Task[]           @relation("createdTasks")
-  notifications   Notification[]
-  holidayRequests HolidayRequest[]
+  contacts           Contact[]
+  campaigns          Campaign[]            @relation("CampaignCreator")
+  assignedDeals      Campaign[]            @relation("CampaignAssignee")
+  productions        Production[]          @relation("ProductionLead")
+  editorialPieces    EditorialPiece[]      @relation("Writer")
+  deadlines          Deadline[]            @relation("userDeadlines")
+  assignedTasks      Task[]                @relation("assignedTasks")
+  createdTasks       Task[]                @relation("createdTasks")
+  notifications      Notification[]
+  holidayRequests    HolidayRequest[]
   assignedMilestones ProductionMilestone[] @relation("milestoneAssignee")
 }
 
 // ===== TASKS =====
 model Task {
-  id              String    @id @default(cuid())
+  id              String      @id @default(cuid())
   title           String
   description     String?
   dueDate         DateTime?
-  status          String    @default("TODO") // TODO, IN_PROGRESS, DONE
-  priority        String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status          String      @default("TODO") // TODO, IN_PROGRESS, DONE
+  priority        String      @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
   portal          String? // commercial, production, print, editorial, finance
   link            String? // deep link to related item
-  assignedTo      User      @relation("assignedTasks", fields: [assignedToId], references: [id])
+  assignedTo      User        @relation("assignedTasks", fields: [assignedToId], references: [id])
   assignedToId    String
-  createdBy       User      @relation("createdTasks", fields: [createdById], references: [id])
+  createdBy       User        @relation("createdTasks", fields: [createdById], references: [id])
   createdById     String
   escalatedAt     DateTime? // last time auto-ping raised this task
-  escalationLevel Int       @default(0) // 0 none, 1 HIGH, 2 URGENT, 3 7-day alert sent
+  escalationLevel Int         @default(0) // 0 none, 1 HIGH, 2 URGENT, 3 7-day alert sent
   staleFlaggedAt  DateTime? // set when flagged as stalled in-progress
-  taskType        String    @default("ACTION") // ACTION = needs doing now, TRACK = actioned, monitoring
+  taskType        String      @default("ACTION") // ACTION = needs doing now, TRACK = actioned, monitoring
   completedAt     DateTime? // set when status flips to DONE — drives the "last 7 days" completed view
   projectId       String? // linked Commercial deal (Campaign)
-  project         Campaign? @relation("campaignTasks", fields: [projectId], references: [id])
+  project         Campaign?   @relation("campaignTasks", fields: [projectId], references: [id])
   productionId    String? // linked Production project
   production      Production? @relation("productionLinkedTasks", fields: [productionId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 // ===== NOTIFICATIONS =====
@@ -197,71 +197,71 @@ model Client {
 }
 
 model Campaign {
-  id               String         @id @default(cuid())
-  clientId         String
-  client           Client         @relation(fields: [clientId], references: [id])
-  title            String
-  type             CampaignType // legacy single type — kept for backwards compatibility
-  dealTypes        String[]       @default([]) // multi-select deal types, e.g. ["EVENT", "DIGITAL_PARTNERSHIP"]
-  workflowType     String         @default("CREATIVE_BRIEF") // CREATIVE_BRIEF | SUPPLIED_ASSETS — determines the process, not the content type
-  jobType          String         @default("CREATIVE_BRIEF") // CREATIVE_BRIEF | SUPPLIED_ASSETS | PRINT_AD — the user-facing job classifier set at deal creation; drives auto-tags + workflowType
-  status           CampaignStatus @default(BRIEF_RECEIVED)
-  stage            DealStage      @default(NEW_BRIEF)
-  stageUpdatedAt   DateTime?
-  description      String?
-  dueDate          DateTime?
-  budgetBreakdown  Json? // [{ category: string, amount: number }] — legacy splits, kept in sync with allocations
-  marginPercent    Float? // company margin as % of the total deal budget (e.g. 30.0)
-  marginAmount     Float? // company margin in £
-  allocations      Json? // [{ name: string, amount: number, isProductionBudget: boolean }]
-  budgetLocked     Boolean        @default(false)
-  budgetLockedAt   DateTime?
-  budgetLockedBy   String? // userId who locked the budget
-  assignedToId     String?
-  assignedTo       User?          @relation("CampaignAssignee", fields: [assignedToId], references: [id])
-  value            Float?
-  currency         String         @default("GBP")
-  margin           Float?
-  timelineStart    DateTime?
-  timelineEnd      DateTime?
-  mediaPlan          Json? // legacy spreadsheet-style media plan — kept for backwards compat, no longer built in the UI
-  mediaPlanVersion   Int       @default(1)
-  mediaPlanUpdatedAt DateTime?
-  mediaPlanUpdatedBy String? // display name of the last editor
-  mediaPlanLockedAt  DateTime?
+  id                     String         @id @default(cuid())
+  clientId               String
+  client                 Client         @relation(fields: [clientId], references: [id])
+  title                  String
+  type                   CampaignType // legacy single type — kept for backwards compatibility
+  dealTypes              String[]       @default([]) // multi-select deal types, e.g. ["EVENT", "DIGITAL_PARTNERSHIP"]
+  workflowType           String         @default("CREATIVE_BRIEF") // CREATIVE_BRIEF | SUPPLIED_ASSETS — determines the process, not the content type
+  jobType                String         @default("CREATIVE_BRIEF") // CREATIVE_BRIEF | SUPPLIED_ASSETS | PRINT_AD — the user-facing job classifier set at deal creation; drives auto-tags + workflowType
+  status                 CampaignStatus @default(BRIEF_RECEIVED)
+  stage                  DealStage      @default(NEW_BRIEF)
+  stageUpdatedAt         DateTime?
+  description            String?
+  dueDate                DateTime?
+  budgetBreakdown        Json? // [{ category: string, amount: number }] — legacy splits, kept in sync with allocations
+  marginPercent          Float? // company margin as % of the total deal budget (e.g. 30.0)
+  marginAmount           Float? // company margin in £
+  allocations            Json? // [{ name: string, amount: number, isProductionBudget: boolean }]
+  budgetLocked           Boolean        @default(false)
+  budgetLockedAt         DateTime?
+  budgetLockedBy         String? // userId who locked the budget
+  assignedToId           String?
+  assignedTo             User?          @relation("CampaignAssignee", fields: [assignedToId], references: [id])
+  value                  Float?
+  currency               String         @default("GBP")
+  margin                 Float?
+  timelineStart          DateTime?
+  timelineEnd            DateTime?
+  mediaPlan              Json? // legacy spreadsheet-style media plan — kept for backwards compat, no longer built in the UI
+  mediaPlanVersion       Int            @default(1)
+  mediaPlanUpdatedAt     DateTime?
+  mediaPlanUpdatedBy     String? // display name of the last editor
+  mediaPlanLockedAt      DateTime?
   // ── Simplified media plan (upload/link) + deal economics ──
-  mediaPlanLink      String? // Google Sheets URL — the externally-built media plan
-  mediaPlanFile      String? // path to an uploaded PDF of the final media plan
-  dealValue          Float? // total deal value taken from the media plan — feeds everything downstream
-  mediaSpend         Float? // portion of the deal value spent on media (100% margin, no hard costs)
-  productionMarginPct Float? // company side of the production margin split (e.g. 60 = 60/40)
-  ioUrl            String?
-  ioSigned         Boolean        @default(false)
-  ioSignedAt       DateTime?
-  briefContent     String? // creative brief for the production team
-  briefDueDate     DateTime? // when the brief is due to production
-  briefStatus      String         @default("DRAFT") // DRAFT, READY, SENT_TO_PRODUCTION
+  mediaPlanLink          String? // Google Sheets URL — the externally-built media plan
+  mediaPlanFile          String? // path to an uploaded PDF of the final media plan
+  dealValue              Float? // total deal value taken from the media plan — feeds everything downstream
+  mediaSpend             Float? // portion of the deal value spent on media (100% margin, no hard costs)
+  productionMarginPct    Float? // company side of the production margin split (e.g. 60 = 60/40)
+  ioUrl                  String?
+  ioSigned               Boolean        @default(false)
+  ioSignedAt             DateTime?
+  briefContent           String? // creative brief for the production team
+  briefDueDate           DateTime? // when the brief is due to production
+  briefStatus            String         @default("DRAFT") // DRAFT, READY, SENT_TO_PRODUCTION
   // Creative workflow (CREATIVE_BRIEF deals): the client brief, Outlander's
   // creative response, and the client feedback log.
-  clientBrief      Json? // { content, references: string[], receivedDate, responseDueDate }
-  creativeResponse Json? // { treatment, moodBoardLinks: string[], sentDate, revisions: [{ treatment, moodBoardLinks, sentDate }] }
-  clientFeedback   Json? // [{ date, from, text, type: 'note'|'revision'|'approval' }]
-  creativeStatus   String? // AWAITING_RESPONSE | RESPONSE_SENT | IN_REVIEW | REVISIONS_REQUESTED | APPROVED
-  isWhiteLabel     Boolean        @default(false) // deal delivered under the client's own brand, not Outlander's
+  clientBrief            Json? // { content, references: string[], receivedDate, responseDueDate }
+  creativeResponse       Json? // { treatment, moodBoardLinks: string[], sentDate, revisions: [{ treatment, moodBoardLinks, sentDate }] }
+  clientFeedback         Json? // [{ date, from, text, type: 'note'|'revision'|'approval' }]
+  creativeStatus         String? // AWAITING_RESPONSE | RESPONSE_SENT | IN_REVIEW | REVISIONS_REQUESTED | APPROVED
+  isWhiteLabel           Boolean        @default(false) // deal delivered under the client's own brand, not Outlander's
   lastSyncedToProduction DateTime? // last time deal changes were pushed to the linked Production
-  paymentTerms     String?
-  notes            String?
-  archived         Boolean        @default(false)
-  archivedAt       DateTime?
-  archivedById     String? // userId who archived the deal
-  archivedByName   String? // display name captured at archive time
-  stageAtArchive   String? // pipeline stage when the deal was archived
-  createdById      String
-  createdBy        User           @relation("CampaignCreator", fields: [createdById], references: [id])
-  billingContactId String?
-  billingContact   Contact?       @relation("ClientContact", fields: [billingContactId], references: [id])
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  paymentTerms           String?
+  notes                  String?
+  archived               Boolean        @default(false)
+  archivedAt             DateTime?
+  archivedById           String? // userId who archived the deal
+  archivedByName         String? // display name captured at archive time
+  stageAtArchive         String? // pipeline stage when the deal was archived
+  createdById            String
+  createdBy              User           @relation("CampaignCreator", fields: [createdById], references: [id])
+  billingContactId       String?
+  billingContact         Contact?       @relation("ClientContact", fields: [billingContactId], references: [id])
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 
   deliverables     Deliverable[]
   assets           CampaignAsset[]
@@ -281,27 +281,27 @@ model Campaign {
 // (pitched to the client). Replaces the older single clientBrief/creativeResponse
 // blobs; those stay on Campaign for backwards compatibility.
 model CreativeRound {
-  id           String   @id @default(cuid())
-  campaignId   String
-  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  roundNumber  Int
-  type         String   // KICK_OFF, INTERNAL or CLIENT
-  status       String   @default("IN_PROGRESS") // IN_PROGRESS, SUBMITTED, REVIEWED, APPROVED, REVISION_NEEDED
-  title        String?  // e.g. "Kick-off Brief", "V1 Ideas", "Client Pitch 1"
-  brief        String?  @db.Text // Brief/notes for this round
-  feedback     String?  @db.Text // Review feedback
+  id             String    @id @default(cuid())
+  campaignId     String
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  roundNumber    Int
+  type           String // KICK_OFF, INTERNAL or CLIENT
+  status         String    @default("IN_PROGRESS") // IN_PROGRESS, SUBMITTED, REVIEWED, APPROVED, REVISION_NEEDED
+  title          String? // e.g. "Kick-off Brief", "V1 Ideas", "Client Pitch 1"
+  brief          String?   @db.Text // Brief/notes for this round
+  feedback       String?   @db.Text // Review feedback
   // Kick-off brief fields (Commercial → Creative handoff). Only populated on
   // KICK_OFF rounds; the creative brief housed on the platform.
-  objectives     String?  @db.Text // key objectives for the creative
-  targetAudience String?           // who the work is aimed at
-  toneDirection  String?  @db.Text // tone / creative direction
-  references     String[] @default([]) // reference links
-  deadline     DateTime?
-  submittedAt  DateTime?
-  reviewedAt   DateTime?
-  deckUrl      String?  // Figma link or deck URL
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  objectives     String?   @db.Text // key objectives for the creative
+  targetAudience String? // who the work is aimed at
+  toneDirection  String?   @db.Text // tone / creative direction
+  references     String[]  @default([]) // reference links
+  deadline       DateTime?
+  submittedAt    DateTime?
+  reviewedAt     DateTime?
+  deckUrl        String? // Figma link or deck URL
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([campaignId])
 }
@@ -373,28 +373,28 @@ enum CampaignStatus {
 }
 
 model Deliverable {
-  id          String    @id @default(cuid())
-  campaignId  String
-  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  title       String? // explicit title — falls back to `type` for legacy rows
-  type        String
-  quantity    Int       @default(1)
-  description String?
-  dueDate     DateTime?
-  status      String    @default("PENDING") // PENDING, IN_PROGRESS, DELIVERED
-  completed   Boolean   @default(false)
-  completedAt DateTime?
-  postedUrl   String? // "Live Link" — pasted when the post/asset goes live
-  performance Json?
+  id             String    @id @default(cuid())
+  campaignId     String
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title          String? // explicit title — falls back to `type` for legacy rows
+  type           String
+  quantity       Int       @default(1)
+  description    String?
+  dueDate        DateTime?
+  status         String    @default("PENDING") // PENDING, IN_PROGRESS, DELIVERED
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  postedUrl      String? // "Live Link" — pasted when the post/asset goes live
+  performance    Json?
   // ── Scope creep: deliverables added AFTER the deal is signed ──
-  isAdditional Boolean  @default(false)
-  overageCost  Float? // extra charge to the client for this additional deliverable
-  approvedBy   String? // who signed off the overage
-  approvedAt   DateTime?
+  isAdditional   Boolean   @default(false)
+  overageCost    Float? // extra charge to the client for this additional deliverable
+  approvedBy     String? // who signed off the overage
+  approvedAt     DateTime?
   // Live-go-live scheduling status for the supplied-asset campaign tracker:
   // PENDING | SCHEDULED | LIVE | LATE — distinct from the delivery `status`.
-  scheduleStatus String @default("PENDING")
-  createdAt   DateTime  @default(now())
+  scheduleStatus String    @default("PENDING")
+  createdAt      DateTime  @default(now())
 }
 
 model CampaignAsset {
@@ -449,7 +449,7 @@ model InsertionOrder {
   // and moves on its own — keeping them apart means a provider hiccup can never
   // corrupt the business status, and an IO signed on paper still works.
   signatureProvider String? // DOCUSIGN — null for IOs handled manually
-  envelopeId        String? @unique
+  envelopeId        String?   @unique
   // The provider's raw status, stored verbatim rather than mapped on write:
   // created | sent | delivered | signed | completed | declined | voided.
   // Mapping on read means a provider adding a state can't silently mislabel one.
@@ -459,25 +459,25 @@ model InsertionOrder {
   declinedReason    String?
   signedPdfUrl      String? // stored copy of the completed envelope
   lastSyncedAt      DateTime?
-  createdById    String
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdById       String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([campaignId])
 }
 
 // ===== PRODUCTION =====
 model Production {
-  id               String           @id @default(cuid())
-  campaignId       String?          @unique
-  campaign         Campaign?        @relation(fields: [campaignId], references: [id])
-  trelloCardId     String? // linked Trello deal card (Commercial pipeline)
-  type             String           @default("EDITORIAL") // EDITORIAL | COMMERCIAL — COMMERCIAL projects are created from Commercial portal with a locked budget
+  id                     String           @id @default(cuid())
+  campaignId             String?          @unique
+  campaign               Campaign?        @relation(fields: [campaignId], references: [id])
+  trelloCardId           String? // linked Trello deal card (Commercial pipeline)
+  type                   String           @default("EDITORIAL") // EDITORIAL | COMMERCIAL — COMMERCIAL projects are created from Commercial portal with a locked budget
   // Colour-coding / billing classification, independent of `type`'s budget-lock
   // semantics: EDITORIAL (green) vs PAID (gold). COMMERCIAL productions are
   // always treated as PAID for colour purposes. Set at creation, editable in
   // the Overview tab.
-  billingType      String           @default("EDITORIAL") // EDITORIAL | PAID
+  billingType            String           @default("EDITORIAL") // EDITORIAL | PAID
   // Which strand of the business this project belongs to, for the Projects list:
   // PRINT | DIGITAL_EDITORIAL | WHITE_LABEL | PAID.
   //
@@ -487,51 +487,51 @@ model Production {
   // separated Print from Digital Editorial and nothing marked White Label at
   // all. Derivation covers the common cases; this field exists so any row can be
   // corrected by hand without the guess becoming permanent.
-  strand           String?
+  strand                 String?
   // Per-production ordering of the budget sections. Empty = the house order in
   // BUDGET_SECTIONS. Stored because the section list is a constant, so there is
   // nowhere else for a drag-reorder to live.
-  budgetSectionOrder String[]
-  campaignBudgetId String? // links back to the CampaignBudget that spawned this production
-  title            String
-  clientName       String?
-  brief            String?
-  description      String?
-  figmaUrl         String?
-  status           ProductionStatus @default(DRAFT)
-  budgetTotal      Float?
-  budgetActual     Float?
-  marginTarget     Float?
+  budgetSectionOrder     String[]
+  campaignBudgetId       String? // links back to the CampaignBudget that spawned this production
+  title                  String
+  clientName             String?
+  brief                  String?
+  description            String?
+  figmaUrl               String?
+  status                 ProductionStatus @default(DRAFT)
+  budgetTotal            Float?
+  budgetActual           Float?
+  marginTarget           Float?
   productionBudgetStatus String? // BUDGETING | LOCKED | IN_PROGRESS | FINAL
   productionLockedAt     DateTime?
   productionLockedBy     String? // userId who locked the production budget
   budgetMarkupPercent    Float? // agency/production-company markup applied to the budget subtotal
   budgetVatPercent       Float? // VAT rate applied on top of (subtotal + markup); defaults to 20% in the UI
-  shootDates       DateTime[]
+  shootDates             DateTime[]
   // Editorial discount: % knocked off APA reference rates in the budget for
   // editorial productions (billingType EDITORIAL). Null = no discount applied.
-  editorialRateDiscount Float?
+  editorialRateDiscount  Float?
   // Catering quote tracking (Phase 3D): caterers contacted from the Directory
   // with their response status. [{ contactId, name, email, phone, status, notes, contactedAt }]
-  cateringQuotes   Json             @default("[]")
+  cateringQuotes         Json             @default("[]")
   // Structured production brief auto-generated when a Commercial deal is cleared
   // for production (Phase 4F): { clientName, budget, deliverables, timeline,
   // creativeDirection, targetAudience, generatedAt, dealId }
-  briefData        Json?
-  archived         Boolean          @default(false)
-  archivedAt       DateTime?
+  briefData              Json?
+  archived               Boolean          @default(false)
+  archivedAt             DateTime?
   // Google Drive integration (per-user OAuth). Root folder "[Client] — [Project]"
   // holding Assets / Selects / Approved / Reference sub-folders. Created lazily
   // via /api/productions/[id]/drive/setup and reused thereafter.
-  driveFolderId    String?
-  leadId           String?
-  lead             User?            @relation("ProductionLead", fields: [leadId], references: [id])
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  driveFolderId          String?
+  leadId                 String?
+  lead                   User?            @relation("ProductionLead", fields: [leadId], references: [id])
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
 
-  callSheets CallSheet[]
-  expenses   ProductionExpense[]
-  crew       ProductionCrew[]
+  callSheets       CallSheet[]
+  expenses         ProductionExpense[]
+  crew             ProductionCrew[]
   productionTasks  ProductionTask[]        @relation("productionTasks")
   teamMembers      ProductionTeamMember[]  @relation("productionTeam")
   creativeAssets   CreativeAsset[]         @relation("productionCreative")
@@ -542,7 +542,7 @@ model Production {
   linkedTasks      Task[]                  @relation("productionLinkedTasks")
   costLines        CostLine[]              @relation("productionCostLines")
   invoices         InvoiceSubmission[]     @relation("productionInvoices")
-  workflows ProductionWorkflow[]
+  workflows        ProductionWorkflow[]
 }
 
 // Shareable internal deep-link to a production. Any signed-in Outlander user
@@ -558,7 +558,6 @@ model ProductionShareLink {
   expiresAt    DateTime?
   createdAt    DateTime   @default(now())
 }
-
 
 model ProductionTask {
   id           String     @id @default(cuid())
@@ -577,37 +576,37 @@ model ProductionTask {
 }
 
 model ProductionTeamMember {
-  id           String     @id @default(cuid())
-  productionId String
-  production   Production @relation("productionTeam", fields: [productionId], references: [id], onDelete: Cascade)
-  name         String
-  role         String
-  email        String?
-  phone        String?
-  rate         Float?
-  ratePer      String?
-  status       String     @default("SUGGESTED")
-  notes        String?
+  id                  String     @id @default(cuid())
+  productionId        String
+  production          Production @relation("productionTeam", fields: [productionId], references: [id], onDelete: Cascade)
+  name                String
+  role                String
+  email               String?
+  phone               String?
+  rate                Float?
+  ratePer             String?
+  status              String     @default("SUGGESTED")
+  notes               String?
   // Dietary requirement collected before the call sheet is sent (Phase 3C).
   // Free text e.g. "No restrictions", "Vegetarian", "Halal", "Gluten-free".
   dietaryRequirements String?
   // Whether this team member was also saved into the Directory as a Contact.
-  contactId    String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  contactId           String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 }
 
 model CreativeAsset {
-  id           String     @id @default(cuid())
-  productionId String
-  production   Production @relation("productionCreative", fields: [productionId], references: [id], onDelete: Cascade)
-  type         String
-  title        String
-  url          String?
-  description  String?
-  sortOrder    Int        @default(0)
+  id             String     @id @default(cuid())
+  productionId   String
+  production     Production @relation("productionCreative", fields: [productionId], references: [id], onDelete: Cascade)
+  type           String
+  title          String
+  url            String?
+  description    String?
+  sortOrder      Int        @default(0)
   // Image approval workflow (Phase 5). PENDING | APPROVED | DENIED.
-  approvalStatus String?  @default("PENDING")
+  approvalStatus String?    @default("PENDING")
   approvedBy     String?
   approvedAt     DateTime?
   // Google Drive integration (Phase 6). driveFileId links this asset to a file
@@ -618,8 +617,8 @@ model CreativeAsset {
   driveThumbnail String?
   uploadedByName String?
   mimeType       String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 model ScheduleBlock {
@@ -663,20 +662,20 @@ model ProductionDeliverable {
 // schedule (which lives on the call sheet). Status (PENDING / DONE / OVERDUE) is
 // derived from `date` + `done` in the UI, not stored.
 model ProductionMilestone {
-  id           String     @id @default(cuid())
+  id           String                @id @default(cuid())
   productionId String
-  production   Production @relation("productionMilestones", fields: [productionId], references: [id], onDelete: Cascade)
-  phase        String     @default("PRE_PRODUCTION") // PRE_PRODUCTION | PRODUCTION | POST_PRODUCTION
+  production   Production            @relation("productionMilestones", fields: [productionId], references: [id], onDelete: Cascade)
+  phase        String                @default("PRE_PRODUCTION") // PRE_PRODUCTION | PRODUCTION | POST_PRODUCTION
   date         DateTime
   // Optional end of a multi-day item ("Shoot Week — 1–4 September"). Null for
   // single-day items; `date` is always the start.
   endDate      DateTime?
   title        String
   description  String?
-  done         Boolean    @default(false)
+  done         Boolean               @default(false)
   // Rendered as a diamond/flag on the timeline (a key event — SHOOT DAY, go
   // live) rather than a task circle.
-  isMilestone  Boolean    @default(false)
+  isMilestone  Boolean               @default(false)
   // Set on rows seeded from a standard production template (see
   // src/lib/production-templates.ts). Used to recalculate their dates when the
   // shoot date changes and to avoid re-seeding duplicates.
@@ -687,10 +686,10 @@ model ProductionMilestone {
   subtasks     ProductionMilestone[] @relation("milestoneSubtasks")
   // Optional assignee — the Outlander team member responsible for this task.
   assignedTo   String?
-  assignedUser User?      @relation("milestoneAssignee", fields: [assignedTo], references: [id])
-  sortOrder    Int        @default(0)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  assignedUser User?                 @relation("milestoneAssignee", fields: [assignedTo], references: [id])
+  sortOrder    Int                   @default(0)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 }
 
 enum ProductionStatus {
@@ -710,59 +709,59 @@ enum CallSheetStatus {
 }
 
 model CallSheet {
-  id              String          @id @default(cuid())
-  productionId    String
-  production      Production      @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  status          CallSheetStatus @default(DRAFT)
-  shootTitle      String?
-  shootDate       DateTime
-  callTime        String          @default("08:00")
+  id                String              @id @default(cuid())
+  productionId      String
+  production        Production          @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  status            CallSheetStatus     @default(DRAFT)
+  shootTitle        String?
+  shootDate         DateTime
+  callTime          String              @default("08:00")
   // Master call time for the whole unit — the default every crew/talent member
   // inherits unless their own row carries a `callTime` override. Empty falls
   // back to `callTime` (which is kept mirrored to this for legacy readers).
-  unitCallTime    String          @default("")
-  wrapTime        String?
-  location        Json
-  locationLat     Float?
-  locationLng     Float?
-  schedule        Json
-  shotlist        Json            @default("[]")
+  unitCallTime      String              @default("")
+  wrapTime          String?
+  location          Json
+  locationLat       Float?
+  locationLng       Float?
+  schedule          Json
+  shotlist          Json                @default("[]")
   // Ordered list of shoot locations — supersedes the single `location` above.
   // [{ name, address, postcode, nearestAE, parkingNotes, contactPerson, whatThreeWords, mapLink, lat, lng }]
   // Order is the movement sequence for the day.
-  locations       Json            @default("[]")
+  locations         Json                @default("[]")
   // Overall shot style / creative approach: { tone, visualDevice, notes }
-  shotStyle       Json            @default("{}")
-  crew            Json
-  talent          Json            @default("[]")
+  shotStyle         Json                @default("{}")
+  crew              Json
+  talent            Json                @default("[]")
   // Rosters normally auto-sort by call time then production hierarchy. Dragging
   // a row sets these, and the stored array order is used verbatim instead —
   // otherwise the next re-sort would silently undo the drag. Per-list, because
   // wanting a hand-built cast order says nothing about the crew list.
-  crewManualOrder   Boolean       @default(false)
-  talentManualOrder Boolean       @default(false)
-  cateringDetails Json            @default("{}")
-  documents       Json            @default("[]")
-  weatherData     Json?
-  productionNotes String?
-  safetyNotes     String?
-  parkingNotes    String?
-  notes           String? // legacy JSON blob — superseded by the dedicated columns above
-  shareToken      String?         @unique
-  clientShareToken String?        @unique // separate token for the redacted client version
+  crewManualOrder   Boolean             @default(false)
+  talentManualOrder Boolean             @default(false)
+  cateringDetails   Json                @default("{}")
+  documents         Json                @default("[]")
+  weatherData       Json?
+  productionNotes   String?
+  safetyNotes       String?
+  parkingNotes      String?
+  notes             String? // legacy JSON blob — superseded by the dedicated columns above
+  shareToken        String?             @unique
+  clientShareToken  String?             @unique // separate token for the redacted client version
   // ── Industry-standard call sheet sections (Jimmy Choo format) ──
-  header            Json          @default("{}") // { productionCompany, jobNumber }
-  clientTeam        Json          @default("[]") // [{ role, name }]
-  agencyTeam        Json          @default("[]") // [{ role, name, phone, email }]
-  productionCompany Json          @default("{}") // { name, address, execProducer, producer }
-  callTimes         Json          @default("[]") // [{ time, department }]
-  productionMobiles Json          @default("[]") // [{ role, name, phone }]
-  movementOrder     Json          @default("{}") // { nearestStation, siteEntrance, techParking, crewParking, routeNotes }
-  equipment         Json          @default("{}") // { cameraSupplier, cameraContact, cameraEmail, lightingSupplier, lightingContact, otherNotes }
-  distributions   Json            @default("[]") // [{ name, role, email, sentAt, confirmedAt? }]
-  distributedAt   DateTime?
-  createdAt       DateTime        @default(now())
-  presence        CallSheetPresence[]
+  header            Json                @default("{}") // { productionCompany, jobNumber }
+  clientTeam        Json                @default("[]") // [{ role, name }]
+  agencyTeam        Json                @default("[]") // [{ role, name, phone, email }]
+  productionCompany Json                @default("{}") // { name, address, execProducer, producer }
+  callTimes         Json                @default("[]") // [{ time, department }]
+  productionMobiles Json                @default("[]") // [{ role, name, phone }]
+  movementOrder     Json                @default("{}") // { nearestStation, siteEntrance, techParking, crewParking, routeNotes }
+  equipment         Json                @default("{}") // { cameraSupplier, cameraContact, cameraEmail, lightingSupplier, lightingContact, otherNotes }
+  distributions     Json                @default("[]") // [{ name, role, email, sentAt, confirmedAt? }]
+  distributedAt     DateTime?
+  createdAt         DateTime            @default(now())
+  presence          CallSheetPresence[]
 }
 
 // Who currently has a call sheet open, for the collaborative editor's "Olive is
@@ -853,21 +852,21 @@ model PrintDistribution {
 // Embedded flat plan + line tracker for a magazine issue. `pages` holds the full
 // page-by-page array (see src/lib/magazine-plan.ts for the page object shape).
 model MagazinePlan {
-  id          String   @id @default(cuid())
-  issueNumber Int
-  issueName   String
-  totalPages  Int      @default(8)
-  pages       Json     @default("[]")
-  seedVersion Int      @default(0) // bumped when the seed blueprint changes, so seeded issues re-seed on next load
+  id           String   @id @default(cuid())
+  issueNumber  Int
+  issueName    String
+  totalPages   Int      @default(8)
+  pages        Json     @default("[]")
+  seedVersion  Int      @default(0) // bumped when the seed blueprint changes, so seeded issues re-seed on next load
   // Total issue revenue (Commercial deal revenue + other income), tracked on the
   // Budget tab's section view so headroom = totalRevenue − sum(budget lines).
   totalRevenue Float?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  updatedBy   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  updatedBy    String?
 
-  costLines        CostLine[]
-  rolloutPlan      RolloutPlan?
+  costLines   CostLine[]
+  rolloutPlan RolloutPlan?
 
   @@unique([issueNumber])
 }
@@ -1122,7 +1121,7 @@ model CreditRequest {
   // FAILED when the send errored. QUEUED/SENDING exist because the sendout is
   // paced over hours: 239 near-identical emails in one burst is what gets a
   // mailbox filtered, so each invite carries the moment it is due.
-  status      String    @default("DRAFT")
+  status       String    @default("DRAFT")
   // When this invite is due to leave. Null = not scheduled. The drip worker
   // claims rows whose slot has passed; progress lives here rather than in a
   // browser tab, so closing the laptop doesn't stop the sendout.
@@ -1132,42 +1131,42 @@ model CreditRequest {
   // meantime, so "who hasn't done it" is decided at send time rather than at
   // scheduling time. Cleared once sent.
   remindAt     DateTime?
-  sentAt      DateTime?
+  sentAt       DateTime?
   // Where the email actually went. In test mode this is the test inbox, not
   // `email` — recorded so a test send can never masquerade as a real one.
-  sentTo      String?
-  isTest      Boolean   @default(false)
-  emailError  String?
-  openedAt    DateTime?
-  respondedAt DateTime?
-  remindedAt  DateTime?
+  sentTo       String?
+  isTest       Boolean   @default(false)
+  emailError   String?
+  openedAt     DateTime?
+  respondedAt  DateTime?
+  remindedAt   DateTime?
 
   // ── Their response ──
-  confirmedName      String?
+  confirmedName       String?
   // Their discipline, picked by them from the closed list in credit-consent.ts.
   // One choice only. This is the credit line, so it is theirs to pick, not the
   // spreadsheet's to guess.
-  confirmedRole      String?
+  confirmedRole       String?
   // Their own one-line description of what they do and who they are, written by
   // them and printed beside the credit. Length is capped by tier — see
   // bioLimitForTier() in credit-consent.ts — because the printed entry is a
   // fixed size on the page: tier 1 gets 90 characters, tier 2 gets 75, and
   // tier 3 is never asked. Nullable: tier 3, untiered rows, and anyone who
   // signed before this existed have none.
-  confirmedBio       String?
-  confirmedInstagram String?
-  confirmedEmail     String?
+  confirmedBio        String?
+  confirmedInstagram  String?
+  confirmedEmail      String?
   // PRIVATE. Delivery only. { line1, line2, city, region, postcode, country }
-  address            Json?
+  address             Json?
   // Which version of the agreement they accepted, when, and the FULL TEXT they
   // saw, snapshotted at acceptance. The version points at the copy in source;
   // the snapshot makes each row self-contained proof of what was signed even if
   // the source copy changes later.
-  agreementVersion   String?
-  agreementText      String?
+  agreementVersion    String?
+  agreementText       String?
   agreementAcceptedAt DateTime?
-  printConsent       Boolean?
-  declineNote        String?
+  printConsent        Boolean?
+  declineNote         String?
   // An extension for this person alone. Null means they follow CREDIT_DEADLINE
   // like everybody else; a date here replaces it for this row only.
   //
@@ -1176,7 +1175,7 @@ model CreditRequest {
   // That happened twice. The second time somebody else submitted through the
   // gap within fifteen minutes, which was a happy accident rather than a plan.
   // A date in the past closes one person early without touching anyone else.
-  submitUntil        DateTime?
+  submitUntil         DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1194,24 +1193,24 @@ model CreditRequest {
 // operations), so nothing here caches raw payloads — if a field is missing,
 // add it and re-sync rather than storing JSON nobody reads.
 model ShopifyOrder {
-  id       String   @id // Shopify GID, e.g. gid://shopify/Order/123
-  name     String // the customer-facing "#1001"
-  orderedAt DateTime // createdAt in Shopify
-  currency String // shop currency — every amount below is in THIS, never presentment
+  id             String   @id // Shopify GID, e.g. gid://shopify/Order/123
+  name           String // the customer-facing "#1001"
+  orderedAt      DateTime // createdAt in Shopify
+  currency       String // shop currency — every amount below is in THIS, never presentment
   // Amounts are shopMoney. Storing presentment would make totals uncomparable
   // across a customer paying in USD and one paying in GBP.
-  totalPrice     Float @default(0)
-  subtotalPrice  Float @default(0)
-  totalShipping  Float @default(0)
-  totalTax       Float @default(0)
-  totalDiscounts Float @default(0)
+  totalPrice     Float    @default(0)
+  subtotalPrice  Float    @default(0)
+  totalShipping  Float    @default(0)
+  totalTax       Float    @default(0)
+  totalDiscounts Float    @default(0)
 
-  financialStatus    String?
-  fulfillmentStatus  String?
+  financialStatus   String?
+  fulfillmentStatus String?
   // Cancelled and test orders must be excluded from every figure. Kept rather
   // than dropped so a sync doesn't silently lose rows it already had.
-  cancelledAt DateTime?
-  isTest      Boolean @default(false)
+  cancelledAt       DateTime?
+  isTest            Boolean   @default(false)
 
   // Destination — the territory and coast signal. Country code is ISO-2.
   shipCountryCode  String?
@@ -1225,10 +1224,10 @@ model ShopifyOrder {
   // Where the row came from. The API cannot return orders older than 60 days
   // without read_all_orders, so history arrives by CSV export instead — and a
   // sync must never delete what it is structurally incapable of re-fetching.
-  source    String   @default("API") // API | CSV
+  source String @default("API") // API | CSV
 
   lineItems ShopifyOrderLine[]
-  syncedAt  DateTime @default(now())
+  syncedAt  DateTime           @default(now())
 
   @@index([orderedAt])
   @@index([shipCountryCode])
@@ -1245,9 +1244,9 @@ model ShopifyOrderLine {
   sku          String?
   title        String
   variantTitle String?
-  quantity     Int    @default(0)
+  quantity     Int     @default(0)
   // Per-unit, shop currency, after line discounts.
-  price        Float  @default(0)
+  price        Float   @default(0)
   productId    String?
   variantId    String?
 
@@ -1490,7 +1489,6 @@ model CampaignBudget {
   @@index([campaignId])
 }
 
-
 // A supplier invoice, from the moment it's requested to the moment it's paid.
 //
 // Deliberately NOT an invoice store. OutlanderOS asks for the invoice, records
@@ -1499,14 +1497,14 @@ model CampaignBudget {
 // the doubling-up this is meant to avoid — `attachmentUrl` points at the file,
 // it isn't the file.
 model InvoiceSubmission {
-  id               String    @id @default(cuid())
+  id               String      @id @default(cuid())
   supplierName     String
   supplierEmail    String
   // ── Request phase ────────────────────────────────────────────────────────
   // Set when Production wraps a shoot and asks the crew to invoice. The token
   // is the crew member's front door: a long random string, since the page it
   // opens is public and must not be guessable from an id.
-  token            String?   @unique
+  token            String?     @unique
   productionId     String?
   production       Production? @relation("productionInvoices", fields: [productionId], references: [id], onDelete: SetNull)
   ioNumber         String? // quoted back to the supplier so finance can match it
@@ -1517,32 +1515,257 @@ model InvoiceSubmission {
   // glance whether what arrived matches what was agreed.
   expectedAmount   Float?
   amount           Float?
-  currency         String    @default("GBP")
+  currency         String      @default("GBP")
   description      String?
   emailSubject     String?
-  emailMessageId   String?   @unique // dedup
+  emailMessageId   String?     @unique // dedup
   attachmentUrl    String?
-  receivedAt       DateTime  @default(now())
+  receivedAt       DateTime    @default(now())
   paymentDeadline  DateTime // 30 days from received
   // REQUESTED — asked for, nothing submitted yet (the new first state)
   // RECEIVED → UNDER_REVIEW → APPROVED → PAID, or REJECTED
-  status           String    @default("RECEIVED")
+  status           String      @default("RECEIVED")
   campaignBudgetId String? // project this invoice is coded to
-  flagged          Boolean   @default(false)
+  flagged          Boolean     @default(false)
   flagNote         String?
   reviewedBy       String?
   approvedBy       String?
   approvedAt       DateTime?
   paidAt           DateTime?
   xeroPaymentId    String? // matched Xero payment
-  reminderSent     Boolean   @default(false)
+  reminderSent     Boolean     @default(false)
   notes            String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   @@index([status])
   @@index([paymentDeadline])
   @@index([campaignBudgetId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// XERO — the ledger of record, mirrored locally
+//
+// Xero owns actuals. OutlanderOS owns intent: what a cost is *for*, what is
+// expected to happen, and why. These tables are a read-through cache of Xero's
+// side of that split, and nothing here is authored in OS — every row is an
+// upsert keyed on a Xero id.
+//
+// Three reasons the mirror exists rather than calling Xero per page load:
+//
+//  1. **Rate limits.** Xero allows 60 calls a minute and 5,000 a day per org.
+//     The finance portal has nine tabs; rendering them live would burn the
+//     daily allowance in an afternoon and then fail for everyone.
+//  2. **Xero being down must not mean the portal is down.** A mirror degrades
+//     to "stale, and here is the timestamp", which is a fact somebody can act
+//     on. A live call degrades to a spinner and then an error.
+//  3. **Joins.** Reconciling a Xero bill against a CostLine is a SQL join once
+//     both sides are in the same database, and an N+1 of HTTP calls otherwise.
+//
+// MONEY IS INTEGER PENCE. The existing ledger uses Float, which cannot hold
+// £0.10 exactly and will invent penny variances the moment it is reconciled
+// against Xero. New tables do not inherit that; migrating CostLine is its own
+// job (see docs/BACKLOG.md). Int caps at £21.4m per row, which is three orders
+// of magnitude above anything this company invoices.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// The org-wide Xero connection. One row, id "singleton".
+//
+// Replaces the `xero` key in .tokens.json, which was a plaintext OAuth refresh
+// token on disk with a non-atomic write. Xero rotates the refresh token on
+// EVERY use, so a single lost write permanently severs the connection — there
+// is no recovery but a human re-running consent.
+//
+// `expiresAt` is a DateTime rather than a number. The old store wrote it in
+// milliseconds and the refresh check read it as seconds, so the proactive
+// refresh never fired once in the integration's life and the connection could
+// only ever die. A DateTime has no unit to get wrong.
+model XeroConnection {
+  id         String @id @default("singleton")
+  tenantId   String
+  tenantName String
+
+  // AES-256-GCM, key derived from NEXTAUTH_SECRET. See src/lib/secret-box.ts.
+  accessTokenEnc  String
+  refreshTokenEnc String
+  expiresAt       DateTime
+  scopes          String?
+
+  connectedAt       DateTime  @default(now())
+  connectedByUserId String?
+  connectedByName   String?
+  lastRefreshAt     DateTime?
+  refreshCount      Int       @default(0)
+  // Set when a refresh fails. Non-null means the next request will surface
+  // "reconnect Xero" rather than retrying a grant Xero has already rejected.
+  lastError         String?
+
+  updatedAt DateTime @updatedAt
+}
+
+// Per-entity incremental cursor. Xero's If-Modified-Since is the difference
+// between pulling 40 changed invoices and all 4,000 every quarter of an hour.
+model XeroSyncState {
+  entity          String    @id // invoices | payments | contacts | accounts | tracking | bank
+  lastModifiedUtc DateTime?
+  lastRunAt       DateTime?
+  lastCount       Int       @default(0)
+}
+
+// One row per sync attempt, successful or not. This is what the dashboard's
+// freshness indicator reads: a number with no "as at" is a number nobody can
+// trust.
+model XeroSyncRun {
+  id         String    @id @default(cuid())
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  status     String    @default("RUNNING") // RUNNING | OK | PARTIAL | FAILED
+  trigger    String    @default("SCHEDULED") // SCHEDULED | MANUAL | CONNECT
+  entities   Json? // { invoices: { fetched, upserted }, … }
+  error      String?
+  durationMs Int?
+
+  @@index([startedAt])
+  @@index([status])
+}
+
+// The chart of accounts. This is the vocabulary CostLine.accountCode has been
+// waiting for since the ledger was built — every cost row has the column and
+// nothing has ever been able to populate the picker behind it.
+model XeroAccount {
+  id            String    @id @default(cuid())
+  xeroAccountId String    @unique
+  code          String?
+  name          String
+  type          String // BANK | REVENUE | DIRECTCOSTS | EXPENSE | …
+  accountClass  String? // ASSET | LIABILITY | EQUITY | EXPENSE | REVENUE
+  status        String?
+  description   String?
+  currencyCode  String?
+  reportingCode String?
+  // Bank accounts only. Kept here rather than in a second table because a bank
+  // account IS an account in Xero, and splitting them means deciding twice.
+  isBank        Boolean   @default(false)
+  balancePence  Int? // from BankSummary, bank accounts only
+  balanceAsAt   DateTime?
+
+  updatedDateUtc DateTime?
+  syncedAt       DateTime  @default(now())
+
+  @@index([code])
+  @@index([type])
+  @@index([isBank])
+}
+
+model XeroTrackingCategory {
+  id                     String               @id @default(cuid())
+  xeroTrackingCategoryId String               @unique
+  name                   String
+  status                 String?
+  options                XeroTrackingOption[]
+  syncedAt               DateTime             @default(now())
+}
+
+model XeroTrackingOption {
+  id                   String               @id @default(cuid())
+  xeroTrackingOptionId String               @unique
+  categoryId           String
+  category             XeroTrackingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name                 String
+  status               String?
+  syncedAt             DateTime             @default(now())
+
+  @@index([categoryId])
+}
+
+// Suppliers and clients as Xero knows them. `Client.xeroContactId` already
+// exists and points here; crew suppliers are matched by name and email when an
+// invoice arrives in invoices@.
+model XeroContact {
+  id              String  @id @default(cuid())
+  xeroContactId   String  @unique
+  name            String
+  emailAddress    String?
+  accountNumber   String?
+  defaultCurrency String?
+  isSupplier      Boolean @default(false)
+  isCustomer      Boolean @default(false)
+  status          String?
+
+  updatedDateUtc DateTime?
+  syncedAt       DateTime  @default(now())
+
+  @@index([name])
+  @@index([emailAddress])
+}
+
+// Both directions in one table, separated by `type`, because an invoice and a
+// bill differ only in which way the money moves and splitting them would mean
+// writing every aging, overdue and reconciliation query twice.
+//
+//   ACCREC — we invoiced them. Inbound. Sourced from billing@ work.
+//   ACCPAY — they invoiced us. Outbound. Sourced from invoices@ work.
+model XeroInvoice {
+  id            String  @id @default(cuid())
+  xeroInvoiceId String  @unique
+  type          String // ACCREC | ACCPAY
+  invoiceNumber String?
+  reference     String?
+  status        String // DRAFT | SUBMITTED | AUTHORISED | PAID | VOIDED | DELETED
+  contactXeroId String?
+  contactName   String  @default("")
+
+  subTotalPence   Int @default(0)
+  totalTaxPence   Int @default(0)
+  totalPence      Int @default(0)
+  amountDuePence  Int @default(0)
+  amountPaidPence Int @default(0)
+
+  currencyCode String @default("GBP")
+  currencyRate Float?
+
+  date            DateTime?
+  dueDate         DateTime?
+  fullyPaidOnDate DateTime?
+
+  // Set once an OS record is matched to this document. The reconciliation
+  // itself lives on CostLine.invoiceRef / InvoiceSubmission; this is the
+  // reverse pointer so the mirror can say "already accounted for".
+  matchedCostLineId          String?
+  matchedInvoiceSubmissionId String?
+
+  updatedDateUtc DateTime?
+  syncedAt       DateTime  @default(now())
+
+  @@index([type, status])
+  @@index([dueDate])
+  @@index([contactXeroId])
+  @@index([invoiceNumber])
+  @@index([date])
+}
+
+// Payments are what turn "invoiced" into "paid", and they are the only
+// evidence of cash actually moving. Kept separately from the invoice because
+// one invoice can be part-paid several times.
+model XeroPayment {
+  id            String    @id @default(cuid())
+  xeroPaymentId String    @unique
+  invoiceXeroId String?
+  invoiceNumber String?
+  contactName   String?
+  amountPence   Int       @default(0)
+  currencyRate  Float?
+  date          DateTime?
+  reference     String?
+  status        String?
+  paymentType   String? // ACCRECPAYMENT | ACCPAYPAYMENT | …
+
+  updatedDateUtc DateTime?
+  syncedAt       DateTime  @default(now())
+
+  @@index([invoiceXeroId])
+  @@index([date])
+  @@index([paymentType])
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1571,13 +1794,13 @@ model RolloutPlan {
   warehouseDeadline DateTime?
 
   // ── Economics inputs ──
-  gbpToUsd       Float @default(1.27)
-  eurToUsd       Float @default(1.08)
-  eastCoastShare Float @default(55) // % of US orders priced on the NY lane
+  gbpToUsd              Float @default(1.27)
+  eurToUsd              Float @default(1.08)
+  eastCoastShare        Float @default(55) // % of US orders priced on the NY lane
   // 0% means the parcel rate is flat however many magazines are in it — the
   // aggressive case, and the whole basis of the bundling argument. Raise it if
   // the carrier charges by weight.
-  shippingUpliftPct Float @default(0)
+  shippingUpliftPct     Float @default(0)
   // Blended placeholder until B2B freight is quoted per lane.
   b2bFreightPerShipment Float @default(45)
   usHubRunningCost      Float @default(0)
@@ -1588,11 +1811,11 @@ model RolloutPlan {
   // Everything about wave timing derives from these five inputs. If the promo
   // wave can't fit inside the lead time, the print date has to move — that's the
   // constraint this exists to surface.
-  printCompleteDate    DateTime?
-  leadTimeWeeks        Float @default(3)
-  promoDaysBeforeDrop1 Int   @default(5)
-  widerDaysAfterLastDrop Int @default(2)
-  hubToStoreTransitDays Int  @default(4)
+  printCompleteDate      DateTime?
+  leadTimeWeeks          Float     @default(3)
+  promoDaysBeforeDrop1   Int       @default(5)
+  widerDaysAfterLastDrop Int       @default(2)
+  hubToStoreTransitDays  Int       @default(4)
 
   // Free-text assumptions and open items — the bullet list at the foot of the
   // overview. Prose, not data, so it stays prose.
@@ -1601,37 +1824,37 @@ model RolloutPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  covers     RolloutCover[]
-  drops      RolloutDrop[]
-  waves      StockistWave[]
-  rateCards  FulfilmentRateCard[]
-  hubs       FulfilmentHub[]
-  channels   RolloutChannel[]
+  covers      RolloutCover[]
+  drops       RolloutDrop[]
+  waves       StockistWave[]
+  rateCards   FulfilmentRateCard[]
+  hubs        FulfilmentHub[]
+  channels    RolloutChannel[]
   territories RolloutTerritory[]
-  stockists  Stockist[]
-  events     RolloutEvent[]
-  lanes      ShippingLane[]
-  milestones RolloutMilestone[]
-  profiles   CoverProfile[]
+  stockists   Stockist[]
+  events      RolloutEvent[]
+  lanes       ShippingLane[]
+  milestones  RolloutMilestone[]
+  profiles    CoverProfile[]
 }
 
 // One cover = one SKU = one factory-printed barcode. No substitutions.
 model RolloutCover {
-  id       String      @id @default(cuid())
-  planId   String
-  plan     RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  name     String // "Cover 1"
-  subject  String? // "Human talent", "Pokemon character — holographic, limited"
-  sku      String // OUT02-C1
-  sharePct Float // share of the total print run
+  id         String       @id @default(cuid())
+  planId     String
+  plan       RolloutPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name       String // "Cover 1"
+  subject    String? // "Human talent", "Pokemon character — holographic, limited"
+  sku        String // OUT02-C1
+  sharePct   Float // share of the total print run
   // Which drop this cover is released in. Two covers can share a drop.
-  dropId   String?
-  drop     RolloutDrop? @relation(fields: [dropId], references: [id], onDelete: SetNull)
+  dropId     String?
+  drop       RolloutDrop? @relation(fields: [dropId], references: [id], onDelete: SetNull)
   // Exactly one cover should be the balancer: it absorbs rounding so every
   // split ties exactly rather than drifting a unit at a time.
-  isBalancer Boolean @default(false)
+  isBalancer Boolean      @default(false)
   notes      String?
-  sortOrder  Int     @default(0)
+  sortOrder  Int          @default(0)
 
   @@index([planId])
 }
@@ -1641,19 +1864,19 @@ model RolloutCover {
 // that makes a cover buyable. Modelling it as a logistics event would invent
 // three shipments that don't exist and triple the freight forecast.
 model RolloutDrop {
-  id        String      @id @default(cuid())
-  planId    String
-  plan      RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  name      String // "Drop 1"
-  goLiveAt  DateTime
+  id         String      @id @default(cuid())
+  planId     String
+  plan       RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name       String // "Drop 1"
+  goLiveAt   DateTime
   // Share of the B2C pool released here. Territory holds are derived from this,
   // so a drop's units never disagree with the territory split.
-  sharePct  Float
+  sharePct   Float
   // Absorbs rounding across territories, exactly as the balancer cover does
   // across cover splits.
-  isBalancer Boolean @default(false)
-  notes     String?
-  sortOrder Int     @default(0)
+  isBalancer Boolean     @default(false)
+  notes      String?
+  sortOrder  Int         @default(0)
 
   covers RolloutCover[]
 
@@ -1664,11 +1887,11 @@ model RolloutDrop {
 // dates; a store's tier picks its wave. Two waves and 53 shipments, against 149
 // if every store received every drop separately.
 model StockistWave {
-  id        String      @id @default(cuid())
-  planId    String
-  plan      RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  name      String // "Wave 1 — Promo"
-  tier      String // PRIMARY | WIDER — which stores belong to this wave
+  id                 String      @id @default(cuid())
+  planId             String
+  plan               RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name               String // "Wave 1 — Promo"
+  tier               String // PRIMARY | WIDER — which stores belong to this wave
   // Both dates are DERIVED from the plan's clock inputs and the drop schedule,
   // and cached here only so a wave can be overridden by hand when a carrier
   // gives a real date. Null means "use the derived date".
@@ -1677,9 +1900,9 @@ model StockistWave {
   // Promo stock sits in store before the first cover is public, so it needs a
   // signed agreement per account. The wider wave lands after every cover is out
   // and has nothing to embargo.
-  isEmbargoed Boolean @default(false)
-  notes       String?
-  sortOrder   Int     @default(0)
+  isEmbargoed        Boolean     @default(false)
+  notes              String?
+  sortOrder          Int         @default(0)
 
   @@index([planId])
 }
@@ -1688,21 +1911,21 @@ model StockistWave {
 // is charged per magazine. That asymmetry is the entire bundling argument — a
 // Full Set costs one order fee, not four.
 model FulfilmentRateCard {
-  id        String      @id @default(cuid())
-  planId    String
-  plan      RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  hubId     String?
-  hub       FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: Cascade)
-  currency  String  @default("USD") // GBP | USD | EUR
-  orderFee  Float   @default(0)
-  itemPick  Float   @default(0)
+  id            String         @id @default(cuid())
+  planId        String
+  plan          RolloutPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  hubId         String?
+  hub           FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  currency      String         @default("USD") // GBP | USD | EUR
+  orderFee      Float          @default(0)
+  itemPick      Float          @default(0)
   // Monthly storage/account cost, kept separate because it doesn't scale with
   // orders and shouldn't be folded into a per-parcel figure.
-  runningCost Float @default(0)
+  runningCost   Float          @default(0)
   // "Yellow cell": a working assumption, not a quote.
-  isPlaceholder Boolean @default(false)
-  source    String?
-  sortOrder Int     @default(0)
+  isPlaceholder Boolean        @default(false)
+  source        String?
+  sortOrder     Int            @default(0)
 
   @@index([planId])
 }
@@ -1734,8 +1957,8 @@ model FulfilmentHub {
   location  String? // "Salt Lake City, Utah"
   serves    String? // what this hub covers
   // Direct-from-printer is a "hub" for allocation purposes but holds no stock.
-  isDirect  Boolean @default(false)
-  sortOrder Int     @default(0)
+  isDirect  Boolean     @default(false)
+  sortOrder Int         @default(0)
 
   territories RolloutTerritory[]
   stockists   Stockist[]
@@ -1748,88 +1971,88 @@ model FulfilmentHub {
 
 // How the run divides by purpose: B2C, B2B, seeding, events, reserve, buffer.
 model RolloutChannel {
-  id      String      @id @default(cuid())
-  planId  String
-  plan    RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  name    String
-  units   Int         @default(0)
-  purpose String?
+  id        String         @id @default(cuid())
+  planId    String
+  plan      RolloutPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name      String
+  units     Int            @default(0)
+  purpose   String?
   // Reserve and buffer sit at a named hub; the rest are distributed via
   // territories, events and stockists, so this is null for them.
-  hubId   String?
-  hub     FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
+  hubId     String?
+  hub       FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
   // Which reconciliation family this row belongs to, so the checks know what
   // should tie to what: B2C | B2B | SEEDING | EVENTS | BUFFER.
-  kind      String @default("B2C")
-  sortOrder Int    @default(0)
+  kind      String         @default("B2C")
+  sortOrder Int            @default(0)
 
   @@index([planId])
 }
 
 // B2C and gifting demand by territory, and which hub serves it.
 model RolloutTerritory {
-  id       String      @id @default(cuid())
-  planId   String
-  plan     RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  name     String // "Asia-Pacific / Middle East"
-  hubId    String?
-  hub      FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
+  id         String         @id @default(cuid())
+  planId     String
+  plan       RolloutPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name       String // "Asia-Pacific / Middle East"
+  hubId      String?
+  hub        FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
   // One B2C pool per territory. The per-drop hold is DERIVED from each drop's
   // share of the run — the sheet's "held for Drop 1/2/3" columns are calculated,
   // not typed, and storing them would let them drift from the drop schedule.
-  b2cUnits   Int @default(0)
-  seedingVip Int @default(0)
-  sortOrder  Int @default(0)
+  b2cUnits   Int            @default(0)
+  seedingVip Int            @default(0)
+  sortOrder  Int            @default(0)
 
   @@index([planId])
 }
 
 // A confirmed retail account. Cover splits are DERIVED from units × profile.
 model Stockist {
-  id      String      @id @default(cuid())
-  planId  String
-  plan    RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  name    String
-  city    String?
-  market  String? // UK | US | France | … — groups the market reconciliation
-  hubId   String?
-  hub     FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
-  profileId String?
-  profile   CoverProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
-  units     Int     @default(0)
+  id              String         @id @default(cuid())
+  planId          String
+  plan            RolloutPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name            String
+  city            String?
+  market          String? // UK | US | France | … — groups the market reconciliation
+  hubId           String?
+  hub             FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
+  profileId       String?
+  profile         CoverProfile?  @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  units           Int            @default(0)
   // PRIMARY accounts receive before the first drop under a written embargo;
   // WIDER accounts receive after the last one, when every cover is public and
   // there is physically nothing to leak. The tier is the ONLY input — the wave,
   // in-store date, dispatch date and embargo days all follow from it.
-  tier      String  @default("WIDER") // PRIMARY | WIDER
+  tier            String         @default("WIDER") // PRIMARY | WIDER
   // Named-later source-location slots. They hold no units and must not count as
   // a shipment, so freight isn't billed for a delivery nobody is making.
-  isReserved Boolean @default(false)
+  isReserved      Boolean        @default(false)
   // Embargo paperwork, tracked per account because the milestone requires a
   // signed agreement from every promo store before the wave dispatches.
-  embargoStatus String? // NOT_REQUIRED | SENT | SIGNED
+  embargoStatus   String? // NOT_REQUIRED | SENT | SIGNED
   embargoSignedAt DateTime?
   // Optional link to the Directory, so a stockist is the same record the
   // commercial team already knows about rather than a second address book.
-  contactId String?
-  notes     String?
-  sortOrder Int     @default(0)
+  contactId       String?
+  notes           String?
+  sortOrder       Int            @default(0)
 
   @@index([planId])
   @@index([contactId])
 }
 
 model RolloutEvent {
-  id     String      @id @default(cuid())
-  planId String
-  plan   RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  city   String
-  hubId  String?
-  hub    FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
-  units     Int     @default(0)
+  id        String         @id @default(cuid())
+  planId    String
+  plan      RolloutPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  city      String
+  hubId     String?
+  hub       FulfilmentHub? @relation(fields: [hubId], references: [id], onDelete: SetNull)
+  units     Int            @default(0)
   eventDate DateTime?
   notes     String?
-  sortOrder Int     @default(0)
+  sortOrder Int            @default(0)
 
   @@index([planId])
 }
@@ -1837,37 +2060,37 @@ model RolloutEvent {
 // A costed shipping route. Rates arrive at different times from different
 // partners, so `ratePerOrder` is nullable and `quoteStatus` carries the reason.
 model ShippingLane {
-  id     String      @id @default(cuid())
-  planId String
-  plan   RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  name         String
-  ratePerOrder Float?
-  currency     String  @default("GBP")
-  volume       Int     @default(0)
-  quoteStatus  String?
+  id            String      @id @default(cuid())
+  planId        String
+  plan          RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name          String
+  ratePerOrder  Float?
+  currency      String      @default("GBP")
+  volume        Int         @default(0)
+  quoteStatus   String?
   // "Yellow cell" — a working assumption, not a quote. Counted and surfaced so
   // the headline saving is never presented as firmer than its inputs.
-  isPlaceholder Boolean @default(false)
+  isPlaceholder Boolean     @default(false)
   // The lane being beaten — last year's cost per order. Excluded from cost
   // totals and used as the comparison baseline.
-  isBaseline   Boolean @default(false)
-  sortOrder    Int     @default(0)
+  isBaseline    Boolean     @default(false)
+  sortOrder     Int         @default(0)
 
   @@index([planId])
 }
 
 model RolloutMilestone {
-  id     String      @id @default(cuid())
-  planId String
-  plan   RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  id           String      @id @default(cuid())
+  planId       String
+  plan         RolloutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   seq          Int
   window       String? // "By 7 August"
   date         DateTime?
   action       String
   owner        String?
   // Slip one of these and the launch date moves.
-  criticalPath Boolean @default(false)
-  status       String  @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | DONE | BLOCKED
+  criticalPath Boolean     @default(false)
+  status       String      @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | DONE | BLOCKED
   notes        String?
 
   @@index([planId])

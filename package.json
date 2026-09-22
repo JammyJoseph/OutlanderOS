@@ -12,7 +12,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:deploy": "prisma migrate deploy",
-    "db:status": "prisma migrate status"
+    "db:status": "prisma migrate status",
+    "check:xero": "tsx scripts/check-xero-units.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
