@@ -51,6 +51,28 @@ export const XERO_SCOPES = [
   'accounting.reports.read',
 ].join(' ')
 
+/**
+ * Which of Xero's two authentication shapes this install uses.
+ *
+ * `XERO_CONNECTION_MODE=custom` selects a Custom Connection. It is explicit
+ * rather than sniffed, because the two flows fail in opposite directions and a
+ * wrong guess is confusing: a Custom Connection asked to run consent sends an
+ * admin to a Xero screen that cannot complete, and a Web app asked for
+ * client_credentials is simply refused.
+ *
+ * Custom Connections are the better fit for this system and the mode this
+ * install is expected to run in. They are bound to one organisation when the
+ * app is created, mint a 30-minute token from the client id and secret, and
+ * have no refresh token — so the single most fragile thing in the old
+ * integration, a rotating refresh token that dies if one write is lost, simply
+ * does not exist.
+ */
+export function xeroMode(): 'CUSTOM' | 'AUTH_CODE' {
+  return (process.env.XERO_CONNECTION_MODE ?? '').trim().toUpperCase() === 'CUSTOM'
+    ? 'CUSTOM'
+    : 'AUTH_CODE'
+}
+
 export class XeroDisconnectedError extends Error {
   /** True when a human must re-run consent; false when it may fix itself. */
   readonly needsReconsent: boolean
@@ -237,6 +259,19 @@ async function loadConnection() {
 
 async function doRefresh(): Promise<XeroContext> {
   const conn = await loadConnection()
+  // A row with no refresh token is a Custom Connection that reached the wrong
+  // branch — it has nothing to refresh and never will. Say so rather than
+  // failing on a null further down, because the fix is a config change
+  // (XERO_CONNECTION_MODE) and not a reconnection.
+  if (!conn.refreshTokenEnc) {
+    throw new XeroDisconnectedError(
+      conn.mode === 'CUSTOM'
+        ? 'This is a Custom Connection but XERO_CONNECTION_MODE is not set to "custom", so the refresh flow ran instead of minting a token.'
+        : 'The stored Xero connection has no refresh token. Reconnect Xero.',
+      true
+    )
+  }
+
   let token: TokenResponse
   try {
     token = await postToken(
@@ -291,7 +326,69 @@ async function doRefresh(): Promise<XeroContext> {
   }
 }
 
+/**
+ * Mints and caches a Custom Connection token.
+ *
+ * The token lasts 30 minutes and costs one call to replace, so it is cached in
+ * XeroConnection purely to avoid re-minting on every request — losing the cache
+ * is a non-event, unlike the AUTH_CODE path where losing the stored token ends
+ * the connection permanently.
+ *
+ * The tenant is discovered once from /connections and kept. A Custom Connection
+ * is bound to exactly one organisation, so it cannot drift.
+ */
+async function getCustomConnectionContext(): Promise<XeroContext> {
+  const conn = await prisma.xeroConnection.findUnique({ where: { id: CONNECTION_ID } })
+  if (conn && conn.mode === 'CUSTOM' && conn.expiresAt.getTime() - REFRESH_SKEW_MS > Date.now()) {
+    return {
+      accessToken: decrypt(conn.accessTokenEnc),
+      tenantId: conn.tenantId,
+      tenantName: conn.tenantName,
+    }
+  }
+
+  const token = await postToken(new URLSearchParams({ grant_type: 'client_credentials' }))
+  const tenants = await listTenants(token.access_token)
+  if (!tenants.length) {
+    // The credentials authenticate but reach no organisation. This is the
+    // state a Custom Connection sits in after it is created and before an
+    // organisation is authorised against it in Xero's developer portal — the
+    // step that is easy to miss because the app looks finished without it.
+    throw new XeroDisconnectedError(
+      'The Xero Custom Connection authenticates but is not connected to an organisation. ' +
+        'In the Xero developer portal, open the app and authorise it against the Outlander organisation.',
+      true
+    )
+  }
+  const tenant = tenants[0]
+
+  const row = {
+    mode: 'CUSTOM',
+    tenantId: tenant.tenantId,
+    tenantName: tenant.tenantName,
+    accessTokenEnc: encrypt(token.access_token),
+    refreshTokenEnc: null,
+    expiresAt: new Date(Date.now() + token.expires_in * 1000),
+    scopes: token.scope ?? null,
+    lastError: null,
+    lastRefreshAt: new Date(),
+  }
+  await prisma.xeroConnection.upsert({
+    where: { id: CONNECTION_ID },
+    create: { id: CONNECTION_ID, ...row },
+    update: { ...row, refreshCount: { increment: 1 } },
+  })
+
+  return {
+    accessToken: token.access_token,
+    tenantId: tenant.tenantId,
+    tenantName: tenant.tenantName,
+  }
+}
+
 export async function getXeroContext(): Promise<XeroContext> {
+  if (xeroMode() === 'CUSTOM') return getCustomConnectionContext()
+
   const conn = await loadConnection()
   if (conn.expiresAt.getTime() - REFRESH_SKEW_MS > Date.now()) {
     return {
@@ -397,6 +494,13 @@ export async function getXeroStatus(): Promise<{
 }> {
   try {
     const conn = await prisma.xeroConnection.findUnique({ where: { id: CONNECTION_ID } })
+
+    // A Custom Connection needs no stored row to work — the credentials alone
+    // mint a token. So "no row" is not "not connected" here; ask Xero.
+    if (!conn && xeroMode() === 'CUSTOM') {
+      const ctx = await getXeroContext()
+      return { connected: true, organisation: ctx.tenantName }
+    }
     if (!conn) return { connected: false, error: 'Xero is not connected.', needsReconsent: true }
     if (conn.lastError) {
       return {

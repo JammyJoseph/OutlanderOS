@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { withAdminDb } from '@/lib/auth'
-import { xeroConsentUrl } from '@/lib/xero'
+import { xeroConsentUrl, xeroMode } from '@/lib/xero'
 
 // Starts the Xero consent flow.
 //
@@ -12,6 +12,24 @@ import { xeroConsentUrl } from '@/lib/xero'
 // a stale claim.
 export const GET = withAdminDb(async (_request, _context, user) => {
   try {
+    // A Custom Connection has no consent flow. Sending somebody to Xero's
+    // authorize screen with these credentials produces an unhelpful error on
+    // Xero's side, so refuse here where the reason can be explained.
+    if (xeroMode() === 'CUSTOM') {
+      return NextResponse.json(
+        {
+          ok: false,
+          mode: 'CUSTOM',
+          error:
+            'This install uses a Xero Custom Connection, which needs no consent click. ' +
+            'It authenticates from the client id and secret alone. If Xero reports no ' +
+            'organisation, authorise the app against the Outlander organisation in the ' +
+            'Xero developer portal.',
+        },
+        { status: 400 }
+      )
+    }
+
     // CSRF: a random state echoed back by Xero and checked in the callback,
     // in a short-lived httpOnly cookie. Without it, anyone who can make an
     // admin's browser hit the callback can bind this company's OutlanderOS to

@@ -1585,9 +1585,24 @@ model XeroConnection {
   tenantId   String
   tenantName String
 
+  // How this connection authenticates. Xero has two completely different
+  // shapes and they share almost nothing:
+  //
+  //   AUTH_CODE — a standard Web app. A human clicks through consent, we get a
+  //               refresh token, and we guard it with our lives because Xero
+  //               rotates it on every use and a lost write is fatal.
+  //   CUSTOM    — a Custom Connection. Machine-to-machine, bound to ONE
+  //               organisation at creation time in Xero's developer portal.
+  //               No consent click, no redirect URI, and no refresh token at
+  //               all: the client id and secret mint a 30-minute access token
+  //               on demand. Strictly better for an unattended integration,
+  //               which is why the plan recommended it.
+  mode String @default("AUTH_CODE")
+
   // AES-256-GCM, key derived from NEXTAUTH_SECRET. See src/lib/secret-box.ts.
   accessTokenEnc  String
-  refreshTokenEnc String
+  // Null on a Custom Connection, which has no refresh token to store.
+  refreshTokenEnc String?
   expiresAt       DateTime
   scopes          String?
 
