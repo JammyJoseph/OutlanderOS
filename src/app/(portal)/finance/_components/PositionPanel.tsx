@@ -162,11 +162,33 @@ export default function PositionPanel() {
           <>
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
             <span>
-              <strong>Xero has never synced</strong>, so nothing below is known to have happened.
+              {/* Three distinct states, and conflating them sends somebody to fix
+                  the wrong thing. Credentials failing is a connection problem;
+                  credentials working while every read comes back empty is a
+                  permissions or subscription problem, and the fix is in Xero. */}
+              {!p.xero.connected ? (
+                <>
+                  <strong>Xero is not connected.</strong> Nothing below is known to have happened.
+                </>
+              ) : (
+                <>
+                  <strong>
+                    Xero is connected to {p.xero.organisation ?? 'an organisation'} but has returned
+                    no data.
+                  </strong>{' '}
+                  The credentials work; the organisation is not releasing records. Nothing below is
+                  known to have happened.
+                </>
+              )}{' '}
               Forecast and committed figures come from OutlanderOS and are unaffected.
             </span>
             {p.xero.error && (
               <span className="basis-full text-[11px] opacity-80">{p.xero.error}</span>
+            )}
+            {p.xero.lastRunStatus && (
+              <span className="basis-full text-[11px] opacity-70">
+                Last sync {p.xero.lastRunStatus.toLowerCase()} {ago(p.xero.freshAsOf)}.
+              </span>
             )}
           </>
         )}
