@@ -166,6 +166,23 @@ async function listTenants(accessToken: string) {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
   })
   if (!res.ok) {
+    // A Custom Connection whose credentials authenticate but which is not bound
+    // to an organisation answers 400 here, complaining that a tenant header is
+    // missing. That reads like a bug in our request and is not: there is simply
+    // no organisation behind the credentials yet. It is the state a Custom
+    // Connection sits in when the app was created but the organisation step was
+    // never completed, or when the Custom Connection subscription is not active
+    // on the Xero side. Both are fixed in the developer portal, not in code, so
+    // the message has to send somebody there rather than reporting a status.
+    if (res.status === 400 && xeroMode() === 'CUSTOM') {
+      throw new XeroDisconnectedError(
+        'The Xero credentials are valid but reach no organisation. In the Xero developer ' +
+          'portal open this Custom Connection and connect it to the Outlander organisation ' +
+          '(the app can exist without being bound to one). Whoever does it needs Adviser or ' +
+          'Standard access to that organisation in Xero.',
+        true
+      )
+    }
     throw new XeroDisconnectedError(`Could not list Xero organisations (${res.status}).`, false)
   }
   return (await res.json()) as Array<{ tenantId: string; tenantName: string }>
