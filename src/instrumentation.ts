@@ -15,6 +15,11 @@ export async function register() {
   // starting. The dynamic import below must not be reached there.
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
 
+  // First, before anything can log: keep credentials out of the pm2 logs.
+  // A failed Google call used to print its refresh token and access token.
+  const { installLogRedaction } = await import('@/lib/log-redact')
+  installLogRedaction()
+
   // The Xero mirror goes stale on its own, so its worker starts regardless of
   // whether NEXTAUTH_URL is set — unlike the drip, it builds no links and needs
   // no host. It is also the only thing keeping the finance portal's numbers
