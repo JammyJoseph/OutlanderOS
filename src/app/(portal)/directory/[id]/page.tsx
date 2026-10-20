@@ -218,7 +218,7 @@ export default function ContactDetailPage({
   const handle = igHandle(contact.instagram);
 
   return (
-    <div className="min-h-full px-6 py-8">
+    <div className="min-h-full px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl">
         <Link
           href="/directory"

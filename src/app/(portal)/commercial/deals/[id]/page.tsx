@@ -393,8 +393,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   ];
 
   return (
-    <div className="min-h-screen bg-card">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="min-h-full">
+      <div className="max-w-[1176px] px-4 pb-20 pt-6 sm:px-8 lg:px-12">
         {/* Breadcrumb + saved indicator */}
         <div className="flex items-center justify-between mb-4">
           <Link
@@ -1568,7 +1568,7 @@ function DocumentsTab({
           <button
             onClick={createIo}
             disabled={creatingIo}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:opacity-90 transition-opacity disabled:opacity-60"
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary dark:bg-gray-100 text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60"
           >
             {creatingIo ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
             Create IO

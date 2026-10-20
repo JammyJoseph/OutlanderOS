@@ -30,7 +30,7 @@ export default function BrandPerformancePage() {
   }, [load]);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-6 font-[Manrope,system-ui,sans-serif]">
+    <div className="px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <Link

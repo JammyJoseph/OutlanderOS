@@ -142,7 +142,7 @@ export default function NewMediaPlanPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-3">
+      <div className="flex flex-wrap items-end justify-between gap-4 px-4 pb-2 pt-6 sm:px-8 lg:px-12">
         <div className="flex items-center gap-3">
           <Link
             href="/commercial/media-plans"
@@ -150,7 +150,7 @@ export default function NewMediaPlanPage() {
           >
             <ChevronLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">New Media Plan</h1>
+          <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">New Media Plan</h1>
         </div>
         <button
           onClick={handleSave}
@@ -161,7 +161,7 @@ export default function NewMediaPlanPage() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto px-4 pb-20 pt-4 sm:px-8 lg:px-12">
         {/* Header form */}
         <div className="mb-6 rounded-2xl bg-surface p-6">
           <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Plan Details</h2>

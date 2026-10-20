@@ -62,8 +62,8 @@ export default function CommercialProjectsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-card font-[family-name:var(--font-manrope)]">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="min-h-full">
+      <div className="max-w-[1176px] px-4 pb-20 pt-6 sm:px-8 lg:px-12">
         <div className="mb-7">
           <h1 className="mt-1 text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">
             Projects

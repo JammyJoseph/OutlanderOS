@@ -7,7 +7,7 @@ import { ThemeChooser } from '@/components/ui/ThemeChooser'
 
 export default function MeSettingsPage() {
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
+    <div className="max-w-[864px] px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       <div className="mb-6">
         <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Settings</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Personal preferences</p>

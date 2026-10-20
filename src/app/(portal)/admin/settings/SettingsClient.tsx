@@ -145,7 +145,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
   ];
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-[864px] space-y-6 px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Settings</h1>
 
       <Suspense fallback={null}>

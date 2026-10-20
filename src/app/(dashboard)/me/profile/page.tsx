@@ -134,7 +134,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-8">
+      <div className="max-w-[1176px] px-4 pb-20 pt-6 sm:px-8 lg:px-12">
         <div className="flex items-center gap-4">
           <Skeleton className="h-16 w-16 rounded-full" />
           <div className="space-y-2">
@@ -167,7 +167,7 @@ export default function ProfilePage() {
   const isAdmin = me.role === 'ADMIN'
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <div className="max-w-[1176px] px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       <div className="mb-6">
         <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">My Profile</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Your details, role and team directory</p>

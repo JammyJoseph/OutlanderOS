@@ -1,6 +1,6 @@
 export default function MyCalendarPage() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
+    <div className="max-w-[992px] px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">My Calendar</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Your week at a glance</p>
       <div className="card-apple p-12 mt-6 text-center text-sm text-gray-400 dark:text-gray-500">

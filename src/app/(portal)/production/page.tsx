@@ -228,8 +228,8 @@ export default function ProductionPage() {
 
 function PageLoading() {
   return (
-    <div className="min-h-screen bg-card">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="min-h-full">
+      <div className="max-w-[1176px] px-4 pb-20 pt-6 sm:px-8 lg:px-12">
         <div className="flex items-center justify-center py-24">
           <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
         </div>
@@ -1274,7 +1274,7 @@ function CreateProjectModal({
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Link
                 href="/commercial"
-                className="inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 dark:bg-gray-100 dark:text-gray-900"
+                className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 dark:bg-gray-100"
               >
                 Track it in Commercial instead
               </Link>

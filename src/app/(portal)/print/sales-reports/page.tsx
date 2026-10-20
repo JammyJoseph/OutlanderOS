@@ -1,4 +1,4 @@
-import { BarChart3 } from "lucide-react";
+;
 import SalesReportsView from "@/components/print/SalesReportsView";
 
 // Shopify sales reporting for the print portal. Reports what the store has
@@ -13,17 +13,16 @@ import SalesReportsView from "@/components/print/SalesReportsView";
 export default function SalesReportsPage() {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2.5 border-b border-border bg-card px-6 py-3">
-        <BarChart3 size={16} className="text-brand" />
+      <div className="flex flex-wrap items-center gap-2.5 px-4 pb-2 pt-6 sm:px-8 lg:px-12">
         <div>
-          <h1 className="text-base font-semibold text-foreground">Sales reports</h1>
-          <p className="text-xs text-muted-foreground">
+          <h1 className="text-foreground text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Sales reports</h1>
+          <p className="mt-1.5 text-base text-muted-foreground">
             Everything the store has sold, consolidated
           </p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto px-4 pb-20 pt-4 sm:px-8 lg:px-12">
         <SalesReportsView />
       </div>
     </div>

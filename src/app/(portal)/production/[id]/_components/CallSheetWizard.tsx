@@ -377,7 +377,7 @@ export default function CallSheetWizard({ production, onClose }: Props) {
             <button
               onClick={() => setStep((s) => s + 1)}
               disabled={!canNext}
-              className="inline-flex items-center gap-1 rounded-xl bg-gray-900 dark:bg-gray-100 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 hover:opacity-90 disabled:opacity-40"
+              className="inline-flex items-center gap-1 rounded-full bg-primary dark:bg-gray-100 px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-40"
             >
               Next <ChevronRight size={15} />
             </button>

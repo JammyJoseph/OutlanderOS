@@ -130,8 +130,8 @@ export default function ThinkTankPage() {
   );
 
   return (
-    <div className="min-h-full bg-background p-6">
-      <div className="mx-auto max-w-4xl space-y-5">
+    <div className="min-h-full px-4 pb-20 pt-6 sm:px-8 lg:px-12">
+      <div className="max-w-[1080px] space-y-5">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

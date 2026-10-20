@@ -243,7 +243,7 @@ function FlatPlanInner() {
         </div>
       )}
       {/* Header */}
-      <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background/90 px-6 py-3 backdrop-blur">
+      <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 bg-background/90 py-3 px-4 sm:px-8 lg:px-12 backdrop-blur">
         <div className="flex items-center gap-3">
           <Link
             href="/print"
@@ -253,11 +253,11 @@ function FlatPlanInner() {
             <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
           <div>
-            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
+            <h1 className="flex items-center gap-2 text-foreground text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">
               <span className="h-2 w-2 rounded-full bg-[#2E5E44]" />
               Issue {String(plan.issueNumber).padStart(2, "0")} — {plan.issueName}
             </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-1.5 text-base text-muted-foreground">
               {pages.length} pages · {signatures.length} signature{signatures.length === 1 ? "" : "s"}
               {saving ? " · saving…" : plan.updatedBy ? ` · last edit ${plan.updatedBy}` : ""}
             </p>
@@ -266,35 +266,35 @@ function FlatPlanInner() {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* View toggle */}
-          <div className="flex rounded-lg bg-secondary p-0.5">
+          <div className="flex gap-1 rounded-full bg-surface p-1">
             <button
               onClick={() => setView("tracker")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "tracker" ? "bg-[#2E5E44] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
+              className={`flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition ${
+                view === "tracker" ? "bg-foreground text-background" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <Table2 className="h-3.5 w-3.5" /> Tracker
             </button>
             <button
               onClick={() => setView("flatplan")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "flatplan" ? "bg-[#2E5E44] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
+              className={`flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition ${
+                view === "flatplan" ? "bg-foreground text-background" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" /> Flat Plan
             </button>
             <button
               onClick={() => setView("sections")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "sections" ? "bg-[#2E5E44] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
+              className={`flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition ${
+                view === "sections" ? "bg-foreground text-background" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <Wallet className="h-3.5 w-3.5" /> Budget
             </button>
             <button
               onClick={() => setView("budget")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                view === "budget" ? "bg-[#2E5E44] text-black" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
+              className={`flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition ${
+                view === "budget" ? "bg-foreground text-background" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
               }`}
             >
               <PoundSterling className="h-3.5 w-3.5" /> Feature P&amp;L
@@ -350,7 +350,7 @@ function FlatPlanInner() {
       </div>
 
       {/* Totals bar */}
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-1 border-t border-border bg-card px-6 py-3 text-xs">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-1 border-t border-line bg-background py-3 text-xs px-4 sm:px-8 lg:px-12">
         <Total label="Total Sections" value={stats.sections} />
         <Total label="Total Content Received" value={`${stats.contentReceivedPct}%`} accent="#fbbf24" />
         <Total label="Total In Progress" value={`${stats.inProgressPct}%`} accent="#c084fc" />
@@ -386,7 +386,7 @@ function renumber(pages: MagazinePage[]): MagazinePage[] {
 const btnGhost =
   "flex items-center gap-1 rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-muted";
 const btnSolid =
-  "flex items-center gap-1 rounded-lg bg-gray-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-gray-700";
+  "flex items-center gap-1 rounded-full bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground hover:brightness-[0.97]";
 
 function Total({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
   return (
@@ -689,7 +689,7 @@ function CheckCell({ checked, onToggle }: { checked: boolean; onToggle: (v: bool
       <button
         onClick={() => onToggle(!checked)}
         className={`mx-auto flex h-4 w-4 items-center justify-center rounded border ${
-          checked ? "border-[#2E5E44] bg-[#2E5E44] text-black" : "border-border bg-transparent"
+          checked ? "border-foreground bg-foreground text-background" : "border-border bg-transparent"
         }`}
       >
         {checked && <Check className="h-3 w-3" />}

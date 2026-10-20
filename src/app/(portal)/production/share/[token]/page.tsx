@@ -9,7 +9,7 @@ function Notice({ title, message }: { title: string; message: string }) {
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-6">
       <div className="text-center max-w-sm">
-        <h1 className="text-lg font-semibold text-gray-900 mb-2">{title}</h1>
+        <h1 className="mb-2 text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">{title}</h1>
         <p className="text-sm text-gray-500">{message}</p>
       </div>
     </div>

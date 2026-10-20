@@ -940,7 +940,7 @@ function DirectoryPicker({
         <div className="flex justify-end border-t border-gray-100 dark:border-gray-800 px-5 py-3">
           <button
             onClick={onClose}
-            className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+            className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:brightness-[0.97]"
           >
             Done
           </button>

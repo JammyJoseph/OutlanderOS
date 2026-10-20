@@ -13,8 +13,12 @@ import { CommandPalette } from "./CommandPalette";
 
 /**
  * The frame every signed-in page sits in, from the redesign:
- *   a 248px sidebar with no border — logo, workspace switcher, that
- *   workspace's pages — and, top right of the content, Search (⌘K) and you.
+ *   a 248px navy sidebar — logo, workspace switcher, that workspace's pages —
+ *   and, top right of the white content, Search (⌘K) and you.
+ *
+ * The sidebar is navy by giving it the `dark` class: the navy colourway's
+ * tokens then apply inside it and nowhere else, so the logo, switcher and nav
+ * pick up their navy versions with no separate styles to keep in step.
  *
  * Pages keep their own content width and padding; the shell only owns the
  * frame, so nothing inside a page moved when this replaced the old headers.
@@ -44,14 +48,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         Skip to content
       </a>
 
-      <aside className="hidden w-[248px] shrink-0 overflow-y-auto lg:block print:hidden" aria-label="Workspace">
+      <aside className="dark hidden w-[248px] shrink-0 overflow-y-auto overflow-x-hidden bg-background text-foreground lg:block print:hidden" aria-label="Workspace">
         <SidebarBody workspace={workspace} />
       </aside>
 
       {menuOpen && (
         <div className="fixed inset-0 z-[80] lg:hidden print:hidden">
           <div className="absolute inset-0 bg-[rgba(11,18,32,0.44)]" onClick={() => setMenuOpen(false)} aria-hidden />
-          <div role="dialog" aria-modal="true" aria-label="Menu" className="absolute inset-y-0 left-0 w-[min(300px,86vw)] overflow-y-auto bg-background shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-label="Menu" className="dark absolute inset-y-0 left-0 w-[min(300px,86vw)] overflow-y-auto bg-background text-foreground shadow-2xl">
             <button
               type="button"
               onClick={() => setMenuOpen(false)}

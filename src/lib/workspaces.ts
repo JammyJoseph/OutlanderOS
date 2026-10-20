@@ -76,7 +76,7 @@ export const WORKSPACES: Workspace[] = [
     name: "My workspace",
     href: "/me",
     blurb: "Your tasks, week, deadlines and holiday",
-    dot: "#0B1220",
+    dot: "var(--foreground)",
     icon: Home,
     nav: [
       { label: "Home", href: "/me", icon: Home },

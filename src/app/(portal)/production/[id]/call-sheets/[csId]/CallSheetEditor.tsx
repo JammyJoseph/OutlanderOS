@@ -881,7 +881,7 @@ function ScheduleImporter({
             <button
               onClick={run}
               disabled={!raw.trim()}
-              className="flex items-center gap-1.5 bg-[#A93B2E] text-white px-3.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
+              className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3.5 py-1.5 rounded-full text-xs font-medium disabled:opacity-40"
             >
               <Wand2 size={13} /> Parse full schedule
             </button>

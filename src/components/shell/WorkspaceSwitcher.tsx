@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronsUpDown, LayoutGrid, LogOut, Search } from "lucide-react";
 import { useUser } from "@/components/user-context";
 import { visibleWorkspaces, type Workspace } from "@/lib/workspaces";
@@ -23,7 +24,12 @@ export function WorkspaceSwitcher({ current }: { current: Workspace }) {
   const wrap = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  // The menu floats above the page (a portal), placed under the button. The
+  // sidebar scrolls, and anything opened inside a scrolling box is clipped to
+  // it — the menu used to be cut off at 248px and drag the sidebar sideways.
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   const isAdmin = user?.role === "ADMIN";
   const all = visibleWorkspaces(isAdmin);
@@ -34,11 +40,28 @@ export function WorkspaceSwitcher({ current }: { current: Workspace }) {
   const mine = shown.filter((w) => w.key === "me");
   const portals = shown.filter((w) => w.key !== "me");
 
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const r = button.current?.getBoundingClientRect();
+      if (r) setPos({ top: r.bottom + 8, left: Math.max(16, r.left) });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     input.current?.focus();
     const onDown = (e: MouseEvent) => {
-      if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (wrap.current?.contains(t) || menu.current?.contains(t)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -87,12 +110,14 @@ export function WorkspaceSwitcher({ current }: { current: Workspace }) {
         <ChevronsUpDown className="size-[18px] shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden />
       </button>
 
-      {open && (
+      {open && pos && createPortal(
         <div
+          ref={menu}
           id={menuId}
           role="menu"
           aria-label="Workspaces"
-          className="absolute left-0 top-[calc(100%+8px)] z-50 w-[380px] max-w-[calc(100vw-32px)] rounded-[20px] bg-popover p-3 text-popover-foreground shadow-[0_1px_2px_rgba(11,18,32,0.08),0_24px_48px_-16px_rgba(11,18,32,0.24)] dark:ring-1 dark:ring-line"
+          style={{ top: pos.top, left: pos.left, maxHeight: `calc(100dvh - ${pos.top + 16}px)` }}
+          className="fixed z-[95] w-[380px] max-w-[calc(100vw-32px)] overflow-y-auto rounded-[20px] bg-popover p-3 text-popover-foreground shadow-[0_1px_2px_rgba(11,18,32,0.08),0_24px_48px_-16px_rgba(11,18,32,0.24)] dark:ring-1 dark:ring-line"
         >
           <div className="relative mb-2">
             <Search className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground" strokeWidth={1.75} aria-hidden />
@@ -135,7 +160,8 @@ export function WorkspaceSwitcher({ current }: { current: Workspace }) {
             <LogOut className="size-5" strokeWidth={1.75} aria-hidden />
             Log out
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

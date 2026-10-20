@@ -131,7 +131,7 @@ export function DirectoryPicker({
           <button
             onClick={confirm}
             disabled={count === 0}
-            className="bg-[#A93B2E] text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40"
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium disabled:opacity-40"
           >
             Add {count > 0 ? count : ""} to Unit List
           </button>

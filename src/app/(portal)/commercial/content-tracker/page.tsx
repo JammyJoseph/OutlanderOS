@@ -116,7 +116,7 @@ export default function ContentTrackerPage() {
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-6 font-[Manrope,system-ui,sans-serif]">
+    <div className="px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Content Tracker</h1>

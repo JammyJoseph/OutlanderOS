@@ -105,10 +105,10 @@ export default function CampaignCalendarPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-3">
+      <div className="flex flex-wrap items-end justify-between gap-4 px-4 pb-2 pt-6 sm:px-8 lg:px-12">
         <div>
-          <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Campaign Calendar</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Campaign Calendar</h1>
+          <p className="mt-1.5 text-base text-muted-foreground">
             {activeCampaigns.length} active this month
           </p>
         </div>
@@ -131,7 +131,7 @@ export default function CampaignCalendarPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto px-4 pb-20 pt-4 sm:px-8 lg:px-12">
         <div className="grid grid-cols-7 mb-1">
           {DAYS.map((d) => (
             <div

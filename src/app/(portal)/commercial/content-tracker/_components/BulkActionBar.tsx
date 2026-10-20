@@ -51,7 +51,7 @@ export default function BulkActionBar({ selectedIds, campaigns, onClear, onCompl
       <button
         onClick={() => brand.trim() && apply({ brand: brand.trim() })}
         disabled={busy || !brand.trim()}
-        className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+        className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:brightness-[0.97] disabled:opacity-50"
       >
         Tag
       </button>
@@ -73,7 +73,7 @@ export default function BulkActionBar({ selectedIds, campaigns, onClear, onCompl
       <button
         onClick={() => postType && apply({ postType })}
         disabled={busy || !postType}
-        className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+        className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:brightness-[0.97] disabled:opacity-50"
       >
         Set
       </button>
@@ -99,7 +99,7 @@ export default function BulkActionBar({ selectedIds, campaigns, onClear, onCompl
           apply({ campaignId, campaignName: c?.name ?? null });
         }}
         disabled={busy || !campaignId}
-        className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+        className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:brightness-[0.97] disabled:opacity-50"
       >
         Assign
       </button>

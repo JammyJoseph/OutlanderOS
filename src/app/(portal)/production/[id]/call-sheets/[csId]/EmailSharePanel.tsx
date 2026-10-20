@@ -207,7 +207,7 @@ export function EmailSharePanel({
       <button
         onClick={openDraft}
         disabled={!selected.length}
-        className="flex items-center justify-center gap-1.5 w-full mt-4 bg-[#A93B2E] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+        className="flex items-center justify-center gap-1.5 w-full mt-4 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
       >
         {opened ? <Check size={15} /> : <Mail size={15} />}
         {opened ? "Draft opened in your email app" : "Open email draft"}

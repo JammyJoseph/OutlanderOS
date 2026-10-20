@@ -113,10 +113,10 @@ export default function PrintIssuePage() {
   if (loading) {
     return (
       <div className="flex h-full flex-col">
-        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-3">
+        <div className="px-4 pb-2 pt-6 sm:px-8 lg:px-12">
           <div className="h-5 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
         </div>
-        <div className="flex-1 p-6">
+        <div className="flex-1 px-4 pb-20 pt-4 sm:px-8 lg:px-12">
           <div className="grid grid-cols-6 gap-3">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="h-24 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
@@ -146,7 +146,7 @@ export default function PrintIssuePage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6 py-3">
+      <div className="flex flex-wrap items-center gap-3 px-4 pb-2 pt-6 sm:px-8 lg:px-12">
         <Link
           href="/print"
           className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
@@ -156,7 +156,7 @@ export default function PrintIssuePage() {
         </Link>
         <span className="text-gray-300 dark:text-gray-600">/</span>
         <div className="flex flex-1 items-center gap-2">
-          <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">{issue.title}</h1>
+          <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">{issue.title}</h1>
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
               ISSUE_STATUS_STYLES[issue.status] ?? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"

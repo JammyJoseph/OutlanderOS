@@ -63,7 +63,7 @@ export function PageHead({
 /** Metric cards in a row that wraps: 210px minimum each. */
 export function StatGrid({ children, className, "aria-label": label }: { children: ReactNode; className?: string; "aria-label"?: string }) {
   return (
-    <section aria-label={label} className={cn("grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(210px,1fr))]", className)}>
+    <section aria-label={label} className={cn("grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(176px,1fr))]", className)}>
       {children}
     </section>
   );

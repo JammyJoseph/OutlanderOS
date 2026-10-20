@@ -10,7 +10,7 @@ const items = [
 
 export default function AdminPage() {
   return (
-    <div className="p-6">
+    <div className="px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       <div className="mb-6 flex items-center gap-3">
         <Shield className="h-6 w-6 text-brand" />
         <div>

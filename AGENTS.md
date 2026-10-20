@@ -127,8 +127,10 @@ normalises its redirects to relative paths.
 The live design is the **2026 redesign** (Foundations board): white page, grey cards
 (`bg-surface`, 24px radius) instead of borders, one light blue accent (`--primary` #A9D4FF
 with ink text) for the one primary action per screen, pill buttons, big plain figures, and
-workspace colours only as 8px dots. Tokens live in `globals.css` (`:root` and a navy `.dark`
-set) and `src/lib/design.ts`.
+workspace colours only as 8px dots, and a **navy sidebar** (chosen 2026-10-20 over full navy
+or all-white). Tokens live in `globals.css` (`:root`, and `.dark` = the navy colourway) and
+`src/lib/design.ts`. The sidebar is navy by carrying the `dark` class, so the navy tokens
+apply inside it only; the whole app can be navy via Settings → Navy.
 
 - **Build screens from `src/components/os`** (`Page`, `PageHead`, `StatGrid`/`Stat`,
   `Panel`, `Rows`/`Row`, `Tag`, `Chips`, `Table`, `FlowFrame`, `SuccessScreen`, `Overlay`,
@@ -138,7 +140,12 @@ set) and `src/lib/design.ts`.
   ⌘K search (`/api/search`), account menu. Sidebar items for every workspace live in
   `src/lib/workspaces.ts`; add pages there, not in a component.
 - Anything that creates or sends something is a focused flow (`FlowFrame`, 480px column,
-  step bar); finishing it shows the navy `SuccessScreen`. Nothing else uses navy.
+  step bar); finishing it shows the navy `SuccessScreen`.
+- **One page frame:** content uses the shell's gutter (`px-4 sm:px-8 lg:px-12`), starts at the
+  same left edge as the top bar and is at most 1080px wide — `Page` does this. No page gets
+  its own white header bar with a rule under it.
+- Menus that open from the sidebar must render in a portal (see `WorkspaceSwitcher`): the
+  sidebar scrolls, and anything absolutely positioned inside it is clipped.
 - Logos: `OutlanderOS_Logo_Ink.svg` (white "OS" pill, ink outline) on light grounds,
   `OutlanderOS_Logo_OnColour.svg` on navy, blue or dark. The metallic originals are kept but
   no longer used in the app.

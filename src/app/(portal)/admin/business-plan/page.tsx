@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, FileText } from 'lucide-react'
+import { ExternalLink } from "lucide-react"
 
 const DOCS = [
   {
@@ -25,12 +25,11 @@ export default function BusinessPlanPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex flex-wrap items-end justify-between gap-4 px-4 pb-4 pt-6 sm:px-8 lg:px-12">
         <div className="flex items-center gap-3">
-          <FileText size={20} className="text-brand" />
           <div>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Business Plan</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Outlander Magazine — Strategic Plan</p>
+            <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Business Plan</h1>
+            <p className="mt-1.5 text-base text-muted-foreground">Outlander Magazine — Strategic Plan</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -52,7 +51,7 @@ export default function BusinessPlanPage() {
             href={doc.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors ml-2"
+            className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground text-xs font-medium hover:brightness-[0.97] transition-colors ml-2"
           >
             <ExternalLink size={12} />
             Open in Google Docs

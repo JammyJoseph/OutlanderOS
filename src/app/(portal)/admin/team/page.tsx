@@ -113,7 +113,7 @@ export default function TeamPage() {
   const activeCount = staff.filter((s) => s.isActive).length;
 
   return (
-    <div className="space-y-6 px-1">
+    <div className="max-w-[1176px] space-y-6 px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

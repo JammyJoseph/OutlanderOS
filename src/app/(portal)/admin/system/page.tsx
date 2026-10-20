@@ -137,7 +137,7 @@ export default function SystemPage() {
   ]
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10 pb-16">
+    <div className="max-w-[1176px] space-y-10 px-4 pb-20 pt-6 sm:px-8 lg:px-12">
       {/* Header */}
       <div>
         <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">System Overview</h1>

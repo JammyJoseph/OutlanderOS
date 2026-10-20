@@ -279,89 +279,103 @@
   --hero-ink: #0B3B66;
 }
 
-/* ===== DARK THEME — applied when <html class="dark"> =====
-   The same system on navy, for the people who chose dark. */
+/* ===== NAVY — applied when <html class="dark"> =====
+   The navy colourway: the redesign's success screens carried across the whole
+   platform. Navy ground, white type, light blue for the one primary action and
+   for anything that needs to catch the eye; cards a step lighter than the
+   ground. (Replaces the old near-black dark theme.) */
 .dark {
-  --background: #0B1220;
-  --foreground: #F3F5F8;
-  --card: #111A2B;
-  --card-foreground: #F3F5F8;
-  --surface: #141E31;
-  --surface-2: #1B273D;
-  --popover: #141E31;
-  --popover-foreground: #F3F5F8;
+  --background: #0A2540;
+  --foreground: #FFFFFF;
+  --card: #0F2C4D;
+  --card-foreground: #FFFFFF;
+  --surface: #12335A;
+  --surface-2: #183E69;
+  --popover: #12335A;
+  --popover-foreground: #FFFFFF;
   --primary: #A9D4FF;
-  --primary-foreground: #0B1220;
-  --secondary: #1B2A44;
-  --secondary-foreground: #F3F5F8;
-  --muted: #141E31;
-  --muted-foreground: #9AA4B3;
-  --accent: #1B2A44;
-  --accent-foreground: #F3F5F8;
-  --destructive: #F08A80;
-  --destructive-foreground: #0B1220;
-  --border: #243049;
-  --input: #34415C;
+  --primary-foreground: #0A2540;
+  --secondary: #1C4675;
+  --secondary-foreground: #FFFFFF;
+  --muted: #12335A;
+  --muted-foreground: #A9BCD2;
+  --accent: #1C4675;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF9A8F;
+  --destructive-foreground: #0A2540;
+  --border: #23476F;
+  --input: #3A5F8A;
   --ring: #A9D4FF;
-  --line: #243049;
-  --field: #34415C;
-  --ink-2: #D5DBE3;
-  --navy: #06101F;
+  --line: #23476F;
+  --field: #3A5F8A;
+  --ink-2: #D8E3EF;
+  --navy: #071D33;
   --brand: #A9D4FF;
-  --focus: #2A4E7A;
-  --ok: #7FD3A2;   --ok-bg: #12301F;
-  --warn: #F2C26B; --warn-bg: #33270F;
-  --bad: #F08A80;  --bad-bg: #3A1A17;
-  --info: #A9D4FF; --info-bg: #14273F;
+  --focus: #3F6FA3;
+  --ok: #8FDDB0;   --ok-bg: #12402F;
+  --warn: #F5C870; --warn-bg: #3D3317;
+  --bad: #FF9A8F;  --bad-bg: #4A2128;
+  --info: #A9D4FF; --info-bg: #1C4675;
 
-  --portal-commercial: #C9A44A;
-  --portal-production: #D0584A;
-  --portal-print: #4E8F6C;
-  --portal-editorial: #9678BC;
-  --portal-finance: #5B7BC4;
-  --portal-think-tank: #D07C3E;
-  --portal-contacts: #5B7BC4;
-  --portal-admin: #8a8a86;
+  --portal-commercial: #D9B45A;
+  --portal-production: #F07A6A;
+  --portal-print: #6CC497;
+  --portal-editorial: #B79BE0;
+  --portal-finance: #8FB0F0;
+  --portal-think-tank: #F0A060;
+  --portal-contacts: #8FB0F0;
+  --portal-admin: #C9CED6;
   --chart-1: #A9D4FF;
-  --chart-2: #3D5A80;
-  --chart-3: #4E8F6C;
-  --chart-4: #C9A44A;
-  --chart-5: #D0584A;
-  --sidebar: #0B1220;
-  --sidebar-foreground: #D5DBE3;
+  --chart-2: #5B86B8;
+  --chart-3: #6CC497;
+  --chart-4: #D9B45A;
+  --chart-5: #F07A6A;
+  --sidebar: #0A2540;
+  --sidebar-foreground: #D8E3EF;
   --sidebar-primary: #A9D4FF;
-  --sidebar-primary-foreground: #0B1220;
-  --sidebar-accent: #1B2A44;
-  --sidebar-accent-foreground: #F3F5F8;
+  --sidebar-primary-foreground: #0A2540;
+  --sidebar-accent: #1C4675;
+  --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: transparent;
   --sidebar-ring: #A9D4FF;
   --hero: #A9D4FF;
-  --on-hero: #0B1220;
-  --hero-tint: #14273F;
+  --on-hero: #0A2540;
+  --hero-tint: #1C4675;
   --hero-ink: #A9D4FF;
+
+  /* The grey scale, re-pointed at navy, so older pages' dark: classes
+     (dark:bg-gray-900 cards, dark:border-gray-700 lines, dark:text-gray-400
+     labels) land on this colourway rather than on black. */
+  --color-gray-950: #071D33; --color-gray-900: #0F2C4D; --color-gray-800: #183E69;
+  --color-gray-700: #23476F; --color-gray-600: #8EA6C2; --color-gray-500: #A9BCD2;
+  --color-gray-400: #93A9C4; --color-gray-300: #C6D3E2;
+  --color-slate-900: #0F2C4D; --color-slate-800: #183E69; --color-slate-700: #23476F;
+  --color-neutral-900: #0F2C4D; --color-neutral-800: #183E69; --color-neutral-700: #23476F;
+  --color-zinc-900: #0F2C4D; --color-zinc-800: #183E69; --color-zinc-700: #23476F;
+  --color-stone-900: #0F2C4D; --color-stone-800: #183E69; --color-stone-700: #23476F;
 
   /* Safety-net remap of the Tailwind palette tint-shades (50/100/200) to dark
      values, so light-only utilities don't glare on navy. */
-  --color-gray-50: #141E31;   --color-gray-100: #18233A;   --color-gray-200: #243049;
-  --color-slate-50: #141E31;  --color-slate-100: #18233A;  --color-slate-200: #243049;
-  --color-neutral-50: #141E31;--color-neutral-100: #18233A;--color-neutral-200: #243049;
-  --color-zinc-50: #141E31;   --color-zinc-100: #18233A;   --color-zinc-200: #243049;
-  --color-stone-50: #141E31;  --color-stone-100: #18233A;  --color-stone-200: #243049;
-  --color-amber-50: #33270F;  --color-amber-100: #33270F;
-  --color-yellow-50: #33270F; --color-yellow-100: #33270F;
-  --color-orange-50: #33270F; --color-orange-100: #33270F;
-  --color-green-50: #12301F;  --color-green-100: #12301F;
-  --color-emerald-50: #12301F;--color-emerald-100: #12301F;
-  --color-teal-50: #12301F;   --color-teal-100: #12301F;
-  --color-red-50: #3A1A17;    --color-red-100: #3A1A17;
-  --color-rose-50: #3A1A17;   --color-rose-100: #3A1A17;
-  --color-pink-50: #3A1A17;   --color-pink-100: #3A1A17;
-  --color-blue-50: #14273F;   --color-blue-100: #14273F;
-  --color-sky-50: #14273F;    --color-sky-100: #14273F;
-  --color-indigo-50: #14273F; --color-indigo-100: #14273F;
-  --color-cyan-50: #14273F;   --color-cyan-100: #14273F;
-  --color-purple-50: #241B36; --color-purple-100: #241B36;
-  --color-violet-50: #241B36; --color-violet-100: #241B36;
+  --color-gray-50: #12335A;   --color-gray-100: #163A63;   --color-gray-200: #23476F;
+  --color-slate-50: #12335A;  --color-slate-100: #163A63;  --color-slate-200: #23476F;
+  --color-neutral-50: #12335A;--color-neutral-100: #163A63;--color-neutral-200: #23476F;
+  --color-zinc-50: #12335A;   --color-zinc-100: #163A63;   --color-zinc-200: #23476F;
+  --color-stone-50: #12335A;  --color-stone-100: #163A63;  --color-stone-200: #23476F;
+  --color-amber-50: #3D3317;  --color-amber-100: #3D3317;
+  --color-yellow-50: #3D3317; --color-yellow-100: #3D3317;
+  --color-orange-50: #3D3317; --color-orange-100: #3D3317;
+  --color-green-50: #12402F;  --color-green-100: #12402F;
+  --color-emerald-50: #12402F;--color-emerald-100: #12402F;
+  --color-teal-50: #12402F;   --color-teal-100: #12402F;
+  --color-red-50: #4A2128;    --color-red-100: #4A2128;
+  --color-rose-50: #4A2128;   --color-rose-100: #4A2128;
+  --color-pink-50: #4A2128;   --color-pink-100: #4A2128;
+  --color-blue-50: #1C4675;   --color-blue-100: #1C4675;
+  --color-sky-50: #1C4675;    --color-sky-100: #1C4675;
+  --color-indigo-50: #1C4675; --color-indigo-100: #1C4675;
+  --color-cyan-50: #1C4675;   --color-cyan-100: #1C4675;
+  --color-purple-50: #2E2A55; --color-purple-100: #2E2A55;
+  --color-violet-50: #2E2A55; --color-violet-100: #2E2A55;
 }
 
 @layer base {
@@ -478,10 +492,10 @@
   background: #8C95A3;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #34415C;
+  background: #2C537F;
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #4A5875;
+  background: #3F6FA3;
 }
 
 /* ── Flat surfaces ───────────────────────────────────────────────────────────
@@ -515,47 +529,47 @@
    to dark-monochrome equivalents until the per-file sweep is complete. */
 @media not print {
   /* Surfaces */
-  .dark .bg-white { background-color: #111A2B; }
+  .dark .bg-white { background-color: #0F2C4D; }
   .dark .bg-white\/95, .dark .bg-white\/90, .dark .bg-white\/85, .dark .bg-white\/80,
-  .dark .bg-white\/75, .dark .bg-white\/70, .dark .bg-white\/60 { background-color: rgba(17,26,43,0.85); }
-  .dark .bg-white\/50, .dark .bg-white\/40, .dark .bg-white\/30 { background-color: rgba(20,30,49,0.6); }
+  .dark .bg-white\/75, .dark .bg-white\/70, .dark .bg-white\/60 { background-color: rgba(15,44,77,0.9); }
+  .dark .bg-white\/50, .dark .bg-white\/40, .dark .bg-white\/30 { background-color: rgba(18,51,90,0.6); }
   .dark .bg-white\/20, .dark .bg-white\/10, .dark .bg-white\/5 { background-color: rgba(255,255,255,0.06); }
   .dark .border-white\/60, .dark .border-white\/50, .dark .border-white\/40, .dark .border-white\/20, .dark .border-white\/10 { border-color: rgba(255,255,255,0.08); }
-  .dark .bg-gray-50, .dark .bg-slate-50, .dark .bg-neutral-50 { background-color: #141E31; }
-  .dark .bg-gray-100, .dark .bg-slate-100, .dark .bg-neutral-100 { background-color: #141E31; }
-  .dark .bg-gray-200, .dark .bg-slate-200, .dark .bg-neutral-200 { background-color: #18233A; }
+  .dark .bg-gray-50, .dark .bg-slate-50, .dark .bg-neutral-50 { background-color: #12335A; }
+  .dark .bg-gray-100, .dark .bg-slate-100, .dark .bg-neutral-100 { background-color: #12335A; }
+  .dark .bg-gray-200, .dark .bg-slate-200, .dark .bg-neutral-200 { background-color: #163A63; }
 
   /* Hover surfaces */
-  .dark .hover\:bg-white:hover { background-color: #18233A; }
-  .dark .hover\:bg-gray-50:hover, .dark .hover\:bg-slate-50:hover, .dark .hover\:bg-neutral-50:hover { background-color: #18233A; }
-  .dark .hover\:bg-gray-100:hover, .dark .hover\:bg-slate-100:hover, .dark .hover\:bg-neutral-100:hover { background-color: #18233A; }
-  .dark .hover\:bg-gray-200:hover { background-color: #243049; }
+  .dark .hover\:bg-white:hover { background-color: #163A63; }
+  .dark .hover\:bg-gray-50:hover, .dark .hover\:bg-slate-50:hover, .dark .hover\:bg-neutral-50:hover { background-color: #163A63; }
+  .dark .hover\:bg-gray-100:hover, .dark .hover\:bg-slate-100:hover, .dark .hover\:bg-neutral-100:hover { background-color: #163A63; }
+  .dark .hover\:bg-gray-200:hover { background-color: #23476F; }
 
   /* Text */
   .dark .text-gray-900, .dark .text-slate-900, .dark .text-neutral-900,
   .dark .text-gray-800, .dark .text-slate-800, .dark .text-neutral-800 { color: #ffffff; }
-  .dark .text-gray-700, .dark .text-slate-700, .dark .text-neutral-700 { color: #D5DBE3; }
+  .dark .text-gray-700, .dark .text-slate-700, .dark .text-neutral-700 { color: #D8E3EF; }
   .dark .text-gray-600, .dark .text-slate-600, .dark .text-neutral-600,
-  .dark .text-gray-500, .dark .text-slate-500, .dark .text-neutral-500 { color: #9AA4B3; }
+  .dark .text-gray-500, .dark .text-slate-500, .dark .text-neutral-500 { color: #A9BCD2; }
   .dark .text-gray-400, .dark .text-slate-400, .dark .text-neutral-400,
-  .dark .text-gray-300, .dark .text-slate-300, .dark .text-neutral-300 { color: #7B8494; }
+  .dark .text-gray-300, .dark .text-slate-300, .dark .text-neutral-300 { color: #93A9C4; }
 
   .dark .hover\:text-gray-900:hover, .dark .hover\:text-gray-800:hover { color: #ffffff; }
-  .dark .hover\:text-gray-700:hover, .dark .hover\:text-gray-600:hover { color: #C3CBD6; }
+  .dark .hover\:text-gray-700:hover, .dark .hover\:text-gray-600:hover { color: #C6D3E2; }
 
   /* Borders */
-  .dark .border-gray-100, .dark .border-slate-100, .dark .border-neutral-100 { border-color: #18233A; }
-  .dark .border-gray-200, .dark .border-slate-200, .dark .border-neutral-200 { border-color: #243049; }
-  .dark .border-gray-300, .dark .border-slate-300, .dark .border-neutral-300 { border-color: #34415C; }
-  .dark .hover\:border-gray-200:hover, .dark .hover\:border-gray-300:hover { border-color: #34415C; }
+  .dark .border-gray-100, .dark .border-slate-100, .dark .border-neutral-100 { border-color: #163A63; }
+  .dark .border-gray-200, .dark .border-slate-200, .dark .border-neutral-200 { border-color: #23476F; }
+  .dark .border-gray-300, .dark .border-slate-300, .dark .border-neutral-300 { border-color: #3A5F8A; }
+  .dark .hover\:border-gray-200:hover, .dark .hover\:border-gray-300:hover { border-color: #3A5F8A; }
 
   /* Divide */
   .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
-  .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #243049; }
+  .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #23476F; }
 
   /* Inputs */
   .dark .placeholder\:text-gray-400::placeholder,
-  .dark .placeholder\:text-gray-500::placeholder { color: #7B8494; }
+  .dark .placeholder\:text-gray-500::placeholder { color: #93A9C4; }
 }
 
 /* ── Status pill / accent remap (dark only) ──────────────────────────────────

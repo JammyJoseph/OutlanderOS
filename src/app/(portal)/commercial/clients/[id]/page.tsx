@@ -231,7 +231,7 @@ export default function ClientDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="space-y-4 px-4 pb-20 pt-6 sm:px-8 lg:px-12">
         <div className="h-20 animate-pulse rounded-xl bg-gray-100" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {[...Array(4)].map((_, i) => (
@@ -296,7 +296,7 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Campaign list */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto px-4 pb-20 pt-4 sm:px-8 lg:px-12">
         {client.campaigns.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 p-12 text-center">
             <FileText className="mx-auto h-8 w-8 text-gray-300" />

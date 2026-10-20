@@ -98,7 +98,7 @@ export default function ConfirmReceiptPage({
               <button
                 onClick={confirmReceipt}
                 disabled={busy}
-                className="mt-6 inline-flex items-center justify-center gap-2 w-full rounded-xl bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-4 py-3 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="mt-6 inline-flex items-center justify-center gap-2 w-full rounded-full bg-primary dark:bg-gray-100 text-primary-foreground px-4 py-3 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {busy ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                 Confirm receipt

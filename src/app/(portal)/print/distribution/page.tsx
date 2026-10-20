@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Truck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import RolloutView from "@/components/print/RolloutView";
 
 interface Issue {
@@ -39,12 +39,11 @@ export default function DistributionPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-3">
+      <div className="flex flex-wrap items-end justify-between gap-4 px-4 pb-2 pt-6 sm:px-8 lg:px-12">
         <div className="flex items-center gap-2.5">
-          <Truck size={16} className="text-brand" />
           <div>
-            <h1 className="text-base font-semibold text-foreground">Rollout &amp; distribution</h1>
-            <p className="text-xs text-muted-foreground">
+            <h1 className="text-foreground text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Rollout &amp; distribution</h1>
+            <p className="mt-1.5 text-base text-muted-foreground">
               Print run, warehouses, stockists and the launch calendar
             </p>
           </div>
@@ -64,7 +63,7 @@ export default function DistributionPage() {
         )}
       </div>
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto px-4 pb-20 pt-4 sm:px-8 lg:px-12">
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 size={22} className="animate-spin text-muted-foreground" />

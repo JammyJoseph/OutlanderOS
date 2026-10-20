@@ -3,12 +3,13 @@
 import { Sun, Moon, Check } from 'lucide-react'
 import { useTheme } from '@/components/theme-context'
 
-// Light / dark theme picker. Shared by the profile and settings pages.
+// Light / navy theme picker. Shared by the profile and settings pages. The
+// stored value stays 'dark' so existing preferences carry over.
 export function ThemeChooser() {
   const { theme, setTheme } = useTheme()
   const options: { value: 'light' | 'dark'; label: string; icon: React.ReactNode; desc: string }[] = [
-    { value: 'light', label: 'Light', icon: <Sun className="h-4 w-4" />, desc: 'Bright, default theme' },
-    { value: 'dark', label: 'Dark', icon: <Moon className="h-4 w-4" />, desc: 'Low-light, high contrast' },
+    { value: 'light', label: 'Light', icon: <Sun className="h-4 w-4" />, desc: 'White, with light blue' },
+    { value: 'dark', label: 'Navy', icon: <Moon className="h-4 w-4" />, desc: 'Navy, with light blue' },
   ]
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -21,7 +22,7 @@ export function ThemeChooser() {
             onClick={() => setTheme(opt.value)}
             className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
  active
- ? 'border-foreground bg-amber-50 dark:bg-amber-900/30 ring-2 ring-focus'
+ ? 'border-foreground bg-accent ring-2 ring-focus'
  : 'border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-800'
  }`}
           >

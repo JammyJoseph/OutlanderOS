@@ -214,10 +214,10 @@ function PipelineBoard() {
     "rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-focus dark:focus:ring-focus focus:border-foreground dark:focus:border-foreground";
 
   return (
-    <div className="min-h-screen bg-card">
-      <div className="max-w-full px-6 py-8">
+    <div className="min-h-full">
+      <div className="px-4 pb-20 pt-6 sm:px-8 lg:px-12">
         {/* Header */}
-        <div className="flex items-end justify-between mb-5 max-w-6xl mx-auto">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="mt-1 text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Pipeline</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
@@ -243,7 +243,7 @@ function PipelineBoard() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2 mb-5 max-w-6xl mx-auto">
+        <div className="mb-5 flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
