@@ -41,7 +41,7 @@ export default function DistributionPage() {
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-3">
         <div className="flex items-center gap-2.5">
-          <Truck size={16} className="text-[#9C7C2E]" />
+          <Truck size={16} className="text-brand" />
           <div>
             <h1 className="text-base font-semibold text-foreground">Rollout &amp; distribution</h1>
             <p className="text-xs text-muted-foreground">
@@ -53,7 +53,7 @@ export default function DistributionPage() {
           <select
             value={issueId ?? ""}
             onChange={(e) => setIssueId(e.target.value)}
-            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-[#9C7C2E]/30"
+            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-focus"
           >
             {issues.map((i) => (
               <option key={i.id} value={i.id}>

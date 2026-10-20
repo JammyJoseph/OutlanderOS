@@ -52,10 +52,10 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+    <div className="bg-surface rounded-2xl p-6">
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5">
-          <Film size={22} className="text-[#9C7C2E]" />
+          <Film size={22} className="text-brand" />
         </div>
         <div className="flex-1 min-w-0">
           <input
@@ -106,7 +106,7 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
                           <span className={`w-2 h-2 rounded-full ${st.dot}`} />
                           {st.label}
                           {s === production.status && (
-                            <Check size={13} className="ml-auto text-[#9C7C2E]" />
+                            <Check size={13} className="ml-auto text-brand" />
                           )}
                         </button>
                       );
@@ -124,7 +124,7 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
               <select
                 value={production.strand ?? ""}
                 onChange={(e) => onPatch({ strand: e.target.value })}
-                className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-focus dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
                 title="Which strand this project belongs to in the Projects list"
               >
                 <option value="">Auto — {STRAND_LABELS[derivedStrand]}</option>
@@ -145,7 +145,7 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
                 href={production.figmaUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
               >
                 Figma <ExternalLink size={11} />
               </a>

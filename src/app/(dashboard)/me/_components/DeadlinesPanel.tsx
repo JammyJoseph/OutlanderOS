@@ -71,9 +71,9 @@ export function DeadlinesPanel() {
   }, [load]);
 
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <section className="rounded-2xl bg-surface p-6">
       <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <h2 className="flex items-center gap-1.5 text-xl font-semibold text-foreground [&>svg]:hidden">
           <CalendarClock className="h-3.5 w-3.5" /> Deadlines
         </h2>
         {items && items.length > 0 && (

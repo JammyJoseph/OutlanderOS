@@ -1,64 +1,37 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { ErrorState } from "@/components/ui/error-state";
-import {
-  Banknote,
-  Clapperboard,
-  FolderKanban,
-  Landmark,
-  PackageCheck,
-  TrendingUp,
-} from "lucide-react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
+import { Stat, StatGrid } from "@/components/os";
 import { formatGBP, type PulseData } from "./types";
 
 function Skeleton() {
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <StatGrid>
       {Array.from({ length: 4 }, (_, i) => (
-        <div key={i} className="h-[92px] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+        <div key={i} className="h-[132px] animate-pulse rounded-2xl bg-surface" />
       ))}
-    </div>
+    </StatGrid>
   );
 }
 
-interface CardProps {
-  label: string;
-  value: React.ReactNode;
-  sub?: React.ReactNode;
-  icon: React.ReactNode;
-  accent: string;
-  href?: string;
-}
+const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
 
-function PulseCard({ label, value, sub, icon, accent, href }: CardProps) {
-  const body = (
-    <div
-      className={`rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 ${
-        href ? "transition-colors hover:border-[#c9c9c6] dark:hover:border-[#3a3a3a]" : ""
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-          {label}
-        </span>
-        <span style={{ color: accent }} className="opacity-70">
-          {icon}
-        </span>
-      </div>
-      <div className="mt-1.5 truncate text-xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
-      {sub && <div className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">{sub}</div>}
-    </div>
+function payrollCard(p: PulseData["payroll"]) {
+  const d = parseISO(p.date);
+  return (
+    <Stat
+      label="Next payroll"
+      value={p.daysUntil === 0 ? "Today" : p.daysUntil === 1 ? "Tomorrow" : `${p.daysUntil} days`}
+      note={format(d, "EEEE d MMMM")}
+    />
   );
-  return href ? <Link href={href}>{body}</Link> : body;
 }
 
-// Role-aware Business Pulse KPI cards. ADMIN (finance/admin) sees pipeline +
-// Xero money; MEMBER (ops/production) sees projects, deliveries, and the next
-// shoot. Payroll now lives in the HR sidebar, not here. Fetches
-// /api/dashboard/pulse on its own so the rest of the dashboard isn't blocked
+// Role-aware business pulse. ADMIN sees pipeline and Xero money; MEMBER sees
+// projects, deliveries and the next shoot. Both see payroll. Fetches
+// /api/dashboard/pulse on its own so the rest of the dashboard isn't held up
 // by Xero round-trips.
 export function BusinessPulse() {
   const [pulse, setPulse] = useState<PulseData | null>(null);
@@ -82,12 +55,8 @@ export function BusinessPulse() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <ErrorState
-          title="Business pulse unavailable"
-          message="Couldn't load your KPIs right now."
-          onRetry={load}
-        />
+      <div className="rounded-2xl bg-surface">
+        <ErrorState title="Business pulse unavailable" message="Couldn't load your figures right now." onRetry={load} />
       </div>
     );
   }
@@ -97,81 +66,50 @@ export function BusinessPulse() {
     const shoot = pulse.nextShoot;
     const shootDate = shoot ? parseISO(shoot.date) : null;
     const shootDays = shootDate ? differenceInCalendarDays(shootDate, new Date()) : null;
-    const shootCountdown =
-      shootDays === null
-        ? null
-        : shootDays === 0
-          ? "Today"
-          : shootDays === 1
-            ? "Tomorrow"
-            : `in ${shootDays} days`;
+    const countdown =
+      shootDays === null ? null : shootDays === 0 ? "Today" : shootDays === 1 ? "Tomorrow" : `${shootDays} days`;
 
     return (
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <PulseCard
-          label="Active Projects"
+      <StatGrid aria-label="Business pulse">
+        <Stat
+          label="Active projects"
           value={pulse.activeProjects}
-          sub={`${pulse.activeDealCount} deal${pulse.activeDealCount === 1 ? "" : "s"} · ${pulse.activeProductionCount} production${pulse.activeProductionCount === 1 ? "" : "s"}`}
-          icon={<FolderKanban className="h-4 w-4" />}
-          accent="#9C7C2E"
+          note={`${plural(pulse.activeDealCount, "deal")} · ${plural(pulse.activeProductionCount, "production")}`}
           href="/commercial/pipeline"
         />
-        <PulseCard
-          label="Upcoming Deliveries"
-          value={pulse.upcomingDeliveries}
-          sub="due in the next 14 days"
-          icon={<PackageCheck className="h-4 w-4" />}
-          accent="#A93B2E"
-        />
-        <PulseCard
-          label="Next Shoot"
-          value={shoot && shootCountdown ? shootCountdown : "No shoots scheduled"}
-          sub={
-            shoot && shootDate
-              ? `${shoot.title} · ${format(shootDate, "d MMM")}`
-              : "Schedule one in Production"
-          }
-          icon={<Clapperboard className="h-4 w-4" />}
-          accent="#2E5E44"
+        <Stat label="Deliveries" value={pulse.upcomingDeliveries} note="Due in the next 14 days" />
+        <Stat
+          label="Next shoot"
+          value={shoot && countdown ? countdown : "None booked"}
+          note={shoot && shootDate ? `${shoot.title} · ${format(shootDate, "d MMM")}` : "Schedule one in Production"}
           href={shoot ? `/production/${shoot.productionId}` : "/production"}
         />
-      </div>
+        {payrollCard(pulse.payroll)}
+      </StatGrid>
     );
   }
 
-  const connectXero = (
-    <Link href="/finance" className="font-semibold text-[#2F4B8F] dark:text-[#5B7BC4] hover:underline">
-      Connect Xero
-    </Link>
-  );
-
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-      <PulseCard
-        label="Pipeline Value"
+    <StatGrid aria-label="Business pulse">
+      <Stat
+        label="Pipeline value"
         value={formatGBP(pulse.pipelineValue)}
-        sub={`${pulse.activeDealCount} active deal${pulse.activeDealCount === 1 ? "" : "s"}`}
-        icon={<TrendingUp className="h-4 w-4" />}
-        accent="#9C7C2E"
+        note={plural(pulse.activeDealCount, "active deal")}
+        href="/commercial"
       />
-      <PulseCard
-        label="Receivables"
-        value={pulse.xeroConnected ? formatGBP(pulse.outstandingReceivables) : connectXero}
-        sub={
-          pulse.xeroConnected
-            ? `${pulse.receivableCount} open invoice${pulse.receivableCount === 1 ? "" : "s"}`
-            : "Xero not connected"
-        }
-        icon={<Banknote className="h-4 w-4" />}
-        accent="#2F4B8F"
+      <Stat
+        label="Owed to us"
+        value={pulse.xeroConnected ? formatGBP(pulse.outstandingReceivables) : "—"}
+        note={pulse.xeroConnected ? plural(pulse.receivableCount, "open invoice") : "Xero not connected"}
+        href="/finance"
       />
-      <PulseCard
-        label="Bank Balance"
-        value={pulse.xeroConnected ? formatGBP(pulse.bankBalance) : connectXero}
-        sub={pulse.xeroConnected ? pulse.bankAccountName || "Xero" : "Xero not connected"}
-        icon={<Landmark className="h-4 w-4" />}
-        accent="#2E5E44"
+      <Stat
+        label="Bank balance"
+        value={pulse.xeroConnected ? formatGBP(pulse.bankBalance) : "—"}
+        note={pulse.xeroConnected ? `Xero${pulse.bankAccountName ? ` · ${pulse.bankAccountName}` : ""}` : "Xero not connected"}
+        href="/finance"
       />
-    </div>
+      {payrollCard(pulse.payroll)}
+    </StatGrid>
   );
 }

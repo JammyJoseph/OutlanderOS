@@ -136,7 +136,7 @@ export default function CampaignCalendarPage() {
           {DAYS.map((d) => (
             <div
               key={d}
-              className="py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-400"
+              className="py-2 text-center text-[13px] text-muted-foreground"
             >
               {d}
             </div>
@@ -155,8 +155,8 @@ export default function CampaignCalendarPage() {
                   <>
                     <span
                       className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                        isToday(day) ? "bg-[#111111] text-white dark:bg-white dark:text-black" : "text-gray-700 dark:text-gray-300"
-                      }`}
+ isToday(day) ? "bg-foreground text-background " : "text-gray-700 dark:text-gray-300"
+ }`}
                     >
                       {day}
                     </span>

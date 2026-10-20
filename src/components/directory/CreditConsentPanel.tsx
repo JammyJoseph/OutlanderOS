@@ -224,7 +224,7 @@ export default function CreditConsentPanel() {
           here sends immediately — it stamps each invite with the moment it is
           due, and the server works through them. */}
       {data && (
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="rounded-2xl bg-surface p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h3 className="text-sm font-semibold text-foreground">Sendout</h3>
             <p className="text-xs text-muted-foreground">
@@ -333,7 +333,7 @@ export default function CreditConsentPanel() {
           list IS the confidential part of Issue 02, and every contributor has
           signed an agreement to keep it quiet. */}
       {data && (
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="rounded-2xl bg-surface p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Table2 size={14} className="text-muted-foreground" />
@@ -432,7 +432,7 @@ export default function CreditConsentPanel() {
 
       {adding && (
         <form
-          className="grid gap-2 rounded-2xl border border-border bg-card p-4 sm:grid-cols-[1.2fr_1.4fr_1fr_1fr_90px_auto]"
+          className="grid gap-2 rounded-2xl bg-surface p-6 sm:grid-cols-[1.2fr_1.4fr_1fr_1fr_90px_auto]"
           onSubmit={(e) => {
             e.preventDefault();
             void act("add", { action: "add", ...addForm }, () => {

@@ -1,20 +1,20 @@
 // Shared options for the auth cookies.
 //
-// `secure` is derived from NEXTAUTH_URL rather than hardcoded, because
-// production is currently served over plain HTTP on a bare IP with no
-// certificate. Setting `secure: true` there would stop the browser sending the
-// cookie at all and lock everyone out. Deriving it means the flag switches
-// itself on the moment the site is served over https — no code change, and no
-// window where the cookie is marked secure on a site that can't offer TLS.
-//
-// See docs/BACKLOG.md §0 — TLS is the blocking item here.
+// `secure` is derived from NEXTAUTH_URL rather than hardcoded, so local dev
+// over plain http still works while production (https since 2026) gets the
+// flag automatically.
 export function authCookieSecure(): boolean {
   return (process.env.NEXTAUTH_URL ?? '').startsWith('https://')
 }
 
 export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
 
-export function authCookieOptions(maxAge: number = AUTH_COOKIE_MAX_AGE) {
+/**
+ * `maxAge: "session"` leaves the expiry off, so the browser drops the cookie
+ * when it closes — what "Keep me logged in" unticked means. The token inside
+ * still expires after 30 days either way.
+ */
+export function authCookieOptions(maxAge: number | "session" = AUTH_COOKIE_MAX_AGE) {
   return {
     httpOnly: true,
     // Lax still accompanies top-level navigations, so ordinary links into the
@@ -23,7 +23,7 @@ export function authCookieOptions(maxAge: number = AUTH_COOKIE_MAX_AGE) {
     // protection against a cross-site form post.
     sameSite: 'lax' as const,
     secure: authCookieSecure(),
-    maxAge,
+    ...(maxAge === "session" ? {} : { maxAge }),
     path: '/',
   }
 }

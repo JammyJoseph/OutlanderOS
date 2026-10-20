@@ -352,10 +352,10 @@ export default function SalesReportsView() {
         <>
           {/* ══ The roundup ══ */}
           {(roundupState === "loading" || roundup) && (
-            <section className="rounded-2xl border border-border bg-card p-5">
+            <section className="rounded-2xl bg-surface p-6">
               <div className="flex items-center gap-2">
-                <Sparkles size={14} className="text-[#9C7C2E]" />
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <Sparkles size={14} className="text-brand" />
+                <h3 className="text-muted-foreground text-xl font-semibold text-foreground [&>svg]:hidden">
                   What the numbers say
                 </h3>
               </div>
@@ -719,7 +719,7 @@ function Delta({ value }: { value: number | null }) {
 function Bar({ value }: { value: number }) {
   return (
     <span className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-muted sm:inline-block">
-      <span className="block h-full rounded-full bg-[#9C7C2E]" style={{ width: `${Math.min(100, value)}%` }} />
+      <span className="block h-full rounded-full bg-foreground" style={{ width: `${Math.min(100, value)}%` }} />
     </span>
   );
 }
@@ -741,8 +741,8 @@ function Section({ title, blurb, children }: {
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="bg-[#111] px-4 py-3 dark:bg-[#1a1a1a]">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-white">{title}</h3>
+      <div className="bg-foreground px-4 py-3 dark:bg-[#1a1a1a]">
+        <h3 className="text-white text-xl font-semibold text-foreground [&>svg]:hidden">{title}</h3>
         {blurb && <p className="mt-0.5 text-xs text-white/60">{blurb}</p>}
       </div>
       {children}

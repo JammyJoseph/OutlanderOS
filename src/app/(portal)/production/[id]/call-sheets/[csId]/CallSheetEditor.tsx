@@ -258,7 +258,7 @@ export function CallSheetEditor(p: EditorProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50 dark:border-gray-800">
             {billingContact && (
               <div className="rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-800 px-3.5 py-2.5">
-                <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">
+                <p className="flex items-center gap-1.5 mb-1 text-[13px] text-muted-foreground">
                   <ContactIcon size={11} /> Client contact
                 </p>
                 <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">

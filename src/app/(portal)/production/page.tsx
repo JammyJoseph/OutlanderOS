@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHead, pill } from "@/components/os";
 import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import {
@@ -87,7 +88,7 @@ const STATUS_STYLES: Record<
   SHOOTING: {
     bg: "bg-amber-100 dark:bg-amber-900/30",
     text: "text-amber-700 dark:text-amber-300",
-    dot: "bg-[#9C7C2E]",
+    dot: "bg-foreground",
     label: "Shooting",
   },
   POST_PRODUCTION: {
@@ -205,7 +206,7 @@ function countdownLabel(date: Date): string {
 }
 
 function countdownTone(date: Date): { bg: string; text: string } {
-  if (isToday(date)) return { bg: "bg-[#111111] dark:bg-white", text: "text-white dark:text-black" };
+  if (isToday(date)) return { bg: "bg-foreground ", text: "text-white dark:text-black" };
   if (isTomorrow(date)) return { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-800 dark:text-amber-300" };
   const days = differenceInCalendarDays(date, new Date());
   if (days <= 7) return { bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300" };
@@ -327,49 +328,45 @@ function ProductionInner() {
     }
   }
 
-  const subtitle = view === "projects" ? "all projects" : "live overview";
+  const committed = productions.reduce((sum, p) => sum + (p.budgetedTotal ?? 0), 0);
+  const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
 
   return (
-    <div className="min-h-screen bg-card">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Page header */}
-        <div className="flex items-end justify-between mb-7">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#A93B2E]">
-              OutlanderOS · Production
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
-              Production Studio
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-              {productions.length} project{productions.length !== 1 ? "s" : ""} · {subtitle}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {isOverview && (
-              <button
-                onClick={() => setShowArchived((v) => !v)}
-                className={`flex items-center gap-1.5 rounded-xl border bg-white dark:bg-gray-900 px-3 py-2.5 text-sm transition-colors ${
-                  showArchived
-                    ? "border-gray-400 dark:border-gray-500 text-gray-700 dark:text-gray-300 font-medium"
-                    : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
-                }`}
-                title={showArchived ? "Hide archived projects" : "Show archived projects"}
-              >
-                <Archive size={14} className="text-gray-400 dark:text-gray-500" />
-                {showArchived ? "Showing archived" : "Archived"}
+    <div className="px-4 pb-20 pt-6 sm:px-8 lg:px-12">
+      <div className="flex max-w-[1080px] flex-col gap-10">
+        <PageHead
+          eyebrow={
+            view === "projects"
+              ? `${allProductions.length} project${allProductions.length !== 1 ? "s" : ""}`
+              : `Budget committed across ${productions.length} live production${productions.length !== 1 ? "s" : ""}`
+          }
+          title={view === "projects" ? "All projects" : undefined}
+          figure={view === "projects" ? undefined : loading ? "\u00a0" : gbp(committed)}
+          actions={
+            <>
+              <button type="button" onClick={() => setShowCreate(true)} className={pill("primary")}>
+                <Plus strokeWidth={1.75} /> New production
               </button>
-            )}
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors shadow-sm"
-            >
-              <Plus size={16} />
-              New Project
-            </button>
-          </div>
-        </div>
-
+              {isOverview && (
+                <button
+                  type="button"
+                  aria-pressed={showArchived}
+                  onClick={() => setShowArchived((v) => !v)}
+                  className={pill(showArchived ? "outline" : "secondary")}
+                >
+                  <Archive strokeWidth={1.75} />
+                  {showArchived ? "Hide archived" : "Show archived"}
+                </button>
+              )}
+              {isOverview && (
+                <Link href="/production?view=projects" className={pill("secondary")}>
+                  All projects
+                </Link>
+              )}
+            </>
+          }
+        />
+        <div className="flex flex-col">
         <SmartTip id="productions-paid-via-commercial" className="mb-4" />
 
         {/* Loading */}
@@ -390,7 +387,7 @@ function ProductionInner() {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 rounded-xl bg-[#111111] dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:opacity-90"
+              className="mt-4 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
               Retry
             </button>
@@ -411,6 +408,7 @@ function ProductionInner() {
             onCreate={() => setShowCreate(true)}
           />
         )}
+        </div>
       </div>
 
       {showCreate && (
@@ -524,7 +522,7 @@ function OverviewView({
         const rate = Math.round((converted / total) * 100);
         return (
           <div className="mb-6 flex items-center gap-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 shadow-sm">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            <span className="text-[13px] text-muted-foreground">
               Brief conversion
             </span>
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
@@ -558,7 +556,7 @@ function OverviewView({
         {list.length === 0 ? (
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12 flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-4">
-              <Film size={28} className="text-[#9C7C2E]" />
+              <Film size={28} className="text-brand" />
             </div>
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">No projects yet</h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-sm">
@@ -566,7 +564,7 @@ function OverviewView({
             </p>
             <button
               onClick={onCreate}
-              className="flex items-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors"
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-full text-sm font-semibold hover:opacity-90 transition-colors"
             >
               <Plus size={16} />
               Create your first project
@@ -577,7 +575,7 @@ function OverviewView({
             <ProjectTable rows={active} />
             {archived.length > 0 && (
               <div className="mt-8">
-                <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                <h2 className="mb-3 text-xl font-semibold text-foreground [&>svg]:hidden">
                   Completed — {archived.length}
                 </h2>
                 <ProjectTable rows={archived} flat />
@@ -590,7 +588,7 @@ function OverviewView({
             Commercial projects are unarchived from the parent deal. */}
         {showArchived && archivedProjects.length > 0 && (
           <div className="mt-8">
-            <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <h2 className="mb-3 flex items-center gap-1.5 text-xl font-semibold text-foreground [&>svg]:hidden">
               <Archive size={12} /> Archived — {archivedProjects.length}
             </h2>
             <div className="opacity-60 grayscale">
@@ -696,7 +694,7 @@ function ProjectsListView({ productions, onChanged }: { productions: Production[
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search projects or clients…"
-          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
         />
       </div>
 
@@ -706,11 +704,11 @@ function ProjectsListView({ productions, onChanged }: { productions: Production[
           <button
             key={t.key}
             onClick={() => setFilter(t.key)}
-            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-              filter === t.key
-                ? "bg-[#111111] dark:bg-white text-white dark:text-black"
-                : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            }`}
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+ filter === t.key
+ ? "bg-primary text-primary-foreground "
+ : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+ }`}
           >
             {t.label}
             <span
@@ -753,14 +751,14 @@ function StatCard({
   subtitle?: string;
 }) {
   const TONE: Record<typeof tone, { bg: string; fg: string }> = {
-    amber: { bg: "bg-amber-50 dark:bg-amber-900/30", fg: "text-[#9C7C2E]" },
+    amber: { bg: "bg-amber-50 dark:bg-amber-900/30", fg: "text-brand" },
     emerald: { bg: "bg-emerald-50 dark:bg-emerald-900/30", fg: "text-emerald-600 dark:text-emerald-400" },
     blue: { bg: "bg-blue-50 dark:bg-blue-900/30", fg: "text-blue-600 dark:text-blue-400" },
     orange: { bg: "bg-orange-50 dark:bg-orange-900/30", fg: "text-orange-600 dark:text-orange-400" },
   };
   const t = TONE[tone];
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+    <div className="bg-surface rounded-2xl p-6">
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
         <div className={`w-7 h-7 rounded-lg ${t.bg} ${t.fg} flex items-center justify-center`}>
@@ -802,7 +800,7 @@ function UpcomingList({ productions }: { productions: Production[] }) {
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm h-full overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800">
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <Clock size={15} className="text-[#9C7C2E]" />
+          <Clock size={15} className="text-brand" />
           Upcoming
         </h2>
       </div>
@@ -828,7 +826,7 @@ function UpcomingList({ productions }: { productions: Production[] }) {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="text-center w-10 shrink-0">
-                    <div className="text-[9px] font-bold text-[#9C7C2E] uppercase leading-none">
+                    <div className="text-[9px] font-bold text-brand uppercase leading-none">
                       {format(it.date, "MMM")}
                     </div>
                     <div className="text-base font-bold text-gray-800 dark:text-gray-200 leading-tight mt-0.5">
@@ -836,7 +834,7 @@ function UpcomingList({ productions }: { productions: Production[] }) {
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-[#9C7C2E] transition-colors">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-brand transition-colors">
                       {it.production.title}
                     </p>
                     <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
@@ -888,7 +886,7 @@ function UpcomingList({ productions }: { productions: Production[] }) {
 function CreativeInProgress({ deals }: { deals: CreativeDeal[] }) {
   return (
     <section className="mb-8">
-      <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+      <h2 className="mb-3 flex items-center gap-2 text-xl font-semibold text-foreground [&>svg]:hidden">
         <Sparkles size={13} className="text-purple-500 dark:text-purple-400" />
         Creative in Progress — {deals.length}
         <span className="font-normal normal-case tracking-normal text-gray-400 dark:text-gray-500">· incoming work, not yet cleared for production</span>
@@ -904,9 +902,9 @@ function CreativeInProgress({ deals }: { deals: CreativeDeal[] }) {
             <Link
               key={d.id}
               href={`/commercial/deals/${d.id}`}
-              className={`block rounded-2xl border bg-white dark:bg-gray-900 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
-                approved ? "border-emerald-200 dark:border-emerald-800" : "border-purple-100 dark:border-purple-800"
-              }`}
+              className={`block rounded-2xl bg-surface p-6 transition-all hover:-translate-y-0.5 hover:shadow-md ${
+ approved ? "border-emerald-200 dark:border-emerald-800" : "border-purple-100 dark:border-purple-800"
+ }`}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.cls}`}>
@@ -996,7 +994,7 @@ function ProjectTable({ rows, flat = false, onChanged }: { rows: Production[]; f
       {groups.map((g) => (
         <div key={g.key}>
           <div className="flex items-baseline gap-2 mb-2">
-            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+            <h2 className="text-xl font-semibold text-foreground [&>svg]:hidden">
               {g.label}
             </h2>
             <span className="text-xs text-gray-400 dark:text-gray-500">{g.rows.length}</span>
@@ -1059,7 +1057,7 @@ function ProjectRows({ rows, onChanged }: { rows: Production[]; onChanged?: () =
     <div className="overflow-x-auto">
       <table className="w-full min-w-[760px] text-sm">
         <thead>
-          <tr className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500">
+          <tr className="text-[13px] text-muted-foreground">
             <th className="text-left font-semibold px-4 py-2.5">Project</th>
             <th className="text-left font-semibold px-3 py-2.5">Status</th>
             <th className="text-left font-semibold px-3 py-2.5">Shoot</th>
@@ -1314,7 +1312,7 @@ function CreateProjectModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Summer Campaign 2026"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
               autoFocus
             />
           </div>
@@ -1327,7 +1325,7 @@ function CreateProjectModal({
               value={client}
               onChange={(e) => setClient(e.target.value)}
               placeholder="e.g. Aston Martin"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
             />
           </div>
           <div>
@@ -1339,7 +1337,7 @@ function CreateProjectModal({
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="Concept, deliverables, anything worth remembering…"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
             />
           </div>
           <div>
@@ -1353,7 +1351,7 @@ function CreateProjectModal({
                     type="date"
                     value={d}
                     onChange={(e) => updateDate(i, e.target.value)}
-                    className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+                    className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
                   />
                   {shootDates.length > 1 && (
                     <button
@@ -1369,7 +1367,7 @@ function CreateProjectModal({
               <button
                 type="button"
                 onClick={addDate}
-                className="flex items-center gap-1.5 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E] transition-colors"
+                className="flex items-center gap-1.5 text-xs font-medium text-brand hover:text-brand transition-colors"
               >
                 <Plus size={13} /> Add another date
               </button>
@@ -1391,10 +1389,10 @@ function CreateProjectModal({
                   type="button"
                   onClick={() => setBilling(opt.key)}
                   className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
-                    billing === opt.key
-                      ? "border-[#9C7C2E] bg-amber-50/60 dark:bg-amber-900/20 text-gray-900 dark:text-gray-100"
-                      : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  }`}
+ billing === opt.key
+ ? "border-foreground bg-amber-50/60 dark:bg-amber-900/20 text-gray-900 dark:text-gray-100"
+ : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+ }`}
                 >
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: opt.hex }} />
                   {opt.label}
@@ -1410,7 +1408,7 @@ function CreateProjectModal({
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as ProductionStatus)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] bg-white dark:bg-gray-900"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground bg-white dark:bg-gray-900"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
@@ -1430,10 +1428,10 @@ function CreateProjectModal({
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="0"
                 className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
-                  budget && Number(budget) < 0
-                    ? "border-red-400 focus:ring-red-200 dark:border-red-500"
-                    : "border-gray-200 dark:border-gray-700 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
-                }`}
+ budget && Number(budget) < 0
+ ? "border-red-400 focus:ring-red-200 dark:border-red-500"
+ : "border-gray-200 dark:border-gray-700 focus:ring-focus focus:border-foreground"
+ }`}
               />
             </div>
           </div>
@@ -1447,10 +1445,10 @@ function CreateProjectModal({
               onChange={(e) => setFigmaUrl(e.target.value)}
               placeholder="https://figma.com/file/…"
               className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
-                figmaUrl.trim() && !isValidUrl(figmaUrl)
-                  ? "border-red-400 focus:ring-red-200 dark:border-red-500"
-                  : "border-gray-200 dark:border-gray-700 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
-              }`}
+ figmaUrl.trim() && !isValidUrl(figmaUrl)
+ ? "border-red-400 focus:ring-red-200 dark:border-red-500"
+ : "border-gray-200 dark:border-gray-700 focus:ring-focus focus:border-foreground"
+ }`}
             />
           </div>
 
@@ -1471,7 +1469,7 @@ function CreateProjectModal({
             <button
               type="submit"
               disabled={!title.trim() || creating}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#111111] dark:bg-white text-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-full text-sm font-semibold hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creating ? <Loader2 size={15} className="animate-spin" /> : null}
               Create Project

@@ -1,6 +1,6 @@
+import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { PersonalHeader } from "@/components/portal/PersonalHeader";
-import { PersonalSidebar } from "@/components/portal/PersonalSidebar";
+import { AppShell } from "@/components/shell/AppShell";
 
 export default async function MeLayout({ children }: { children: React.ReactNode }) {
   // Somebody on a temporary password is held on the change-password screen by
@@ -11,13 +11,11 @@ export default async function MeLayout({ children }: { children: React.ReactNode
     return <>{children}</>;
   }
 
+  // The sidebar reads the query string (useSearchParams) for tab-aware
+  // highlighting, so it needs a Suspense boundary.
   return (
-    <div className="flex h-full flex-1 flex-col">
-      <PersonalHeader />
-      <div className="flex flex-1 overflow-hidden">
-        <PersonalSidebar />
-        <main className="flex-1 overflow-y-auto">{children}</main>
-      </div>
-    </div>
+    <Suspense fallback={null}>
+      <AppShell>{children}</AppShell>
+    </Suspense>
   );
 }

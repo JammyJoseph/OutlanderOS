@@ -1,82 +1,56 @@
 "use client";
 
+// First sign-in, after choosing a password: step 2 (connect Google) and step 3
+// (what you can use). Either way out marks the welcome as seen, so it is only
+// ever shown once.
+//
+// Connecting Google itself happens in Settings, which already handles both the
+// hosted redirect and the paste-a-code fallback; this page sends you there
+// rather than keeping a second copy of that flow.
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  Loader2,
-  LayoutDashboard,
-  Briefcase,
-  Film,
-  Receipt,
-  Newspaper,
-  Contact,
-  Shield,
-  Sparkles,
-} from "lucide-react";
+import { CalendarDays, FileSpreadsheet, Mail } from "lucide-react";
+import { FlowFrame, FlowTitle, Rows, Row, Dot } from "@/components/os";
+import { visibleWorkspaces } from "@/lib/workspaces";
 
-interface Portal {
-  title: string;
-  desc: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
+type Step = "loading" | "google" | "done";
 
-// Maps a team assignment to the portal it unlocks. Everyone also gets the Hub
-// and Directory; admins additionally get the Admin portal.
-const TEAM_PORTALS: Record<string, Portal> = {
-  COMMERCIAL: { title: "Commercial", desc: "Pipeline, deals, clients & media plans", icon: Briefcase },
-  PRODUCTION: { title: "Production", desc: "Projects, schedules & budgets", icon: Film },
-  FINANCE: { title: "Finance", desc: "Invoices, expenses & P&L", icon: Receipt },
-  OPERATIONS: { title: "Operations", desc: "Print, distribution & systems", icon: Newspaper },
-  ADMIN: { title: "Admin", desc: "Team, settings & business plan", icon: Shield },
-};
+const PERKS = [
+  { icon: CalendarDays, title: "Calendar", text: "Shoots, deadlines and meetings appear on your dashboard week." },
+  { icon: FileSpreadsheet, title: "Drive and Sheets", text: "Budgets, call sheets and media plans save to the right project folder." },
+  { icon: Mail, title: "Gmail", text: "Send IOs and invoices from your own address." },
+];
 
 export default function WelcomePage() {
   const router = useRouter();
+  const [step, setStep] = useState<Step>("loading");
   const [name, setName] = useState("");
-  const [portals, setPortals] = useState<Portal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [entering, setEntering] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const [meRes, permRes] = await Promise.all([
-          fetch("/api/me"),
-          fetch("/api/me/permissions"),
-        ]);
+        const [meRes, permRes] = await Promise.all([fetch("/api/me"), fetch("/api/me/permissions")]);
         const me = await meRes.json().catch(() => ({}));
         const perm = await permRes.json().catch(() => ({}));
-
         // Already onboarded — don't show the welcome again.
         if (me?.user?.hasSeenWelcome) {
-          router.replace("/me");
+          router.replace("/hub");
           return;
         }
-
         setName(me?.user?.name?.split(" ")[0] || me?.user?.name || "");
-
-        const teams: string[] = Array.isArray(perm?.teams) ? perm.teams : [];
-        const list: Portal[] = [
-          { title: "Your Hub", desc: "Deadlines, tasks & your dashboard", icon: LayoutDashboard },
-        ];
-        for (const t of teams) {
-          const p = TEAM_PORTALS[t];
-          if (p && !list.some((x) => x.title === p.title)) list.push(p);
-        }
-        if (perm?.isAdmin && !list.some((x) => x.title === "Admin")) {
-          list.push(TEAM_PORTALS.ADMIN);
-        }
-        list.push({ title: "Directory", desc: "Contacts & network", icon: Contact });
-        setPortals(list);
-      } finally {
-        setLoading(false);
+        setIsAdmin(!!perm?.isAdmin);
+        setStep(me?.user?.googleConnected ? "done" : "google");
+      } catch {
+        setStep("google");
       }
     })();
   }, [router]);
 
-  async function getStarted() {
-    setEntering(true);
+  async function finish(to: string) {
+    setBusy(true);
     try {
       await fetch("/api/me", {
         method: "PATCH",
@@ -86,77 +60,84 @@ export default function WelcomePage() {
     } catch {
       /* non-fatal — still let them in */
     }
-    router.push("/me");
+    router.push(to);
     router.refresh();
   }
 
+  if (step === "loading") return <div className="min-h-dvh bg-background" />;
+
+  const steps = ["Password", "Google", "Done"];
+
+  if (step === "google") {
+    return (
+      <FlowFrame steps={steps} current={1} onClose={() => setStep("done")}>
+        <FlowTitle sub="OutlanderOS reads from your Outlander Google account so your day is in one place. You can disconnect it in Settings.">
+          Connect your Google account
+        </FlowTitle>
+        <Rows className="mb-8">
+          {PERKS.map((p) => (
+            <Row
+              key={p.title}
+              lead={
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface">
+                  <p.icon className="size-5 text-ink-2" strokeWidth={1.75} aria-hidden />
+                </span>
+              }
+              title={p.title}
+              meta={<span className="whitespace-normal">{p.text}</span>}
+              className="[&_.truncate]:whitespace-normal"
+            />
+          ))}
+        </Rows>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => finish("/me/settings#google")}
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-6 text-[15px] font-semibold text-primary-foreground hover:brightness-[0.97] disabled:opacity-50"
+        >
+          Connect Google account
+        </button>
+        <p className="mt-5 text-center">
+          <button
+            type="button"
+            onClick={() => setStep("done")}
+            className="text-sm font-semibold underline decoration-[1.5px] underline-offset-4 hover:text-brand"
+          >
+            Skip for now
+          </button>
+        </p>
+      </FlowFrame>
+    );
+  }
+
+  const spaces = visibleWorkspaces(isAdmin);
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#05060a] p-4">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,#10131f_0%,#05060a_55%,#020308_100%)]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-40 left-1/3 h-[460px] w-[460px] rounded-full bg-[#9C7C2E]/10 blur-3xl"
-      />
-
-      <div className="relative w-full max-w-lg">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-          </div>
-        ) : (
-          <>
-            <div className="mb-8 text-center">
-              <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#9C7C2E]/15 ring-1 ring-[#9C7C2E]/30">
-                <Sparkles className="h-6 w-6 text-[#9C7C2E]" />
+    <FlowFrame steps={steps} current={2} onClose={() => finish("/hub")}>
+      <FlowTitle sub="Here's what you can use. You can switch between them from the top of the sidebar.">
+        {name ? `You're all set, ${name}` : "You're all set"}
+      </FlowTitle>
+      <Rows className="mb-8">
+        {spaces.map((w) => (
+          <Row
+            key={w.key}
+            lead={
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface">
+                <Dot color={w.dot} />
               </span>
-              <h1 className="text-3xl font-extrabold tracking-tight text-white">
-                Welcome to Outlander<span className="text-[#9C7C2E]">OS</span>
-                {name ? <span className="text-white">, {name}</span> : ""}
-              </h1>
-              <p className="mt-3 text-sm text-gray-400">
-                Your workspace is ready. Here&apos;s what you have access to:
-              </p>
-            </div>
-
-            <div className="space-y-2.5">
-              {portals.map((p) => {
-                const Icon = p.icon;
-                return (
-                  <div
-                    key={p.title}
-                    className="flex items-center gap-3 rounded-xl border border-[#2a2a2a] bg-[#0e1018]/80 px-4 py-3 backdrop-blur-md"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#9C7C2E]/15">
-                      <Icon className="h-4 w-4 text-[#9C7C2E]" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-white">{p.title}</p>
-                      <p className="truncate text-xs text-gray-400">{p.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={getStarted}
-              disabled={entering}
-              className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 disabled:opacity-50"
-            >
-              {entering ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Get Started
-              {!entering && <ArrowRight className="h-4 w-4" />}
-            </button>
-
-            <p className="mt-6 text-center text-[11px] text-gray-500">
-              Internal operating system · Outlander Magazine
-            </p>
-          </>
-        )}
-      </div>
-    </div>
+            }
+            title={w.name}
+            meta={w.blurb}
+          />
+        ))}
+      </Rows>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => finish("/hub")}
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-6 text-[15px] font-semibold text-primary-foreground hover:brightness-[0.97] disabled:opacity-50"
+      >
+        {busy ? "Opening…" : "Open OutlanderOS"}
+      </button>
+    </FlowFrame>
   );
 }

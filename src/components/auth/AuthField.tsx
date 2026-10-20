@@ -3,26 +3,21 @@
 // Form parts for the signed-out screens, written once so the accessibility is
 // right everywhere rather than re-done (or not done) on each page.
 //
-// What the old screens got wrong, and what each part here does instead:
+//   * Every field has a real <label htmlFor> and a stable id.
+//   * Errors are a live region, read out the moment they appear, and the field
+//     they concern is marked aria-invalid and points at them.
+//   * Password fields can be shown, and notice Caps Lock — the commonest reason
+//     a correct password is rejected.
 //
-//   * Labels were not connected to their inputs. A screen reader announced
-//     "edit text" with no name, and clicking a label did nothing. Every field
-//     here has a real <label htmlFor> and a stable id.
-//   * Errors appeared as red text nobody was told about. The alert here is a
-//     live region, so it is read out the moment it appears, and the field it
-//     concerns is marked aria-invalid and points at it.
-//   * Password fields had no way to check what you typed, and nothing noticed
-//     Caps Lock — the commonest reason a correct password is rejected.
-//
-// Inputs are 16px so iOS does not zoom the page when one is focused, and every
-// control is at least 44px tall, comfortably above the 24px WCAG 2.2 minimum.
+// Sizes follow the redesign: 52px fields with a 12px radius, 44px pill
+// buttons. Inputs are 16px so iOS does not zoom the page on focus.
 
 import { useId, useState, type InputHTMLAttributes, type ReactNode } from 'react'
 
 const FIELD =
-  'block h-12 w-full rounded-xl border-2 border-border bg-card px-4 text-base text-foreground ' +
-  'placeholder:text-muted-foreground transition-colors ' +
-  'focus:border-hero focus:outline-none focus-visible:ring-4 focus-visible:ring-hero/20 ' +
+  'block h-[52px] w-full rounded-lg border border-field bg-card px-4 text-base text-foreground ' +
+  'placeholder:text-muted-foreground transition-[border-color,box-shadow] ' +
+  'focus:border-foreground focus:outline-none focus:shadow-[0_0_0_3px_var(--focus)] ' +
   'aria-[invalid=true]:border-destructive'
 
 interface AuthFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'className'> {
@@ -31,10 +26,16 @@ interface AuthFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id
   help?: ReactNode
   /** Shown under the field and announced. Also marks the field invalid. */
   error?: string
+  /**
+   * Shown at the right of the label row (e.g. "Forgot password?"). It comes
+   * after the input in the page's order, so Tab still goes from one field
+   * straight to the next.
+   */
+  labelAside?: ReactNode
   id?: string
 }
 
-export function AuthField({ label, help, error, id, type = 'text', ...input }: AuthFieldProps) {
+export function AuthField({ label, help, error, labelAside, id, type = 'text', ...input }: AuthFieldProps) {
   const auto = useId()
   const fieldId = id ?? `f-${auto}`
   const helpId = help ? `${fieldId}-help` : undefined
@@ -50,19 +51,19 @@ export function AuthField({ label, help, error, id, type = 'text', ...input }: A
   }
 
   return (
-    <div className="grid gap-2">
-      <label htmlFor={fieldId} className="text-sm font-semibold">
+    <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-3">
+      <label htmlFor={fieldId} className="col-start-1 row-start-1 mb-2 text-[15px] text-ink-2">
         {label}
       </label>
 
-      <div className="relative">
+      <div className="relative col-span-2 row-start-2">
         <input
           {...input}
           id={fieldId}
           type={isPassword && shown ? 'text' : type}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className={FIELD + (isPassword ? ' pr-20' : '')}
+          className={FIELD + (isPassword ? ' pr-[88px]' : '')}
           onKeyDown={(e) => {
             if (isPassword) trackCaps(e)
             input.onKeyDown?.(e)
@@ -82,7 +83,7 @@ export function AuthField({ label, help, error, id, type = 'text', ...input }: A
             onClick={() => setShown((v) => !v)}
             aria-pressed={shown}
             aria-controls={fieldId}
-            className="absolute inset-y-1.5 right-1.5 rounded-lg px-3 text-sm font-semibold text-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+            className="absolute right-2 top-2 h-9 rounded-full bg-surface px-3.5 text-sm font-semibold text-foreground hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
           >
             {shown ? 'Hide' : 'Show'}
             <span className="sr-only"> password</span>
@@ -90,34 +91,41 @@ export function AuthField({ label, help, error, id, type = 'text', ...input }: A
         )}
       </div>
 
-      {isPassword && capsOn && (
-        <p className="text-sm font-semibold text-foreground" aria-live="polite">
-          Caps Lock is on.
-        </p>
-      )}
-      {help && (
-        <p id={helpId} className="text-sm text-muted-foreground">
-          {help}
-        </p>
-      )}
-      {error && (
-        <p id={errorId} className="text-sm font-semibold text-destructive">
-          {error}
-        </p>
-      )}
+      {labelAside && <div className="col-start-2 row-start-1 mb-2 justify-self-end">{labelAside}</div>}
+
+      <div className="col-span-2 row-start-3 grid gap-1.5 empty:hidden">
+        {isPassword && capsOn && (
+          <p className="mt-2 text-sm font-semibold text-warn" aria-live="polite">
+            Caps Lock is on.
+          </p>
+        )}
+        {help && (
+          <p id={helpId} className="mt-2 text-sm text-muted-foreground">
+            {help}
+          </p>
+        )}
+        {error && (
+          <p id={errorId} className="mt-2 text-sm font-semibold text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
+
+const ICON = 'mt-0.5 size-5 shrink-0'
 
 /** Read out the moment it appears. One per form, above the fields. */
 export function AuthAlert({ children }: { children: ReactNode }) {
   if (!children) return null
   return (
-    <div
-      role="alert"
-      className="mb-6 rounded-xl border-2 border-destructive/30 bg-destructive/8 px-4 py-3 text-sm font-semibold text-destructive"
-    >
-      {children}
+    <div role="alert" className="mb-6 flex items-start gap-3.5 rounded-xl bg-bad-bg px-5 py-4 text-[15px] font-medium text-bad">
+      <svg viewBox="0 0 24 24" className={ICON} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" aria-hidden>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7.5v5.5M12 16.5h.01" />
+      </svg>
+      <div>{children}</div>
     </div>
   )
 }
@@ -126,49 +134,57 @@ export function AuthAlert({ children }: { children: ReactNode }) {
 export function AuthNotice({ children }: { children: ReactNode }) {
   if (!children) return null
   return (
-    <div role="status" className="mb-6 rounded-xl bg-hero-tint px-4 py-3 text-sm font-semibold text-hero-ink">
-      {children}
+    <div role="status" className="mb-6 flex items-start gap-3.5 rounded-xl bg-surface px-5 py-4 text-left text-[15px] text-ink-2">
+      <svg viewBox="0 0 24 24" className={`${ICON} text-brand`} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" aria-hidden>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 11v5.5M12 7.5h.01" />
+      </svg>
+      <div>{children}</div>
     </div>
   )
 }
 
 /**
- * The one hero action on each screen. Stays focusable while working, and says
- * what it is doing rather than going grey and silent.
+ * The one primary action on each screen. Stays focusable while working, and
+ * says what it is doing rather than going grey and silent.
  */
 export function AuthButton({
   children,
   busy,
   busyLabel,
+  disabled,
 }: {
   children: ReactNode
   busy?: boolean
   busyLabel: string
+  disabled?: boolean
 }) {
   return (
     <button
       type="submit"
-      aria-disabled={busy || undefined}
-      className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-full bg-hero px-6 text-base font-semibold text-on-hero transition-[filter] hover:brightness-110 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-foreground aria-disabled:cursor-wait aria-disabled:opacity-70"
+      aria-disabled={busy || disabled || undefined}
+      className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-6 text-[15px] font-semibold text-primary-foreground transition-[filter,opacity] hover:brightness-[0.97] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
     >
       <span aria-live="polite">{busy ? busyLabel : children}</span>
     </button>
   )
 }
 
-/** A text-style action: back links, "forgot password", secondary choices. */
+/** A text action: back links, "Forgot password?", "Send again". */
 export function AuthLinkButton({
   children,
   onClick,
+  className = '',
 }: {
   children: ReactNode
   onClick: () => void
+  className?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="text-sm font-semibold text-foreground underline underline-offset-4 hover:text-hero-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+      className={`text-sm font-semibold text-foreground underline decoration-[1.5px] underline-offset-4 hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground ${className}`}
     >
       {children}
     </button>
@@ -194,18 +210,24 @@ export function PasswordRules({
       ? [{ ok: password.length > 0 && password === confirm, text: 'Both passwords match' }]
       : []),
   ]
+  const started = password.length > 0
   return (
-    <ul className="grid gap-1.5 text-sm" aria-label="Password requirements">
+    <ul
+      className={`grid gap-2 rounded-lg px-4 py-3.5 text-sm ${started && rules.every((r) => r.ok) ? 'bg-ok-bg' : 'bg-surface'}`}
+      aria-label="Password requirements"
+    >
       {rules.map((r) => (
-        <li key={r.text} className={`flex items-center gap-2 ${r.ok ? 'text-foreground' : 'text-muted-foreground'}`}>
-          <span
-            aria-hidden="true"
-            className={`grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold ${
-              r.ok ? 'bg-hero text-on-hero' : 'border-2 border-border'
-            }`}
-          >
-            {r.ok ? '✓' : ''}
-          </span>
+        <li key={r.text} className={`flex items-center gap-2.5 ${r.ok ? 'text-ok' : 'text-ink-2'}`}>
+          {r.ok ? (
+            <svg viewBox="0 0 24 24" className="size-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <path d="m8.5 12.5 2.5 2.5 4.5-5" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="size-[18px] shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+          )}
           <span>
             {r.text}
             <span className="sr-only">{r.ok ? ' — done' : ' — not yet'}</span>

@@ -46,7 +46,7 @@ export default function ChangePasswordForm({ forced }: { forced: boolean }) {
       // bounce straight back here. A full load sends the updated cookies.
       window.location.assign(data.onboarding ? '/welcome' : '/me?password=changed')
     } catch {
-      setError("Can't reach Outlander OS. Check your connection and try again.")
+      setError("Can't reach OutlanderOS. Check your connection and try again.")
       setBusy(false)
     }
   }
@@ -63,7 +63,7 @@ export default function ChangePasswordForm({ forced }: { forced: boolean }) {
         {forced ? 'Choose your password' : 'Change your password'}
       </AuthHeading>
       <AuthAlert>{error}</AuthAlert>
-      <form onSubmit={submit} className="grid gap-5" noValidate>
+      <form onSubmit={submit} className="grid gap-6" noValidate>
         <AuthField
           id="current-password"
           label={forced ? 'Temporary password' : 'Current password'}
@@ -73,25 +73,27 @@ export default function ChangePasswordForm({ forced }: { forced: boolean }) {
           value={current}
           onChange={(e) => setCurrent(e.target.value)}
         />
-        <AuthField
-          id="new-password"
-          label="New password"
-          type="password"
-          autoComplete="new-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className="grid gap-3">
+          <AuthField
+            id="new-password"
+            label="New password"
+            type="password"
+            autoComplete="new-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <PasswordRules password={password} confirm={confirm} min={MIN_PASSWORD_LENGTH} />
+        </div>
         <AuthField
           id="confirm-password"
-          label="Type it again"
+          label="Confirm password"
           type="password"
           autoComplete="new-password"
           required
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
         />
-        <PasswordRules password={password} confirm={confirm} min={MIN_PASSWORD_LENGTH} />
         <AuthButton busy={busy} busyLabel="Saving…">
           {forced ? 'Save and continue' : 'Change password'}
         </AuthButton>

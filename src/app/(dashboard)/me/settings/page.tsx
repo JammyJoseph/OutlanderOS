@@ -9,7 +9,7 @@ export default function MeSettingsPage() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+        <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Settings</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Personal preferences</p>
       </div>
 
@@ -44,9 +44,9 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="mb-6 rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+    <section className="mb-6 rounded-2xl bg-surface p-6">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#9C7C2E] dark:text-[#C9A44A]">{icon}</div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-brand dark:text-brand">{icon}</div>
         <div>
           <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
           {subtitle && <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}

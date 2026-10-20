@@ -123,7 +123,7 @@ export default function ClientsPage() {
           </button>
           <button
             disabled
-            className="flex items-center gap-2 rounded-lg bg-[#111111] px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black hover:bg-[#111111] dark:hover:bg-white transition-colors disabled:opacity-60"
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-foreground dark:hover:bg-white transition-colors disabled:opacity-60"
           >
             <Plus className="h-4 w-4" />
             Add Client
@@ -151,11 +151,11 @@ export default function ClientsPage() {
             {clients.map((client) => (
               <div
                 key={client.id}
-                className={`group relative rounded-xl border bg-white dark:bg-gray-900 p-5 transition-all ${
-                  client.archived
-                    ? "border-gray-200 dark:border-gray-700 opacity-70 hover:opacity-100"
-                    : "border-gray-200 dark:border-gray-700 hover:border-[#9C7C2E]/50 dark:hover:border-[#C9A44A]/50 hover:shadow-md"
-                }`}
+                className={`group relative rounded-2xl bg-surface p-6 transition-all ${
+ client.archived
+ ? " opacity-70 hover:opacity-100"
+ : " hover:bg-surface-2 dark:hover:bg-surface-2 hover:shadow-md"
+ }`}
               >
                 <Link
                   href={`/commercial/clients/${client.id}`}
@@ -197,7 +197,7 @@ export default function ClientsPage() {
                   {/* Stats row */}
                   <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-lg bg-gray-50 dark:bg-gray-800 px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      <p className="text-[13px] text-muted-foreground">
                         Total Spend
                       </p>
                       <p className="mt-0.5 text-sm font-bold text-gray-900 dark:text-gray-100">
@@ -205,7 +205,7 @@ export default function ClientsPage() {
                       </p>
                     </div>
                     <div className="rounded-lg bg-gray-50 dark:bg-gray-800 px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      <p className="text-[13px] text-muted-foreground">
                         Campaigns
                       </p>
                       <div className="mt-0.5 flex items-center gap-1.5">

@@ -287,7 +287,7 @@ export default function ProjectDetail() {
           <p className="text-gray-500 dark:text-gray-400 mb-4">Project not found.</p>
           <Link
             href="/production"
-            className="text-[#9C7C2E] text-sm font-medium hover:underline"
+            className="text-brand text-sm font-medium hover:underline"
           >
             Back to Productions
           </Link>
@@ -322,7 +322,7 @@ export default function ProjectDetail() {
               This project is managed from Commercial
               <Link
                 href={`/commercial/deals/${production.campaignId}`}
-                className="inline-flex items-center gap-0.5 font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+                className="inline-flex items-center gap-0.5 font-medium text-brand hover:text-brand"
               >
                 View deal <ArrowUpRight size={11} />
               </Link>

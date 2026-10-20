@@ -165,7 +165,7 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
           </div>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand"
           >
             <Plus size={13} /> Add asset
           </button>
@@ -188,11 +188,11 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
                 <button
                   key={f.key}
                   onClick={() => setFilter(f.key)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    active
-                      ? "bg-[#111111] dark:bg-white text-white dark:text-black"
-                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  }`}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+ active
+ ? "bg-primary text-primary-foreground "
+ : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+ }`}
                 >
                   {f.label}
                   <span className={active ? "opacity-70" : "text-gray-400 dark:text-gray-500"}>{n}</span>
@@ -211,7 +211,7 @@ export default function CreativeTab({ productionId, assets, refresh }: Props) {
             </p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand"
             >
               <Plus size={12} /> Add your first asset
             </button>
@@ -426,7 +426,7 @@ function DrivePanel({ productionId, refresh }: { productionId: string; refresh: 
           {!state.loading && !state.connected && (
             <a
               href="/me/settings"
-              className="inline-flex items-center gap-1.5 bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 rounded-full hover:opacity-90 transition-opacity"
             >
               <Cloud size={13} /> Connect Google Drive
             </a>
@@ -436,7 +436,7 @@ function DrivePanel({ productionId, refresh }: { productionId: string; refresh: 
             <button
               onClick={setup}
               disabled={busy === "setup"}
-              className="inline-flex items-center gap-1.5 bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 rounded-full hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {busy === "setup" ? <Loader2 size={13} className="animate-spin" /> : <FolderPlus size={13} />}
               Set up Drive folder
@@ -468,7 +468,7 @@ function DrivePanel({ productionId, refresh }: { productionId: string; refresh: 
               <button
                 onClick={() => fileInput.current?.click()}
                 disabled={uploading}
-                className="inline-flex items-center gap-1.5 bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 rounded-full hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 <UploadCloud size={13} /> Upload to Drive
               </button>
@@ -574,7 +574,7 @@ function AssetCard({
             onError={() => setImgError(true)}
           />
         ) : (
-          <Icon size={36} className="text-[#9C7C2E]/60" />
+          <Icon size={36} className="text-brand/60" />
         )}
         {isDrive && (
           <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur text-[10px] font-medium text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-md">
@@ -642,7 +642,7 @@ function AssetCard({
             href={asset.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-[#9C7C2E] hover:underline"
+            className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-brand hover:underline"
           >
             {isDrive ? "Open in Drive" : "Open"} <ExternalLink size={11} />
           </a>
@@ -679,7 +679,7 @@ function AddAssetForm({
       <select
         value={type}
         onChange={(e) => setType(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       >
         {(CREATIVE_TYPES ?? []).map((t) => (
           <option key={t.key} value={t.key}>
@@ -692,26 +692,26 @@ function AddAssetForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Filename / title"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <input
         type="url"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="Image or file URL — https://…"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <input
         type="text"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Notes"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
+          className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 rounded-full hover:opacity-90 transition-colors"
         >
           Add
         </button>

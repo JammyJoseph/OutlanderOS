@@ -146,7 +146,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Settings</h1>
+      <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Settings</h1>
 
       <Suspense fallback={null}>
         <OAuthHandler
@@ -182,7 +182,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       {/* Connected Accounts */}
       <section>
         <div className="mb-3 flex items-center gap-2">
-          <Link2 className="h-4 w-4 text-[#9C7C2E]" />
+          <Link2 className="h-4 w-4 text-brand" />
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Connected Accounts</h2>
         </div>
         <div className="space-y-3">
@@ -232,7 +232,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                       onClick={() =>
                         router.push(`/api/google/connect?label=${account.id}`)
                       }
-                      className="bg-[#111111] text-white dark:bg-white dark:text-black"
+                      className="bg-foreground text-background  "
                     >
                       Connect
                     </Button>
@@ -247,7 +247,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       {/* Google Sheets */}
       <section>
         <div className="mb-3 flex items-center gap-2">
-          <TableProperties className="h-4 w-4 text-[#9C7C2E]" />
+          <TableProperties className="h-4 w-4 text-brand" />
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Google Sheets</h2>
         </div>
 
@@ -336,7 +336,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
             </Button>
             <Button
               size="sm"
-              className="bg-[#111111] text-white dark:bg-white dark:text-black disabled:opacity-40"
+              className="bg-foreground text-background disabled:opacity-40"
               onClick={handleAddSheet}
               disabled={testStatus !== "ok"}
             >
@@ -349,7 +349,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
       {/* Integrations */}
       <section>
         <div className="mb-3 flex items-center gap-2">
-          <Plug className="h-4 w-4 text-[#9C7C2E]" />
+          <Plug className="h-4 w-4 text-brand" />
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Integrations</h2>
         </div>
         <div className="space-y-2">
@@ -400,7 +400,7 @@ export default function SettingsClient({ initialPrimary, initialBilling, initial
                 <Button
                   size="sm"
                   onClick={() => { window.location.href = '/api/xero/connect' }}
-                  className="bg-[#111111] text-white dark:bg-white dark:text-black"
+                  className="bg-foreground text-background  "
                 >
                   <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                   Connect

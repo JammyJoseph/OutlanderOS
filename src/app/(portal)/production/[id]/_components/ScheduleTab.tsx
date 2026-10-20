@@ -83,11 +83,11 @@ export default function ScheduleTab({
               <button
                 key={d}
                 onClick={() => setActiveDay(d)}
-                className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                  activeDay === d
-                    ? "bg-[#111111] dark:bg-white text-white dark:text-black"
-                    : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
+ activeDay === d
+ ? "bg-primary text-primary-foreground "
+ : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+ }`}
               >
                 Day {d}
                 <span
@@ -108,7 +108,7 @@ export default function ScheduleTab({
           </div>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand"
           >
             <Plus size={13} /> Add block
           </button>
@@ -127,7 +127,7 @@ export default function ScheduleTab({
             <p className="text-sm text-gray-500 dark:text-gray-400">No schedule blocks for Day {activeDay}.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand"
             >
               <Plus size={12} /> Add your first block
             </button>
@@ -285,33 +285,33 @@ function AddBlockForm({
         type="time"
         value={time}
         onChange={(e) => setTime(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] tabular-nums"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground tabular-nums"
       />
       <input
         type="text"
         value={activity}
         onChange={(e) => setActivity(e.target.value)}
         placeholder="Activity (Crew call, Setup, Talent arrives…)"
-        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <input
         type="text"
         value={location}
         onChange={(e) => setLocation(e.target.value)}
         placeholder="Location"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <input
         type="text"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
+          className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 rounded-full hover:opacity-90 transition-colors"
         >
           Add
         </button>

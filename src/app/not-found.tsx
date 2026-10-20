@@ -6,13 +6,13 @@ export default function NotFound() {
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-white px-6 text-center">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 -left-40 h-[480px] w-[480px] rounded-full bg-[#9C7C2E]/15 blur-3xl"
+        className="pointer-events-none absolute -top-40 -left-40 h-[480px] w-[480px] rounded-full bg-accent blur-3xl"
       />
       <div
         aria-hidden
         className="pointer-events-none absolute -bottom-40 -right-40 h-[480px] w-[480px] rounded-full bg-[#6B4E8E]/10 blur-3xl"
       />
-      <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-400">
+      <p className="text-[13px] text-muted-foreground">
         Outlander Magazine
       </p>
       <h1 className="mt-3 text-6xl font-extrabold tracking-tight text-gray-200">404</h1>
@@ -24,7 +24,7 @@ export default function NotFound() {
       <div className="mt-6 flex items-center gap-3">
         <Link
           href="/me"
-          className="rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-5 py-2.5 text-sm font-semibold shadow-sm transition-colors hover:brightness-110"
+          className="rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-semibold transition-colors hover:brightness-110"
         >
           Go to Dashboard
         </Link>

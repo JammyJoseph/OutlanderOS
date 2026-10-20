@@ -39,7 +39,7 @@ export function SunStrip({ sun }: { sun: SunInfo }) {
           key={it.label}
           className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 px-3 py-2 text-center"
         >
-          <p className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          <p className="flex items-center justify-center gap-1 text-[13px] text-muted-foreground">
             <span className="text-[#A93B2E]">{it.icon}</span> {it.label}
           </p>
           <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
@@ -248,11 +248,11 @@ export function WeatherDisplay({
       {sun && <SunStrip sun={sun} />}
       {hourly.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+          <p className="mb-1.5 text-[13px] text-muted-foreground">
             Shoot day — temperature &amp; rain
           </p>
           <TimelineBar hourly={hourly} />
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5 pt-1">
+          <p className="mb-1.5 pt-1 text-[13px] text-muted-foreground">
             Hourly breakdown
           </p>
           <HourlyTimeline hourly={hourly} callTime={callTime} wrapTime={wrapTime} />

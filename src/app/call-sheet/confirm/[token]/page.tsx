@@ -60,7 +60,7 @@ export default function ConfirmReceiptPage({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-8 text-center">
+      <div className="w-full max-w-md rounded-2xl bg-surface p-8 text-center">
         {loading ? (
           <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" />
         ) : error || !info ? (

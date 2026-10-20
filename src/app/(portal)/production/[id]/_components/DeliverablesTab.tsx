@@ -136,7 +136,7 @@ export default function DeliverablesTab({
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-50">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <Package size={15} className="text-[#9C7C2E]" />
+              <Package size={15} className="text-brand" />
               Sold Deliverables
               <span className="text-[11px] font-normal text-gray-400">from the deal</span>
             </h2>
@@ -163,7 +163,7 @@ export default function DeliverablesTab({
                       )}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                      <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[13px] text-muted-foreground">
                         {d.type}
                       </span>
                       {d.dueDate && (
@@ -198,7 +198,7 @@ export default function DeliverablesTab({
           return (
             <div
               key={s}
-              className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4"
+              className="bg-surface rounded-2xl p-6"
             >
               <div className="flex items-center gap-2">
                 <span
@@ -216,12 +216,12 @@ export default function DeliverablesTab({
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-            <Package size={15} className="text-[#9C7C2E]" />
+            <Package size={15} className="text-brand" />
             Deliverables
           </h2>
           <button
             onClick={() => setShowAdd((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+            className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand"
           >
             <Plus size={13} /> Add deliverable
           </button>
@@ -234,7 +234,7 @@ export default function DeliverablesTab({
             <p className="text-sm text-gray-500 dark:text-gray-400">No deliverables tracked yet.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand"
             >
               <Plus size={12} /> Add your first deliverable
             </button>
@@ -337,7 +337,7 @@ function DeliverableRow({
             href={deliverable.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-[#9C7C2E]"
+            className="text-gray-400 hover:text-brand"
           >
             <ExternalLink size={13} />
           </a>
@@ -379,7 +379,7 @@ function FormatRow({
   onUpdate: (patch: Partial<ProductionDeliverable>) => void;
 }) {
   const selCls =
-    "text-[11px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-1.5 py-1 text-gray-600 dark:text-gray-300 focus:outline-none focus:border-[#9C7C2E]";
+    "text-[11px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-1.5 py-1 text-gray-600 dark:text-gray-300 focus:outline-none focus:border-foreground";
   function applyDefaults() {
     const d = defaultFormatFor(deliverable.type, deliverable.title);
     onUpdate({
@@ -404,7 +404,7 @@ function FormatRow({
     <div className="flex flex-wrap items-center gap-1.5">
       {specs.map((s) => (
         <label key={s.key} className="inline-flex items-center gap-1">
-          <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">{s.label}</span>
+          <span className="text-[13px] text-muted-foreground">{s.label}</span>
           <select
             value={(deliverable[s.key] as string) || ""}
             onChange={(e) => onUpdate({ [s.key]: e.target.value || null } as Partial<ProductionDeliverable>)}
@@ -422,7 +422,7 @@ function FormatRow({
       {empty && (
         <button
           onClick={applyDefaults}
-          className="text-[10px] font-medium text-[#9C7C2E] hover:underline"
+          className="text-[10px] font-medium text-brand hover:underline"
           title="Fill sensible format defaults for this deliverable type"
         >
           Use defaults
@@ -466,7 +466,7 @@ function AddDeliverableForm({
       <select
         value={type}
         onChange={(e) => setType(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       >
         {(DELIVERABLE_TYPES ?? []).map((t) => (
           <option key={t.key} value={t.key}>
@@ -479,25 +479,25 @@ function AddDeliverableForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-4 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <input
         type="date"
         value={dueDate}
         onChange={(e) => setDueDate(e.target.value)}
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <input
         type="url"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="URL"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
+          className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 rounded-full hover:opacity-90 transition-colors"
         >
           Add
         </button>

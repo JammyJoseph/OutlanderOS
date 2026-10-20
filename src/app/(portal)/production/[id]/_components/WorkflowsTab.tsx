@@ -139,7 +139,7 @@ export default function WorkflowsTab({ productionId }: { productionId: string })
 
       {adding && (
         <form
-          className="grid gap-2 rounded-2xl border border-border bg-card p-4 sm:grid-cols-[1.2fr_1fr_1.2fr_auto]"
+          className="grid gap-2 rounded-2xl bg-surface p-6 sm:grid-cols-[1.2fr_1fr_1.2fr_auto]"
           onSubmit={(e) => {
             e.preventDefault();
             void act("add", { action: "add", ...addForm }).then(() => {

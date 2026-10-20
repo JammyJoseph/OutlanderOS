@@ -30,7 +30,7 @@ export default function GoogleCallbackPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#141414] px-6">
-      <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+      <div className="w-full max-w-md rounded-2xl bg-surface p-8">
         {/* Black-fill cut: this card is white in both themes. */}
         <h1>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -58,7 +58,7 @@ export default function GoogleCallbackPage() {
                 </code>
                 <button
                   onClick={copyCode}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-3 py-2 text-sm font-semibold hover:brightness-95"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-2 text-sm font-semibold hover:brightness-95"
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   {copied ? 'Copied' : 'Copy'}

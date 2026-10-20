@@ -160,7 +160,7 @@ export function CallSheetDeliverables({
             className={`px-4 py-2.5 text-sm ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+              <span className="text-[13px] text-muted-foreground">
                 {TYPE_LABEL[d.type] || d.type}
               </span>
               <span className="text-gray-800 font-medium">{d.title}</span>

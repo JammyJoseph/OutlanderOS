@@ -200,7 +200,7 @@ function Stars({
         const star = (
           <Star
             size={size}
-            className={i <= (rating ?? 0) ? "fill-[#9C7C2E] text-[#9C7C2E] dark:fill-[#C9A44A] dark:text-[#C9A44A]" : "text-gray-300 dark:text-gray-600"}
+            className={i <= (rating ?? 0) ? "fill-brand text-brand dark:fill-brand dark:text-brand" : "text-gray-300 dark:text-gray-600"}
           />
         );
         return onChange ? (
@@ -225,7 +225,7 @@ function Stars({
 
 function CategoryBadge({ category }: { category: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+    <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[13px] text-muted-foreground">
       {category}
     </span>
   );
@@ -275,7 +275,7 @@ function Avatar({
 
 const inputCls =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
-const labelCls = "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1";
+const labelCls = "block mb-1 text-[13px] text-muted-foreground";
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
@@ -685,15 +685,12 @@ function Directory() {
     view === "scanner" || view === "network" || view === "dashboard" || view === "print";
 
   return (
-    <div className="min-h-full px-6 py-8 pb-28">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-full px-4 pb-28 pt-6 sm:px-8 lg:px-12">
+      <div className="max-w-[1080px]">
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: ACCENT }}>
-              OutlanderOS · Directory
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+            <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">
               {view === "dashboard"
                 ? "Directory"
                 : view === "radar"
@@ -822,15 +819,15 @@ function Directory() {
                   onClick={() => setFavouritesOnly((v) => !v)}
                   title="Show favourites only"
                   className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                    favouritesOnly
-                      ? "border-[#9C7C2E] dark:border-[#C9A44A] text-gray-900 dark:text-gray-100"
-                      : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-                  }`}
+ favouritesOnly
+ ? "border-foreground dark:border-foreground text-gray-900 dark:text-gray-100"
+ : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+ }`}
                   style={favouritesOnly ? { backgroundColor: "rgba(156,124,46,0.12)" } : undefined}
                 >
                   <Star
                     size={14}
-                    className={favouritesOnly ? "fill-[#9C7C2E] text-[#9C7C2E] dark:fill-[#C9A44A] dark:text-[#C9A44A]" : "text-gray-400 dark:text-gray-500"}
+                    className={favouritesOnly ? "fill-brand text-brand dark:fill-brand dark:text-brand" : "text-gray-400 dark:text-gray-500"}
                   />
                   Favourites
                 </button>
@@ -926,7 +923,7 @@ function Directory() {
             </p>
             <button
               onClick={() => setReloadNonce((n) => n + 1)}
-              className="rounded-md bg-[#111111] px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
+              className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground  "
             >
               Retry
             </button>
@@ -1041,7 +1038,7 @@ function Directory() {
             <span className="text-sm text-foreground">{undoItem.contact.name} archived</span>
             <button
               onClick={undoArchive}
-              className="text-sm font-semibold text-[#9C7C2E] dark:text-[#C9A44A] hover:underline"
+              className="text-sm font-semibold text-brand dark:text-brand hover:underline"
             >
               Undo
             </button>
@@ -1198,7 +1195,7 @@ function SplitPanel({
       {/* Left — contact list */}
       <div className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card lg:w-2/5">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-4 py-2.5 backdrop-blur">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+          <p className="text-[13px] text-muted-foreground">
             {contacts.length} contact{contacts.length === 1 ? "" : "s"}
           </p>
           <p className="hidden text-[10px] text-gray-400 dark:text-gray-500 sm:block">↑ ↓ to browse</p>
@@ -1383,8 +1380,8 @@ function FavouriteStar({
         }}
         className={
           favourite
-            ? "fill-[#9C7C2E] text-[#9C7C2E] dark:fill-[#C9A44A] dark:text-[#C9A44A]"
-            : "text-gray-400 dark:text-gray-500 hover:text-[#9C7C2E] dark:hover:text-[#C9A44A]"
+            ? "fill-brand text-brand dark:fill-brand dark:text-brand"
+            : "text-gray-400 dark:text-gray-500 hover:text-brand dark:hover:text-brand"
         }
       />
     </button>
@@ -1587,7 +1584,7 @@ function ContactDetailPanel({
                 <span className="block text-base font-bold text-gray-900 dark:text-gray-100 tabular-nums">
                   {followers}
                 </span>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                <span className="text-[13px] text-muted-foreground">
                   Followers
                 </span>
               </span>
@@ -1629,7 +1626,7 @@ function ContactDetailPanel({
         {handle && (
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <p className="text-[13px] text-muted-foreground">
                 Instagram
               </p>
               {scanStale && (
@@ -1686,7 +1683,7 @@ function ContactDetailPanel({
         {/* Bio / notes */}
         {c.notes && (
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            <p className="mb-1.5 text-[13px] text-muted-foreground">
               Bio / Notes
             </p>
             <p className="whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-400">{c.notes}</p>
@@ -1696,7 +1693,7 @@ function ContactDetailPanel({
         {/* Tags */}
         {tags.length > 0 && (
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            <p className="mb-1.5 text-[13px] text-muted-foreground">
               Tags
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -1715,7 +1712,7 @@ function ContactDetailPanel({
         {/* Portfolio */}
         {portfolio.length > 0 && (
           <div>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            <p className="mb-1.5 text-[13px] text-muted-foreground">
               Portfolio
             </p>
             <div className="space-y-1.5">
@@ -1737,7 +1734,7 @@ function ContactDetailPanel({
 
         {/* Collaboration history */}
         <div>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          <p className="mb-1.5 text-[13px] text-muted-foreground">
             Collaboration history
           </p>
           {loading ? (
@@ -1822,7 +1819,7 @@ function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl bg-surface p-6">
       <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
         <Icon size={15} style={{ color: ACCENT }} />
         <span className="text-[11px] font-semibold uppercase tracking-wide">{label}</span>
@@ -1873,7 +1870,7 @@ function HottestCreatives() {
   if (loaded && top.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl bg-surface p-6">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
           <Trophy size={15} style={{ color: ACCENT }} />
@@ -2008,7 +2005,7 @@ function Dashboard({
 
       {/* Category breakdown */}
       {topCategories.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-surface p-6">
           <div className="mb-3 flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <Tags size={15} style={{ color: ACCENT }} />
             <span className="text-[11px] font-semibold uppercase tracking-wide">
@@ -2060,7 +2057,7 @@ function Dashboard({
             </>
           );
           const cls =
-            "group flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 text-left transition-colors hover:border-[var(--ring)]";
+            "group flex flex-col items-start gap-3 rounded-2xl bg-surface p-6 text-left transition-colors hover:bg-surface-2(--ring)]";
           return q.href ? (
             <Link key={q.key} href={q.href} className={cls}>
               {inner}
@@ -2075,7 +2072,7 @@ function Dashboard({
 
       {/* Recently scanned */}
       {recentlyScanned.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-surface p-6">
           <div className="mb-3 flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <TrendingUp size={15} style={{ color: ACCENT }} />
             <span className="text-[11px] font-semibold uppercase tracking-wide">
@@ -2195,7 +2192,7 @@ function RadarList({
         return (
           <div
             key={e.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface p-6"
             style={{ boxShadow: `0 0 0 1px rgba(224,224,224,0.04), 0 0 24px -12px ${ACCENT}` }}
           >
             <div className="min-w-0 flex-1">

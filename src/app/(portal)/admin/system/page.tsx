@@ -140,7 +140,7 @@ export default function SystemPage() {
     <div className="max-w-5xl mx-auto space-y-10 pb-16">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">System Overview</h1>
+        <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">System Overview</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           How OutlanderOS works — data flows, integrations, and where your input matters
         </p>
@@ -148,7 +148,7 @@ export default function SystemPage() {
 
       {/* ── Section 1: Data Flow Diagram ── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">
+        <h2 className="mb-5 text-xl font-semibold text-foreground [&>svg]:hidden">
           Data Flow
         </h2>
 
@@ -226,7 +226,7 @@ export default function SystemPage() {
             {/* Engine */}
             <div className="flex flex-col items-center justify-center w-44 shrink-0">
               <div className="w-full bg-gray-900 rounded-xl p-4 text-center shadow-lg">
-                <div className="w-8 h-8 rounded-full bg-[#9C7C2E] flex items-center justify-center mx-auto mb-2">
+                <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center mx-auto mb-2">
                   <Bot size={16} className="text-white" />
                 </div>
                 <p className="text-white text-xs font-bold tracking-wide">OutlanderOS</p>
@@ -276,7 +276,7 @@ export default function SystemPage() {
                   >
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                        <Icon size={13} className="text-[#9C7C2E]" />
+                        <Icon size={13} className="text-brand" />
                       </div>
                       <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{out.label}</span>
                     </div>
@@ -295,7 +295,7 @@ export default function SystemPage() {
 
       {/* ── Section 2: Integration Status ── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">
+        <h2 className="mb-5 text-xl font-semibold text-foreground [&>svg]:hidden">
           Integration Status
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -304,7 +304,7 @@ export default function SystemPage() {
             return (
               <div
                 key={int.id}
-                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-2 shadow-sm"
+                className="bg-surface rounded-2xl p-6 flex flex-col gap-2"
               >
                 <div className="flex items-center justify-between">
                   <div
@@ -332,7 +332,7 @@ export default function SystemPage() {
 
       {/* ── Section 3: Where Quinn's Input is Required ── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">
+        <h2 className="mb-5 text-xl font-semibold text-foreground [&>svg]:hidden">
           Where Your Input is Required
         </h2>
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-800 shadow-sm overflow-hidden">
@@ -345,13 +345,13 @@ export default function SystemPage() {
                 className="flex items-start gap-4 px-5 py-4 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors group"
               >
                 <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/50 transition-colors">
-                  <Icon size={15} className="text-[#9C7C2E]" />
+                  <Icon size={15} className="text-brand" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{action.title}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{action.detail}</p>
                 </div>
-                <ChevronRight size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-[#9C7C2E] mt-1.5 shrink-0 transition-colors" />
+                <ChevronRight size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-brand mt-1.5 shrink-0 transition-colors" />
               </NextLink>
             )
           })}
@@ -360,23 +360,23 @@ export default function SystemPage() {
 
       {/* ── Section 5: System Health ── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-5">
+        <h2 className="mb-5 text-xl font-semibold text-foreground [&>svg]:hidden">
           System Health
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
+          <div className="bg-surface rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-1">
               <Wifi size={13} className="text-green-500" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Server</span>
+              <span className="text-[13px] text-muted-foreground">Server</span>
             </div>
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Online</p>
             <p className="text-[10px] text-green-500 mt-0.5">All systems running</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
+          <div className="bg-surface rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-1">
               <RefreshCw size={13} className={loading ? 'text-amber-400 animate-spin' : 'text-gray-400 dark:text-gray-500'} />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Last Refresh</span>
+              <span className="text-[13px] text-muted-foreground">Last Refresh</span>
             </div>
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {loading ? 'Loading…' : loadedAt || '—'}
@@ -384,10 +384,10 @@ export default function SystemPage() {
             <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Auto on page load</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
+          <div className="bg-surface rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-1">
-              <FileCheck size={13} className="text-[#9C7C2E]" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Connected</span>
+              <FileCheck size={13} className="text-brand" />
+              <span className="text-[13px] text-muted-foreground">Connected</span>
             </div>
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {loading ? '—' : `${connectedCount} / 4`}
@@ -395,10 +395,10 @@ export default function SystemPage() {
             <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Data sources active</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
+          <div className="bg-surface rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-1">
               <AlertCircle size={13} className="text-gray-300 dark:text-gray-600" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Errors</span>
+              <span className="text-[13px] text-muted-foreground">Errors</span>
             </div>
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">None</p>
             <p className="text-[10px] text-green-500 mt-0.5">No recent errors</p>

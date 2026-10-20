@@ -44,7 +44,7 @@ const UserContext = createContext<UserContextValue | null>(null);
 
 /**
  * Fetches /api/me exactly once per page load and shares it with every consumer
- * (ThemeProvider, PortalSwitcher, PersonalHeader, …). Previously each of those
+ * (ThemeProvider, the app shell, …). Previously each of those
  * fetched independently, firing three parallel /api/me requests on every load.
  */
 export function UserProvider({ children }: { children: React.ReactNode }) {

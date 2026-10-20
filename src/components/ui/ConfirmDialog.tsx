@@ -46,7 +46,7 @@ export function ConfirmDialog({
   const confirmClasses =
     confirmVariant === "danger"
       ? "bg-red-600 text-white hover:bg-red-700 focus:ring-red-300"
-      : "bg-[#111111] text-white dark:bg-white dark:text-black hover:brightness-95 focus:ring-amber-200";
+      : "bg-foreground text-background hover:brightness-95 focus:ring-focus";
 
   return (
     <div
@@ -62,7 +62,7 @@ export function ConfirmDialog({
       />
 
       {/* Card */}
-      <div className="relative w-full max-w-md rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-xl">
+      <div className="relative w-full max-w-md rounded-2xl bg-surface p-6 shadow-xl">
         <div className="flex items-start gap-3">
           {confirmVariant === "danger" && (
             <div className="mt-0.5 shrink-0 rounded-full bg-red-100 dark:bg-red-900/30 p-2">

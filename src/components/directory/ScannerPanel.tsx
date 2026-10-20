@@ -136,11 +136,11 @@ interface ScanNetworkResult {
   error?: string
 }
 
-const cardCls = "rounded-2xl border border-border bg-card p-5";
+const cardCls = "rounded-2xl bg-surface p-6";
 const inputCls =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
 const labelCls =
-  "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1";
+  "block mb-1 text-[13px] text-muted-foreground";
 
 function fmtCount(n: number | null | undefined): string {
   if (n == null) return "—";
@@ -608,7 +608,7 @@ function SingleScanner({
                   followers
                 </span>
                 {profile.category && (
-                  <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[13px] text-muted-foreground">
                     {profile.category}
                   </span>
                 )}
@@ -633,7 +633,7 @@ function SingleScanner({
               )}
               {profile.taggedAccounts.length > 0 && (
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <span className="text-[13px] text-muted-foreground">
                     Tagged
                   </span>
                   {profile.taggedAccounts.slice(0, 12).map((h) => (
@@ -705,7 +705,7 @@ function SingleScanner({
 
       {/* Credits */}
       {credits && !credits.ok && (
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl bg-surface p-6">
           <p className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
             <AlertTriangle size={15} className="text-amber-500 dark:text-amber-400" />
             {credits.error || "No credits found."}
@@ -766,7 +766,7 @@ function SingleScanner({
             <div className="space-y-4">
               {creditsByRole.map(({ role, people }) => (
                 <div key={role}>
-                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <p className="mb-1.5 text-[13px] text-muted-foreground">
                     {role}
                   </p>
                   <div className="overflow-hidden rounded-lg border border-border">
@@ -1109,7 +1109,7 @@ function NetworkResult({
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[13px] text-muted-foreground">
                   {p.category}
                 </span>
                 {p.existed ? (

@@ -135,7 +135,7 @@ export default function ThinkTankPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="flex items-center gap-2 text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">
               <span className="h-2.5 w-2.5 rounded-full bg-orange-400" />
               Think Tank
             </h1>
@@ -202,7 +202,7 @@ export default function ThinkTankPage() {
             {filtered.map((s) => (
               <li
                 key={s.id}
-                className="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm"
+                className="rounded-2xl bg-surface p-6"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -211,10 +211,10 @@ export default function ThinkTankPage() {
                         href={s.sourceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group inline-flex items-start gap-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-[#9C7C2E] dark:hover:text-[#C9A44A]"
+                        className="group inline-flex items-start gap-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-brand dark:hover:text-brand"
                       >
                         {s.title}
-                        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-gray-300 dark:text-gray-600 group-hover:text-[#9C7C2E] dark:group-hover:text-[#C9A44A]" />
+                        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-gray-300 dark:text-gray-600 group-hover:text-brand dark:group-hover:text-brand" />
                       </a>
                     ) : (
                       <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{s.title}</span>
@@ -290,7 +290,7 @@ export default function ThinkTankPage() {
                                 href={m.sourceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:text-[#9C7C2E] dark:hover:text-[#C9A44A]"
+                                className="hover:text-brand dark:hover:text-brand"
                               >
                                 {m.title}
                               </a>

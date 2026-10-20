@@ -205,8 +205,8 @@ export default function CallSheetWizard({ production, onClose }: Props) {
             <div
               key={i}
               className={`h-1 flex-1 rounded-full transition-colors ${
-                i <= step ? "bg-[#9C7C2E]" : "bg-gray-100 dark:bg-gray-800"
-              }`}
+ i <= step ? "bg-[#9C7C2E]" : "bg-gray-100 dark:bg-gray-800"
+ }`}
             />
           ))}
         </div>
@@ -232,10 +232,10 @@ export default function CallSheetWizard({ production, onClose }: Props) {
                       key={t.key}
                       onClick={() => setShootType(t.key)}
                       className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
-                        shootType === t.key
-                          ? "border-[#9C7C2E] bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-gray-100"
-                          : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300"
-                      }`}
+ shootType === t.key
+ ? "border-foreground bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-gray-100"
+ : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300"
+ }`}
                     >
                       {t.label}
                     </button>
@@ -264,15 +264,15 @@ export default function CallSheetWizard({ production, onClose }: Props) {
                         key={m.id}
                         onClick={() => toggle(m.id)}
                         className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${
-                          on
-                            ? "border-[#9C7C2E] bg-amber-50/50 dark:bg-amber-900/20"
-                            : "border-gray-200 dark:border-gray-700"
-                        }`}
+ on
+ ? "border-foreground bg-amber-50/50 dark:bg-amber-900/20"
+ : "border-gray-200 dark:border-gray-700"
+ }`}
                       >
                         <span
                           className={`flex h-5 w-5 items-center justify-center rounded border ${
-                            on ? "bg-[#9C7C2E] border-[#9C7C2E]" : "border-gray-300 dark:border-gray-600"
-                          }`}
+ on ? "bg-foreground border-foreground" : "border-gray-300 dark:border-gray-600"
+ }`}
                         >
                           {on && <Check size={13} className="text-black" />}
                         </span>
@@ -328,10 +328,10 @@ export default function CallSheetWizard({ production, onClose }: Props) {
                     key={t.key}
                     onClick={() => setTemplateKey(t.key)}
                     className={`rounded-xl border px-2 py-2 text-xs font-medium transition-colors ${
-                      templateKey === t.key
-                        ? "border-[#9C7C2E] bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-gray-100"
-                        : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
-                    }`}
+ templateKey === t.key
+ ? "border-foreground bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-gray-100"
+ : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
+ }`}
                   >
                     {t.label}
                   </button>
@@ -385,7 +385,7 @@ export default function CallSheetWizard({ production, onClose }: Props) {
             <button
               onClick={create}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {busy ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
               Create call sheet
@@ -397,14 +397,14 @@ export default function CallSheetWizard({ production, onClose }: Props) {
   );
 }
 
-const wLabel = "block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5";
+const wLabel = "block mb-1.5 text-[13px] text-muted-foreground";
 const wInput =
-  "w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]";
+  "w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground";
 
 function StepHead({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <p className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
-      <span className="text-[#9C7C2E]">{icon}</span> {title}
+      <span className="text-brand">{icon}</span> {title}
     </p>
   );
 }

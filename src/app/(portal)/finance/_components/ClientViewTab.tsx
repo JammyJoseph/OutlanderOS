@@ -20,7 +20,7 @@ import {
 function StatTile({ label, value, cls }: { label: string; value: string; cls?: string }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-4 py-3 shadow-sm">
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</p>
+      <p className="mb-1 text-[13px] text-muted-foreground">{label}</p>
       <p className={`font-mono text-lg font-bold tabular-nums ${cls ?? 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
     </div>
   )
@@ -33,7 +33,7 @@ function BreakdownBar({ media, production, margin }: { media: number; production
   const seg = [
     { label: 'Media spend', value: media, color: 'bg-[#2F4B8F]' },
     { label: 'Production cost', value: production, color: 'bg-[#A93B2E]' },
-    { label: 'Margin', value: margin, color: 'bg-[#9C7C2E]' },
+    { label: 'Margin', value: margin, color: 'bg-foreground' },
   ].filter((s) => s.value > 0)
   return (
     <div>
@@ -62,7 +62,7 @@ function ClientCard({ r, onOpen }: { r: ClientRollup; onOpen: () => void }) {
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') onOpen()
       }}
-      className="cursor-pointer rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-4 shadow-sm transition-shadow hover:shadow-md"
+      className="cursor-pointer rounded-2xl bg-surface p-6 transition-shadow hover:shadow-md"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{r.clientName}</p>
@@ -85,7 +85,7 @@ function ClientCard({ r, onOpen }: { r: ClientRollup; onOpen: () => void }) {
         </div>
         <div>
           <dt className="text-gray-400 dark:text-gray-500">Margin</dt>
-          <dd className="font-mono text-[#9C7C2E]">{fmtGBP(r.margin)}</dd>
+          <dd className="font-mono text-brand">{fmtGBP(r.margin)}</dd>
         </div>
       </dl>
       <BreakdownBar media={r.mediaSpend} production={r.productionCost} margin={r.margin} />
@@ -119,11 +119,11 @@ function ClientDetail({ r, onBack, onOpenProject }: { r: ClientRollup; onBack: (
         <StatTile label="Total Budget (exc. VAT)" value={fmtGBP(r.totalBudget)} />
         <StatTile label="Total Spent" value={fmtGBP(r.totalSpent)} cls={r.totalSpent > r.totalBudget ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'} />
         <StatTile label="Outstanding" value={fmtGBP(r.totalOutstanding)} cls={r.totalOutstanding < 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'} />
-        <StatTile label="Margin" value={fmtGBP(r.margin)} cls="text-[#9C7C2E]" />
+        <StatTile label="Margin" value={fmtGBP(r.margin)} cls="text-brand" />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-5 shadow-sm">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Spending Breakdown</p>
+      <div className="rounded-2xl bg-surface p-6">
+        <p className="mb-3 text-xl font-semibold text-foreground">Spending Breakdown</p>
         <BreakdownBar media={r.mediaSpend} production={r.productionCost} margin={r.margin} />
       </div>
 
@@ -131,7 +131,7 @@ function ClientDetail({ r, onBack, onOpenProject }: { r: ClientRollup; onBack: (
         <div className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/70 px-4 py-2.5">
           <p className="text-xs font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300">Projects</p>
         </div>
-        <div className="hidden grid-cols-12 gap-2 border-b border-gray-100 dark:border-gray-800 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 sm:grid">
+        <div className="hidden grid-cols-12 gap-2 border-b border-gray-100 dark:border-gray-800 px-4 py-2 sm:grid text-[13px] text-muted-foreground">
           <div className="col-span-4">Project</div>
           <div className="col-span-2 text-right">Budget (exc. VAT)</div>
           <div className="col-span-2 text-right">Spent</div>

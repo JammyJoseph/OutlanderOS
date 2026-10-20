@@ -1081,8 +1081,8 @@ export default function BudgetTab({
             <div
               key={sec.key}
               className={`border-b border-border last:border-b-0 border-l-2 ${
-                dragSection === sec.key ? "opacity-40" : ""
-              } ${overSection === sec.key && dragSection !== sec.key ? "border-t-2 border-t-[#9C7C2E]" : ""}`}
+ dragSection === sec.key ? "opacity-40" : ""
+ } ${overSection === sec.key && dragSection !== sec.key ? "border-t-2 border-t-foreground" : ""}`}
               // Sections drag by their heading. Dragging a whole section from
               // anywhere would fight the row drag inside it.
               onDragOver={(e) => {
@@ -1612,7 +1612,7 @@ function RoleCombobox({
         >
           {groups.map((g) => (
             <div key={g.label}>
-              <div className="px-3 pb-0.5 pt-1.5 text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+              <div className="px-3 pb-0.5 pt-1.5 text-[13px] text-muted-foreground">
                 {g.label}
               </div>
               {g.options.map((opt, j) => {
@@ -1927,8 +1927,8 @@ function BudgetRow({
     return (
       <div
         className={`border-t border-border/60 ${isDragging ? "opacity-40" : ""} ${
-          isDropTarget ? "border-t-2 border-t-[#9C7C2E]" : ""
-        }`}
+ isDropTarget ? "border-t-2 border-t-foreground" : ""
+ }`}
         draggable={draggable}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
@@ -2069,8 +2069,8 @@ function BudgetRow({
   return (
     <div
       className={`border-t border-border/60 ${isDragging ? "opacity-40" : ""} ${
-        isDropTarget ? "border-t-2 border-t-[#9C7C2E]" : ""
-      }`}
+ isDropTarget ? "border-t-2 border-t-foreground" : ""
+ }`}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -2415,7 +2415,7 @@ function InvoiceSubRow({
   return (
     <div className="grid grid-cols-12 gap-1.5 px-4 pb-1.5 pt-0.5 items-center bg-muted/30 dark:bg-white/[0.02]">
       <div className="col-span-3 flex items-center gap-1 pl-1">
-        <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">PO</span>
+        <span className="text-[13px] text-muted-foreground">PO</span>
         <input
           type="text"
           value={poNumber}
@@ -2436,7 +2436,7 @@ function InvoiceSubRow({
         />
       </div>
       <div className="col-span-2 flex items-center gap-1">
-        <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">Inv £</span>
+        <span className="text-[13px] text-muted-foreground">Inv £</span>
         <input
           type="number"
           value={invoicedAmount}

@@ -21,12 +21,12 @@ type TabId = 'dashboard' | 'projects' | 'budget' | 'clients' | 'invoices' | 'exp
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
-  { id: 'projects', label: 'Project Folders' },
-  { id: 'budget', label: 'Budget vs Actuals' },
-  { id: 'clients', label: 'Client View' },
-  { id: 'invoices', label: 'Invoices & Approvals' },
+  { id: 'projects', label: 'Project folders' },
+  { id: 'budget', label: 'Budget vs actuals' },
+  { id: 'clients', label: 'Client view' },
+  { id: 'invoices', label: 'Invoices and approvals' },
   { id: 'expenses', label: 'Expenses' },
-  { id: 'pl', label: 'P&L & History' },
+  { id: 'pl', label: 'P&L and history' },
   { id: 'print', label: 'Print P&L' },
 ]
 
@@ -43,31 +43,28 @@ function FinanceInner() {
   }
 
   return (
-    <div className="flex flex-col py-6 px-4 sm:px-6">
-      <div className="mx-auto w-full max-w-6xl space-y-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#2F4B8F]">
-            OutlanderOS · Finance
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Finance</h1>
-          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Budgets, costs, invoices &amp; the company P&amp;L — one source of truth</p>
-        </div>
-
-        <div className="flex overflow-x-auto border-b border-border">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => switchTab(tab.id)}
-              className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-                active === tab.id
-                  ? 'border-[#2F4B8F] font-semibold text-[#2F4B8F]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+    <div className="px-4 pb-20 pt-6 sm:px-8 lg:px-12">
+      <div className="flex max-w-[1080px] flex-col gap-8">
+        <nav aria-label="Finance sections" className="-mx-1 overflow-x-auto px-1">
+          <div className="flex w-max gap-1">
+            {TABS.map((tab) => {
+              const on = active === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-current={on ? 'page' : undefined}
+                  onClick={() => switchTab(tab.id)}
+                  className={`inline-flex min-h-9 items-center whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground ${
+                    on ? 'bg-foreground text-background' : 'text-ink-2 hover:bg-surface'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+        </nav>
 
         <div>
           {active === 'dashboard' && <DashboardTab />}

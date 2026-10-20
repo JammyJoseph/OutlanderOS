@@ -215,7 +215,7 @@ export default function TeamTab({ production, productionId, members, refresh }: 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Stat label="Crew" value={String(counts.total)} icon={<Users size={14} />} />
         <Stat label="Suggested" value={String(counts.suggested)} dot="bg-gray-300 dark:bg-gray-600" />
-        <Stat label="Confirmed" value={String(counts.confirmed)} dot="bg-[#9C7C2E]" />
+        <Stat label="Confirmed" value={String(counts.confirmed)} dot="bg-foreground" />
         <Stat label="Contracted" value={String(counts.contracted)} dot="bg-emerald-500" />
       </div>
 
@@ -239,7 +239,7 @@ export default function TeamTab({ production, productionId, members, refresh }: 
             </button>
             <button
               onClick={() => setShowAdd((v) => !v)}
-              className="flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+              className="flex items-center gap-1 text-xs font-medium text-brand hover:text-brand"
             >
               <Plus size={13} /> Add member
             </button>
@@ -253,7 +253,7 @@ export default function TeamTab({ production, productionId, members, refresh }: 
             <p className="text-sm text-gray-500 dark:text-gray-400">No team members yet.</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand"
             >
               <Plus size={12} /> Add your first member
             </button>
@@ -369,7 +369,7 @@ function OutlanderTeamSection({
         className="w-full px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between text-left"
       >
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <Building2 size={15} className="text-[#9C7C2E]" /> Outlander Team
+          <Building2 size={15} className="text-brand" /> Outlander Team
           <span className="text-[11px] font-normal text-gray-400">one-click add internal staff</span>
         </h2>
         <span className="text-xs text-gray-400">{collapsed ? "Show" : "Hide"}</span>
@@ -393,11 +393,11 @@ function OutlanderTeamSection({
                 <button
                   onClick={() => addStaff(u)}
                   disabled={added || busyId === u.id}
-                  className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                    added
-                      ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default"
-                      : "bg-[#111111] dark:bg-white text-white dark:text-black hover:opacity-90"
-                  }`}
+                  className={`shrink-0 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+ added
+ ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default"
+ : "bg-primary text-primary-foreground hover:opacity-90"
+ }`}
                 >
                   {busyId === u.id ? (
                     <Loader2 size={13} className="animate-spin" />
@@ -441,7 +441,7 @@ function DirectoryAddPrompt({
       <div className="w-full max-w-md rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Contact size={15} className="text-[#9C7C2E]" /> Add to Directory?
+            <Contact size={15} className="text-brand" /> Add to Directory?
           </h2>
           <button onClick={onCancel} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
             <X size={18} />
@@ -505,7 +505,7 @@ function DirectoryAddPrompt({
               await onConfirm({ ...form, email: email || null, phone: phone || null }, { instagram, category });
             }}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] dark:bg-white px-3.5 py-2 text-xs font-medium text-white dark:text-black hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {busy ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
             Add to directory &amp; team
@@ -517,12 +517,12 @@ function DirectoryAddPrompt({
 }
 
 const promptInputCls =
-  "w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1.5 text-sm focus:outline-none focus:border-[#9C7C2E] focus:ring-1 focus:ring-[#9C7C2E]/30";
+  "w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1.5 text-sm focus:outline-none focus:border-foreground focus:ring-1 focus:ring-focus";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-wide text-gray-400">{label}</span>
+      <span className="mb-0.5 block text-[13px] text-muted-foreground">{label}</span>
       {children}
     </label>
   );
@@ -658,7 +658,7 @@ function CateringPanel({
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <UtensilsCrossed size={15} className="text-[#9C7C2E]" /> Catering
+          <UtensilsCrossed size={15} className="text-brand" /> Catering
         </h2>
         <span
           className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
@@ -675,7 +675,7 @@ function CateringPanel({
         {/* Dietary checklist */}
         {members.length > 0 && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+            <p className="mb-2 text-[13px] text-muted-foreground">
               Dietary checklist
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -705,10 +705,10 @@ function CateringPanel({
         {/* Catering brief */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Catering brief</p>
+            <p className="text-[13px] text-muted-foreground">Catering brief</p>
             <button
               onClick={copyBrief}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#9C7C2E] hover:opacity-80"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:opacity-80"
             >
               {copied ? <Check size={13} /> : <ClipboardCopy size={13} />}
               {copied ? "Copied" : "Copy brief"}
@@ -728,11 +728,11 @@ function CateringPanel({
         {/* Caterer quotes (Phase 3D) */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Caterer quotes</p>
+            <p className="text-[13px] text-muted-foreground">Caterer quotes</p>
             <button
               onClick={requestQuotes}
               disabled={loadingCaterers || savingQuotes}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#9C7C2E] hover:opacity-80 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:opacity-80 disabled:opacity-50"
               title="Pull caterers from the Directory and start tracking their quotes"
             >
               {loadingCaterers ? <Loader2 size={13} className="animate-spin" /> : <ChefHat size={13} />}
@@ -764,7 +764,7 @@ function CateringPanel({
                       updateQuote(i, { quoteAmount: e.target.value === "" ? null : Number(e.target.value) })
                     }
                     placeholder="£ quote"
-                    className="w-20 text-xs text-right rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 focus:outline-none focus:border-[#9C7C2E]"
+                    className="w-20 text-xs text-right rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 focus:outline-none focus:border-foreground"
                   />
                   <select
                     value={q.status}
@@ -796,7 +796,7 @@ function CateringPanel({
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 px-2.5 py-1.5 text-center">
-      <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400 truncate">{label}</p>
+      <p className="truncate text-[13px] text-muted-foreground">{label}</p>
       <p className="text-base font-semibold text-gray-900 dark:text-gray-100">{value}</p>
     </div>
   );
@@ -873,13 +873,13 @@ function DirectoryPicker({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search contacts…"
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-8 pr-3 text-sm focus:border-[#9C7C2E] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30"
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-8 pr-3 text-sm focus:border-foreground focus:outline-none focus:ring-2 focus:ring-focus"
             />
           </div>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 focus:border-[#9C7C2E] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30"
+            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 focus:border-foreground focus:outline-none focus:ring-2 focus:ring-focus"
           >
             <option value="">All categories</option>
             {PICKER_CATEGORIES.map((c) => (
@@ -909,8 +909,8 @@ function DirectoryPicker({
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{c.name}</p>
                         {c.rating ? (
-                          <span className="inline-flex items-center gap-0.5 text-[11px] text-[#9C7C2E]">
-                            <Star size={11} className="fill-[#9C7C2E] text-[#9C7C2E]" /> {c.rating}
+                          <span className="inline-flex items-center gap-0.5 text-[11px] text-brand">
+                            <Star size={11} className="fill-brand text-brand" /> {c.rating}
                           </span>
                         ) : null}
                       </div>
@@ -921,11 +921,11 @@ function DirectoryPicker({
                     <button
                       onClick={() => pick(c)}
                       disabled={isAdded}
-                      className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                        isAdded
-                          ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-                          : "bg-[#111111] dark:bg-white text-white dark:text-black hover:opacity-90"
-                      }`}
+                      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+ isAdded
+ ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+ : "bg-primary text-primary-foreground hover:opacity-90"
+ }`}
                       title={alreadyOnTeam ? "Already has a member with this name" : "Add to team"}
                     >
                       {isAdded ? "Added ✓" : alreadyOnTeam ? "Add again" : "Add"}
@@ -995,7 +995,7 @@ function MemberRow({
           {member.email && (
             <a
               href={`mailto:${member.email}`}
-              className="inline-flex items-center gap-1 hover:text-[#9C7C2E] truncate"
+              className="inline-flex items-center gap-1 hover:text-brand truncate"
             >
               <Mail size={11} className="shrink-0" />
               <span className="truncate">{member.email}</span>
@@ -1004,7 +1004,7 @@ function MemberRow({
           {member.phone && (
             <a
               href={`tel:${member.phone}`}
-              className="inline-flex items-center gap-1 hover:text-[#9C7C2E] truncate"
+              className="inline-flex items-center gap-1 hover:text-brand truncate"
             >
               <Phone size={11} className="shrink-0" />
               <span className="truncate">{member.phone}</span>
@@ -1128,14 +1128,14 @@ function AddMemberForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
-        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <input
         type="text"
         value={role}
         onChange={(e) => setRole(e.target.value)}
         placeholder="Role (Director, DP, MUA…)"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <input
         type="email"
@@ -1143,17 +1143,17 @@ function AddMemberForm({
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
         className={`md:col-span-2 px-3 py-2 rounded-xl border text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 ${
-          emailInvalid
-            ? "border-red-400 focus:ring-red-200 focus:border-red-400"
-            : "border-gray-200 dark:border-gray-700 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
-        }`}
+ emailInvalid
+ ? "border-red-400 focus:ring-red-200 focus:border-red-400"
+ : "border-gray-200 dark:border-gray-700 focus:ring-focus focus:border-foreground"
+ }`}
       />
       <input
         type="tel"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Phone"
-        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+        className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
       />
       <div className="md:col-span-2 flex items-center gap-1">
         <span className="text-xs text-gray-400 dark:text-gray-500">£</span>
@@ -1164,10 +1164,10 @@ function AddMemberForm({
           onChange={(e) => setRate(e.target.value)}
           placeholder="Rate"
           className={`flex-1 px-2 py-2 rounded-xl border text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 ${
-            rateNeg
-              ? "border-red-400 focus:ring-red-200 focus:border-red-400"
-              : "border-gray-200 dark:border-gray-700 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
-          }`}
+ rateNeg
+ ? "border-red-400 focus:ring-red-200 focus:border-red-400"
+ : "border-gray-200 dark:border-gray-700 focus:ring-focus focus:border-foreground"
+ }`}
         />
         <select
           value={ratePer}
@@ -1182,7 +1182,7 @@ function AddMemberForm({
       <div className="md:col-span-1 flex items-center gap-1 justify-end">
         <button
           onClick={submit}
-          className="bg-[#111111] dark:bg-white text-white dark:text-black text-xs font-medium px-3 py-2 rounded-xl hover:opacity-90 transition-colors"
+          className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 rounded-full hover:opacity-90 transition-colors"
         >
           Add
         </button>
@@ -1211,10 +1211,10 @@ function Stat({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+    <div className="bg-surface rounded-2xl p-6">
       <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
         {dot && <span className={`w-2 h-2 rounded-full ${dot}`} />}
-        {icon && <span className="text-[#9C7C2E]">{icon}</span>}
+        {icon && <span className="text-brand">{icon}</span>}
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
       <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">{value}</p>

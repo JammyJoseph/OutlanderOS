@@ -109,7 +109,7 @@ export default function DeliverablesTab({
       )}
 
       {/* ── Contracted ── */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <PackageCheck size={15} className="text-[var(--portal-commercial)]" />
@@ -193,7 +193,7 @@ export default function DeliverablesTab({
       </div>
 
       {/* ── Totals ── */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Deal value</h3>
         <dl className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
@@ -236,7 +236,7 @@ function DeliverableRow({
           {d.quantity > 1 && <span className="text-gray-400 dark:text-gray-500 font-normal"> ×{d.quantity}</span>}
         </p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+          <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[13px] text-muted-foreground">
             {d.type}
           </span>
           {d.dueDate && (
@@ -292,7 +292,7 @@ function AdditionalRow({
             </span>
           </p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+            <span className="px-1.5 py-0.5 rounded bg-white dark:bg-gray-900 text-[13px] text-muted-foreground">
               {d.type}
             </span>
             {d.dueDate && (
@@ -404,7 +404,7 @@ function AddDeliverableForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Title (e.g. Instagram Reel)"
-          className="sm:col-span-6 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+          className="sm:col-span-6 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus"
           autoFocus
         />
         <select
@@ -445,7 +445,7 @@ function AddDeliverableForm({
                 value={overage}
                 onChange={(e) => setOverage(e.target.value)}
                 placeholder="Overage cost"
-                className="w-full pl-7 pr-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                className="w-full pl-7 pr-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus"
               />
             </div>
             <input
@@ -469,9 +469,9 @@ function AddDeliverableForm({
         <button
           type="submit"
           disabled={!title.trim() || busy}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${
-            additional ? "bg-amber-500 text-white hover:bg-amber-600" : "bg-[#111111] text-white dark:bg-white dark:text-black hover:bg-[#111111] dark:hover:bg-white"
-          }`}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-colors disabled:opacity-50 ${
+ additional ? "bg-amber-500 text-primary-foreground hover:bg-amber-600" : "bg-primary text-primary-foreground hover:bg-foreground dark:hover:bg-white"
+ }`}
         >
           {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           Add

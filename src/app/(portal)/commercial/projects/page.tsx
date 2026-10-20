@@ -65,10 +65,7 @@ export default function CommercialProjectsPage() {
     <div className="min-h-screen bg-card font-[family-name:var(--font-manrope)]">
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="mb-7">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
-            OutlanderOS · Commercial
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
+          <h1 className="mt-1 text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">
             Projects
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
@@ -98,7 +95,7 @@ export default function CommercialProjectsPage() {
               return (
                 <div
                   key={p.id}
-                  className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm"
+                  className="rounded-2xl bg-surface p-6"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">

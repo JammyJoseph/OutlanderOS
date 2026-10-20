@@ -26,7 +26,7 @@ interface NewCredentials {
 }
 
 const TEAMS = [
-  { key: "COMMERCIAL", label: "Commercial", chip: "bg-[#9C7C2E]/15 text-[#9C7C2E] dark:text-[#C9A44A]" },
+  { key: "COMMERCIAL", label: "Commercial", chip: "bg-accent text-brand dark:text-brand" },
   { key: "PRODUCTION", label: "Production", chip: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
   { key: "FINANCE", label: "Finance", chip: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
   { key: "OPERATIONS", label: "Operations", chip: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
@@ -117,7 +117,7 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Staff</h1>
+          <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Team</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {staff.length} member{staff.length !== 1 ? "s" : ""} · {activeCount} active
           </p>
@@ -129,12 +129,12 @@ export default function TeamPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search staff…"
-              className="w-52 rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-xs text-gray-900 outline-none focus:border-[#9C7C2E] focus:ring-2 focus:ring-amber-200/60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className="w-52 rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-xs text-gray-900 outline-none focus:border-foreground focus:ring-2 focus:ring-focus dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             />
           </div>
           <button
             onClick={() => setCreating(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black px-3 py-1.5 text-xs font-medium transition-colors hover:brightness-95"
+            className="flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold transition-colors hover:brightness-95"
           >
             <Plus className="h-3.5 w-3.5" />
             Add Staff
@@ -342,8 +342,8 @@ function CredentialsModal({
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9C7C2E]/20">
-              <KeyRound className="h-4 w-4 text-[#9C7C2E] dark:text-[#C9A44A]" />
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
+              <KeyRound className="h-4 w-4 text-brand dark:text-brand" />
             </span>
             <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Account created</h2>
           </div>
@@ -389,7 +389,7 @@ function CredentialsModal({
           </button>
           <button
             onClick={onClose}
-            className="rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-medium"
+            className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold"
           >
             Done
           </button>
@@ -472,7 +472,7 @@ function StaffModal({
   }
 
   const inputCls =
-    "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 focus:border-[#9C7C2E] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30";
+    "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 focus:border-foreground focus:outline-none focus:ring-2 focus:ring-focus";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -501,8 +501,8 @@ function StaffModal({
             />
           </div>
           {isNew ? (
-            <div className="flex items-start gap-2 rounded-lg border border-[#9C7C2E]/40 bg-[#9C7C2E]/10 px-3 py-2.5">
-              <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9C7C2E] dark:text-[#C9A44A]" />
+            <div className="flex items-start gap-2 rounded-lg border border-foreground/40 bg-accent px-3 py-2.5">
+              <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand dark:text-brand" />
               <p className="text-xs text-gray-600 dark:text-gray-400">
                 A temporary password will be generated and shown once after creation. They&apos;ll be
                 prompted to change it on first login.
@@ -562,7 +562,7 @@ function StaffModal({
                     className={cn(
                       "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                       on
-                        ? "border-[#9C7C2E] bg-[#9C7C2E]/15 text-gray-800 dark:text-gray-200"
+                        ? "border-foreground bg-accent text-gray-800 dark:text-gray-200"
                         : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
                     )}
                   >
@@ -587,7 +587,7 @@ function StaffModal({
           <button
             onClick={save}
             disabled={saving}
-            className="flex items-center gap-1.5 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-medium disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold disabled:opacity-50"
           >
             {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {isNew ? "Create" : "Save changes"}

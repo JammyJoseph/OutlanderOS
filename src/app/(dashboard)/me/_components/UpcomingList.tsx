@@ -20,50 +20,33 @@ function formatDate(iso: string): string {
   today.setHours(0, 0, 0, 0);
   const diff = Math.round((new Date(date).setHours(0, 0, 0, 0) - today.getTime()) / 86_400_000);
   if (diff === 0) return "Today";
-  if (diff === 1) return "Tomorrow";
-  return date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  if (diff === 1) return "Tmrw";
+  if (diff < 7) return date.toLocaleDateString("en-GB", { weekday: "short" });
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-// Next few dated items across all portals, soonest first.
+// Next few dated items across all portals, soonest first. Sits inside the
+// "This week" card, under the days.
 export function UpcomingList({ items }: Props) {
+  if (items.length === 0) {
+    return <p className="mt-5 border-t border-line pt-4 text-[15px] text-muted-foreground">Nothing on the horizon yet.</p>;
+  }
   return (
-    <section className="rounded-xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-        <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">Upcoming</h2>
-      </div>
-      {items.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
-          Nothing on the horizon yet.
-        </p>
-      ) : (
-        <ul className="divide-y divide-gray-50 dark:divide-gray-800">
-          {items.slice(0, 3).map((item) => {
-            const colors = PORTAL_COLORS[item.portal] ?? PORTAL_COLORS.personal;
-            return (
-              <li key={item.id}>
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm text-gray-800 dark:text-gray-200">{item.title}</div>
-                    <div className="truncate text-xs text-gray-400 dark:text-gray-500">
-                      {formatDate(item.date)}
-                      {item.context ? ` · ${item.context}` : ""}
-                    </div>
-                  </div>
-                  <span
-                    className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
-                    style={{ backgroundColor: colors.bg, color: colors.text }}
-                  >
-                    {PORTAL_LABELS[item.portal]}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
+    <ul className="mt-4">
+      {items.slice(0, 4).map((item) => (
+        <li key={item.id} className="border-t border-line">
+          <Link href={item.href} className="flex items-start gap-4 py-3.5 hover:[&_.t]:underline">
+            <span className="w-12 shrink-0 text-sm text-muted-foreground">{formatDate(item.date)}</span>
+            <span className="min-w-0 flex-1">
+              <span className="t block font-semibold leading-snug">{item.title}</span>
+              <span className="mt-0.5 flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="size-2 shrink-0 rounded-full" style={{ background: (PORTAL_COLORS[item.portal] ?? PORTAL_COLORS.personal).accent }} aria-hidden />
+                <span className="truncate">{item.context ?? PORTAL_LABELS[item.portal]}</span>
+              </span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

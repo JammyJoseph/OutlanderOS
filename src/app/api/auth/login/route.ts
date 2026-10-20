@@ -109,7 +109,10 @@ export async function POST(request: NextRequest) {
     user: { id: user.id, email: user.email, name: user.name, role: user.role },
     mustChangePassword: user.mustChangePassword === true,
   })
-  response.cookies.set('auth_token', signSession(user), authCookieOptions())
+  // "Keep me logged in for 30 days" ticked (the default) keeps the cookie for
+  // 30 days; unticked, it ends when the browser closes.
+  const remember = body?.remember !== false
+  response.cookies.set('auth_token', signSession(user), authCookieOptions(remember ? undefined : 'session'))
 
   // New accounts, and anyone given a password by an admin, must choose their
   // own before doing anything else. The proxy reads this flag to hold them on

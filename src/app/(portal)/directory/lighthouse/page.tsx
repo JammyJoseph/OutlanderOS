@@ -51,7 +51,7 @@ export default function LighthousePage() {
             <Sparkles size={20} />
           </span>
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Lighthouse</h1>
+            <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Lighthouse</h1>
             <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
               A public-facing showcase of the creatives we rate and the talent we&apos;re watching.
             </p>
@@ -116,7 +116,7 @@ function ComingSoonSection({
                 <div className="h-2.5 w-1/2 rounded-full bg-secondary" />
                 <div className="flex items-center gap-2 pt-1 text-gray-400 dark:text-gray-500">
                   {section.key === "spotlight" ? (
-                    <Star size={12} className="fill-[#9C7C2E] text-[#9C7C2E] dark:fill-[#C9A44A] dark:text-[#C9A44A]" />
+                    <Star size={12} className="fill-brand text-brand dark:fill-brand dark:text-brand" />
                   ) : (
                     <Users size={12} />
                   )}

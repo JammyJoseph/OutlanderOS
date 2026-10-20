@@ -391,7 +391,7 @@ const btnSolid =
 function Total({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</span>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
       <span className="font-mono text-sm font-bold" style={{ color: accent ?? "var(--foreground)" }}>
         {value}
       </span>
@@ -428,7 +428,7 @@ function TrackerView({
     <div className="h-full overflow-auto">
       <table className="w-full border-separate border-spacing-0 text-[11px]">
         <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          <tr className="text-left text-[13px] text-muted-foreground">
             <th className={th}>#</th>
             <th className={`${th} text-center`}>Sig</th>
             <th className={`${th} text-center`}>Stock</th>
@@ -900,7 +900,7 @@ function SignatureBlock({
         <>
           <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
           <div className="absolute -left-3 top-[58px] z-30 w-36 overflow-hidden rounded-md border border-border bg-popover text-foreground shadow-lg">
-            <div className="border-b border-border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <div className="border-b border-border px-2.5 py-1.5 text-[13px] text-muted-foreground">
               Sig {si + 1} · {sig.pageCount}pp
             </div>
             {(["coated", "uncoated"] as StockType[]).map((st) => (
@@ -1245,7 +1245,7 @@ const modalInput =
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
     <label className={`flex flex-col gap-1 ${full ? "col-span-2" : ""}`}>
-      <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</span>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
       {children}
     </label>
   );

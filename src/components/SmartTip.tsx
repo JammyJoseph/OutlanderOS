@@ -56,14 +56,14 @@ export default function SmartTip({ id, className }: { id: string; className?: st
     <div
       className={`flex items-start gap-3 rounded-xl border border-[#e7dfc9] bg-[#faf7ee] px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20 ${className ?? ""}`}
     >
-      <Lightbulb size={15} className="mt-0.5 shrink-0 text-[#9C7C2E] dark:text-amber-400" />
+      <Lightbulb size={15} className="mt-0.5 shrink-0 text-brand dark:text-amber-400" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{tip.title}</p>
         <p className="mt-0.5 text-xs leading-relaxed text-gray-600 dark:text-gray-400">{tip.body}</p>
         {tip.cta && (
           <Link
             href={tip.cta.href}
-            className="mt-1.5 inline-block text-xs font-medium text-[#9C7C2E] underline-offset-2 hover:underline dark:text-amber-400"
+            className="mt-1.5 inline-block text-xs font-medium text-brand underline-offset-2 hover:underline dark:text-amber-400"
           >
             {tip.cta.label}
           </Link>

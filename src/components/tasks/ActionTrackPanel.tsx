@@ -83,21 +83,41 @@ function sortTasks(tasks: PanelTask[]): PanelTask[] {
   });
 }
 
-// Project context badge — Commercial gold, Production red, Print green.
-function badgeFor(task: PanelTask): { label: string; bg: string; text: string } | null {
-  if (task.production) return { label: task.production.title, bg: "#A93B2E1A", text: "#A93B2E" };
-  if (task.project) return { label: task.project.title, bg: "#9C7C2E1A", text: "#9C7C2E" };
-  if (task.portal === "print") return { label: "Print", bg: "#2E5E441A", text: "#2E5E44" };
+// Where a task comes from: a workspace dot and the deal or production name.
+function contextFor(task: PanelTask): { dot: string; label: string } | null {
+  if (task.production) return { dot: "#A93B2E", label: `${task.production.title} · Production` };
+  if (task.project) return { dot: "#9C7C2E", label: `${task.project.title} · Commercial` };
+  if (task.portal === "print") return { dot: "#2E5E44", label: "Print" };
+  if (task.portal === "finance") return { dot: "#2F4B8F", label: "Finance" };
+  if (task.portal === "followup") return { dot: "#6B4E8E", label: "Follow-up" };
   return null;
 }
 
+// "Today", "Wed", "Overdue · Mon" — the tag on the right of a row.
+function dueTag(dueDate: string): { text: string; tone: "bad" | "plain" } {
+  const tone = dueTone(dueDate);
+  const d = new Date(dueDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((new Date(d).setHours(0, 0, 0, 0) - today.getTime()) / DAY_MS);
+  const weekday = d.toLocaleDateString("en-GB", { weekday: "short" });
+  if (tone === "overdue") return { text: `Overdue · ${days > -7 ? weekday : formatDue(dueDate)}`, tone: "bad" };
+  if (days === 0) return { text: "Today", tone: "plain" };
+  if (days === 1) return { text: "Tomorrow", tone: "plain" };
+  if (days < 7) return { text: weekday, tone: "plain" };
+  return { text: formatDue(dueDate), tone: "plain" };
+}
+
+const ICON_BTN =
+  "flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-2 focus-visible:outline-foreground";
+
 function QuickAdd({
   placeholder,
-  accent,
+  label,
   onAdd,
 }: {
   placeholder: string;
-  accent: string;
+  label: string;
   onAdd: (title: string, dueDate: string | null) => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
@@ -120,39 +140,38 @@ function QuickAdd({
   }
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2">
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") submit();
-        }}
-        placeholder={placeholder}
-        className="min-w-0 flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm outline-none transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500"
-        style={{ borderColor: undefined }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = accent)}
-        onBlur={(e) => (e.currentTarget.style.borderColor = "")}
-        disabled={saving}
-      />
+    <div className="flex items-center gap-2 py-2">
+      <div className="relative min-w-0 flex-1">
+        <svg viewBox="0 0 24 24" className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" aria-hidden>
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+          }}
+          aria-label={label}
+          placeholder={placeholder}
+          className="h-11 w-full rounded-lg border-0 bg-background pl-10 pr-3 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus-visible:shadow-[0_0_0_3px_var(--focus)]"
+          disabled={saving}
+        />
+      </div>
       {showDate ? (
         <input
           type="date"
           autoFocus
+          aria-label="Deadline"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") submit();
           }}
-          className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400 outline-none"
+          className="h-11 rounded-lg border-0 bg-background px-3 text-sm text-ink-2 outline-none focus-visible:shadow-[0_0_0_3px_var(--focus)]"
         />
       ) : (
-        <button
-          onClick={() => setShowDate(true)}
-          aria-label="Add a deadline"
-          title="Add a deadline"
-          className="shrink-0 rounded-lg p-1.5 text-gray-300 dark:text-gray-600 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-500 dark:hover:text-gray-400"
-        >
-          <CalendarDays className="h-4 w-4" />
+        <button type="button" onClick={() => setShowDate(true)} aria-label="Add a deadline" title="Add a deadline" className={ICON_BTN}>
+          <CalendarDays className="size-[18px]" strokeWidth={1.75} />
         </button>
       )}
     </div>
@@ -179,129 +198,87 @@ function TaskRow({
   const [editingDate, setEditingDate] = useState(false);
   const isAction = task.taskType !== "TRACK";
   const done = task.status === "DONE";
-  const tone = dueTone(task.dueDate);
-  const badge = showBadge ? badgeFor(task) : null;
+  const ctx = showBadge ? contextFor(task) : null;
+  const tag = task.dueDate ? dueTag(task.dueDate) : null;
 
   return (
-    <li
-      className={`group flex items-center gap-3 px-4 py-2.5 transition-all duration-300 hover:bg-gray-50/70 dark:hover:bg-gray-800/70 ${
-        fading ? "opacity-0" : "opacity-100"
-      }`}
-    >
-      {/* Circular checkbox */}
+    <li className={`group flex items-center gap-4 py-3.5 transition-opacity duration-300 ${fading ? "opacity-0" : "opacity-100"}`}>
       <button
+        type="button"
         onClick={() => onToggle(task)}
-        aria-label={done ? "Mark as to do" : "Mark as done"}
-        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-          done || fading
-            ? "border-[#9C7C2E] bg-[#9C7C2E] text-black"
-            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-[#9C7C2E]"
+        aria-label={done ? `Mark "${task.title}" as to do` : `Mark "${task.title}" as done`}
+        className={`flex size-6 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground ${
+          done || fading ? "border-foreground bg-foreground text-background" : "border-[#9AA4B2] bg-background hover:border-foreground"
         }`}
       >
-        {(done || fading) && <Check className="h-3 w-3" strokeWidth={3} />}
+        {(done || fading) && <Check className="size-3.5" strokeWidth={3} />}
       </button>
 
-      <span
-        className={`min-w-0 flex-1 truncate text-sm ${
-          done
-            ? "text-gray-400 dark:text-gray-500 line-through"
-            : isAction
-              ? "font-semibold text-gray-900 dark:text-gray-100"
-              : "text-gray-800 dark:text-gray-200"
-        }`}
-      >
-        {task.title}
-        {/* Deadline inline after the title */}
-        {!done && (
-          editingDate ? (
-            <input
-              type="date"
-              autoFocus
-              defaultValue={task.dueDate ? task.dueDate.split("T")[0] : ""}
-              onBlur={(e) => {
-                setEditingDate(false);
-                const next = e.target.value || null;
-                const cur = task.dueDate ? task.dueDate.split("T")[0] : null;
-                if (next !== cur) onDeadline(task, next);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") e.currentTarget.blur();
-              }}
-              className="ml-2 rounded border border-gray-200 dark:border-gray-700 px-1 py-0.5 text-xs font-normal text-gray-600 dark:text-gray-400 outline-none"
-            />
-          ) : task.dueDate ? (
-            <button
-              onClick={() => setEditingDate(true)}
-              title="Change deadline"
-              className={`ml-2 text-xs font-medium ${
-                tone === "overdue"
-                  ? "text-red-500"
-                  : tone === "soon"
-                    ? "text-amber-500"
-                    : "text-gray-400 dark:text-gray-500"
-              }`}
-            >
-              by {formatDue(task.dueDate)}
-            </button>
-          ) : (
-            <button
-              onClick={() => setEditingDate(true)}
-              aria-label="Set deadline"
-              title="Set deadline"
-              className="ml-2 hidden text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 group-hover:inline-block"
-            >
-              <CalendarDays className="inline h-3.5 w-3.5" />
-            </button>
-          )
+      <div className="min-w-0 flex-1">
+        <div className={`truncate ${done ? "text-muted-foreground line-through" : isAction ? "font-semibold" : "text-ink-2"}`}>{task.title}</div>
+        {ctx && (
+          <div className="mt-0.5 flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+            <span className="size-2 shrink-0 rounded-full" style={{ background: ctx.dot }} aria-hidden />
+            <span className="truncate">{ctx.label}</span>
+          </div>
         )}
-      </span>
+      </div>
 
-      {badge && (
-        <span
-          className="max-w-[140px] shrink-0 truncate rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
-          style={{ backgroundColor: badge.bg, color: badge.text }}
-        >
-          {badge.label}
-        </span>
-      )}
-
-      {/* Hover actions — move between ACTION/TRACK, delete */}
+      {/* Hover actions — move between to-do and waiting-on, delete */}
       {!done && (
-        <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
           <button
+            type="button"
             onClick={() => onMove(task)}
-            title={isAction ? "Move to Track" : "Move to Action"}
-            className={`flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
-              isAction
-                ? "text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                : "text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30"
-            }`}
+            title={isAction ? "Move to Waiting on" : "Move to To do"}
+            aria-label={isAction ? "Move to Waiting on" : "Move to To do"}
+            className={ICON_BTN}
           >
-            {isAction ? (
-              <>
-                <ArrowRight className="h-3 w-3" /> Track
-              </>
-            ) : (
-              <>
-                <ArrowLeft className="h-3 w-3" /> Action
-              </>
-            )}
+            {isAction ? <ArrowRight className="size-4" strokeWidth={1.75} /> : <ArrowLeft className="size-4" strokeWidth={1.75} />}
           </button>
-          <button
-            onClick={() => onDelete(task)}
-            aria-label="Delete task"
-            title="Delete task"
-            className="rounded-md p-1 text-gray-300 dark:text-gray-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400"
-          >
-            <Trash2 className="h-3 w-3" />
+          <button type="button" onClick={() => onDelete(task)} aria-label="Delete task" title="Delete task" className={`${ICON_BTN} hover:text-bad`}>
+            <Trash2 className="size-4" strokeWidth={1.75} />
           </button>
         </span>
       )}
+
+      {!done &&
+        (editingDate ? (
+          <input
+            type="date"
+            autoFocus
+            aria-label="Deadline"
+            defaultValue={task.dueDate ? task.dueDate.split("T")[0] : ""}
+            onBlur={(e) => {
+              setEditingDate(false);
+              const next = e.target.value || null;
+              const cur = task.dueDate ? task.dueDate.split("T")[0] : null;
+              if (next !== cur) onDeadline(task, next);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
+            className="h-8 rounded-lg border border-field bg-background px-2 text-xs text-ink-2 outline-none"
+          />
+        ) : tag ? (
+          <button
+            type="button"
+            onClick={() => setEditingDate(true)}
+            title="Change deadline"
+            className={`inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-xs font-semibold ${tag.tone === "bad" ? "bg-bad-bg text-bad" : "bg-background text-ink-2"}`}
+          >
+            {tag.text}
+          </button>
+        ) : (
+          <button type="button" onClick={() => setEditingDate(true)} aria-label="Set deadline" title="Set deadline" className={`${ICON_BTN} opacity-0 group-hover:opacity-100 focus-visible:opacity-100`}>
+            <CalendarDays className="size-4" strokeWidth={1.75} />
+          </button>
+        ))}
     </li>
   );
 }
 
-// A completed task in the DONE section — muted, struck-through, green accent.
+// A completed task in the Done section — muted and struck through.
 function DoneRow({
   task,
   showBadge,
@@ -313,65 +290,33 @@ function DoneRow({
   onReopen: (task: PanelTask) => void;
   onDelete: (task: PanelTask) => void;
 }) {
-  const cameFromTrack = task.taskType === "TRACK";
-  const badge = showBadge ? badgeFor(task) : null;
+  const ctx = showBadge ? contextFor(task) : null;
   const when = task.completedAt ?? task.createdAt;
 
   return (
-    <li className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/70">
-      {/* Filled green checkmark — click to reopen */}
+    <li className="group flex items-center gap-4 py-3">
       <button
+        type="button"
         onClick={() => onReopen(task)}
-        aria-label="Reopen task"
+        aria-label={`Reopen "${task.title}"`}
         title="Reopen"
-        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 border-[#2E5E44] bg-[#2E5E44] text-white transition-colors hover:border-[#2E5E44] hover:bg-[#2E5E44] dark:border-[#4E8F6C] dark:bg-[#4E8F6C] dark:hover:border-[#4E8F6C] dark:hover:bg-[#4E8F6C]"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full bg-ok text-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
       >
-        <Check className="h-3 w-3" strokeWidth={3} />
+        <Check className="size-3.5" strokeWidth={3} />
       </button>
-
-      <span className="min-w-0 flex-1 truncate text-sm text-gray-400 line-through">
-        {task.title}
-      </span>
-
-      {/* Where it came from — ACTION or TRACK */}
-      <span
-        className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-          cameFromTrack ? "bg-blue-50 text-blue-600" : "bg-[#9C7C2E]/10 text-[#7a5f20] dark:bg-[#C9A44A]/10 dark:text-[#C9A44A]"
-        }`}
-      >
-        {cameFromTrack ? "was Track" : "was Action"}
-      </span>
-
-      {/* Completion date */}
-      <span className="hidden shrink-0 text-[11px] font-medium text-gray-400 sm:inline">
-        {formatDone(when)}
-      </span>
-
-      {badge && (
-        <span
-          className="max-w-[120px] shrink-0 truncate rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
-          style={{ backgroundColor: badge.bg, color: badge.text }}
-        >
-          {badge.label}
-        </span>
-      )}
-
-      {/* Hover actions — reopen, delete */}
-      <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
-          onClick={() => onReopen(task)}
-          title="Reopen task"
-          className="flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-100"
-        >
-          <RotateCcw className="h-3 w-3" /> Reopen
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-muted-foreground line-through">{task.title}</div>
+        <div className="mt-0.5 truncate text-sm text-muted-foreground">
+          Done {formatDone(when)}
+          {ctx ? ` · ${ctx.label}` : ""}
+        </div>
+      </div>
+      <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+        <button type="button" onClick={() => onReopen(task)} aria-label="Reopen task" title="Reopen task" className={ICON_BTN}>
+          <RotateCcw className="size-4" strokeWidth={1.75} />
         </button>
-        <button
-          onClick={() => onDelete(task)}
-          aria-label="Delete task"
-          title="Delete task"
-          className="rounded-md p-1 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
-        >
-          <Trash2 className="h-3 w-3" />
+        <button type="button" onClick={() => onDelete(task)} aria-label="Delete task" title="Delete task" className={`${ICON_BTN} hover:text-bad`}>
+          <Trash2 className="size-4" strokeWidth={1.75} />
         </button>
       </span>
     </li>
@@ -517,10 +462,11 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
 
   if (loading) {
     return (
-      <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-        <div className="space-y-2">
+      <section className="rounded-2xl bg-surface px-6 py-6 sm:px-7">
+        <div className="mb-4 h-6 w-32 animate-pulse rounded-md bg-surface-2" />
+        <div className="space-y-3">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="h-9 animate-pulse rounded-lg bg-gray-100" />
+            <div key={i} className="h-11 animate-pulse rounded-lg bg-surface-2" />
           ))}
         </div>
       </section>
@@ -541,94 +487,64 @@ export function ActionTrackPanel({ projectId, productionId }: Props) {
       />
     ));
 
+  const heading = (text: string, count: number) => (
+    <h3 className="flex items-center gap-2 pt-3 text-sm font-semibold text-muted-foreground">
+      {text}
+      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-background px-1.5 text-xs font-semibold text-ink-2">{count}</span>
+    </h3>
+  );
+
   return (
-    <section className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-      {/* ACTION — amber/gold marker */}
-      <div>
-        <div className="flex items-center gap-2 px-4 pb-1 pt-3">
-          <span className="h-2 w-2 shrink-0" style={{ backgroundColor: "#9C7C2E" }} />
-          <h2 className="text-sm font-bold tracking-wide text-gray-900">ACTION</h2>
-          <span className="rounded-full bg-[#9C7C2E]/10 px-2 py-0.5 text-[11px] font-bold text-[#9C7C2E]">
-            {actions.length}
-          </span>
-        </div>
-        <QuickAdd
-          placeholder="Add an action… (Enter to save)"
-          accent="#9C7C2E"
-          onAdd={(title, due) => addTask("ACTION", title, due)}
-        />
-        {actions.length === 0 ? (
-          <p className="px-4 pb-4 pt-1 text-sm text-gray-400">
-            Nothing needs doing. Enjoy the quiet.
-          </p>
-        ) : (
-          <ul className="divide-y divide-gray-50 pb-1">{renderRows(actions)}</ul>
+    <section className="rounded-2xl bg-surface px-6 py-6 sm:px-7" aria-label="Your tasks">
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold">{projectId || productionId ? "Tasks" : "Your tasks"}</h2>
+        {!projectId && !productionId && (
+          <a href="/me/tasks" className="text-sm font-semibold underline decoration-[1.5px] underline-offset-4 hover:text-brand">
+            See all
+          </a>
         )}
       </div>
 
-      <div className="h-px bg-gray-100" />
+      {heading("To do", actions.length)}
+      <QuickAdd placeholder="Add a task, press Enter to save" label="Add a task" onAdd={(title, due) => addTask("ACTION", title, due)} />
+      {actions.length === 0 ? (
+        <p className="pb-3 pt-1 text-[15px] text-muted-foreground">Nothing needs doing. Enjoy the quiet.</p>
+      ) : (
+        <ul className="[&>li+li]:border-t [&>li+li]:border-line">{renderRows(actions)}</ul>
+      )}
 
-      {/* TRACK — blue marker */}
-      <div>
-        <div className="flex items-center gap-2 px-4 pb-1 pt-3">
-          <span className="h-2 w-2 shrink-0" style={{ backgroundColor: "#2F4B8F" }} />
-          <h2 className="text-sm font-bold tracking-wide text-gray-900">TRACK</h2>
-          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">
-            {tracks.length}
-          </span>
-        </div>
-        <QuickAdd
-          placeholder="Track something you're waiting on…"
-          accent="#2F4B8F"
-          onAdd={(title, due) => addTask("TRACK", title, due)}
-        />
-        {tracks.length === 0 ? (
-          <p className="px-4 pb-4 pt-1 text-sm text-gray-400">
-            Nothing being tracked right now.
-          </p>
-        ) : (
-          <ul className="divide-y divide-gray-50 pb-1">{renderRows(tracks)}</ul>
-        )}
-      </div>
+      <div className="mt-3 border-t border-line" />
+      {heading("Waiting on", tracks.length)}
+      <QuickAdd placeholder="Something you're waiting on…" label="Add something you're waiting on" onAdd={(title, due) => addTask("TRACK", title, due)} />
+      {tracks.length === 0 ? (
+        <p className="pb-1 pt-1 text-[15px] text-muted-foreground">Nothing being tracked right now.</p>
+      ) : (
+        <ul className="[&>li+li]:border-t [&>li+li]:border-line">{renderRows(tracks)}</ul>
+      )}
 
-      {/* DONE — green left border, visible by default, collapsible */}
       {done.length > 0 && (
-        <div className="border-t border-gray-100 bg-gray-50/40">
-          <div className="flex items-center justify-between pr-3">
+        <div className="mt-3 border-t border-line pt-1">
+          <div className="flex items-center justify-between">
             <button
+              type="button"
               onClick={() => setShowDone((v) => !v)}
-              className="flex items-center gap-2 px-4 pb-1 pt-3 text-sm font-bold tracking-wide text-gray-500 hover:text-gray-700"
+              aria-expanded={showDone}
+              className="flex min-h-11 items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"
             >
-              {showDone ? (
-                <ChevronDown className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronRight className="h-3.5 w-3.5" />
-              )}
-              <span className="h-2 w-2 shrink-0" style={{ backgroundColor: "#2E5E44" }} />
-              DONE
-              <span className="rounded-full bg-[#2E5E44]/10 px-2 py-0.5 text-[11px] font-bold text-[#2E5E44]">
-                {done.length}
-              </span>
+              {showDone ? <ChevronDown className="size-4" strokeWidth={1.75} /> : <ChevronRight className="size-4" strokeWidth={1.75} />}
+              Done
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-ok-bg px-1.5 text-xs font-semibold text-ok">{done.length}</span>
             </button>
             {showDone && (
-              <button
-                onClick={clearDone}
-                className="rounded-md px-2 py-1 text-[11px] font-semibold text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
-              >
+              <button type="button" onClick={clearDone} className="min-h-9 rounded-full px-3 text-sm font-semibold text-muted-foreground hover:bg-bad-bg hover:text-bad">
                 Clear all
               </button>
             )}
           </div>
           {showDone && (
-            <ul className="divide-y divide-gray-100/70 pb-1 pt-1">
+            <ul className="[&>li+li]:border-t [&>li+li]:border-line">
               {done.map((t) => (
-                <DoneRow
-                  key={t.id}
-                  task={t}
-                  showBadge={showBadges}
-                  onReopen={reopen}
-                  onDelete={remove}
-                />
+                <DoneRow key={t.id} task={t} showBadge={showBadges} onReopen={reopen} onDelete={remove} />
               ))}
             </ul>
           )}

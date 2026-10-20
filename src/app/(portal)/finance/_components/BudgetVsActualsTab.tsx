@@ -232,7 +232,7 @@ export default function BudgetVsActualsTab() {
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
           <table className="w-full min-w-[880px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50 text-left text-[11px] uppercase tracking-wider text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+              <tr className="border-b border-gray-200 bg-gray-50 text-left dark:border-gray-700 dark:bg-gray-900 text-[13px] text-muted-foreground">
                 <Th label="Project" k="campaignName" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <Th label="Client" k="clientName" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <Th label="Budget" k="budgetExVat" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
@@ -264,7 +264,7 @@ export default function BudgetVsActualsTab() {
                       <span className="block max-w-[220px] truncate font-medium" title={r.campaignName}>
                         {r.campaignName}
                       </span>
-                      <span className="text-[10px] uppercase tracking-wide text-gray-400">
+                      <span className="text-[13px] text-muted-foreground">
                         {r.billingType === 'EDITORIAL' ? 'Editorial' : 'Paid'}
                         {r.source === 'production' ? ' · production' : ''}
                       </span>
@@ -380,7 +380,7 @@ function SummaryStat({
         : 'text-gray-900 dark:text-gray-100'
   return (
     <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="text-[13px] text-muted-foreground">{label}</p>
       <p className={`mt-1 text-xl font-bold tabular-nums ${valueColor}`}>{value}</p>
       {hint && <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{hint}</p>}
     </div>
@@ -400,7 +400,7 @@ function FilterGroup({
 }) {
   return (
     <div className="inline-flex items-center gap-1.5">
-      <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</span>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
       <div className="inline-flex overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
         {options.map((o) => (
           <button

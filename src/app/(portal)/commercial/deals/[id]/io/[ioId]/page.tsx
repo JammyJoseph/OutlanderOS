@@ -273,7 +273,7 @@ export default function InsertionOrderPage({
       <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 dark:text-gray-400 mb-4">Insertion order not found.</p>
-          <Link href={`/commercial/deals/${id}`} className="text-[#9C7C2E] text-sm font-medium hover:underline">
+          <Link href={`/commercial/deals/${id}`} className="text-brand text-sm font-medium hover:underline">
             Back to Deal
           </Link>
         </div>
@@ -474,7 +474,7 @@ export default function InsertionOrderPage({
                   <select
                     value={clientOrAgency}
                     onChange={(e) => setClientOrAgency(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
                   >
                     <option value="CLIENT">Client</option>
                     <option value="AGENCY">Agency</option>
@@ -583,7 +583,7 @@ export default function InsertionOrderPage({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
                 placeholder="Anything the client needs to know — payment schedule, usage, exclusivity…"
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] resize-y"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground resize-y"
               />
             </Card>
 
@@ -601,7 +601,7 @@ export default function InsertionOrderPage({
           </div>
         ) : (
           /* Preview — the live document; printing captures exactly this. */
-          <div className="bg-white rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-8 print:p-0 print:border-none print:shadow-none print:rounded-none">
+          <div className="bg-surface rounded-2xl p-8 print:p-0 print:border-none print:shadow-none print:rounded-none">
             <IODocument data={viewData} />
           </div>
         )}
@@ -614,7 +614,7 @@ export default function InsertionOrderPage({
 
 function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+    <div className="bg-surface rounded-2xl p-6">
       <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">{title}</h3>
       {hint && <p className="text-xs text-gray-400 mb-3">{hint}</p>}
       <div className={hint ? "" : "mt-3"}>{children}</div>
@@ -648,7 +648,7 @@ function TextInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
     />
   );
 }
@@ -670,7 +670,7 @@ function CellInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+      className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
     />
   );
 }

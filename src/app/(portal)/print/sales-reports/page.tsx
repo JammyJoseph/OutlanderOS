@@ -14,7 +14,7 @@ export default function SalesReportsPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 border-b border-border bg-card px-6 py-3">
-        <BarChart3 size={16} className="text-[#9C7C2E]" />
+        <BarChart3 size={16} className="text-brand" />
         <div>
           <h1 className="text-base font-semibold text-foreground">Sales reports</h1>
           <p className="text-xs text-muted-foreground">

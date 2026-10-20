@@ -119,7 +119,7 @@ export default function ContentTrackerPage() {
     <div className="mx-auto max-w-7xl px-6 py-6 font-[Manrope,system-ui,sans-serif]">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Content Tracker</h1>
+          <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Content Tracker</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Track every post, classify it, attribute it to brands and campaigns.
           </p>

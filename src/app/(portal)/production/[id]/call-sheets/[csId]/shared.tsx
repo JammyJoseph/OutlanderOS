@@ -96,7 +96,7 @@ export function DocSection({
     <div className="break-inside-avoid">
       <div className="flex items-center gap-1.5 mb-3">
         <span className="text-[#A93B2E]">{icon}</span>
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">{title}</h3>
+        <h3 className="text-xl font-semibold text-foreground [&>svg]:hidden">{title}</h3>
       </div>
       {children}
     </div>

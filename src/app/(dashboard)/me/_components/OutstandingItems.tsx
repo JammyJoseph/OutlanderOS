@@ -36,9 +36,9 @@ export function OutstandingItems() {
   }, [load]);
 
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <section className="rounded-2xl bg-surface p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <h2 className="text-xl font-semibold text-foreground [&>svg]:hidden">
           Outstanding Items
         </h2>
         <ReceiptText className="h-4 w-4 text-[#2F4B8F] dark:text-[#5B7BC4] opacity-70" />

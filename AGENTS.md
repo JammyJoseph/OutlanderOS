@@ -124,10 +124,29 @@ normalises its redirects to relative paths.
 
 ## Styling
 
-Live theme is **Paper Standard** (light). `.dark` class-remap in `globals.css` is a
-deliberate safety net — do not delete it until the per-file `dark:` sweep is complete and
-browser-verified. Primary buttons are black, not brass. Accents come from `--portal-*` vars
-and `src/lib/design.ts`.
+The live design is the **2026 redesign** (Foundations board): white page, grey cards
+(`bg-surface`, 24px radius) instead of borders, one light blue accent (`--primary` #A9D4FF
+with ink text) for the one primary action per screen, pill buttons, big plain figures, and
+workspace colours only as 8px dots. Tokens live in `globals.css` (`:root` and a navy `.dark`
+set) and `src/lib/design.ts`.
+
+- **Build screens from `src/components/os`** (`Page`, `PageHead`, `StatGrid`/`Stat`,
+  `Panel`, `Rows`/`Row`, `Tag`, `Chips`, `Table`, `FlowFrame`, `SuccessScreen`, `Overlay`,
+  `pill()`). Screens the design file doesn't cover follow the same recipe: a figure or title,
+  one row of pill actions, grey cards, plain rows, tags only for meaning.
+- **The shell is `src/components/shell/AppShell`** — 248px sidebar, workspace switcher,
+  ⌘K search (`/api/search`), account menu. Sidebar items for every workspace live in
+  `src/lib/workspaces.ts`; add pages there, not in a component.
+- Anything that creates or sends something is a focused flow (`FlowFrame`, 480px column,
+  step bar); finishing it shows the navy `SuccessScreen`. Nothing else uses navy.
+- Logos: `OutlanderOS_Logo_Ink.svg` (white "OS" pill, ink outline) on light grounds,
+  `OutlanderOS_Logo_OnColour.svg` on navy, blue or dark. The metallic originals are kept but
+  no longer used in the app.
+- Tailwind's grey, green, amber, red and blue scales are retuned in `globals.css`, so old
+  `text-gray-500`-style classes land on the new palette. Prefer the semantic tokens
+  (`text-muted-foreground`, `bg-surface`, `text-ok`, `bg-bad-bg`…) in new code.
+- `.dark` class-remap is still a deliberate safety net — do not delete it until the per-file
+  `dark:` sweep is complete and browser-verified.
 
 CSS compiler quirks: `@media screen` gets stripped (use bare `@media`), `:root` inside
 `@media` does not work, and the var tint-shade remap flips opacity variants.

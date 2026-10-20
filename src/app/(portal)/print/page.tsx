@@ -148,7 +148,7 @@ function IssueCard({ issue, isCurrent }: { issue: IssueSummary; isCurrent: boole
   return (
     <Link
       href={`/print/flat-plan?issue=${issue.issueNumber}`}
-      className="group relative flex flex-col rounded-2xl border border-border bg-card p-5 transition hover:bg-secondary"
+      className="group relative flex flex-col rounded-2xl bg-surface p-6 transition hover:bg-secondary"
       style={{
         borderColor: isCurrent ? `${st.accent}66` : undefined,
         boxShadow: isCurrent ? `inset 0 0 0 1px ${st.accent}33` : undefined,

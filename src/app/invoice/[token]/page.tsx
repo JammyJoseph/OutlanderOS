@@ -221,7 +221,7 @@ export default function InvoiceSubmissionPage({
         <button
           type="submit"
           disabled={busy}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#111] px-5 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {busy && <Loader2 size={14} className="animate-spin" />}
           Submit invoice
@@ -241,7 +241,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           alt="Outlander"
           className="mb-8 h-5 w-auto"
         />
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">{children}</div>
+        <div className="rounded-2xl bg-surface p-6">{children}</div>
         <p className="mt-6 text-center text-xs text-gray-400">
           Outlander Magazine Ltd · Company 13257633 · VAT GB 483323490
         </p>

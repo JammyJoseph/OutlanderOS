@@ -65,7 +65,7 @@ export default function NetworkPanel() {
   return (
     <div className="space-y-3">
       {nodes.map((n) => (
-        <div key={n.id} className="rounded-2xl border border-border bg-card p-5">
+        <div key={n.id} className="rounded-2xl bg-surface p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Link
               href={`/directory/${n.id}`}

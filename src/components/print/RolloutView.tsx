@@ -1381,7 +1381,7 @@ function Section({
           by eye in a page this long. */}
       <div className="flex items-center justify-between gap-3 bg-foreground px-4 py-2.5">
         <div className="min-w-0">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-background">{title}</h2>
+          <h2 className="text-background text-xl font-semibold text-foreground [&>svg]:hidden">{title}</h2>
           {blurb && <p className="mt-0.5 truncate text-[11px] text-background/70">{blurb}</p>}
         </div>
         {onAdd && (
@@ -1491,9 +1491,9 @@ function TextInput({
       onChange={(e) => setV(e.target.value)}
       onBlur={() => v !== value && onCommit(v)}
       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-      className={`w-full min-w-[6rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-sm text-foreground outline-none hover:border-border focus:border-[#9C7C2E] ${
-        mono ? "font-mono text-xs" : ""
-      }`}
+      className={`w-full min-w-[6rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-sm text-foreground outline-none hover:border-border focus:border-foreground ${
+ mono ? "font-mono text-xs" : ""
+ }`}
     />
   );
 }
@@ -1530,7 +1530,7 @@ function NumberInput({
         if (next !== value) onCommit(next);
       }}
       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-      className={`w-full min-w-[4rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-right text-sm tabular-nums text-foreground outline-none hover:border-border focus:border-[#9C7C2E] ${className ?? ""}`}
+      className={`w-full min-w-[4rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-right text-sm tabular-nums text-foreground outline-none hover:border-border focus:border-foreground ${className ?? ""}`}
     />
   );
 }
@@ -1555,9 +1555,9 @@ function DateInput({
       type="date"
       defaultValue={iso}
       onBlur={(e) => e.target.value !== iso && onCommit(e.target.value || null)}
-      className={`rounded border border-transparent bg-transparent px-1 py-0.5 text-foreground outline-none hover:border-border focus:border-[#9C7C2E] ${
-        small ? "text-xs" : "text-lg font-semibold"
-      }`}
+      className={`rounded border border-transparent bg-transparent px-1 py-0.5 text-foreground outline-none hover:border-border focus:border-foreground ${
+ small ? "text-xs" : "text-lg font-semibold"
+ }`}
     />
   );
 }
@@ -1575,7 +1575,7 @@ function Select({
     <select
       value={value}
       onChange={(e) => onCommit(e.target.value)}
-      className="w-full min-w-[5rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-xs text-foreground outline-none hover:border-border focus:border-[#9C7C2E]"
+      className="w-full min-w-[5rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-xs text-foreground outline-none hover:border-border focus:border-foreground"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>

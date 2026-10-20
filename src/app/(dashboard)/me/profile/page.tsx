@@ -144,7 +144,7 @@ export default function ProfilePage() {
         </div>
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+            <div key={i} className="rounded-2xl bg-surface p-6">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="mt-3 h-5 w-40" />
             </div>
@@ -169,11 +169,11 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Profile</h1>
+        <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">My Profile</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Your details, role and team directory</p>
       </div>
 
-      <div className="rounded-2xl bg-white dark:bg-gray-900 p-8 shadow-sm border border-gray-100 dark:border-gray-800">
+      <div className="rounded-2xl bg-surface p-8">
         <div className="flex items-start justify-between gap-6">
           <div className="flex items-center gap-5">
             <Avatar name={me.name} src={avatarSrc(me)} size={88} />
@@ -259,7 +259,7 @@ export default function ProfilePage() {
               <button
                 onClick={save}
                 disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-semibold hover:brightness-95 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:brightness-95 disabled:opacity-50"
               >
                 <Check className="h-4 w-4" />
                 {saving ? 'Saving…' : 'Save changes'}
@@ -288,9 +288,9 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div className="mt-8 rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+      <div className="mt-8 rounded-2xl bg-surface p-6">
         <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#9C7C2E] dark:text-[#C9A44A]"><Sun className="h-4 w-4" /></div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-brand dark:text-brand"><Sun className="h-4 w-4" /></div>
           <div>
             <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Appearance</h2>
             <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Choose how OutlanderOS looks for you</p>
@@ -309,7 +309,7 @@ export default function ProfilePage() {
         <div className="mt-4 overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              <tr className="border-b border-gray-100 dark:border-gray-800 text-left text-[13px] text-muted-foreground">
                 <th className="px-5 py-3">Name</th>
                 <th className="px-5 py-3">Role</th>
                 <th className="px-5 py-3">Department</th>
@@ -409,7 +409,7 @@ function RoleBadge({ role }: { role: 'ADMIN' | 'MEMBER' }) {
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[13px] text-muted-foreground">
       <UserIcon className="h-3 w-3" /> Member
     </span>
   )
@@ -484,7 +484,7 @@ function EditUserModal({
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
-          <button onClick={save} disabled={saving} className="rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-semibold hover:brightness-95 disabled:opacity-50">
+          <button onClick={save} disabled={saving} className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:brightness-95 disabled:opacity-50">
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>

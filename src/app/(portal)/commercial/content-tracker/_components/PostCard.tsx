@@ -44,7 +44,7 @@ export default function PostCard({
       onClick={onSelect}
       className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-white dark:bg-gray-900 transition-shadow hover:shadow-md ${
         isUnclassified ? "border-rose-300/60 ring-1 ring-rose-100" : "border-gray-200 dark:border-gray-700"
-      } ${selected ? "ring-2 ring-amber-400" : ""}`}
+      } ${selected ? "ring-2 ring-focus" : ""}`}
     >
       <div className="relative aspect-square w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
         {thumb ? (

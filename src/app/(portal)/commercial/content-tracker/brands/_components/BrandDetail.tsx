@@ -137,20 +137,20 @@ export default function BrandDetail({ name, onClose }: Props) {
             </div>
 
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h3 className="mb-2 text-xl font-semibold text-foreground [&>svg]:hidden">
                 Reach over time
               </h3>
               <Timeline timeline={data.timeline} />
             </div>
 
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h3 className="text-xl font-semibold text-foreground [&>svg]:hidden">
                 Performance Summary
               </h3>
               <button
                 onClick={generateReport}
                 disabled={reporting}
-                className="inline-flex items-center gap-1 rounded-lg bg-[#111111] px-3 py-1.5 text-xs font-medium text-white dark:bg-white dark:text-black shadow-sm hover:bg-[#111111] dark:hover:bg-white disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-foreground dark:hover:bg-white disabled:opacity-60"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 Generate Report
@@ -163,7 +163,7 @@ export default function BrandDetail({ name, onClose }: Props) {
             )}
 
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h3 className="mb-2 text-xl font-semibold text-foreground [&>svg]:hidden">
                 All posts ({data.posts.length})
               </h3>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-6">
@@ -206,7 +206,7 @@ export default function BrandDetail({ name, onClose }: Props) {
 function Big({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
-      <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="text-[13px] text-muted-foreground">{label}</p>
       <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{value}</p>
     </div>
   );
@@ -227,7 +227,7 @@ function Timeline({
         <div key={t.month} className="flex flex-1 flex-col items-center gap-1">
           <div className="text-[10px] text-gray-500 dark:text-gray-400">{compactNumber(t.reach)}</div>
           <div
-            className="w-full rounded-t bg-[#9C7C2E]/80 dark:bg-[#C9A44A]/80"
+            className="w-full rounded-t bg-primary dark:bg-foreground/80"
             style={{ height: `${(t.reach / max) * 100}%`, minHeight: "2px" }}
             title={`${t.month}: ${t.posts} posts, ${compactNumber(t.reach)} reach`}
           />

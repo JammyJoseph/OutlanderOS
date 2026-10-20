@@ -84,11 +84,11 @@ const CONFIDENCE_LABEL: Record<string, string> = {
   UNVERIFIED: "Unverified",
 };
 
-const cardCls = "rounded-2xl border border-border bg-card p-5";
+const cardCls = "rounded-2xl bg-surface p-6";
 const inputCls =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
 const labelCls =
-  "block text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2";
+  "block mb-2 text-[13px] text-muted-foreground";
 
 function Stars({
   rating,
@@ -113,7 +113,7 @@ function Stars({
             size={size}
             className={
               i <= (rating ?? 0)
-                ? "fill-[#9C7C2E] text-[#9C7C2E] dark:fill-[#C9A44A] dark:text-[#C9A44A]"
+                ? "fill-brand text-brand dark:fill-brand dark:text-brand"
                 : "text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500"
             }
           />
@@ -241,15 +241,15 @@ export default function ContactDetailPage({
                   size={24}
                   className={
                     contact.isFavourite
-                      ? "fill-[#9C7C2E] text-[#9C7C2E] dark:fill-[#C9A44A] dark:text-[#C9A44A]"
-                      : "text-gray-400 dark:text-gray-500 hover:text-[#9C7C2E] dark:hover:text-[#C9A44A]"
+                      ? "fill-brand text-brand dark:fill-brand dark:text-brand"
+                      : "text-gray-400 dark:text-gray-500 hover:text-brand dark:hover:text-brand"
                   }
                 />
               </button>
-              <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">
                 {contact.name}
               </h1>
-              <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+              <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[13px] text-muted-foreground">
                 {contact.category}
               </span>
               {contact.source === "instagram_scan" && contact.confidence && (
@@ -441,7 +441,7 @@ export default function ContactDetailPage({
                     <Instagram size={22} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                    <p className="text-[13px] text-muted-foreground">
                       Instagram
                     </p>
                     <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">@{handle}</p>
@@ -477,7 +477,7 @@ export default function ContactDetailPage({
             )}
 
             <div className={cardCls}>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <p className="text-[13px] text-muted-foreground">
                 Added
               </p>
               <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">
@@ -509,7 +509,7 @@ function InfoRow({
     <div className="flex items-start gap-2.5">
       <span className="mt-0.5 text-gray-600 dark:text-gray-400">{icon}</span>
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
+        <p className="text-[13px] text-muted-foreground">{label}</p>
         <div className="truncate text-sm text-gray-400 dark:text-gray-500">{children}</div>
       </div>
     </div>

@@ -430,6 +430,36 @@ two budget systems still sit outside it.
 - [ ] Track copy pass by someone who produces regularly — the templates are v1.
 - [ ] Possible later: per-step attachments (agreement PDFs) once DocuSign lands.
 
+## 1j. Redesign (from "OutlanderOS Redesign", 27 boards — started 2026-10-20)
+
+Done in the first pass:
+- [x] Foundations: tokens, cool grey scale, status colours, radii, Acumin Pro titles, ExtraCond
+      success headlines, navy dark mode (`globals.css`, `lib/design.ts`).
+- [x] Shell: 248px sidebar, workspace switcher, ⌘K search over deals/productions/clients/
+      contacts (`/api/search`), account menu, phone menu (`components/shell`).
+- [x] Flat logos: ink-outline "OS" pill on light, white pill on colour.
+- [x] Sign in, forgot, check your email, new password + navy "Password updated", forced
+      first password, welcome (Google step). "Keep me logged in" is real (session cookie when
+      unticked). "I have an invite link" left out — there is no invite-link feature.
+- [x] Hub ("Where are you starting?") with last-used and skip-after-login.
+- [x] /me dashboard, the real Tasks page (/me/tasks used to redirect), Holiday as a two-step
+      flow ending in "Request sent".
+- [x] Commercial dashboard; Production overview header; Finance shell and tabs.
+- [x] Bulk passes over every page: black/brass buttons → pills, section cards → grey,
+      tiny grey caps → 20px titles / 13px labels, page titles.
+
+Still to bring to the boards (each page works today in the new styling, but isn't laid out
+like its board yet):
+- [ ] Pipeline board (4.2) — white cards on grey columns, "19 days in stage" flag, filter chips.
+- [ ] New deal as a focused flow (4.3) — Client → Details → Value → Review, replacing the modal.
+- [ ] Deal page (4.4) — stage bar, details card, production / signed IO / people side cards.
+- [ ] Production project budget tab (5.2) and the call sheet wizard as a 5-step flow (5.3).
+- [ ] Shared call sheet (5.4) — navy "your call time" card, confirm / can't make it.
+- [ ] Finance dashboard (6.1) — revenue/costs chart, "Needs your approval", "Owed to us";
+      the money-position cards are still the older outlined style.
+- [ ] Invoice approval (6.2), Print flat plan (6.3), Directory list (6.4), Admin team (6.5).
+- [ ] 24 inline `#9C7C2E` brass values in style props and charts.
+
 ## 1g. Held until TLS (see ROADMAP Phase 1b)
 
 Neither is technically blocked. Both are held because shipping them over

@@ -39,7 +39,7 @@ export default function BrandPerformancePage() {
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Content Tracker
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">Brand Performance</h1>
+          <h1 className="mt-2 text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Brand Performance</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             How brands are performing across your tagged content.
           </p>
@@ -75,7 +75,7 @@ function BrandCard({ brand, onClick }: { brand: BrandSummary; onClick: () => voi
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 text-left transition-shadow hover:shadow-md"
+      className="flex flex-col items-start gap-3 rounded-2xl bg-surface p-6 text-left transition-shadow hover:shadow-md"
     >
       <div
         className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium ${c.bg} ${c.text} ${c.border}`}
@@ -106,7 +106,7 @@ function Stat({
 }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="text-[13px] text-muted-foreground">{label}</p>
       <p className="mt-0.5 inline-flex items-center gap-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
         {icon}
         {value}

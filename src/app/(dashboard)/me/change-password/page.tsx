@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { AuthShell } from "@/components/auth/AuthShell";
 import ChangePasswordForm from "./ChangePasswordForm";
 
-export const metadata: Metadata = { title: "Change password · Outlander OS" };
+export const metadata: Metadata = { title: "Change password · OutlanderOS" };
 
 // Two different situations share this screen, and it used to treat both as the
 // first one:
@@ -27,8 +27,8 @@ export default async function ChangePasswordPage() {
     );
   }
   return (
-    <div className="px-6 py-10 sm:px-10">
-      <div className="w-full max-w-[400px]">
+    <div className="px-4 pb-20 pt-10 sm:px-8 lg:px-12">
+      <div className="mx-auto w-full max-w-[480px]">
         <ChangePasswordForm forced={false} />
       </div>
     </div>

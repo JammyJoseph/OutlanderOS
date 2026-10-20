@@ -173,7 +173,7 @@ export default function CreativeRoundsTab({
   return (
     <div className="max-w-3xl space-y-5">
       {/* Progress rail — one node per round */}
-      <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-5">
+      <div className="rounded-2xl bg-surface p-6">
         <div className="flex items-center justify-between gap-3 mb-4">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Creative progress</h3>
           <span className="text-xs text-gray-400">
@@ -375,7 +375,7 @@ function RoundCard({
               onBlur={() => brief !== (round.brief ?? "") && onUpdate({ brief })}
               rows={4}
               placeholder="The brief — what the client wants, the ask, mandatories, budget signals…"
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-focus focus:border-amber-400"
             />
           </KickField>
 
@@ -387,7 +387,7 @@ function RoundCard({
               onBlur={() => objectives !== (round.objectives ?? "") && onUpdate({ objectives })}
               rows={2}
               placeholder="What this creative needs to achieve — the goals to hit."
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-focus focus:border-amber-400"
             />
           </KickField>
 
@@ -400,7 +400,7 @@ function RoundCard({
                 onChange={(e) => setAudience(e.target.value)}
                 onBlur={() => audience !== (round.targetAudience ?? "") && onUpdate({ targetAudience: audience || null })}
                 placeholder="Who the work is aimed at"
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-amber-400"
               />
             </KickField>
             {/* Deadline for V1 response */}
@@ -409,7 +409,7 @@ function RoundCard({
                 type="date"
                 value={round.deadline ? round.deadline.slice(0, 10) : ""}
                 onChange={(e) => onUpdate({ deadline: e.target.value || null })}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-amber-400"
               />
             </KickField>
           </div>
@@ -422,7 +422,7 @@ function RoundCard({
               onBlur={() => tone !== (round.toneDirection ?? "") && onUpdate({ toneDirection: tone || null })}
               rows={2}
               placeholder="Look, feel and tone — the creative direction to steer by."
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-focus focus:border-amber-400"
             />
           </KickField>
 
@@ -483,7 +483,7 @@ function RoundCard({
 
           {/* Brief */}
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+            <p className="mb-1.5 text-[13px] text-muted-foreground">
               Brief / notes
             </p>
             <textarea
@@ -499,7 +499,7 @@ function RoundCard({
           {/* Deck link + deadline */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+              <p className="mb-1.5 text-[13px] text-muted-foreground">
                 Deck / Figma link
               </p>
               <div className="flex items-center gap-2">
@@ -527,7 +527,7 @@ function RoundCard({
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+              <p className="mb-1.5 text-[13px] text-muted-foreground">
                 Deadline
               </p>
               <input
@@ -545,7 +545,7 @@ function RoundCard({
             round.status === "REVISION_NEEDED" ||
             round.feedback) && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+              <p className="mb-1.5 flex items-center gap-1 text-[13px] text-muted-foreground">
                 <MessageSquare size={11} /> Review feedback
               </p>
               <textarea
@@ -619,7 +619,7 @@ function KickField({
 }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+      <p className="mb-1.5 flex items-center gap-1 text-[13px] text-muted-foreground">
         {icon} {label}
       </p>
       {children}
@@ -638,7 +638,7 @@ function RefLinks({ links, onChange }: { links: string[]; onChange: (links: stri
   }
   return (
     <div>
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+      <p className="mb-1.5 flex items-center gap-1 text-[13px] text-muted-foreground">
         <LinkIcon size={11} /> Reference links
       </p>
       {links.length > 0 && (
@@ -680,7 +680,7 @@ function RefLinks({ links, onChange }: { links: string[]; onChange: (links: stri
             }
           }}
           placeholder="https:// — decks, examples, brand refs"
-          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-amber-400"
         />
         <button
           onClick={add}

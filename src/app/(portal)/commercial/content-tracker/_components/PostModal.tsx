@@ -110,7 +110,7 @@ export default function PostModal({ post, campaigns, onClose, onSave }: Props) {
               >
                 {typeStyle.label}
               </span>
-              <h2 className="mt-2 text-xs uppercase tracking-wider text-gray-400">
+              <h2 className="mt-2 text-xl font-semibold text-foreground [&>svg]:hidden">
                 {post.mediaType.replace("_", " ")} · {new Date(post.timestamp).toLocaleString()}
               </h2>
             </div>
@@ -124,7 +124,7 @@ export default function PostModal({ post, campaigns, onClose, onSave }: Props) {
 
           <div className="space-y-4 p-5">
             <div>
-              <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h3 className="mb-1 text-xl font-semibold text-foreground [&>svg]:hidden">
                 Caption
               </h3>
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900 dark:text-gray-100">
@@ -146,7 +146,7 @@ export default function PostModal({ post, campaigns, onClose, onSave }: Props) {
             </div>
 
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h3 className="mb-2 text-xl font-semibold text-foreground [&>svg]:hidden">
                 Brands
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -183,7 +183,7 @@ export default function PostModal({ post, campaigns, onClose, onSave }: Props) {
             </div>
 
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h3 className="mb-2 text-xl font-semibold text-foreground [&>svg]:hidden">
                 Post Type
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -204,7 +204,7 @@ export default function PostModal({ post, campaigns, onClose, onSave }: Props) {
             </div>
 
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h3 className="mb-2 text-xl font-semibold text-foreground [&>svg]:hidden">
                 Campaign
               </h3>
               <select
@@ -227,7 +227,7 @@ export default function PostModal({ post, campaigns, onClose, onSave }: Props) {
             </div>
 
             <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h3 className="mb-2 text-xl font-semibold text-foreground [&>svg]:hidden">
                 Notes
               </h3>
               <textarea
@@ -264,7 +264,7 @@ export default function PostModal({ post, campaigns, onClose, onSave }: Props) {
               <button
                 onClick={save}
                 disabled={saving}
-                className="rounded-lg bg-[#111111] px-4 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-black shadow-sm hover:bg-[#111111] dark:hover:bg-white disabled:opacity-60"
+                className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-foreground dark:hover:bg-white disabled:opacity-60"
               >
                 {saving ? "Saving…" : "Save"}
               </button>

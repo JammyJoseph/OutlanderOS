@@ -253,7 +253,7 @@ export default function CreditConfirmPage({
   if (stage === "agreement") {
     return (
       <Shell>
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">
+        <p className="text-[13px] text-muted-foreground">
           Private &amp; confidential{first ? ` · for ${r.name}` : ""}
         </p>
         <h1 className="mt-3 font-serif text-3xl leading-tight text-black">
@@ -269,7 +269,7 @@ export default function CreditConfirmPage({
         <div className="mt-8 space-y-5 border-t border-gray-200 pt-6">
           {data!.agreement.terms.map((t) => (
             <div key={t.heading}>
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">
+              <h2 className="text-xl font-semibold text-foreground [&>svg]:hidden">
                 {t.heading}
               </h2>
               <p className="mt-1.5 text-sm leading-relaxed text-black">{t.body}</p>
@@ -288,7 +288,7 @@ export default function CreditConfirmPage({
           <button
             onClick={accept}
             disabled={busy}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             I agree, show me
@@ -336,7 +336,7 @@ export default function CreditConfirmPage({
 
   return (
     <Shell>
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">
+      <p className="text-[13px] text-muted-foreground">
         The Outlander Directory · Issue 02
       </p>
       <h1 className="mt-3 font-serif text-3xl leading-tight text-black">
@@ -454,7 +454,7 @@ export default function CreditConfirmPage({
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
           <div className="flex items-center gap-2">
             <Lock size={13} className="text-gray-500" />
-            <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">
+            <h2 className="text-xl font-semibold text-foreground [&>svg]:hidden">
               Postal address, kept private
             </h2>
           </div>

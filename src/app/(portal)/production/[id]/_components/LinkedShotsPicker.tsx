@@ -37,7 +37,7 @@ export function LinkedShotsPicker({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        <span className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
           <Link2 size={11} /> Linked shots
         </span>
         {selected.length === 0 && (

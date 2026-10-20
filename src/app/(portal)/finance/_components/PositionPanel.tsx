@@ -59,7 +59,7 @@ interface Position {
 
 const LAYER: Record<Layer, { label: string; dot: string; text: string }> = {
   ACTUAL: { label: 'Actual', dot: '#2E5E44', text: 'text-[#2E5E44] dark:text-[#4E8F6C]' },
-  COMMITTED: { label: 'Committed', dot: '#9C7C2E', text: 'text-[#9C7C2E] dark:text-[#C9A44A]' },
+  COMMITTED: { label: 'Committed', dot: '#9C7C2E', text: 'text-brand dark:text-brand' },
   FORECAST: { label: 'Forecast', dot: '#2F4B8F', text: 'text-[#2F4B8F] dark:text-[#7C97D6]' },
 }
 
@@ -88,7 +88,7 @@ function FigureCard({
   const layer = LAYER[f.layer]
   return (
     <div className="rounded-lg border border-border bg-card px-5 py-4">
-      <p className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+      <p className="mb-1.5 flex items-center gap-2 text-[13px] text-muted-foreground">
         <span className="h-2 w-2 shrink-0" style={{ backgroundColor: layer.dot }} />
         <span className="truncate">{label}</span>
       </p>
@@ -147,7 +147,7 @@ export default function PositionPanel() {
         className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-4 py-2.5 text-[12px] ${
           p.xero.connected && !unknown
             ? 'border-border bg-card text-gray-500 dark:text-gray-400'
-            : 'border-[#e5c9a0] bg-[#fdf6ea] text-[#7a5a1e] dark:border-[#5a4520] dark:bg-[#2a2008] dark:text-[#C9A44A]'
+            : 'border-[#e5c9a0] bg-[#fdf6ea] text-[#7a5a1e] dark:border-[#5a4520] dark:bg-[#2a2008] dark:text-brand'
         }`}
       >
         {p.xero.connected && !unknown ? (
@@ -222,7 +222,7 @@ export default function PositionPanel() {
           a permanent "£0 unattributed" badge is noise that trains people to
           ignore the place a real number will one day appear. */}
       {p.uncodedSpend.value > 0 && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-[#e5c9a0] bg-[#fdf6ea] px-4 py-3 text-[12px] text-[#7a5a1e] dark:border-[#5a4520] dark:bg-[#2a2008] dark:text-[#C9A44A]">
+        <div className="flex items-start gap-2.5 rounded-lg border border-[#e5c9a0] bg-[#fdf6ea] px-4 py-3 text-[12px] text-[#7a5a1e] dark:border-[#5a4520] dark:bg-[#2a2008] dark:text-brand">
           <CircleDot className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
             <strong>{fmtGBP(p.uncodedSpend.value)}</strong> of spend across{' '}

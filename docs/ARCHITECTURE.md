@@ -167,5 +167,7 @@ Client-heavy: 143 client components, 225 `fetch()` calls in `.tsx`, 59 of them i
 `revalidate`, no React `cache()`, while 27 routes are `force-dynamic`. **Zero `loading.tsx`**,
 so every waterfall shows as a blank.
 
-Error boundaries exist at every layout level, which is good. Theme is Paper Standard (light);
-see `AGENTS.md` for the CSS compiler quirks.
+Error boundaries exist at every layout level, which is good. The design is the 2026
+redesign — one shell (`components/shell`), one set of page parts (`components/os`), one
+workspace config (`lib/workspaces.ts`); see `AGENTS.md` → Styling, and for the CSS compiler
+quirks.

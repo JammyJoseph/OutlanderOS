@@ -13,7 +13,7 @@ function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
 /** A card with a title line and a few body lines — good default page skeleton. */
 function SkeletonCard({ lines = 3 }: { lines?: number }) {
   return (
-    <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+    <div className="rounded-2xl bg-surface p-6">
       <Skeleton className="h-5 w-1/3" />
       <div className="mt-4 space-y-2.5">
         {Array.from({ length: lines }).map((_, i) => (
@@ -31,7 +31,7 @@ function SkeletonList({ rows = 5 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4"
+          className="flex items-center gap-3 rounded-2xl bg-surface p-6"
         >
           <Skeleton className="h-9 w-9 rounded-full" />
           <div className="flex-1 space-y-2">

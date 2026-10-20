@@ -94,7 +94,7 @@ export default function LeaderboardPage() {
             <Trophy size={20} />
           </span>
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+            <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">
               Leaderboard
             </h1>
             <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
@@ -242,7 +242,7 @@ function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: number }) 
   return (
     <Link
       href={`/directory/${entry.id}`}
-      className="group relative flex flex-col items-center gap-3 rounded-2xl border bg-card p-5 text-center transition-colors hover:border-[var(--ring)]"
+      className="group relative flex flex-col items-center gap-3 rounded-2xl bg-surface p-6 text-center transition-colors hover:bg-surface-2(--ring)]"
       style={{ borderColor: `${medal.color}66` }}
     >
       {/* Rank badge */}
@@ -271,7 +271,7 @@ function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: number }) 
 
       <div className="min-w-0">
         <p className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">{entry.name}</p>
-        <span className="mt-1 inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+        <span className="mt-1 inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[13px] text-muted-foreground">
           {entry.category}
         </span>
       </div>
@@ -312,7 +312,7 @@ function LeaderboardRow({ entry, rank }: { entry: LeaderboardEntry; rank: number
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{entry.name}</p>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-[13px] text-muted-foreground">
             {entry.category}
           </span>
           {handle && (

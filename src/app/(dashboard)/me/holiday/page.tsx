@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Calendar, Plus, X, Check, AlertTriangle, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import Link from 'next/link'
+import { Plus, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Field } from '@/components/ui/Field'
 import { INPUT_CLS } from '@/lib/styles'
+import { Avatar, FlowFrame, FlowTitle, KV, Overlay, Page, PageHead, Panel, Row, Rows, SectionHead, Split, StatGrid, SuccessScreen, Table, Tag, pill } from '@/components/os'
 
 type HolidayStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 type HolidayType = 'ANNUAL' | 'SICK' | 'PERSONAL' | 'OTHER'
@@ -60,6 +62,30 @@ function bookedDatesMap(requests: HolidayRequest[]): Map<string, HolidayStatus> 
   return map
 }
 
+// Working days between two dates, inclusive — what the server will charge.
+function workingDays(startISO: string, endISO: string): number {
+  if (!startISO || !endISO) return 0
+  const cur = new Date(startISO)
+  const end = new Date(endISO)
+  if (end < cur) return 0
+  let n = 0
+  while (cur <= end) {
+    const day = cur.getDay()
+    if (day !== 0 && day !== 6) n++
+    cur.setDate(cur.getDate() + 1)
+  }
+  return n
+}
+
+const TYPES: { value: HolidayType; title: string; text: string }[] = [
+  { value: 'ANNUAL', title: 'Holiday', text: 'Comes out of your allowance' },
+  { value: 'SICK', title: 'Sick', text: "Doesn't use your allowance" },
+  { value: 'PERSONAL', title: 'Personal', text: 'Appointments, family, moving house' },
+  { value: 'OTHER', title: 'Other', text: 'Anything else — add a note' },
+]
+
+type Step = 'closed' | 'dates' | 'review' | 'sent'
+
 export default function HolidayPage() {
   const [me, setMe] = useState<Me | null>(null)
   const [balance, setBalance] = useState<Balance | null>(null)
@@ -68,7 +94,7 @@ export default function HolidayPage() {
   const [pendingTeam, setPendingTeam] = useState<HolidayRequest[]>([])
   const [loading, setLoading] = useState(true)
 
-  const [showForm, setShowForm] = useState(false)
+  const [step, setStep] = useState<Step>('closed')
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
     startDate: todayISO(7),
@@ -110,16 +136,21 @@ export default function HolidayPage() {
     }
   }
 
-  async function submitRequest() {
+  function toReview() {
     setError(null)
     if (!form.startDate || !form.endDate) {
-      setError('Please choose both a start and end date.')
+      setError('Choose both a first and a last day.')
       return
     }
     if (new Date(form.endDate) < new Date(form.startDate)) {
-      setError('End date must be on or after the start date.')
+      setError('The last day has to be on or after the first day.')
       return
     }
+    setStep('review')
+  }
+
+  async function submitRequest() {
+    setError(null)
     setSubmitting(true)
     try {
       const res = await fetch('/api/holiday', {
@@ -129,15 +160,20 @@ export default function HolidayPage() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setError(data.error || 'Failed to submit request')
+        setError(data.error || "Couldn't send your request. Try again.")
         return
       }
-      setShowForm(false)
-      setForm({ startDate: todayISO(7), endDate: todayISO(7), type: 'ANNUAL', notes: '' })
-      await load()
+      setStep('sent')
+      void load()
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function closeFlow() {
+    setStep('closed')
+    setError(null)
+    setForm({ startDate: todayISO(7), endDate: todayISO(7), type: 'ANNUAL', notes: '' })
   }
 
   async function updateStatus(id: string, status: HolidayStatus) {
@@ -151,28 +187,33 @@ export default function HolidayPage() {
 
   const dateMap = useMemo(() => bookedDatesMap(requests), [requests])
 
+  // Who else is off in the chosen range — shown before you send, not after.
+  const overlaps = useMemo(() => {
+    if (!form.startDate || !form.endDate) return [] as string[]
+    const s0 = new Date(form.startDate).getTime()
+    const e0 = new Date(form.endDate).getTime()
+    const names = new Set<string>()
+    for (const r of teamApproved) {
+      if (r.userId === me?.id) continue
+      if (new Date(r.startDate).getTime() <= e0 && new Date(r.endDate).getTime() >= s0 && r.user?.name) names.add(r.user.name.split(' ')[0])
+    }
+    return [...names]
+  }, [form.startDate, form.endDate, teamApproved, me?.id])
+
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-8">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="mt-2 h-4 w-64" />
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-            <Skeleton className="h-6 w-40" />
-            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 rounded-xl" />
-              ))}
-            </div>
-            <Skeleton className="mt-5 h-2.5 w-full rounded-full" />
-          </div>
-          <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="mt-4 h-48 w-full rounded-xl" />
-          </div>
+      <Page>
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-56" />
+          <Skeleton className="h-10 w-40" />
         </div>
-        <Skeleton className="mt-10 h-40 w-full rounded-2xl" />
-      </div>
+        <StatGrid>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[132px] rounded-2xl" />
+          ))}
+        </StatGrid>
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </Page>
     )
   }
 
@@ -183,251 +224,262 @@ export default function HolidayPage() {
   const remaining = balance?.remaining ?? allowance
   const usedPct = Math.min(100, Math.round((used / Math.max(allowance, 1)) * 100))
   const pendingPct = Math.min(100 - usedPct, Math.round((pending / Math.max(allowance, 1)) * 100))
+  const days = workingDays(form.startDate, form.endDate)
+  const charged = form.type === 'ANNUAL' ? days : 0
+  const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Holiday</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Request time off and view your balance</p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Holiday balance</h2>
-              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Annual leave for {balance?.year ?? new Date().getFullYear()}</p>
-            </div>
-            <button
-              onClick={() => setShowForm((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-3.5 py-2 text-sm font-semibold hover:brightness-95"
-            >
-              <Plus className="h-4 w-4" /> Request time off
-            </button>
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <BalanceTile label="Allowance" value={`${allowance}`} suffix="days" />
-            <BalanceTile label="Used" value={`${used}`} suffix="days" tone="green" />
-            <BalanceTile label="Pending" value={`${pending}`} suffix="days" tone="amber" />
-            <BalanceTile label="Remaining" value={`${remaining}`} suffix="days" tone="primary" />
-          </div>
-
-          <div className="mt-5">
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-              <div className="flex h-full">
-                <div className="h-full bg-emerald-400" style={{ width: `${usedPct}%` }} />
-                <div className="h-full bg-amber-300" style={{ width: `${pendingPct}%` }} />
-              </div>
-            </div>
-            <div className="mt-2 flex items-center gap-4 text-[11px] text-gray-500 dark:text-gray-400">
-              <Legend color="bg-emerald-400" label="Used" />
-              <Legend color="bg-amber-300" label="Pending" />
-              <Legend color="bg-gray-100 dark:bg-gray-800" label="Remaining" />
-            </div>
-          </div>
-
-          {showForm && (
-            <div className="mt-6 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/60 p-5">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">New request</h3>
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Start date">
-                  <input type="date" className={INPUT_CLS} value={form.startDate}
-                    onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
-                </Field>
-                <Field label="End date">
-                  <input type="date" className={INPUT_CLS} value={form.endDate}
-                    onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
-                </Field>
-                <Field label="Type">
-                  <select className={INPUT_CLS} value={form.type}
-                    onChange={(e) => setForm({ ...form, type: e.target.value as HolidayType })}>
-                    <option value="ANNUAL">Annual leave</option>
-                    <option value="SICK">Sick</option>
-                    <option value="PERSONAL">Personal</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </Field>
-                <Field label="Notes (optional)" wide>
-                  <textarea className={INPUT_CLS} rows={2} value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-                </Field>
-              </div>
-              {error && (
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 px-3 py-1.5 text-xs font-medium text-red-700 dark:text-red-300">
-                  <AlertTriangle className="h-3.5 w-3.5" /> {error}
+    <>
+      {(step === 'dates' || step === 'review') && (
+        <Overlay label="Book time off" onClose={closeFlow}>
+          <FlowFrame steps={['Dates', 'Review']} current={step === 'dates' ? 0 : 1} onClose={closeFlow}>
+            {step === 'dates' ? (
+              <>
+                <FlowTitle sub={`An admin approves requests. You have ${remaining} days left this year.`}>When are you off?</FlowTitle>
+                <fieldset className="mb-6">
+                  <legend className="mb-2 text-[15px] text-ink-2">Type</legend>
+                  <div className="grid gap-2">
+                    {TYPES.map((t) => {
+                      const on = form.type === t.value
+                      return (
+                        <label
+                          key={t.value}
+                          className={`flex cursor-pointer items-center gap-3.5 rounded-xl px-4 py-3.5 ${on ? 'shadow-[inset_0_0_0_2px_var(--foreground)]' : 'shadow-[inset_0_0_0_1px_var(--field)] hover:bg-surface'}`}
+                        >
+                          <input
+                            type="radio"
+                            name="type"
+                            value={t.value}
+                            checked={on}
+                            onChange={() => setForm({ ...form, type: t.value })}
+                            className="size-5 accent-foreground"
+                          />
+                          <span>
+                            <span className="block font-semibold">{t.title}</span>
+                            <span className="block text-sm text-muted-foreground">{t.text}</span>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </fieldset>
+                <div className="mb-6 grid grid-cols-2 gap-3">
+                  <Field label="First day">
+                    <input type="date" className={INPUT_CLS} value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+                  </Field>
+                  <Field label="Last day">
+                    <input type="date" className={INPUT_CLS} value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+                  </Field>
                 </div>
-              )}
-              <div className="mt-4 flex justify-end gap-2">
-                <button onClick={() => setShowForm(false)} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
-                <button onClick={submitRequest} disabled={submitting}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-semibold hover:brightness-95 disabled:opacity-50">
-                  <Check className="h-4 w-4" /> {submitting ? 'Submitting…' : 'Submit'}
+                <div className="mb-6 rounded-xl bg-surface px-5 py-2">
+                  <KV k="Working days" v={days} />
+                  <div className="border-t border-line">
+                    <KV k="Left after this" v={`${Math.max(0, remaining - charged)} days`} />
+                  </div>
+                  {overlaps.length > 0 && (
+                    <p className="flex items-center gap-2 border-t border-line py-3 text-sm text-ink-2">
+                      <Users className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden />
+                      {overlaps.join(', ')} {overlaps.length === 1 ? 'is' : 'are'} also off then.
+                    </p>
+                  )}
+                </div>
+                {error && <p role="alert" className="mb-4 rounded-xl bg-bad-bg px-4 py-3 text-[15px] font-medium text-bad">{error}</p>}
+                <button type="button" onClick={toReview} className={`${pill('primary')} w-full`}>
+                  Continue
                 </button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={() => setStep('dates')} className="mb-6 inline-flex items-center gap-2 text-sm font-semibold hover:text-brand">
+                  <ChevronLeft className="size-[18px]" strokeWidth={1.75} /> Back
+                </button>
+                <FlowTitle sub="Check it, then send it for approval.">Review your request</FlowTitle>
+                <div className="mb-6 rounded-xl bg-surface px-5 py-2 [&>*+*]:border-t [&>*+*]:border-line">
+                  <KV k="Type" v={prettyType(form.type)} />
+                  <KV k="From" v={longDate(form.startDate)} />
+                  <KV k="To" v={longDate(form.endDate)} />
+                  <KV k="Working days" v={days} />
+                  <KV k="Left after this" v={`${Math.max(0, remaining - charged)} days`} />
+                </div>
+                <Field label="Note for the approver (optional)">
+                  <textarea className={INPUT_CLS} rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                </Field>
+                {error && <p role="alert" className="mt-4 rounded-xl bg-bad-bg px-4 py-3 text-[15px] font-medium text-bad">{error}</p>}
+                <button type="button" onClick={submitRequest} disabled={submitting} className={`${pill('primary')} mt-6 w-full`}>
+                  {submitting ? 'Sending…' : 'Send request'}
+                </button>
+              </>
+            )}
+          </FlowFrame>
+        </Overlay>
+      )}
+
+      {step === 'sent' && (
+        <Overlay label="Request sent" onClose={closeFlow}>
+          <SuccessScreen
+            title="Request sent"
+            actions={
+              <>
+                <Link href="/me" className={pill('primary')} onClick={closeFlow}>
+                  Back to my dashboard
+                </Link>
+                <button type="button" className={pill('onNavy')} onClick={() => setStep('dates')}>
+                  Book more time
+                </button>
+              </>
+            }
+          >
+            {formatRange(form.startDate, form.endDate)} is with an admin for approval. It shows as pending on the team calendar until then.
+          </SuccessScreen>
+        </Overlay>
+      )}
+
+      <Page>
+        <PageHead
+          eyebrow={`${balance?.year ?? new Date().getFullYear()} · ${pending ? `${pending} days pending` : 'nothing pending'}`}
+          figure={remaining}
+          figureNote={`of ${allowance} days left`}
+          actions={
+            <button type="button" onClick={() => setStep('dates')} className={pill('primary')}>
+              <Plus strokeWidth={1.75} /> Book time off
+            </button>
+          }
+        />
+
+        <Split
+          main={
+            <Panel title="This year">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-line">
+                <div className="flex h-full">
+                  <div className="h-full bg-foreground" style={{ width: `${usedPct}%` }} />
+                  <div className="h-full bg-primary" style={{ width: `${pendingPct}%` }} />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+              <div className="mt-3 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
+                <Legend color="bg-foreground" label={`${used} used`} />
+                <Legend color="bg-primary" label={`${pending} pending`} />
+                <Legend color="bg-line" label={`${remaining} left`} />
+              </div>
+            </Panel>
+          }
+          side={
+            <Panel title="This month">
+              <MiniCalendar dateMap={dateMap} />
+            </Panel>
+          }
+        />
 
-        <div className="rounded-2xl bg-white dark:bg-gray-900 p-5 shadow-sm border border-gray-100 dark:border-gray-800">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">This month</h3>
-          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Booked days at a glance</p>
-          <MiniCalendar dateMap={dateMap} />
-        </div>
-      </div>
+        {isAdmin && (
+          <Panel title="Waiting for you" action={<span className="text-sm text-muted-foreground">{pendingTeam.length} {pendingTeam.length === 1 ? 'request' : 'requests'}</span>}>
+            {pendingTeam.length === 0 ? (
+              <p className="py-2 text-[15px] text-muted-foreground">All clear. No requests waiting.</p>
+            ) : (
+              <Rows>
+                {pendingTeam.map((r) => (
+                  <Row
+                    key={r.id}
+                    lead={<Avatar name={r.user?.name} tone="card" />}
+                    title={r.user?.name ?? 'Unknown'}
+                    meta={`${formatRange(r.startDate, r.endDate)} · ${r.days} ${r.days === 1 ? 'day' : 'days'} · ${prettyType(r.type)}${r.notes ? ` · ${r.notes}` : ''}`}
+                    trail={
+                      <span className="flex shrink-0 gap-2">
+                        <button type="button" onClick={() => setPendingAction({ id: r.id, status: 'REJECTED', who: r.user?.name })} className={pill('danger', 'sm')}>
+                          Reject
+                        </button>
+                        <button type="button" onClick={() => setPendingAction({ id: r.id, status: 'APPROVED', who: r.user?.name })} className={pill('primary', 'sm')}>
+                          Approve
+                        </button>
+                      </span>
+                    }
+                  />
+                ))}
+              </Rows>
+            )}
+          </Panel>
+        )}
 
-      <section className="mt-10">
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Team calendar</h2>
-        </div>
-        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Approved time off across the team</p>
-        <TeamCalendar requests={teamApproved} />
-      </section>
+        <section className="flex flex-col gap-3">
+          <SectionHead title="Team calendar" action={<span className="text-sm text-muted-foreground">Approved time off</span>} />
+          <TeamCalendar requests={teamApproved} />
+        </section>
 
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">My requests</h2>
-        <div className="mt-4 overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
+        <section className="flex flex-col gap-3">
+          <SectionHead title="My requests" />
           {requests.length === 0 ? (
-            <div className="px-6 py-10 text-center text-sm text-gray-400 dark:text-gray-500">No requests yet. Click <span className="font-medium text-gray-600 dark:text-gray-400">Request time off</span> to book some leave.</div>
+            <div className="rounded-2xl bg-surface px-6 py-10 text-center text-[15px] text-muted-foreground">No requests yet.</div>
           ) : (
-            <table className="w-full text-sm">
+            <Table>
               <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-800 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  <th className="px-5 py-3">Dates</th>
-                  <th className="px-5 py-3">Days</th>
-                  <th className="px-5 py-3">Type</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Notes</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
+                <tr>
+                  <th>Dates</th>
+                  <th>Days</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Note</th>
+                  <th className="text-right">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50/60 dark:hover:bg-gray-800/60">
-                    <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{formatRange(r.startDate, r.endDate)}</td>
-                    <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{r.days}</td>
-                    <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{prettyType(r.type)}</td>
-                    <td className="px-5 py-3"><StatusBadge status={r.status} /></td>
-                    <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate">{r.notes || '—'}</td>
-                    <td className="px-5 py-3 text-right">
+                  <tr key={r.id}>
+                    <td className="font-semibold">{formatRange(r.startDate, r.endDate)}</td>
+                    <td className="tabular-nums">{r.days}</td>
+                    <td className="text-ink-2">{prettyType(r.type)}</td>
+                    <td>
+                      <StatusBadge status={r.status} />
+                    </td>
+                    <td className="max-w-xs truncate text-muted-foreground">{r.notes || '—'}</td>
+                    <td className="text-right">
                       {r.status === 'PENDING' && (
-                        <button onClick={() => setPendingAction({ id: r.id, status: 'CANCELLED' })}
-                          className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-300">Cancel</button>
+                        <button type="button" onClick={() => setPendingAction({ id: r.id, status: 'CANCELLED' })} className="text-sm font-semibold text-muted-foreground hover:text-bad">
+                          Cancel
+                        </button>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           )}
-        </div>
-      </section>
-
-      {isAdmin && (
-        <section className="mt-10">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Pending approvals</h2>
-            <span className="text-xs text-gray-400 dark:text-gray-500">{pendingTeam.length} {pendingTeam.length === 1 ? 'request' : 'requests'}</span>
-          </div>
-          <div className="mt-4 overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
-            {pendingTeam.length === 0 ? (
-              <div className="px-6 py-10 text-center text-sm text-gray-400 dark:text-gray-500">All clear — no pending requests.</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 dark:border-gray-800 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                    <th className="px-5 py-3">Requester</th>
-                    <th className="px-5 py-3">Dates</th>
-                    <th className="px-5 py-3">Days</th>
-                    <th className="px-5 py-3">Type</th>
-                    <th className="px-5 py-3">Notes</th>
-                    <th className="px-5 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingTeam.map((r) => (
-                    <tr key={r.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50/60 dark:hover:bg-gray-800/60">
-                      <td className="px-5 py-3">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{r.user?.name ?? 'Unknown'}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{r.user?.department || r.user?.email}</div>
-                      </td>
-                      <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{formatRange(r.startDate, r.endDate)}</td>
-                      <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{r.days}</td>
-                      <td className="px-5 py-3 text-gray-600 dark:text-gray-400">{prettyType(r.type)}</td>
-                      <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs max-w-xs truncate">{r.notes || '—'}</td>
-                      <td className="px-5 py-3 text-right">
-                        <div className="inline-flex gap-1.5">
-                          <button onClick={() => setPendingAction({ id: r.id, status: 'APPROVED', who: r.user?.name })}
-                            className="rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30">Approve</button>
-                          <button onClick={() => setPendingAction({ id: r.id, status: 'REJECTED', who: r.user?.name })}
-                            className="rounded-lg bg-red-50 dark:bg-red-900/30 px-2.5 py-1.5 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30">Reject</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
         </section>
-      )}
 
-      <ConfirmDialog
-        open={!!pendingAction}
-        title={
-          pendingAction?.status === 'APPROVED'
-            ? 'Approve request?'
-            : pendingAction?.status === 'REJECTED'
-              ? 'Reject request?'
-              : 'Cancel request?'
-        }
-        message={
-          pendingAction?.status === 'APPROVED'
-            ? `Approve ${pendingAction?.who ?? 'this'} time-off request? The days will be deducted from their balance.`
-            : pendingAction?.status === 'REJECTED'
-              ? `Reject ${pendingAction?.who ?? 'this'} time-off request?`
-              : 'Cancel this time-off request? This cannot be undone.'
-        }
-        confirmLabel={
-          pendingAction?.status === 'APPROVED'
-            ? 'Approve'
-            : pendingAction?.status === 'REJECTED'
-              ? 'Reject'
-              : 'Cancel request'
-        }
-        confirmVariant={pendingAction?.status === 'APPROVED' ? 'primary' : 'danger'}
-        busy={actionBusy}
-        onConfirm={async () => {
-          if (!pendingAction) return
-          setActionBusy(true)
-          try {
-            await updateStatus(pendingAction.id, pendingAction.status)
-          } finally {
-            setActionBusy(false)
-            setPendingAction(null)
+        <ConfirmDialog
+          open={!!pendingAction}
+          title={
+            pendingAction?.status === 'APPROVED'
+              ? 'Approve request?'
+              : pendingAction?.status === 'REJECTED'
+                ? 'Reject request?'
+                : 'Cancel request?'
           }
-        }}
-        onCancel={() => setPendingAction(null)}
-      />
-    </div>
-  )
-}
-
-function BalanceTile({ label, value, suffix, tone }: { label: string; value: string; suffix: string; tone?: 'green' | 'amber' | 'primary' }) {
-  const toneClass =
-    tone === 'green' ? 'text-emerald-600 dark:text-emerald-400' :
-    tone === 'amber' ? 'text-amber-600 dark:text-amber-400' :
-    tone === 'primary' ? 'text-[#9C7C2E] dark:text-[#C9A44A]' :
-    'text-gray-900 dark:text-gray-100'
-  return (
-    <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-800/40 p-4">
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</div>
-      <div className="mt-1 flex items-baseline gap-1">
-        <span className={`text-2xl font-semibold ${toneClass}`}>{value}</span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">{suffix}</span>
-      </div>
-    </div>
+          message={
+            pendingAction?.status === 'APPROVED'
+              ? `Approve ${pendingAction?.who ?? 'this'} time-off request? The days come off their balance.`
+              : pendingAction?.status === 'REJECTED'
+                ? `Reject ${pendingAction?.who ?? 'this'} time-off request?`
+                : 'Cancel this time-off request? This cannot be undone.'
+          }
+          confirmLabel={
+            pendingAction?.status === 'APPROVED' ? 'Approve' : pendingAction?.status === 'REJECTED' ? 'Reject' : 'Cancel request'
+          }
+          confirmVariant={pendingAction?.status === 'APPROVED' ? 'primary' : 'danger'}
+          busy={actionBusy}
+          onConfirm={async () => {
+            if (!pendingAction) return
+            setActionBusy(true)
+            try {
+              await updateStatus(pendingAction.id, pendingAction.status)
+            } finally {
+              setActionBusy(false)
+              setPendingAction(null)
+            }
+          }}
+          onCancel={() => setPendingAction(null)}
+        />
+      </Page>
+    </>
   )
 }
 
@@ -440,18 +492,14 @@ function Legend({ color, label }: { color: string; label: string }) {
 }
 
 function StatusBadge({ status }: { status: HolidayStatus }) {
-  const map: Record<HolidayStatus, { bg: string; text: string; label: string; icon?: React.ReactNode }> = {
-    PENDING: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-800 dark:text-amber-300', label: 'Pending', icon: <Clock className="h-3 w-3" /> },
-    APPROVED: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-800 dark:text-emerald-300', label: 'Approved', icon: <Check className="h-3 w-3" /> },
-    REJECTED: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', label: 'Rejected', icon: <X className="h-3 w-3" /> },
-    CANCELLED: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-400', label: 'Cancelled' },
+  const map: Record<HolidayStatus, { tone: 'warn' | 'ok' | 'bad' | 'neutral'; label: string }> = {
+    PENDING: { tone: 'warn', label: 'Pending' },
+    APPROVED: { tone: 'ok', label: 'Approved' },
+    REJECTED: { tone: 'bad', label: 'Rejected' },
+    CANCELLED: { tone: 'neutral', label: 'Cancelled' },
   }
   const cfg = map[status]
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
-      {cfg.icon}{cfg.label}
-    </span>
-  )
+  return <Tag tone={cfg.tone}>{cfg.label}</Tag>
 }
 
 function prettyType(t: HolidayType): string {
@@ -460,7 +508,7 @@ function prettyType(t: HolidayType): string {
 
 // Per-person colour palette for the team calendar rows.
 const TEAM_COLORS = [
-  { bar: 'bg-[#9C7C2E] dark:bg-[#C9A44A]', text: 'text-[#9C7C2E] dark:text-[#C9A44A]', dot: 'bg-[#9C7C2E] dark:bg-[#C9A44A]' },
+  { bar: 'bg-foreground dark:bg-foreground', text: 'text-brand dark:text-brand', dot: 'bg-foreground dark:bg-foreground' },
   { bar: 'bg-[#2F4B8F] dark:bg-[#5B7BC4]', text: 'text-[#2F4B8F] dark:text-[#5B7BC4]', dot: 'bg-[#2F4B8F] dark:bg-[#5B7BC4]' },
   { bar: 'bg-[#2E5E44] dark:bg-[#4E8F6C]', text: 'text-[#2E5E44] dark:text-[#4E8F6C]', dot: 'bg-[#2E5E44] dark:bg-[#4E8F6C]' },
   { bar: 'bg-[#A93B2E] dark:bg-[#D0584A]', text: 'text-[#A93B2E] dark:text-[#D0584A]', dot: 'bg-[#A93B2E] dark:bg-[#D0584A]' },
@@ -556,7 +604,7 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
           <table className="w-full border-separate" style={{ borderSpacing: '1px 4px' }}>
             <thead>
               <tr>
-                <th className="w-32 min-w-32 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                <th className="w-32 min-w-32 text-left text-[13px] text-muted-foreground">
                   Person
                 </th>
                 {Array.from({ length: daysInMonth }, (_, i) => {
@@ -567,8 +615,8 @@ function TeamCalendar({ requests }: { requests: HolidayRequest[] }) {
                     <th
                       key={i}
                       className={`min-w-5 pb-1 text-center text-[9px] font-medium ${
-                        isToday ? 'text-[#9C7C2E] dark:text-[#C9A44A] font-bold' : isWeekend ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-gray-500'
-                      }`}
+ isToday ? 'text-brand dark:text-brand font-bold' : isWeekend ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-gray-500'
+ }`}
                     >
                       {i + 1}
                     </th>
@@ -634,10 +682,8 @@ function MiniCalendar({ dateMap }: { dateMap: Map<string, HolidayStatus> }) {
 
   return (
     <div className="mt-4">
-      <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
-        <Calendar className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" /> {monthName}
-      </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+      <div className="mb-3 text-sm font-semibold text-ink-2">{monthName}</div>
+      <div className="grid grid-cols-7 gap-1 text-center text-[13px] text-muted-foreground">
         {['M','T','W','T','F','S','S'].map((d, i) => <div key={i} className="py-1">{d}</div>)}
       </div>
       <div className="grid grid-cols-7 gap-1 mt-1">
@@ -649,7 +695,7 @@ function MiniCalendar({ dateMap }: { dateMap: Map<string, HolidayStatus> }) {
           if (status === 'APPROVED') cls += 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'
           else if (status === 'PENDING') cls += 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
           else cls += 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-          if (isToday) cls += ' ring-2 ring-[#9C7C2E] dark:ring-[#C9A44A]'
+          if (isToday) cls += ' ring-2 ring-foreground dark:ring-foreground'
           return <div key={i} className={cls}>{c.day}</div>
         })}
       </div>

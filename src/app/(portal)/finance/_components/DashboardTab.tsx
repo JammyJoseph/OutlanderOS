@@ -57,8 +57,8 @@ function OverageAlerts({ o }: { o: OverviewResponse }) {
 function CashPosition({ o }: { o: OverviewResponse }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Bank Balance (Xero)</p>
+      <div className="rounded-2xl bg-surface p-6">
+        <p className="mb-1.5 text-[13px] text-muted-foreground">Bank Balance (Xero)</p>
         <p className={`font-mono text-2xl font-bold tabular-nums ${(o.bankBalance?.balance ?? 0) >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-500 dark:text-red-400'}`}>
           {o.xeroConnected ? fmtGBP(o.bankBalance?.balance) : '—'}
         </p>
@@ -66,7 +66,7 @@ function CashPosition({ o }: { o: OverviewResponse }) {
       </div>
       <div className="flex items-center justify-between rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/60 dark:bg-gray-800/60 p-5">
         <div>
-          <p className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          <p className="mb-1 flex items-center gap-1.5 text-[13px] text-muted-foreground">
             <Landmark className="h-3 w-3" /> Cash Position — Wize
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">Connect Wize to see multi-currency balances and upcoming transfers alongside Xero.</p>
@@ -86,8 +86,8 @@ function CashPosition({ o }: { o: OverviewResponse }) {
 function ActivityFeed({ o }: { o: OverviewResponse }) {
   const items = o.recentActivity ?? []
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-      <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Recent Invoice Activity</p>
+    <div className="rounded-2xl bg-surface p-6">
+      <p className="mb-3 text-xl font-semibold text-foreground">Recent Invoice Activity</p>
       {items.length === 0 ? (
         <p className="py-6 text-center text-xs text-gray-400 dark:text-gray-500">No invoice activity yet.</p>
       ) : (
@@ -150,8 +150,8 @@ export default function DashboardTab() {
       <OverageAlerts o={o} />
 
       {/* P&L snapshot */}
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">P&amp;L Snapshot — Year to Date (Xero)</p>
+      <div className="rounded-2xl bg-surface p-6">
+        <p className="mb-3 text-xl font-semibold text-foreground">P&amp;L Snapshot — Year to Date (Xero)</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div>
             <p className="text-[11px] text-gray-400 dark:text-gray-500">Revenue</p>
@@ -163,7 +163,7 @@ export default function DashboardTab() {
           </div>
           <div>
             <p className="text-[11px] text-gray-400 dark:text-gray-500">Profit</p>
-            <p className="font-mono text-lg font-bold text-[#9C7C2E]">{connected ? fmtGBP(pl.profit) : '—'}</p>
+            <p className="font-mono text-lg font-bold text-brand">{connected ? fmtGBP(pl.profit) : '—'}</p>
           </div>
           <div>
             <p className="text-[11px] text-gray-400 dark:text-gray-500">Margin</p>

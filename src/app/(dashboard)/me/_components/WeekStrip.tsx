@@ -7,10 +7,12 @@ interface Props {
   tasks: Task[];
   shoots: Shoot[];
   culturalEvents: CulturalEvent[];
+  /** Rendered under the days — the upcoming list. */
+  children?: React.ReactNode;
 }
 
 const DAY_MS = 86_400_000;
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 function sameDay(a: Date, b: Date): boolean {
   return (
@@ -21,7 +23,7 @@ function sameDay(a: Date, b: Date): boolean {
 }
 
 // Current week, Monday to Sunday, with dots for tasks, shoots and events.
-export function WeekStrip({ tasks, shoots, culturalEvents }: Props) {
+export function WeekStrip({ tasks, shoots, culturalEvents, children }: Props) {
   const days = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -51,48 +53,34 @@ export function WeekStrip({ tasks, shoots, culturalEvents }: Props) {
   }, [tasks, shoots, culturalEvents]);
 
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((d, i) => (
-          <div
-            key={i}
-            className={`flex flex-col items-center rounded-lg px-1 py-2 ${
-              d.isToday ? "bg-[#9C7C2E]/10 dark:bg-[#C9A44A]/10 ring-1 ring-[#9C7C2E] dark:ring-[#C9A44A]" : ""
-            }`}
-          >
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-              {WEEKDAYS[i]}
-            </span>
-            <span
-              className={`mt-0.5 text-sm font-bold ${
-                d.isToday ? "text-[#9C7C2E] dark:text-[#C9A44A]" : "text-gray-700 dark:text-gray-300"
-              }`}
-            >
-              {d.date.getDate()}
-            </span>
-            <div className="mt-1 flex h-1.5 items-center gap-0.5">
-              {d.taskCount > 0 && (
-                <span
-                  className="h-1.5 w-1.5 rounded-full bg-[#9C7C2E] dark:bg-[#C9A44A]"
-                  title={d.taskTitle || `${d.taskCount} due`}
-                />
-              )}
-              {d.shootCount > 0 && (
-                <span
-                  className="h-1.5 w-1.5 rounded-full bg-[#A93B2E] dark:bg-[#D0584A]"
-                  title={d.shootTitle || `${d.shootCount} shoot`}
-                />
-              )}
-              {d.eventCount > 0 && (
-                <span
-                  className="h-1.5 w-1.5 rounded-full bg-purple-400"
-                  title={d.eventTitle || `${d.eventCount} event`}
-                />
-              )}
+    <section className="rounded-2xl bg-surface px-6 py-6" aria-label="This week">
+      <h2 className="mb-3 text-xl font-semibold">This week</h2>
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {days.map((d, i) => {
+          const parts = [d.taskTitle && `Due: ${d.taskTitle}`, d.shootTitle && `Shoot: ${d.shootTitle}`, d.eventTitle && `Event: ${d.eventTitle}`].filter(Boolean);
+          return (
+            <div key={i} className="flex flex-col items-center gap-1" title={parts.join(" · ") || undefined}>
+              <span className="text-xs text-muted-foreground" aria-hidden>
+                {WEEKDAYS[i]}
+              </span>
+              <span
+                className={`flex size-8 items-center justify-center rounded-full text-[15px] font-semibold tabular-nums ${
+                  d.isToday ? "bg-foreground text-background" : i >= 5 ? "text-muted-foreground" : ""
+                }`}
+                aria-label={d.date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) + (parts.length ? `: ${parts.join(", ")}` : "")}
+              >
+                {d.date.getDate()}
+              </span>
+              <span className="flex h-1.5 items-center gap-0.5" aria-hidden>
+                {d.taskCount > 0 && <span className="size-1.5 rounded-full bg-foreground" />}
+                {d.shootCount > 0 && <span className="size-1.5 rounded-full bg-[#A93B2E]" />}
+                {d.eventCount > 0 && <span className="size-1.5 rounded-full bg-[#6B4E8E]" />}
+              </span>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+      {children}
     </section>
   );
 }

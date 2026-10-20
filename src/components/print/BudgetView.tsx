@@ -80,7 +80,7 @@ export default function BudgetView({
       )}
       <table className="w-full border-separate border-spacing-0 text-[11px]">
         <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wider text-gray-500">
+          <tr className="text-left text-[13px] text-muted-foreground">
             <th className={th}>Page(s)</th>
             <th className={th}>Feature</th>
             <th className={th}>Type</th>
@@ -296,7 +296,7 @@ function BudgetRowView({
       </td>
 
       <td className={`${td} text-center`}>
-        <span className="text-[10px] uppercase tracking-wide text-gray-400">{statusShort(row.status)}</span>
+        <span className="text-[13px] text-muted-foreground">{statusShort(row.status)}</span>
       </td>
     </tr>
   );

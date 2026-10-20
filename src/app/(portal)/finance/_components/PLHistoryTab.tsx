@@ -109,7 +109,7 @@ export default function PLHistoryTab() {
   const lastPL = lastYear.data?.profitAndLoss
   const yoy = lastPL && lastPL.revenue > 0 && thisPL ? ((thisPL.revenue - lastPL.revenue) / lastPL.revenue) * 100 : null
 
-  const selectCls = 'rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:border-[#9C7C2E] focus:outline-none'
+  const selectCls = 'rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:border-foreground focus:outline-none'
 
   return (
     <div className="space-y-5">
@@ -127,7 +127,7 @@ export default function PLHistoryTab() {
                 setGranularity(g)
                 setPeriod(periodOptions(g)[0].value)
               }}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${granularity === g ? 'bg-[#9C7C2E] text-gray-900' : 'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium capitalize transition-colors ${granularity === g ? 'bg-primary text-gray-900' : 'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
             >
               {g}
             </button>
@@ -156,8 +156,8 @@ export default function PLHistoryTab() {
       </div>
 
       {/* Year-over-year comparison */}
-      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-5 shadow-sm">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Year-over-Year</p>
+      <div className="rounded-2xl bg-surface p-6">
+        <p className="mb-3 text-xl font-semibold text-foreground">Year-over-Year</p>
         <div className="flex flex-wrap items-end gap-6">
           <div>
             <p className="text-[11px] text-gray-400 dark:text-gray-500">{CURRENT_YEAR - 1} revenue</p>
@@ -183,8 +183,8 @@ export default function PLHistoryTab() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Revenue by client */}
-        <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Revenue by Client (Xero)</p>
+        <div className="rounded-2xl bg-surface p-6">
+          <p className="mb-3 text-xl font-semibold text-foreground">Revenue by Client (Xero)</p>
           {!connected ? (
             <p className="text-xs text-gray-400 dark:text-gray-500">Connect Xero to rank clients by invoiced revenue.</p>
           ) : revenueByClient.length === 0 ? (
@@ -208,8 +208,8 @@ export default function PLHistoryTab() {
         </div>
 
         {/* Project margin analysis */}
-        <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Project Margin Analysis</p>
+        <div className="rounded-2xl bg-surface p-6">
+          <p className="mb-3 text-xl font-semibold text-foreground">Project Margin Analysis</p>
           {projectMargins.length === 0 ? (
             <p className="text-xs text-gray-400 dark:text-gray-500">No projects with budgets yet — margins appear once budgets and costs are logged.</p>
           ) : (

@@ -35,7 +35,7 @@ export default function ExpensesTab() {
     <div className="space-y-5">
       {/* Connect empty state */}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-white to-amber-50/50 p-8 text-center shadow-sm">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#9C7C2E]/15 text-[#9C7C2E]">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-brand">
           <CreditCard className="h-6 w-6" />
         </div>
         <h2 className="mb-1 text-sm font-bold text-gray-900 dark:text-gray-100">Connect MOSS</h2>
@@ -46,7 +46,7 @@ export default function ExpensesTab() {
         <button
           disabled
           title="MOSS integration coming soon"
-          className="cursor-not-allowed rounded-lg bg-[#111111]/50 dark:bg-white/50 px-4 py-2 text-xs font-semibold text-white dark:text-black"
+          className="cursor-not-allowed rounded-lg bg-primary/60 px-4 py-2 text-xs font-semibold text-primary-foreground "
         >
           Connect MOSS
         </button>
@@ -55,7 +55,7 @@ export default function ExpensesTab() {
 
       {/* Ready-made structure for when MOSS connects */}
       <div>
-        <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        <p className="mb-2 flex items-center gap-1.5 text-[13px] text-muted-foreground">
           <ReceiptText className="h-3 w-3" /> Team Card Spend — waiting for MOSS
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -275,7 +275,7 @@ export default function ClientDetailPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-gray-900">{client.name}</h1>
+                <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">{client.name}</h1>
                 {client.archived && (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                     Archived
@@ -304,7 +304,7 @@ export default function ClientDetailPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+            <h2 className="text-xl font-semibold text-foreground [&>svg]:hidden">
               Campaigns ({client.campaigns.length})
             </h2>
             {client.campaigns.map((campaign) => {
@@ -312,7 +312,7 @@ export default function ClientDetailPage() {
               return (
                 <div
                   key={campaign.id}
-                  className="rounded-xl border border-gray-200 bg-white p-5"
+                  className="rounded-2xl bg-surface p-6"
                 >
                   {/* Campaign header */}
                   <div className="flex items-start justify-between gap-4 mb-3">

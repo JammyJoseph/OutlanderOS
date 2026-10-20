@@ -211,7 +211,7 @@ function PipelineBoard() {
   }
 
   const inputCls =
-    "rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 dark:focus:ring-[#C9A44A]/30 focus:border-[#9C7C2E] dark:focus:border-[#C9A44A]";
+    "rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-focus dark:focus:ring-focus focus:border-foreground dark:focus:border-foreground";
 
   return (
     <div className="min-h-screen bg-card">
@@ -219,10 +219,7 @@ function PipelineBoard() {
         {/* Header */}
         <div className="flex items-end justify-between mb-5 max-w-6xl mx-auto">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[var(--portal-commercial)]">
-              OutlanderOS · Commercial
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Pipeline</h1>
+            <h1 className="mt-1 text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Pipeline</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
               {filtered.length} deal{filtered.length !== 1 ? "s" : ""} · drag cards between stages
             </p>
@@ -237,7 +234,7 @@ function PipelineBoard() {
             </Link>
             <button
               onClick={() => setShowNewDeal(true)}
-              className="flex items-center gap-2 bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#111111] dark:hover:bg-white transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-full text-sm font-semibold hover:bg-foreground dark:hover:bg-white transition-colors "
             >
               <Plus size={16} />
               New Deal
@@ -362,18 +359,18 @@ function PipelineBoard() {
                             setDraggingId(null);
                           }}
                           className={`w-[270px] shrink-0 rounded-2xl border transition-all duration-150 ${
-                            group.creative ? "bg-purple-100/40 dark:bg-purple-900/30" : "bg-gray-100/70 dark:bg-gray-800/70"
-                          } ${
-                            isOver && dropBlocked
-                              ? "border-gray-300 dark:border-gray-600 ring-2 ring-gray-300/40 dark:ring-gray-600/40 opacity-60"
-                              : isOver
-                                ? "border-[#9C7C2E] dark:border-[#C9A44A] ring-2 ring-[#9C7C2E]/30 dark:ring-[#C9A44A]/30 bg-amber-50/60 dark:bg-amber-900/30"
-                                : isFocused
-                                  ? "border-[#9C7C2E]/50 dark:border-[#C9A44A]/50 ring-1 ring-[#9C7C2E]/20 dark:ring-[#C9A44A]/20"
-                                  : group.creative
-                                    ? "border-purple-200/60 dark:border-purple-800/60"
-                                    : "border-gray-200/60 dark:border-gray-700/60"
-                          }`}
+ group.creative ? "bg-purple-100/40 dark:bg-purple-900/30" : "bg-gray-100/70 dark:bg-gray-800/70"
+ } ${
+ isOver && dropBlocked
+ ? "border-gray-300 dark:border-gray-600 ring-2 ring-gray-300/40 dark:ring-gray-600/40 opacity-60"
+ : isOver
+ ? "border-foreground dark:border-foreground ring-2 ring-focus dark:ring-focus bg-amber-50/60 dark:bg-amber-900/30"
+ : isFocused
+ ? "border-foreground/50 dark:border-foreground/50 ring-1 ring-focus dark:ring-focus"
+ : group.creative
+ ? "border-purple-200/60 dark:border-purple-800/60"
+ : "border-gray-200/60 dark:border-gray-700/60"
+ }`}
                         >
                           {/* Column header */}
                           <div className="px-3.5 pt-3.5 pb-2 flex items-center justify-between">
@@ -480,10 +477,10 @@ function TypeFilterDropdown({
       <button
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-1.5 rounded-xl border bg-white dark:bg-gray-900 text-sm px-3 py-2 transition-colors ${
-          selected.length
-            ? "border-[#9C7C2E] dark:border-[#C9A44A] text-[var(--portal-commercial)] font-medium"
-            : "border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-        }`}
+ selected.length
+ ? "border-foreground dark:border-foreground text-[var(--portal-commercial)] font-medium"
+ : "border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+ }`}
       >
         {selected.length === 0
           ? "All types"
@@ -505,7 +502,7 @@ function TypeFilterDropdown({
                   type="checkbox"
                   checked={selected.includes(t)}
                   onChange={() => toggle(t)}
-                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 accent-[#9C7C2E] dark:accent-[#C9A44A]"
+                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 accent-foreground dark:accent-foreground"
                 />
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${TYPE_STYLES[t].bg} ${TYPE_STYLES[t].text}`}
@@ -589,7 +586,7 @@ function DealCard({
             <ArchiveIcon size={13} />
           </button>
         )}
-        <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide truncate mb-1.5">
+        <p className="truncate mb-1.5 text-[13px] text-muted-foreground">
           {deal.client.name}
         </p>
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-1.5">

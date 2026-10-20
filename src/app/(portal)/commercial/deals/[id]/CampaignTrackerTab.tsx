@@ -189,7 +189,7 @@ export default function CampaignTrackerTab({
     <div className="space-y-5 max-w-4xl">
       {/* Bespoke milestones */}
       {bespoke && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <div className="bg-surface rounded-2xl p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <Film size={15} className="text-red-600" />
@@ -224,7 +224,7 @@ export default function CampaignTrackerTab({
 
       {/* Link banking — supplied/print go-live tracking */}
       {!bespoke && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <div className="bg-surface rounded-2xl p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <LinkIcon size={15} className="text-[var(--portal-commercial)]" />
@@ -280,7 +280,7 @@ export default function CampaignTrackerTab({
                         }
                       }}
                       placeholder="Paste live link…"
-                      className="w-44 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 dark:focus:ring-[#C9A44A]/30 focus:border-[#9C7C2E] dark:focus:border-[#C9A44A]"
+                      className="w-44 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs focus:outline-none focus:ring-2 focus:ring-focus dark:focus:ring-focus focus:border-foreground dark:focus:border-foreground"
                     />
                     {d.postedUrl ? (
                       <a
@@ -303,7 +303,7 @@ export default function CampaignTrackerTab({
       )}
 
       {/* Campaign calendar — deliverables, shoots, and payment due date */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <CalendarDays size={15} className="text-[var(--portal-commercial)]" />
@@ -346,7 +346,7 @@ export default function CampaignTrackerTab({
 
         <div className="grid grid-cols-7 gap-1 text-center mb-1">
           {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-            <div key={d} className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 py-1">
+            <div key={d} className="py-1 text-[13px] text-muted-foreground">
               {d}
             </div>
           ))}
@@ -361,8 +361,8 @@ export default function CampaignTrackerTab({
               <div
                 key={key}
                 className={`min-h-[72px] rounded-lg border p-1.5 ${
-                  inMonth ? "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900" : "border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50"
-                } ${today ? "ring-1 ring-[#9C7C2E] dark:ring-[#C9A44A]" : ""}`}
+ inMonth ? "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900" : "border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50"
+ } ${today ? "ring-1 ring-foreground dark:ring-foreground" : ""}`}
               >
                 <p className={`text-[10px] font-semibold ${inMonth ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-600"}`}>
                   {format(day, "d")}

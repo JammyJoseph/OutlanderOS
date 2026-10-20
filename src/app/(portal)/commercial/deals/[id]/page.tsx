@@ -445,7 +445,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         )}
 
         {/* Header */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 mb-5">
+        <div className="bg-surface rounded-2xl p-6 mb-5">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -645,10 +645,10 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === t.key
-                  ? "bg-[#9C7C2E]/10 dark:bg-[#C9A44A]/10 text-[var(--portal-commercial)]"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
-              }`}
+ tab === t.key
+ ? "bg-accent dark:bg-foreground/10 text-[var(--portal-commercial)]"
+ : "text-gray-500 dark:text-gray-400 hover:text-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
+ }`}
             >
               {t.label}
             </button>
@@ -663,7 +663,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         )}
         {/* Creative requested but this is a supplied-assets deal — no creative loop. */}
         {tab === "creative" && !creativeUnlocked && (
-          <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-8 text-center max-w-2xl">
+          <div className="rounded-2xl bg-surface p-8 text-center max-w-2xl">
             <LockIcon className="mx-auto mb-3 text-gray-300" size={28} />
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               No creative rounds for supplied-assets deals
@@ -773,7 +773,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
 function HeaderField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 px-3 py-2">
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
+      <p className="mb-0.5 text-[13px] text-muted-foreground">
         {label}
       </p>
       {children}
@@ -810,7 +810,7 @@ function EditableTitle({ title, onSave }: { title: string; onSave: (t: string) =
             setEditing(false);
           }
         }}
-        className="w-full text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight bg-transparent border-b-2 border-[#9C7C2E] dark:border-[#C9A44A] focus:outline-none"
+        className="w-full text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight bg-transparent border-b-2 border-foreground dark:border-foreground focus:outline-none"
       />
     );
   }
@@ -862,7 +862,7 @@ function EditableValue({
               setEditing(false);
             }
           }}
-          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums rounded-xl border-2 border-[#9C7C2E] dark:border-[#C9A44A] focus:outline-none"
+          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums rounded-xl border-2 border-foreground dark:border-foreground focus:outline-none"
         />
       </div>
     );
@@ -922,7 +922,7 @@ function TypePills({
           <button
             onClick={() => setAdding((a) => !a)}
             title="Add type"
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-[#9C7C2E] dark:hover:border-[#C9A44A] hover:text-[var(--portal-commercial)] transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-foreground dark:hover:border-foreground hover:text-[var(--portal-commercial)] transition-colors"
           >
             <Plus size={11} /> Add
           </button>
@@ -1079,12 +1079,12 @@ function OverviewTab({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div className="lg:col-span-2 space-y-5">
         {/* Total budget — hero number + current phase */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <div className="bg-surface rounded-2xl p-6">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+            <p className="text-[13px] text-muted-foreground">
               Total budget
             </p>
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#9C7C2E]/10 dark:bg-[#C9A44A]/10 text-[var(--portal-commercial)]">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-accent dark:bg-foreground/10 text-[var(--portal-commercial)]">
               {phase.label}
             </span>
           </div>
@@ -1096,8 +1096,8 @@ function OverviewTab({
               <div key={step} className="flex-1">
                 <div
                   className={`h-1.5 rounded-full ${
-                    i <= phase.index ? "bg-[#9C7C2E] dark:bg-[#C9A44A]" : "bg-gray-100 dark:bg-gray-800"
-                  }`}
+ i <= phase.index ? "bg-[#9C7C2E] dark:bg-foreground" : "bg-gray-100 dark:bg-gray-800"
+ }`}
                 />
                 <p
                   className={`mt-1 text-[9px] font-medium truncate ${
@@ -1112,7 +1112,7 @@ function OverviewTab({
         </div>
 
         {/* Deal summary */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <div className="bg-surface rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">Deal summary</h3>
           <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
             <SummaryCell label="Client">
@@ -1159,7 +1159,7 @@ function OverviewTab({
 
         {/* What needs doing — auto tasks for the current phase */}
         {autoTasks.length > 0 && (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+          <div className="bg-surface rounded-2xl p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                 <ListChecks size={15} className="text-[var(--portal-commercial)]" />
@@ -1203,7 +1203,7 @@ function OverviewTab({
         )}
 
         {/* Recent activity — compact timeline */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <div className="bg-surface rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
             <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
             Recent activity
@@ -1236,7 +1236,7 @@ function OverviewTab({
 
       <div className="space-y-5">
         {/* Media plan overview */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <div className="bg-surface rounded-2xl p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Media plan</h3>
             <button
@@ -1273,7 +1273,7 @@ function OverviewTab({
         </div>
 
         {/* Key dates */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <div className="bg-surface rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Key dates</h3>
           <dl className="space-y-2.5 text-sm">
             <div className="flex items-center justify-between">
@@ -1317,7 +1317,7 @@ function OverviewTab({
         </div>
 
         {/* Client */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+        <div className="bg-surface rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Client</h3>
           <Link
             href={`/commercial/clients/${deal.client.id}`}
@@ -1356,7 +1356,7 @@ function OverviewTab({
 function SummaryCell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
+      <dt className="mb-0.5 text-[13px] text-muted-foreground">
         {label}
       </dt>
       <dd>{children}</dd>
@@ -1411,7 +1411,7 @@ function BudgetDeliverablesTab({
   return (
     <div className="space-y-5">
       {/* Budget summary — the deal economics alongside deliverables */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-4">
           <Banknote size={15} className="text-[var(--portal-commercial)]" />
           Budget
@@ -1431,7 +1431,7 @@ function BudgetDeliverablesTab({
         </div>
         {allocations.length > 0 ? (
           <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-800 space-y-1.5">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+            <p className="mb-1 text-[13px] text-muted-foreground">
               Allocation breakdown
             </p>
             {allocations.map((a, i) => (
@@ -1477,7 +1477,7 @@ function BudgetDeliverablesTab({
 function BudgetStat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 px-3 py-2.5">
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
+      <p className="text-[13px] text-muted-foreground">{label}</p>
       <p className="text-base font-bold text-gray-900 dark:text-gray-100 tabular-nums mt-0.5">
         {value}
         {sub && <span className="text-[11px] font-medium text-gray-400 ml-1">{sub}</span>}
@@ -1559,7 +1559,7 @@ function DocumentsTab({
   return (
     <div className="max-w-3xl space-y-5">
       {/* Insertion orders — built in-app, printable, tracked by status */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <FileText size={15} className="text-[var(--portal-commercial)]" />
@@ -1611,7 +1611,7 @@ function DocumentsTab({
       </div>
 
       {/* Manual IO / contract link — fallback for externally-produced IOs */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-1">
           <LinkIcon size={15} className="text-[var(--portal-commercial)]" />
           External IO / contract link
@@ -1626,7 +1626,7 @@ function DocumentsTab({
             onChange={(e) => setIoUrl(e.target.value)}
             onBlur={() => ioUrl.trim() !== (deal.ioUrl ?? "") && onPatch({ ioUrl: ioUrl.trim() || null })}
             placeholder="https:// — the signed IO or contract"
-            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E]"
+            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground"
           />
           {deal.ioUrl && (
             <a
@@ -1642,7 +1642,7 @@ function DocumentsTab({
       </div>
 
       {/* Media plan documents */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
           <Newspaper size={15} className="text-[var(--portal-commercial)]" />
           Media plan
@@ -1676,7 +1676,7 @@ function DocumentsTab({
       </div>
 
       {/* Creative decks — pulled from the rounds */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
           <Palette size={15} className="text-[var(--portal-commercial)]" />
           Creative decks
@@ -1693,7 +1693,7 @@ function DocumentsTab({
                 href={docLink(d.url)}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 text-sm hover:border-[#9C7C2E]/40 transition-colors"
+                className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 text-sm hover:border-foreground/40 transition-colors"
               >
                 <span className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                   <LinkIcon size={13} className="text-gray-400" />
@@ -1944,7 +1944,7 @@ function BriefCreativeTab({
       </div>
 
       {/* Client Brief */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-1">
           <FileText size={15} className="text-purple-500" />
           Client Brief
@@ -1975,7 +1975,7 @@ function BriefCreativeTab({
 
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+            <p className="mb-1.5 text-[13px] text-muted-foreground">
               Brief received
             </p>
             <input
@@ -1986,7 +1986,7 @@ function BriefCreativeTab({
             />
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+            <p className="mb-1.5 text-[13px] text-muted-foreground">
               Response due
             </p>
             <input
@@ -2022,7 +2022,7 @@ function BriefCreativeTab({
       </div>
 
       {/* Creative Response */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl p-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <Sparkles size={15} className="text-purple-500" />
@@ -2053,7 +2053,7 @@ function BriefCreativeTab({
 
         {/* Figma deck link + embedded preview */}
         <div className="mt-4">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+          <p className="mb-1.5 text-[13px] text-muted-foreground">
             Figma deck link
           </p>
           <div className="flex items-center gap-2">
@@ -2096,7 +2096,7 @@ function BriefCreativeTab({
         </div>
 
         <div className="mt-4">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+          <p className="mb-1.5 text-[13px] text-muted-foreground">
             Submitted by
           </p>
           <input
@@ -2167,7 +2167,7 @@ function VersionHistory({ current }: { current: CreativeResponseData }) {
   const total = versions.length;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+    <div className="bg-surface rounded-2xl p-6">
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between gap-2 text-left"
@@ -2271,7 +2271,7 @@ function LinkListEditor({
 
   return (
     <div className="mt-4">
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+      <p className="mb-1.5 text-[13px] text-muted-foreground">
         {label}
       </p>
       {links.length > 0 && (
@@ -2380,7 +2380,7 @@ function FeedbackLog({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
+    <div className="bg-surface rounded-2xl p-6">
       <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-1">
         <MessageSquare size={15} className="text-purple-500" />
         Client Feedback
@@ -2437,7 +2437,7 @@ function FeedbackLog({
       )}
 
       <form onSubmit={submit} className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/40 p-3.5 space-y-2.5">
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+        <p className="text-[13px] text-muted-foreground">
           Add feedback
         </p>
         <div className="flex items-center gap-2">

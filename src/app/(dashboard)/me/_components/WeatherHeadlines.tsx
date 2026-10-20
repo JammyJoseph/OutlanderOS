@@ -25,7 +25,7 @@ interface DayForecast {
   precip: number;
 }
 
-interface Brief {
+export interface Brief {
   weather: {
     location: string;
     current: { temp: number; condition: string; description: string; icon: string };
@@ -63,31 +63,51 @@ function timeAgo(iso: string | null): string {
 }
 
 // Replaces the old Key Business Reminders card: London weather (current +
+// One request per page load, shared by the date line at the top of /me and
+// this card. A failed load is forgotten, so Retry asks again.
+let briefPromise: Promise<Brief> | null = null;
+export function loadBrief(fresh = false): Promise<Brief> {
+  if (!briefPromise || fresh) {
+    briefPromise = fetch("/api/dashboard/brief").then(async (r) => {
+      if (!r.ok) throw new Error(String(r.status));
+      return (await r.json()) as Brief;
+    });
+    briefPromise.catch(() => {
+      briefPromise = null;
+    });
+  }
+  return briefPromise;
+}
+
 // 3-day forecast) plus the latest general UK/world headlines.
 export function WeatherHeadlines() {
   const [brief, setBrief] = useState<Brief | null>(null);
   const [error, setError] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (fresh = false) => {
     setError(false);
     setBrief(null);
     try {
-      const r = await fetch("/api/dashboard/brief");
-      if (!r.ok) throw new Error(String(r.status));
-      setBrief((await r.json()) as Brief);
+      setBrief(await loadBrief(fresh));
     } catch {
       setError(true);
     }
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let live = true;
+    loadBrief()
+      .then((b) => live && setBrief(b))
+      .catch(() => live && setError(true));
+    return () => {
+      live = false;
+    };
+  }, []);
 
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <h2 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-        Weather &amp; Headlines
+    <section className="rounded-2xl bg-surface p-6">
+      <h2 className="text-xl font-semibold text-foreground [&>svg]:hidden">
+        Weather and headlines
       </h2>
 
       {/* Weather */}
@@ -104,7 +124,7 @@ export function WeatherHeadlines() {
               <div className="flex items-center gap-3">
                 <WeatherIcon
                   condition={brief.weather.current.condition}
-                  className="h-9 w-9 text-[#9C7C2E] dark:text-[#C9A44A]"
+                  className="h-9 w-9 text-brand dark:text-brand"
                 />
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-1.5">
@@ -125,7 +145,7 @@ export function WeatherHeadlines() {
                       key={d.date}
                       className="rounded-lg border border-gray-100 bg-gray-50 px-2 py-2 text-center dark:border-gray-800 dark:bg-gray-800"
                     >
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      <div className="text-[13px] text-muted-foreground">
                         {dayLabel(d.date)}
                       </div>
                       <WeatherIcon
@@ -149,14 +169,14 @@ export function WeatherHeadlines() {
 
       {/* Headlines */}
       <div className="mt-4 border-t border-gray-50 pt-3 dark:border-gray-800">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
           <Newspaper className="h-3 w-3" /> Headlines
         </div>
         {error ? (
           <div className="mt-2 flex items-center justify-between gap-2">
             <p className="text-xs text-red-600 dark:text-red-400">Couldn&apos;t load headlines.</p>
             <button
-              onClick={load}
+              onClick={() => load(true)}
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/30"
             >
               <RotateCw className="h-3 w-3" /> Retry

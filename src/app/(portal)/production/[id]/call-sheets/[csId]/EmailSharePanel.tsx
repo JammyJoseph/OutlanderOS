@@ -188,11 +188,11 @@ export function EmailSharePanel({
 
       {/* What the draft will say */}
       <div className="mt-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5">
-        <p className="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">
+        <p className="text-[13px] text-muted-foreground">
           Subject
         </p>
         <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5 break-words">{subject}</p>
-        <p className="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500 mt-2.5">
+        <p className="mt-2.5 text-[13px] text-muted-foreground">
           BCC
         </p>
         <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">

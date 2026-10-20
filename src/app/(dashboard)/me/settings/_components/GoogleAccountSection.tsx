@@ -155,7 +155,7 @@ export function GoogleAccountSection() {
       <button
         onClick={startConnect}
         disabled={busy}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] text-white dark:bg-white dark:text-black px-4 py-2 text-sm font-semibold hover:brightness-95 disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:brightness-95 disabled:opacity-50"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         Open the Google consent screen
@@ -185,9 +185,9 @@ export function GoogleAccountSection() {
   )
 
   return (
-    <section className="mb-6 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+    <section id="google" className="mb-6 scroll-mt-6 rounded-2xl bg-surface p-6 sm:p-7">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-[#9C7C2E] dark:text-[#C9A44A]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-brand dark:text-brand">
           <Mail className="h-4 w-4" />
         </div>
         <div>
@@ -224,7 +224,7 @@ export function GoogleAccountSection() {
                   void startConnect()
                 }}
                 disabled={busy}
-                className="rounded-xl bg-[#111111] px-4 py-2 text-sm font-semibold text-white hover:brightness-95 disabled:opacity-50 dark:bg-white dark:text-black"
+                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-95 disabled:opacity-50  "
               >
                 Reconnect
               </button>

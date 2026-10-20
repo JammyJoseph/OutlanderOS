@@ -73,7 +73,7 @@ export default function PrintPLTab() {
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-100 px-5 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Per-Issue P&amp;L</p>
+          <p className="text-[13px] text-muted-foreground">Per-Issue P&amp;L</p>
         </div>
         {issues.length === 0 && !loading ? (
           <div className="p-5">
@@ -83,7 +83,7 @@ export default function PrintPLTab() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wider text-gray-400">
+                <tr className="text-left text-[13px] text-muted-foreground">
                   <th className="px-5 py-2 font-semibold">Issue</th>
                   <th className="px-3 py-2 text-right font-semibold">Pages</th>
                   <th className="px-3 py-2 text-right font-semibold">Revenue</th>

@@ -110,7 +110,7 @@ export default function OverviewTab({
       {production.campaign?.id && (
         <Link
           href={`/commercial/deals/${production.campaign.id}`}
-          className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-[#9C7C2E] transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-brand transition-colors"
         >
           From: <span className="text-gray-600 dark:text-gray-400 font-semibold">{production.campaign.title}</span> in
           Commercial <ArrowUpRight size={12} />
@@ -163,7 +163,7 @@ export default function OverviewTab({
 
       {/* Shotlist progress — only when call sheets have shots planned */}
       {shots.total > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+        <div className="bg-surface rounded-2xl p-6">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <ListChecks size={15} className="text-[#A93B2E]" />
@@ -187,7 +187,7 @@ export default function OverviewTab({
         <div className="lg:col-span-2 space-y-5">
           {/* Brief handed over from the Commercial deal */}
           {production.type === "COMMERCIAL" && production.brief && (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-emerald-100 shadow-sm p-5">
+            <div className="bg-surface rounded-2xl border-emerald-100 p-6">
               <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
                 <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                   <FileText size={15} className="text-emerald-600" />
@@ -199,7 +199,7 @@ export default function OverviewTab({
                       {production.clientName || production.campaign?.client?.name}
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1 font-semibold text-[#9C7C2E] bg-amber-50 rounded-full px-2 py-0.5">
+                  <span className="inline-flex items-center gap-1 font-semibold text-brand bg-amber-50 rounded-full px-2 py-0.5">
                     <Lock size={10} /> {gbp(production.budgetTotal ?? 0)} budget
                   </span>
                 </div>
@@ -223,7 +223,7 @@ export default function OverviewTab({
             <ProductionBriefPanel briefData={production.briefData} />
           )}
 
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <div className="bg-surface rounded-2xl p-6">
             <Label>Description</Label>
             <textarea
               value={description}
@@ -233,7 +233,7 @@ export default function OverviewTab({
               }}
               rows={4}
               placeholder="What is this project about?"
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800 text-sm resize-none bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] transition-colors"
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800 text-sm resize-none bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground transition-colors"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div>
@@ -243,7 +243,7 @@ export default function OverviewTab({
                     <span className="font-medium text-gray-900 dark:text-gray-100">
                       {gbp(production.budgetTotal ?? 0)}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#9C7C2E]">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-brand">
                       <Lock size={10} /> Budget set in Commercial
                     </span>
                   </div>
@@ -257,7 +257,7 @@ export default function OverviewTab({
                       scheduleSave();
                     }}
                     placeholder="0"
-                    className="w-full px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-800 text-sm bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] transition-colors"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-800 text-sm bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground transition-colors"
                   />
                 )}
               </div>
@@ -271,7 +271,7 @@ export default function OverviewTab({
                     scheduleSave();
                   }}
                   placeholder="https://figma.com/file/…"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-800 text-sm bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] transition-colors"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-800 text-sm bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground transition-colors"
                 />
               </div>
             </div>
@@ -279,10 +279,10 @@ export default function OverviewTab({
 
           {/* Upcoming task */}
           {upcomingTask && (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+            <div className="bg-surface rounded-2xl p-6">
               <Label>Next up</Label>
               <div className="flex items-start gap-3 mt-1">
-                <Clock size={16} className="text-[#9C7C2E] mt-1 shrink-0" />
+                <Clock size={16} className="text-brand mt-1 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{upcomingTask.title}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -300,15 +300,15 @@ export default function OverviewTab({
         {/* Sidebar — linked deal + shoot dates */}
         <div className="space-y-5">
         <LinkedDeal campaignId={production.campaignId} />
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+        <div className="bg-surface rounded-2xl p-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <CalendarDays size={15} className="text-[#9C7C2E]" />
+              <CalendarDays size={15} className="text-brand" />
               Shoot Dates
             </h2>
             <button
               onClick={addShoot}
-              className="text-xs font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+              className="text-xs font-medium text-brand hover:text-brand"
             >
               + Add
             </button>
@@ -323,7 +323,7 @@ export default function OverviewTab({
                     type="date"
                     value={d}
                     onChange={(e) => updateShoot(i, e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-800 text-sm bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#9C7C2E]/30 focus:border-[#9C7C2E] transition-colors"
+                    className="flex-1 px-3 py-2 rounded-xl border border-gray-100 dark:border-gray-800 text-sm bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-900 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground transition-colors"
                   />
                   <button
                     onClick={() => removeShoot(i)}
@@ -363,7 +363,7 @@ export default function OverviewTab({
 function ProductionBriefPanel({ briefData }: { briefData: ProductionBriefData }) {
   const deliverables = briefData.deliverables ?? [];
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-blue-100 dark:border-blue-900 shadow-sm p-5">
+    <div className="bg-surface rounded-2xl border-blue-100 dark:border-blue-900 p-6">
       <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
         <FileText size={15} className="text-blue-600 dark:text-blue-400" />
         Production Brief
@@ -381,7 +381,7 @@ function ProductionBriefPanel({ briefData }: { briefData: ProductionBriefData })
       </div>
       {briefData.creativeDirection && (
         <div className="mt-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+          <p className="mb-1.5 text-[13px] text-muted-foreground">
             Creative Direction
           </p>
           <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -391,7 +391,7 @@ function ProductionBriefPanel({ briefData }: { briefData: ProductionBriefData })
       )}
       {deliverables.length > 0 && (
         <div className="mt-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+          <p className="mb-1.5 text-[13px] text-muted-foreground">
             Deliverables ({deliverables.length})
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -414,7 +414,7 @@ function ProductionBriefPanel({ briefData }: { briefData: ProductionBriefData })
 function BriefField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">{label}</p>
+      <p className="mb-0.5 text-[13px] text-muted-foreground">{label}</p>
       <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{children}</p>
     </div>
   );
@@ -422,7 +422,7 @@ function BriefField({ label, children }: { label: string; children: React.ReactN
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+    <label className="block mb-1.5 text-[13px] text-muted-foreground">
       {children}
     </label>
   );
@@ -444,9 +444,9 @@ function StatCard({
   progress?: number;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+    <div className="bg-surface rounded-2xl p-6">
       <div className="flex items-center gap-2 text-gray-400">
-        <span className="text-[#9C7C2E]">{icon}</span>
+        <span className="text-brand">{icon}</span>
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
       <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-2 truncate">{primary}</p>
@@ -455,7 +455,7 @@ function StatCard({
       {progress != null && (
         <div className="mt-2 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#9C7C2E] rounded-full transition-all"
+            className="h-full bg-foreground rounded-full transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>

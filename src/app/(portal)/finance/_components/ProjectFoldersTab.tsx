@@ -43,7 +43,7 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') onOpen()
       }}
-      className={`cursor-pointer rounded-xl border bg-white dark:bg-gray-900 p-4 text-left shadow-sm transition-shadow hover:shadow-md ${HEALTH_BORDER[p.overageStatus] ?? 'border-gray-200 dark:border-gray-700'}`}
+      className={`cursor-pointer rounded-2xl bg-surface p-6 text-left transition-shadow hover:shadow-md ${HEALTH_BORDER[p.overageStatus] ?? ' '}`}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -65,7 +65,7 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
         <Link
           href={`/commercial/deals/${p.deal.id}`}
           onClick={(e) => e.stopPropagation()}
-          className="mb-2 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+          className="mb-2 inline-flex max-w-full items-center gap-1 text-[11px] font-medium text-brand hover:text-brand"
         >
           <Briefcase className="h-3 w-3 shrink-0" />
           <span className="truncate">Deal: {p.deal.title}</span>
@@ -93,7 +93,7 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
         {p.targetMarginAmount != null && (
           <div className="col-span-2">
             <dt className="text-gray-400 dark:text-gray-500">Target margin</dt>
-            <dd className="font-mono font-semibold text-[#9C7C2E]">
+            <dd className="font-mono font-semibold text-brand">
               {fmtGBP(p.targetMarginAmount)}
               {p.targetMarginPercent != null && <span className="text-gray-400 dark:text-gray-500"> ({fmtPct(p.targetMarginPercent)})</span>}
             </dd>
@@ -220,7 +220,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
             {deal && (
               <Link
                 href={`/commercial/deals/${deal.id}`}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#9C7C2E] hover:text-[#9C7C2E]"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-brand hover:text-brand"
               >
                 <Briefcase className="h-3 w-3" /> Deal: {deal.title} in Commercial
                 <span className="text-gray-400 dark:text-gray-500">· {dealStageLabel(deal.stage)}</span>
@@ -256,10 +256,10 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
           { label: 'Total Budget', value: fmtGBP(project.totalBudget), cls: 'text-gray-900 dark:text-gray-100' },
           { label: 'Costs Logged', value: fmtGBP(project.totalCosts), cls: over ? 'text-red-500' : 'text-gray-900 dark:text-gray-100' },
           { label: 'Paid by Client (Xero)', value: xero.connected ? fmtGBP(xero.totalPaid) : '—', cls: 'text-emerald-600' },
-          { label: 'Budget Remaining', value: fmtGBP(project.remaining), cls: project.remaining < 0 ? 'text-red-500' : 'text-[#9C7C2E]' },
+          { label: 'Budget Remaining', value: fmtGBP(project.remaining), cls: project.remaining < 0 ? 'text-red-500' : 'text-brand' },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3.5 shadow-sm">
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{s.label}</p>
+            <p className="mb-1 text-[13px] text-muted-foreground">{s.label}</p>
             <p className={`font-mono text-xl font-bold tabular-nums ${s.cls}`}>{s.value}</p>
           </div>
         ))}
@@ -267,8 +267,8 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Budget vs actual chart */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Budget vs Actual</p>
+        <div className="rounded-2xl bg-surface p-6">
+          <p className="mb-3 text-xl font-semibold text-foreground">Budget vs Actual</p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData} margin={{ top: 4, right: 12, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -283,8 +283,8 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
         </div>
 
         {/* Budget breakdown */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Budget Breakdown</p>
+        <div className="rounded-2xl bg-surface p-6">
+          <p className="mb-3 text-xl font-semibold text-foreground">Budget Breakdown</p>
           {splits.length === 0 ? (
             <p className="text-xs text-gray-400 dark:text-gray-500">No budget splits set on this project.</p>
           ) : (
@@ -296,7 +296,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                     <span className="font-mono font-semibold text-gray-900 dark:text-gray-100">{fmtGBP(s.value)}</span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                    <div className="h-full rounded-full bg-[#9C7C2E]" style={{ width: `${project.totalBudget > 0 ? (s.value / project.totalBudget) * 100 : 0}%` }} />
+                    <div className="h-full rounded-full bg-foreground" style={{ width: `${project.totalBudget > 0 ? (s.value / project.totalBudget) * 100 : 0}%` }} />
                   </div>
                 </li>
               ))}
@@ -311,9 +311,9 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
         <>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* Deal economics */}
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
+            <div className="rounded-2xl bg-surface p-6">
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Deal Economics</p>
+                <p className="text-[13px] text-muted-foreground">Deal Economics</p>
                 {eco.budgetLocked && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
                     <Lock className="h-2.5 w-2.5" /> Locked
@@ -338,7 +338,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                 </div>
                 <div className="flex items-center justify-between pl-3">
                   <span className="text-gray-500 dark:text-gray-400">Production Margin{eco.productionMarginPct != null ? ` (${Math.round(eco.productionMarginPct)}%)` : ''}</span>
-                  <span className="font-mono font-semibold text-[#9C7C2E]">{fmtGBP(eco.targetMarginAmount)}</span>
+                  <span className="font-mono font-semibold text-brand">{fmtGBP(eco.targetMarginAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between pl-3">
                   <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
@@ -356,9 +356,9 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
             </div>
 
             {/* Production budget */}
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
+            <div className="rounded-2xl bg-surface p-6">
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Production Budget</p>
+                <p className="text-[13px] text-muted-foreground">Production Budget</p>
                 {eco.productionBudgetStatus && (
                   <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-semibold text-gray-600 dark:text-gray-400">
                     {eco.productionBudgetStatus.replace(/_/g, ' ')}
@@ -390,7 +390,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                 <div className="mt-3">
                   <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                     <div
-                      className={`h-full rounded-full ${eco.productionActuals > eco.productionAllocation ? 'bg-red-500' : 'bg-[#9C7C2E]'}`}
+                      className={`h-full rounded-full ${eco.productionActuals > eco.productionAllocation ? 'bg-red-500' : 'bg-foreground'}`}
                       style={{ width: `${Math.min((eco.productionActuals / eco.productionAllocation) * 100, 100)}%` }}
                     />
                   </div>
@@ -405,11 +405,11 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
 
           {/* Margin analysis */}
           {eco.targetMarginAmount != null && (
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-              <p className="mb-4 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Margin Analysis</p>
+            <div className="rounded-2xl bg-surface p-6">
+              <p className="mb-4 text-xl font-semibold text-foreground">Margin Analysis</p>
               <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="rounded-lg bg-gray-50 dark:bg-gray-800 px-4 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Target Margin</p>
+                  <p className="text-[13px] text-muted-foreground">Target Margin</p>
                   <p className="font-mono text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {fmtGBP(eco.targetMarginAmount)}
                     {eco.targetMarginPercent != null && (
@@ -442,7 +442,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                 <div>
                   <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                     <div
-                      className="h-full bg-[#9C7C2E]"
+                      className="h-full bg-foreground"
                       style={{ width: `${Math.min((eco.targetMarginAmount / eco.dealTotal) * 100, 100)}%` }}
                       title={`Target margin ${fmtGBP(eco.targetMarginAmount)}`}
                     />
@@ -468,9 +468,9 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
 
           {/* Scope creep — additional deliverables billed on top of the deal */}
           {eco.deliverables && (eco.deliverables.additionalCount > 0 || eco.deliverables.contractedCount > 0) && (
-            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-900 p-5 shadow-sm">
+            <div className="rounded-2xl border-amber-200 dark:border-amber-800 bg-surface p-6">
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Deliverables &amp; Scope Creep</p>
+                <p className="text-[13px] text-muted-foreground">Deliverables &amp; Scope Creep</p>
                 {eco.deliverables.additionalOverage > 0 && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
                     +{fmtGBP(eco.deliverables.additionalOverage)} overage
@@ -479,7 +479,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
               </div>
               <div className="mb-3 grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-lg bg-gray-50 dark:bg-gray-800 px-3 py-2.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Contracted</p>
+                  <p className="text-[13px] text-muted-foreground">Contracted</p>
                   <p className="font-mono text-lg font-bold text-gray-900 dark:text-gray-100">{eco.deliverables.contractedCount}</p>
                 </div>
                 <div className="rounded-lg bg-amber-50 dark:bg-amber-900/30 px-3 py-2.5">
@@ -508,9 +508,9 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
           )}
 
           {/* Final P&L */}
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
+          <div className="rounded-2xl bg-surface p-6">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Final P&L</p>
+              <p className="text-[13px] text-muted-foreground">Final P&L</p>
               {eco.targetMarginAmount != null && eco.finalPL.grossProfit !== 0 && (
                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
                   eco.finalPL.grossProfit >= eco.targetMarginAmount ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
@@ -567,8 +567,8 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
       )}
 
       {/* Cost line items by category */}
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Cost Line Items</p>
+      <div className="rounded-2xl bg-surface p-6">
+        <p className="mb-3 text-xl font-semibold text-foreground">Cost Line Items</p>
         {costsByCategory.length === 0 ? (
           <p className="py-4 text-center text-xs text-gray-400 dark:text-gray-500">No costs logged against this project yet.</p>
         ) : (
@@ -599,8 +599,8 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Supplier invoices coded to this project */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Supplier Invoices</p>
+        <div className="rounded-2xl bg-surface p-6">
+          <p className="mb-3 text-xl font-semibold text-foreground">Supplier Invoices</p>
           {invoiceTracking && invoices.length > 0 && (
             <div className="mb-3 grid grid-cols-2 gap-2 text-[11px]">
               <div className="rounded-lg bg-gray-50 dark:bg-gray-800 px-3 py-2">
@@ -651,8 +651,8 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
         </div>
 
         {/* Xero payment status for the client */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Client Payments (Xero)</p>
+        <div className="rounded-2xl bg-surface p-6">
+          <p className="mb-3 text-xl font-semibold text-foreground">Client Payments (Xero)</p>
           {!xero.connected ? (
             <p className="py-4 text-center text-xs text-gray-400 dark:text-gray-500">Connect Xero to see payment status for {project.clientName}.</p>
           ) : xero.clientInvoices.length === 0 ? (
@@ -716,7 +716,7 @@ function ClientGroupedList({ projects, onOpen }: { projects: ProjectSummary[]; o
               </p>
             </div>
             {/* Column headers */}
-            <div className="hidden grid-cols-12 gap-2 border-b border-gray-100 dark:border-gray-800 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 sm:grid">
+            <div className="hidden grid-cols-12 gap-2 border-b border-gray-100 dark:border-gray-800 px-4 py-2 sm:grid text-[13px] text-muted-foreground">
               <div className="col-span-4">Project</div>
               <div className="col-span-2 text-right">Budget (exc. VAT)</div>
               <div className="col-span-2 text-right">Spent</div>
@@ -824,7 +824,7 @@ export default function ProjectFoldersTab() {
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f.value ? 'bg-[#9C7C2E] text-gray-900' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${filter === f.value ? 'bg-primary text-gray-900' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
           >
             {f.label} <span className={filter === f.value ? 'text-gray-700' : 'text-gray-400'}>({f.count})</span>
           </button>
@@ -846,7 +846,7 @@ export default function ProjectFoldersTab() {
             <button
               key={key}
               onClick={() => setView(key)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${view === key ? 'bg-[#9C7C2E] text-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${view === key ? 'bg-primary text-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
             >
               <Icon className="h-3 w-3" /> {label}
             </button>

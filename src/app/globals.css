@@ -97,18 +97,30 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Design tokens from the redesign's Foundations board. */
+  --color-surface: var(--surface);          /* grey cards, instead of borders */
+  --color-surface-2: var(--surface-2);      /* chips and quiet fills on a surface */
+  --color-line: var(--line);                /* row dividers */
+  --color-field: var(--field);              /* input borders */
+  --color-ink-2: var(--ink-2);              /* body text */
+  --color-navy: var(--navy);                /* success screens, data */
+  --color-on-navy: var(--on-navy);
+  --color-brand: var(--brand);              /* accent text: links, "in progress" */
+  --color-focus: var(--focus);              /* the 3px focus halo */
+  --color-ok: var(--ok);         --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);     --color-warn-bg: var(--warn-bg);
+  --color-bad: var(--bad);       --color-bad-bg: var(--bad-bg);
+  --color-info: var(--info);     --color-info-bg: var(--info-bg);
   --color-hero: var(--hero);
   --color-on-hero: var(--on-hero);
   --color-hero-tint: var(--hero-tint);
   --color-hero-ink: var(--hero-ink);
-  /* Acumin Pro is the UI face; Manrope stays as the loaded fallback */
-  --font-sans: "Acumin Pro", var(--font-manrope), system-ui, sans-serif;
+  /* Acumin Pro is the only UI face; Manrope stays as the loaded fallback. */
+  --font-sans: "Acumin Pro", var(--font-manrope), "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-mono), 'Courier New', monospace;
-  /* Editorial serif for headings (was: var(--font-sans)) */
-  --font-heading: "AtGambit", "Times New Roman", Georgia, serif;
-  /* Wide bold cut for subheadings (h3–h6) */
-  --font-subheading: "Acumin Pro Wide", "Acumin Pro", sans-serif;
-  /* Condensed cut for big stat numerals — use via font-[family-name:var(--font-stat)] */
+  --font-heading: "Acumin Pro", var(--font-manrope), "Helvetica Neue", Arial, sans-serif;
+  --font-subheading: "Acumin Pro", var(--font-manrope), "Helvetica Neue", Arial, sans-serif;
+  /* ExtraCond caps: success headlines and big call times only. */
   --font-stat: "Acumin Pro ExtraCond", "Acumin Pro", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -139,100 +151,169 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-  /* Brand accent (was gold #D4A853) — Commercial brass */
+  /* Radius scale: 12 for inputs, 16 for rows and alerts, 24 for cards. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-4xl: 32px;
   --color-amber: #9C7C2E;
 }
 
+/* Tailwind's palettes, retuned so the app's existing utility classes land on the
+   redesign's colours without touching each file. Not `inline`: utilities keep
+   reading the variables, so the dark block below can still override them.
+   Greys go cool (Ink → Surface); status hues take the Foundations tag pairs. */
+@theme {
+  --color-gray-50: #F7F8FA;  --color-gray-100: #F3F5F8; --color-gray-200: #E3E7EC;
+  --color-gray-300: #C3CBD6; --color-gray-400: #7B8494; --color-gray-500: #5B6472;
+  --color-gray-600: #46505E; --color-gray-700: #2B3443; --color-gray-800: #1A2332;
+  --color-gray-900: #0B1220; --color-gray-950: #060A14;
+  --color-slate-50: #F7F8FA;  --color-slate-100: #F3F5F8; --color-slate-200: #E3E7EC;
+  --color-slate-300: #C3CBD6; --color-slate-400: #7B8494; --color-slate-500: #5B6472;
+  --color-slate-600: #46505E; --color-slate-700: #2B3443; --color-slate-800: #1A2332;
+  --color-slate-900: #0B1220; --color-slate-950: #060A14;
+  --color-neutral-50: #F7F8FA;  --color-neutral-100: #F3F5F8; --color-neutral-200: #E3E7EC;
+  --color-neutral-300: #C3CBD6; --color-neutral-400: #7B8494; --color-neutral-500: #5B6472;
+  --color-neutral-600: #46505E; --color-neutral-700: #2B3443; --color-neutral-800: #1A2332;
+  --color-neutral-900: #0B1220; --color-neutral-950: #060A14;
+  --color-zinc-50: #F7F8FA;  --color-zinc-100: #F3F5F8; --color-zinc-200: #E3E7EC;
+  --color-zinc-300: #C3CBD6; --color-zinc-400: #7B8494; --color-zinc-500: #5B6472;
+  --color-zinc-600: #46505E; --color-zinc-700: #2B3443; --color-zinc-800: #1A2332;
+  --color-zinc-900: #0B1220; --color-zinc-950: #060A14;
+  --color-stone-50: #F7F8FA;  --color-stone-100: #F3F5F8; --color-stone-200: #E3E7EC;
+  --color-stone-300: #C3CBD6; --color-stone-400: #7B8494; --color-stone-500: #5B6472;
+  --color-stone-600: #46505E; --color-stone-700: #2B3443; --color-stone-800: #1A2332;
+  --color-stone-900: #0B1220; --color-stone-950: #060A14;
+
+  --color-green-50: #F1F9F4;  --color-green-100: #E3F4EA; --color-green-200: #C6E7D3;
+  --color-green-500: #2F8F5B; --color-green-600: #1D6B42; --color-green-700: #1D6B42; --color-green-800: #155234;
+  --color-emerald-50: #F1F9F4;  --color-emerald-100: #E3F4EA; --color-emerald-200: #C6E7D3;
+  --color-emerald-500: #2F8F5B; --color-emerald-600: #1D6B42; --color-emerald-700: #1D6B42; --color-emerald-800: #155234;
+  --color-amber-50: #FEF8EC;  --color-amber-100: #FDF1DC; --color-amber-200: #F6DDB0;
+  --color-amber-500: #C98A12; --color-amber-600: #8A5300; --color-amber-700: #8A5300; --color-amber-800: #6B4000;
+  --color-yellow-50: #FEF8EC;  --color-yellow-100: #FDF1DC; --color-yellow-200: #F6DDB0;
+  --color-yellow-600: #8A5300; --color-yellow-700: #8A5300; --color-yellow-800: #6B4000;
+  --color-orange-50: #FEF8EC;  --color-orange-100: #FDF1DC; --color-orange-200: #F6DDB0;
+  --color-orange-600: #8A5300; --color-orange-700: #8A5300; --color-orange-800: #6B4000;
+  --color-red-50: #FDF3F2;  --color-red-100: #FBE6E4; --color-red-200: #F2C5C0;
+  --color-red-500: #C2392D; --color-red-600: #A12C22; --color-red-700: #A12C22; --color-red-800: #7E2219;
+  --color-rose-50: #FDF3F2;  --color-rose-100: #FBE6E4; --color-rose-200: #F2C5C0;
+  --color-rose-500: #C2392D; --color-rose-600: #A12C22; --color-rose-700: #A12C22;
+  --color-blue-50: #F2F8FF;  --color-blue-100: #E6F2FF; --color-blue-200: #CFE6FF;
+  --color-blue-500: #3D7DD8; --color-blue-600: #0B3B66; --color-blue-700: #0B3B66; --color-blue-800: #082D4F;
+  --color-sky-50: #F2F8FF;  --color-sky-100: #E6F2FF; --color-sky-200: #CFE6FF;
+  --color-sky-600: #0B3B66; --color-sky-700: #0B3B66;
+  --color-indigo-50: #F2F8FF;  --color-indigo-100: #E6F2FF; --color-indigo-200: #CFE6FF;
+  --color-indigo-600: #0B3B66; --color-indigo-700: #0B3B66;
+}
+
 /* ===== LIGHT THEME — DEFAULT (no class on <html>) =====
-   White ground, hairline borders, black primary. */
+   The redesign: one light blue accent on white, grey cards instead of borders,
+   pill buttons, big plain numbers. Values from the Foundations board. */
 :root {
-  --background: #f3f3f1;          /* page wash — slightly darker so white cards pop */
-  --foreground: #111111;
-  --card: #ffffff;                /* cards sit brighter than the page */
-  --card-foreground: #111111;
-  --popover: #ffffff;
-  --popover-foreground: #111111;
-  --primary: #111111;             /* black primary (was gold) */
-  --primary-foreground: #ffffff;
-  --secondary: #f4f4f2;
-  --secondary-foreground: #111111;
-  --muted: #f4f4f2;
-  --muted-foreground: #6b6b68;
-  --accent: #f4f4f2;              /* neutral highlight (was gold) */
-  --accent-foreground: #111111;
-  --destructive: #c33b2a;
-  --destructive-foreground: #ffffff;
-  --border: #e8e8e6;
-  --input: #e0e0dd;
-  --ring: #111111;                /* black focus ring (was blue) */
+  --background: #FFFFFF;          /* Ground */
+  --foreground: #0B1220;          /* Ink */
+  --card: #FFFFFF;                /* white panels, inputs, menus */
+  --card-foreground: #0B1220;
+  --surface: #F3F5F8;             /* Surface — the grey card */
+  --surface-2: #EDF0F4;
+  --popover: #FFFFFF;
+  --popover-foreground: #0B1220;
+  --primary: #A9D4FF;             /* Accent — primary buttons */
+  --primary-foreground: #0B1220;
+  --secondary: #E6F2FF;           /* Accent tint — secondary buttons, active nav */
+  --secondary-foreground: #0B1220;
+  --muted: #F3F5F8;
+  --muted-foreground: #5B6472;    /* Muted — labels, 5.9:1 on white */
+  --accent: #E6F2FF;
+  --accent-foreground: #0B1220;
+  --destructive: #A12C22;
+  --destructive-foreground: #FFFFFF;
+  --border: #E3E7EC;              /* Line */
+  --input: #C3CBD6;               /* Field */
+  --ring: #0B1220;
+  --line: #E3E7EC;
+  --field: #C3CBD6;
+  --ink-2: #2B3443;
+  --navy: #0A2540;
+  --on-navy: #FFFFFF;
+  --brand: #0B3B66;
+  --focus: #CFE6FF;
+  --ok: #1D6B42;   --ok-bg: #E3F4EA;
+  --warn: #8A5300; --warn-bg: #FDF1DC;
+  --bad: #A12C22;  --bad-bg: #FBE6E4;
+  --info: #0B3B66; --info-bg: #E6F2FF;
 
-  /* Portal accents — muted editorial set */
-  --portal-commercial: #9C7C2E;   /* brass */
-  --portal-production: #A93B2E;   /* oxblood */
-  --portal-print: #2E5E44;        /* forest */
-  --portal-editorial: #6B4E8E;    /* aubergine */
-  --portal-finance: #2F4B8F;      /* royal */
-  --portal-think-tank: #B45A1F;   /* sienna */
-  --portal-contacts: #2F4B8F;     /* royal */
-  --portal-admin: #4A4843;        /* graphite */
-  --chart-1: #9C7C2E;
-  --chart-2: #2F4B8F;
+  /* Workspace markers — 8px dots only. */
+  --portal-commercial: #9C7C2E;
+  --portal-production: #A93B2E;
+  --portal-print: #2E5E44;
+  --portal-editorial: #6B4E8E;
+  --portal-finance: #2F4B8F;
+  --portal-think-tank: #B45A1F;
+  --portal-contacts: #2F4B8F;
+  --portal-admin: #4A4843;
+  --chart-1: #0A2540;
+  --chart-2: #A9D4FF;
   --chart-3: #2E5E44;
-  --chart-4: #6B4E8E;
+  --chart-4: #9C7C2E;
   --chart-5: #A93B2E;
-  --radius: 0.375rem;             /* near-square (was 0.5rem) */
-  --sidebar: #fbfbfa;
-  --sidebar-foreground: #111111;
-  --sidebar-primary: #9C7C2E;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f4f4f2;
-  --sidebar-accent-foreground: #111111;
-  --sidebar-border: #e8e8e6;
-  --sidebar-ring: #111111;
+  --radius: 0.75rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #2B3443;
+  --sidebar-primary: #0B1220;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E6F2FF;
+  --sidebar-accent-foreground: #0B1220;
+  --sidebar-border: transparent;
+  --sidebar-ring: #0B1220;
 
-  /* ── Hero ──────────────────────────────────────────────────────────────
-     The one brand colour, used at full strength for blocks and the primary
-     action. Klein by default (see the redesign direction). Changing the hero
-     colour is these two lines; everything else derives from them.
-     --on-hero is the ink that sits on a hero block. */
-  --hero: #2440F0;
-  --on-hero: #FFFFFF;
-  --hero-tint: color-mix(in oklab, var(--hero) 12%, var(--card));
-  --hero-ink: color-mix(in oklab, var(--hero) 62%, var(--foreground));
+  /* Hero: the light blue accent at full strength. Kept as names because the
+     signed-out screens use them. */
+  --hero: #A9D4FF;
+  --on-hero: #0B1220;
+  --hero-tint: #E6F2FF;
+  --hero-ink: #0B3B66;
 }
 
 /* ===== DARK THEME — applied when <html class="dark"> =====
-   Kept functional; gold accent replaced with paper-white primary and
-   the portal accents lifted for dark grounds. */
+   The same system on navy, for the people who chose dark. */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
-  --card: #141414;
-  --card-foreground: #ffffff;
-  --popover: #1e1e1e;
-  --popover-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #000000;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #ffffff;
-  --muted: #1a1a1a;
-  --muted-foreground: #999999;
-  --accent: #1e1e1e;
-  --accent-foreground: #ffffff;
-  --destructive: #ff6b6b;
-  --destructive-foreground: #ffffff;
-  --border: #2a2a2a;
-  --input: #1a1a1a;
-  --ring: #ffffff;
+  --background: #0B1220;
+  --foreground: #F3F5F8;
+  --card: #111A2B;
+  --card-foreground: #F3F5F8;
+  --surface: #141E31;
+  --surface-2: #1B273D;
+  --popover: #141E31;
+  --popover-foreground: #F3F5F8;
+  --primary: #A9D4FF;
+  --primary-foreground: #0B1220;
+  --secondary: #1B2A44;
+  --secondary-foreground: #F3F5F8;
+  --muted: #141E31;
+  --muted-foreground: #9AA4B3;
+  --accent: #1B2A44;
+  --accent-foreground: #F3F5F8;
+  --destructive: #F08A80;
+  --destructive-foreground: #0B1220;
+  --border: #243049;
+  --input: #34415C;
+  --ring: #A9D4FF;
+  --line: #243049;
+  --field: #34415C;
+  --ink-2: #D5DBE3;
+  --navy: #06101F;
+  --brand: #A9D4FF;
+  --focus: #2A4E7A;
+  --ok: #7FD3A2;   --ok-bg: #12301F;
+  --warn: #F2C26B; --warn-bg: #33270F;
+  --bad: #F08A80;  --bad-bg: #3A1A17;
+  --info: #A9D4FF; --info-bg: #14273F;
 
-  /* Portal accents — same hues, lifted for dark */
   --portal-commercial: #C9A44A;
   --portal-production: #D0584A;
   --portal-print: #4E8F6C;
@@ -241,43 +322,46 @@
   --portal-think-tank: #D07C3E;
   --portal-contacts: #5B7BC4;
   --portal-admin: #8a8a86;
-  --chart-1: #C9A44A;
-  --chart-2: #5B7BC4;
+  --chart-1: #A9D4FF;
+  --chart-2: #3D5A80;
   --chart-3: #4E8F6C;
-  --chart-4: #9678BC;
+  --chart-4: #C9A44A;
   --chart-5: #D0584A;
-  --sidebar: #0f0f0f;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #C9A44A;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2a2a2a;
-  --sidebar-ring: #ffffff;
+  --sidebar: #0B1220;
+  --sidebar-foreground: #D5DBE3;
+  --sidebar-primary: #A9D4FF;
+  --sidebar-primary-foreground: #0B1220;
+  --sidebar-accent: #1B2A44;
+  --sidebar-accent-foreground: #F3F5F8;
+  --sidebar-border: transparent;
+  --sidebar-ring: #A9D4FF;
+  --hero: #A9D4FF;
+  --on-hero: #0B1220;
+  --hero-tint: #14273F;
+  --hero-ink: #A9D4FF;
 
   /* Safety-net remap of the Tailwind palette tint-shades (50/100/200) to dark
-     values — unchanged from the previous file. */
-  --color-gray-50: #1a1a1a;   --color-gray-100: #1c1c1c;   --color-gray-200: #2a2a2a;
-  --color-slate-50: #1a1a1a;  --color-slate-100: #1c1c1c;  --color-slate-200: #2a2a2a;
-  --color-neutral-50: #1a1a1a;--color-neutral-100: #1c1c1c;--color-neutral-200: #2a2a2a;
-  --color-zinc-50: #1a1a1a;   --color-zinc-100: #1c1c1c;   --color-zinc-200: #2a2a2a;
-  --color-stone-50: #1a1a1a;  --color-stone-100: #1c1c1c;  --color-stone-200: #2a2a2a;
-
-  --color-amber-50: color-mix(in srgb, #C9A44A 12%, #141414);  --color-amber-100: color-mix(in srgb, #C9A44A 16%, #141414);
-  --color-yellow-50: color-mix(in srgb, #C9A44A 12%, #141414); --color-yellow-100: color-mix(in srgb, #C9A44A 16%, #141414);
-  --color-orange-50: color-mix(in srgb, #D07C3E 12%, #141414); --color-orange-100: color-mix(in srgb, #D07C3E 16%, #141414);
-  --color-green-50: color-mix(in srgb, #4E8F6C 12%, #141414);  --color-green-100: color-mix(in srgb, #4E8F6C 16%, #141414);
-  --color-emerald-50: color-mix(in srgb, #4E8F6C 12%, #141414);--color-emerald-100: color-mix(in srgb, #4E8F6C 16%, #141414);
-  --color-teal-50: color-mix(in srgb, #4E8F6C 12%, #141414);   --color-teal-100: color-mix(in srgb, #4E8F6C 16%, #141414);
-  --color-red-50: color-mix(in srgb, #ff6b6b 12%, #141414);    --color-red-100: color-mix(in srgb, #ff6b6b 16%, #141414);
-  --color-rose-50: color-mix(in srgb, #ff6b6b 12%, #141414);   --color-rose-100: color-mix(in srgb, #ff6b6b 16%, #141414);
-  --color-pink-50: color-mix(in srgb, #ff6b6b 12%, #141414);   --color-pink-100: color-mix(in srgb, #ff6b6b 16%, #141414);
-  --color-blue-50: color-mix(in srgb, #5B7BC4 12%, #141414);   --color-blue-100: color-mix(in srgb, #5B7BC4 16%, #141414);
-  --color-sky-50: color-mix(in srgb, #5B7BC4 12%, #141414);    --color-sky-100: color-mix(in srgb, #5B7BC4 16%, #141414);
-  --color-indigo-50: color-mix(in srgb, #5B7BC4 12%, #141414); --color-indigo-100: color-mix(in srgb, #5B7BC4 16%, #141414);
-  --color-cyan-50: color-mix(in srgb, #5B7BC4 12%, #141414);   --color-cyan-100: color-mix(in srgb, #5B7BC4 16%, #141414);
-  --color-purple-50: color-mix(in srgb, #9678BC 12%, #141414); --color-purple-100: color-mix(in srgb, #9678BC 16%, #141414);
-  --color-violet-50: color-mix(in srgb, #9678BC 12%, #141414); --color-violet-100: color-mix(in srgb, #9678BC 16%, #141414);
+     values, so light-only utilities don't glare on navy. */
+  --color-gray-50: #141E31;   --color-gray-100: #18233A;   --color-gray-200: #243049;
+  --color-slate-50: #141E31;  --color-slate-100: #18233A;  --color-slate-200: #243049;
+  --color-neutral-50: #141E31;--color-neutral-100: #18233A;--color-neutral-200: #243049;
+  --color-zinc-50: #141E31;   --color-zinc-100: #18233A;   --color-zinc-200: #243049;
+  --color-stone-50: #141E31;  --color-stone-100: #18233A;  --color-stone-200: #243049;
+  --color-amber-50: #33270F;  --color-amber-100: #33270F;
+  --color-yellow-50: #33270F; --color-yellow-100: #33270F;
+  --color-orange-50: #33270F; --color-orange-100: #33270F;
+  --color-green-50: #12301F;  --color-green-100: #12301F;
+  --color-emerald-50: #12301F;--color-emerald-100: #12301F;
+  --color-teal-50: #12301F;   --color-teal-100: #12301F;
+  --color-red-50: #3A1A17;    --color-red-100: #3A1A17;
+  --color-rose-50: #3A1A17;   --color-rose-100: #3A1A17;
+  --color-pink-50: #3A1A17;   --color-pink-100: #3A1A17;
+  --color-blue-50: #14273F;   --color-blue-100: #14273F;
+  --color-sky-50: #14273F;    --color-sky-100: #14273F;
+  --color-indigo-50: #14273F; --color-indigo-100: #14273F;
+  --color-cyan-50: #14273F;   --color-cyan-100: #14273F;
+  --color-purple-50: #241B36; --color-purple-100: #241B36;
+  --color-violet-50: #241B36; --color-violet-100: #241B36;
 }
 
 @layer base {
@@ -286,41 +370,39 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
   }
   html {
     @apply font-sans;
   }
-  /* Editorial serif on page-level headings. Components keep their size/weight
-     utilities; only the family changes. Remove this rule to revert. */
+  /* Page and section titles: Acumin Pro semibold, slightly tight. Components
+     keep their own size utilities; only family, weight and tracking are set. */
   h1, h2 {
     font-family: var(--font-heading);
+    font-weight: 600;
     letter-spacing: -0.015em;
   }
-  /* Subheadings take the wide bold sans at 0% tracking. Sits in @layer base so
-     component-level font-* / tracking-* utilities still win. */
   h3, h4, h5, h6 {
     font-family: var(--font-subheading);
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0;
+  }
+  /* The figure style: every number lines up. */
+  .tabular-nums, [data-figure] {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* Every uppercase label, pill, stat title and section header takes the wide bold
-   cut at 0% tracking. Unlayered + !important so it outranks the tracking-* and
-   font-* utilities already on those elements; that also means an element cannot
-   opt out with a utility — drop the class to exempt one. Only reaches the
-   `uppercase` class, not inline textTransform (print/PDF keep their own type). */
-.uppercase {
-  font-family: var(--font-subheading) !important;
-  font-weight: 700 !important;
-  letter-spacing: 0 !important;
-}
-
-/* Wide bold on all uppercase UI labels */
-.uppercase {
-  font-family: var(--font-subheading) !important;
-  font-weight: 700 !important;
-  letter-spacing: 0 !important;
+/* Uppercase labels: Acumin Pro semibold with a little air, as on the
+   Foundations board's section labels. (Was the Wide cut at 0% tracking.) In
+   the base layer, so a font utility on the same element — font-stat for the
+   ExtraCond success headlines — still wins. */
+@layer base {
+  .uppercase {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
 }
 
 /* Monospace numerals */
@@ -329,126 +411,103 @@
   font-feature-settings: "tnum";
 }
 
-/* OutlanderOS surfaces — theme-aware via CSS variables */
+/* OutlanderOS surfaces — grey cards without borders. */
 .os-card {
-  background: var(--card);
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 24px;
+  border: 0;
   box-shadow: none;
-  transition: border-color 0.2s ease;
 }
 .os-card-hover:hover {
-  border-color: #c9c9c6;
-}
-.dark .os-card-hover:hover {
-  border-color: #3a3a3a;
+  background: var(--surface-2);
 }
 .os-glass {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(255,255,255,0.85);
-}
-.dark .os-glass {
-  background: rgba(20,20,20,0.8);
+  background: color-mix(in srgb, var(--background) 88%, transparent);
 }
 .os-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  border-radius: 4px;   /* near-square chips (was 9999px) */
-  padding: 2px 10px;
-  font-size: 11px;
+  gap: 0.375rem;
+  height: 24px;
+  border-radius: 9999px;
+  padding: 0 10px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  line-height: 1.5;
+  line-height: 1;
+  white-space: nowrap;
 }
-
-/* Apple design utilities — retuned to editorial flat */
 .card-apple {
-  background: var(--card);
-  border-radius: 8px;
+  background: var(--surface);
+  border-radius: 24px;
   box-shadow: none;
-  border: 1px solid var(--border);
-  transition: border-color 0.2s ease;
-}
-.card-apple:hover {
-  border-color: #c9c9c6;
-}
-.dark .card-apple:hover {
-  border-color: #3a3a3a;
+  border: 0;
 }
 .glass-header {
   backdrop-filter: blur(20px);
-  background: rgba(255,255,255,0.9);
+  background: color-mix(in srgb, var(--background) 90%, transparent);
   border-bottom: 1px solid var(--border);
-}
-.dark .glass-header {
-  background: rgba(20,20,20,0.85);
 }
 .btn-primary {
   background: var(--primary);
   color: var(--primary-foreground);
-  border-radius: 6px;
-  padding: 10px 20px;
+  border-radius: 9999px;
+  min-height: 44px;
+  padding: 0 20px;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  transition: opacity 0.2s;
+  transition: filter 0.15s;
 }
 .btn-primary:hover {
-  opacity: 0.85;
+  filter: brightness(0.97);
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d6d6d3;
-  border-radius: 2px;
+  background: #C3CBD6;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b8b8b5;
+  background: #8C95A3;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
+  background: #34415C;
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a3a;
+  background: #4A5875;
 }
 
-/* ── Amber focus-ring neutraliser ────────────────────────────────────────────
-   The per-file sweep retired the old #ffd700 gold utilities, so those remaps
-   were removed. What remains: a few inputs still use Tailwind's amber-200 focus
-   ring (focus:ring-amber-200/60) as a gold-ish glow — neutralise it to a hairline
-   black ring so no gold leaks in. Amber is otherwise kept as a semantic warning
-   colour elsewhere. Scoped out of print. */
+/* ── Flat surfaces ───────────────────────────────────────────────────────────
+   The redesign uses no drop shadows on cards; only floating things (menus,
+   dialogs, the search palette) lift. Scoped out of print. */
 @media not print {
-  html:not(.dark) .focus\:ring-amber-200\/60:focus { --tw-ring-color: rgba(17,17,17,0.12); }
-  html:not(.dark) .ring-amber-200\/60 { --tw-ring-color: rgba(17,17,17,0.12); }
-}
-
-/* ── Light-theme editorial flattening ────────────────────────────────────────
-   Squares off the oversized radii and kills drop shadows so existing
-   components read as hairline print surfaces without per-file edits.
-   Remove any rule if a specific screen needs its old value back. */
-@media not print {
-  html:not(.dark) .rounded-xl { border-radius: 8px; }
-  html:not(.dark) .rounded-2xl { border-radius: 10px; }
-  html:not(.dark) .rounded-lg { border-radius: 6px; }
-  html:not(.dark) .shadow-sm { box-shadow: none; }
+  html:not(.dark) .shadow-sm,
+  html:not(.dark) .shadow-xs { box-shadow: none; }
   html:not(.dark) .shadow-md,
-  html:not(.dark) .hover\:shadow-md:hover { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-  html:not(.dark) .shadow-lg { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
-  /* Hairline tints: warm greys → neutral hairlines */
-  html:not(.dark) .border-gray-100, html:not(.dark) .border-slate-100, html:not(.dark) .border-neutral-100 { border-color: #f0f0ee; }
-  html:not(.dark) .border-gray-200, html:not(.dark) .border-slate-200, html:not(.dark) .border-neutral-200 { border-color: #e8e8e6; }
-  html:not(.dark) .divide-gray-50 > :not([hidden]) ~ :not([hidden]),
-  html:not(.dark) .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
-  html:not(.dark) .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #f0f0ee; }
+  html:not(.dark) .hover\:shadow-md:hover { box-shadow: 0 1px 2px rgba(11,18,32,0.06); }
+  html:not(.dark) .shadow-lg { box-shadow: 0 8px 28px rgba(11,18,32,0.10), 0 1px 3px rgba(11,18,32,0.06); }
+  html:not(.dark) .shadow-xl,
+  html:not(.dark) .shadow-2xl { box-shadow: 0 24px 64px rgba(11,18,32,0.16), 0 2px 6px rgba(11,18,32,0.06); }
+}
+
+/* Focus: ink border with a light blue halo, as on the Foundations inputs. In
+   the base layer so a borderless field (search, quick-add) can opt out with a
+   utility class. */
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    border-color: var(--foreground);
+    box-shadow: 0 0 0 3px var(--focus);
+    outline: none;
+  }
 }
 
 /* ── Dark-theme safety net ───────────────────────────────────────────────────
@@ -456,47 +515,47 @@
    to dark-monochrome equivalents until the per-file sweep is complete. */
 @media not print {
   /* Surfaces */
-  .dark .bg-white { background-color: #141414; }
+  .dark .bg-white { background-color: #111A2B; }
   .dark .bg-white\/95, .dark .bg-white\/90, .dark .bg-white\/85, .dark .bg-white\/80,
-  .dark .bg-white\/75, .dark .bg-white\/70, .dark .bg-white\/60 { background-color: rgba(20,20,20,0.82); }
-  .dark .bg-white\/50, .dark .bg-white\/40, .dark .bg-white\/30 { background-color: rgba(30,30,30,0.55); }
+  .dark .bg-white\/75, .dark .bg-white\/70, .dark .bg-white\/60 { background-color: rgba(17,26,43,0.85); }
+  .dark .bg-white\/50, .dark .bg-white\/40, .dark .bg-white\/30 { background-color: rgba(20,30,49,0.6); }
   .dark .bg-white\/20, .dark .bg-white\/10, .dark .bg-white\/5 { background-color: rgba(255,255,255,0.06); }
   .dark .border-white\/60, .dark .border-white\/50, .dark .border-white\/40, .dark .border-white\/20, .dark .border-white\/10 { border-color: rgba(255,255,255,0.08); }
-  .dark .bg-gray-50, .dark .bg-slate-50, .dark .bg-neutral-50 { background-color: #1a1a1a; }
-  .dark .bg-gray-100, .dark .bg-slate-100, .dark .bg-neutral-100 { background-color: #1a1a1a; }
-  .dark .bg-gray-200, .dark .bg-slate-200, .dark .bg-neutral-200 { background-color: #222222; }
+  .dark .bg-gray-50, .dark .bg-slate-50, .dark .bg-neutral-50 { background-color: #141E31; }
+  .dark .bg-gray-100, .dark .bg-slate-100, .dark .bg-neutral-100 { background-color: #141E31; }
+  .dark .bg-gray-200, .dark .bg-slate-200, .dark .bg-neutral-200 { background-color: #18233A; }
 
   /* Hover surfaces */
-  .dark .hover\:bg-white:hover { background-color: #1e1e1e; }
-  .dark .hover\:bg-gray-50:hover, .dark .hover\:bg-slate-50:hover, .dark .hover\:bg-neutral-50:hover { background-color: #222222; }
-  .dark .hover\:bg-gray-100:hover, .dark .hover\:bg-slate-100:hover, .dark .hover\:bg-neutral-100:hover { background-color: #222222; }
-  .dark .hover\:bg-gray-200:hover { background-color: #2a2a2a; }
+  .dark .hover\:bg-white:hover { background-color: #18233A; }
+  .dark .hover\:bg-gray-50:hover, .dark .hover\:bg-slate-50:hover, .dark .hover\:bg-neutral-50:hover { background-color: #18233A; }
+  .dark .hover\:bg-gray-100:hover, .dark .hover\:bg-slate-100:hover, .dark .hover\:bg-neutral-100:hover { background-color: #18233A; }
+  .dark .hover\:bg-gray-200:hover { background-color: #243049; }
 
   /* Text */
   .dark .text-gray-900, .dark .text-slate-900, .dark .text-neutral-900,
   .dark .text-gray-800, .dark .text-slate-800, .dark .text-neutral-800 { color: #ffffff; }
-  .dark .text-gray-700, .dark .text-slate-700, .dark .text-neutral-700 { color: #e5e5e5; }
+  .dark .text-gray-700, .dark .text-slate-700, .dark .text-neutral-700 { color: #D5DBE3; }
   .dark .text-gray-600, .dark .text-slate-600, .dark .text-neutral-600,
-  .dark .text-gray-500, .dark .text-slate-500, .dark .text-neutral-500 { color: #999999; }
+  .dark .text-gray-500, .dark .text-slate-500, .dark .text-neutral-500 { color: #9AA4B3; }
   .dark .text-gray-400, .dark .text-slate-400, .dark .text-neutral-400,
-  .dark .text-gray-300, .dark .text-slate-300, .dark .text-neutral-300 { color: #666666; }
+  .dark .text-gray-300, .dark .text-slate-300, .dark .text-neutral-300 { color: #7B8494; }
 
   .dark .hover\:text-gray-900:hover, .dark .hover\:text-gray-800:hover { color: #ffffff; }
-  .dark .hover\:text-gray-700:hover, .dark .hover\:text-gray-600:hover { color: #cccccc; }
+  .dark .hover\:text-gray-700:hover, .dark .hover\:text-gray-600:hover { color: #C3CBD6; }
 
   /* Borders */
-  .dark .border-gray-100, .dark .border-slate-100, .dark .border-neutral-100 { border-color: #1e1e1e; }
-  .dark .border-gray-200, .dark .border-slate-200, .dark .border-neutral-200 { border-color: #2a2a2a; }
-  .dark .border-gray-300, .dark .border-slate-300, .dark .border-neutral-300 { border-color: #3a3a3a; }
-  .dark .hover\:border-gray-200:hover, .dark .hover\:border-gray-300:hover { border-color: #3a3a3a; }
+  .dark .border-gray-100, .dark .border-slate-100, .dark .border-neutral-100 { border-color: #18233A; }
+  .dark .border-gray-200, .dark .border-slate-200, .dark .border-neutral-200 { border-color: #243049; }
+  .dark .border-gray-300, .dark .border-slate-300, .dark .border-neutral-300 { border-color: #34415C; }
+  .dark .hover\:border-gray-200:hover, .dark .hover\:border-gray-300:hover { border-color: #34415C; }
 
   /* Divide */
   .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
-  .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #2a2a2a; }
+  .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #243049; }
 
   /* Inputs */
   .dark .placeholder\:text-gray-400::placeholder,
-  .dark .placeholder\:text-gray-500::placeholder { color: #666666; }
+  .dark .placeholder\:text-gray-500::placeholder { color: #7B8494; }
 }
 
 /* ── Status pill / accent remap (dark only) ──────────────────────────────────
