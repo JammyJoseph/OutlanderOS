@@ -34,6 +34,14 @@ Verified against live prod on 2026-07-27.
       (`ecosystem.config.js`; it listened on every interface, kept off the internet by ufw
       alone) and nginx has `server_tokens off`. Plaintext Google tokens on `User` re-sealed
       and expired reset tokens cleared the same day.
+- [ ] **Reconnect the dashboard's shared Google account.** Its saved token is "expired or
+      revoked" (seen 2026-10-20), so the dashboard calendar and billing tracker are failing.
+      Admin → Settings → Connect. It still lives in plaintext `.tokens.json` (item above).
+- [x] ~~OAuth tokens in the server logs~~ — a failed Google call logged its refresh token,
+      client id and Bearer token. `src/lib/log-redact.ts` (installed from
+      `instrumentation.ts`) now reduces HTTP-client errors to message + status and masks
+      token-shaped strings in every log line. One revoked token remains in
+      `/root/.pm2/logs/outlanderos-error-0.log` from before the fix.
 - [ ] **Two accounts have never signed in** — Callum (ADMIN) and Shreeya. Confirm or
       deactivate; an unused admin account is the most valuable thing on the system to guess.
 - [ ] **`.tokens.json.bak-20260922105853`** sits next to `.tokens.json` on prod — a second
