@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withAdminDb } from '@/lib/auth'
 import { isSyncRunning, lastSyncSummary, runXeroSync } from '@/lib/xero-sync'
+import { resetXeroBackoff } from '@/lib/xero-worker'
 
 // Pull Xero now.
 //
@@ -15,6 +16,9 @@ export const POST = withAdminDb(async () => {
     )
   }
   const outcome = await runXeroSync('MANUAL')
+  // A manual sync that works means whatever was broken has been fixed — so the
+  // scheduled worker must not sit in a six-hour backoff waiting to find out.
+  if (outcome.status !== 'FAILED') resetXeroBackoff()
   return NextResponse.json({
     ok: outcome.status !== 'FAILED',
     ...outcome,

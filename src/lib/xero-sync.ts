@@ -59,6 +59,12 @@ export interface SyncOutcome {
   durationMs: number
   entities: SyncReport
   error?: string
+  /**
+   * True when retrying cannot help — a revoked grant, a lapsed subscription, a
+   * permission Xero refuses. The worker uses this to stop retrying every
+   * fifteen minutes against a door that is shut.
+   */
+  needsHuman?: boolean
 }
 
 async function cursorFor(entity: Entity): Promise<Date | null> {
@@ -417,25 +423,46 @@ async function doSync(trigger: 'SCHEDULED' | 'MANUAL' | 'CONNECT'): Promise<Sync
       where: { id: run.id },
       data: { finishedAt: new Date(), status: 'FAILED', error: message.slice(0, 480), durationMs },
     })
-    return { runId: run.id, status: 'FAILED', durationMs, entities, error: message }
+    return {
+      runId: run.id,
+      status: 'FAILED',
+      durationMs,
+      entities,
+      error: message,
+      needsHuman: err instanceof XeroDisconnectedError ? err.needsReconsent : false,
+    }
   }
 
   let failures = 0
+  let successes = 0
+  let needsHuman = false
+  let firstError: string | undefined
   for (const entity of ENTITIES) {
     try {
       entities[entity.name] = await entity.run()
+      successes++
     } catch (err) {
       failures++
       const message = err instanceof Error ? err.message : String(err)
+      firstError ??= message
       entities[entity.name] = { fetched: 0, upserted: 0, pages: 0, error: message.slice(0, 300) }
       console.error(`[xero-sync] ${entity.name} failed:`, message)
       // A dead connection will not fix itself for the entities behind this one.
-      if (err instanceof XeroDisconnectedError && err.needsReconsent) break
+      if (err instanceof XeroDisconnectedError && err.needsReconsent) {
+        needsHuman = true
+        break
+      }
     }
   }
 
   const durationMs = Date.now() - started
-  const status = failures === 0 ? 'OK' : failures === ENTITIES.length ? 'FAILED' : 'PARTIAL'
+  // Judged by what SUCCEEDED, not by what failed. The old rule counted
+  // failures against the six entities, but a needsReconsent break means the
+  // entities behind the failure never ran — so a run that synced nothing at
+  // all scored 1 failure out of 6 and was recorded as PARTIAL. PARTIAL counts
+  // as fresh in lastSyncSummary, so the dashboard would have said "synced three
+  // minutes ago" about a sync that read nothing. 2,663 of them, as it happens.
+  const status = failures === 0 ? 'OK' : successes === 0 ? 'FAILED' : 'PARTIAL'
   await prisma.xeroSyncRun.update({
     where: { id: run.id },
     // Cast: SyncReport is a plain record of plain fields, but Prisma's Json
@@ -443,6 +470,7 @@ async function doSync(trigger: 'SCHEDULED' | 'MANUAL' | 'CONNECT'): Promise<Sync
     data: {
       finishedAt: new Date(),
       status,
+      error: status === 'OK' ? null : (firstError ?? null)?.slice(0, 480),
       entities: entities as unknown as Prisma.InputJsonValue,
       durationMs,
     },
@@ -450,7 +478,19 @@ async function doSync(trigger: 'SCHEDULED' | 'MANUAL' | 'CONNECT'): Promise<Sync
 
   const total = Object.values(entities).reduce((n, e) => n + e.upserted, 0)
   console.log(`[xero-sync] ${status} in ${durationMs}ms, ${total} rows, trigger ${trigger}`)
-  return { runId: run.id, status, durationMs, entities }
+  return { runId: run.id, status, durationMs, entities, error: firstError, needsHuman }
+}
+
+/**
+ * Trims the run log. XeroSyncRun is a diagnostic — "what did the last few syncs
+ * do" — not a history anyone reads past a fortnight. Without this it grows by
+ * 96 rows a day forever; a month of a broken connection had already left
+ * 2,692 of them.
+ */
+export async function pruneSyncRuns(keepDays = 14): Promise<number> {
+  const cutoff = new Date(Date.now() - keepDays * 86_400_000)
+  const { count } = await prisma.xeroSyncRun.deleteMany({ where: { startedAt: { lt: cutoff } } })
+  return count
 }
 
 /** What the dashboard shows above the numbers. */
