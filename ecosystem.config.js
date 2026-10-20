@@ -3,7 +3,10 @@ module.exports = {
     {
       name: 'outlanderos',
       script: 'node_modules/.bin/next',
-      args: 'start -p 3000',
+      // Localhost only: nginx (and the health-check watchdog) reach the app on
+      // 127.0.0.1, and nothing else should. It used to listen on every
+      // interface, kept off the internet by the firewall alone.
+      args: 'start -p 3000 -H 127.0.0.1',
       instances: 1, // Keep at 1 for now (4GB server)
       exec_mode: 'fork',
       max_memory_restart: '3G',

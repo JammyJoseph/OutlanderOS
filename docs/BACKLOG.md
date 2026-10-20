@@ -30,10 +30,14 @@ Verified against live prod on 2026-07-27.
       stored hashed, Google tokens on `User` sealed like Xero's, and the Google OAuth
       callback refusing a state it didn't issue (it let anyone replace the shared Google
       account). Rerun `bash scripts/auth-smoke.sh` against a local build after any auth change.
-- [ ] **Server hardening left over from the 2026-10-20 audit.** `next start` listens on
-      `*:3000` (ufw blocks it from outside, but bind it to `127.0.0.1` anyway); nginx
-      advertises its version (`server_tokens off`). Two accounts have never signed in —
-      Callum (ADMIN) and Shreeya — and are worth confirming or deactivating.
+- [x] ~~Server hardening from the 2026-10-20 audit~~ — `next start` now binds `127.0.0.1`
+      (`ecosystem.config.js`; it listened on every interface, kept off the internet by ufw
+      alone) and nginx has `server_tokens off`. Plaintext Google tokens on `User` re-sealed
+      and expired reset tokens cleared the same day.
+- [ ] **Two accounts have never signed in** — Callum (ADMIN) and Shreeya. Confirm or
+      deactivate; an unused admin account is the most valuable thing on the system to guess.
+- [ ] **`.tokens.json.bak-20260922105853`** sits next to `.tokens.json` on prod — a second
+      plaintext copy of the shared Google/Xero tokens. Goes with the `.tokens.json` item above.
 - [x] ~~Rotate the two committed API keys~~ — **fallbacks removed from source** (2026-07-27).
       Both routes now read env-only and degrade cleanly when unset. ⚠️ **Still to do: rotate
       both at the provider** — they remain in git history. OpenWeather: regenerate at
