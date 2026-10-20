@@ -320,7 +320,7 @@ export default function BudgetVsActualsTab() {
                     </td>
                     <td className="px-3 py-2 text-center">
                       <span
-                        className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass(
+                        className={`inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-xs font-semibold ${badgeClass(
                           OVERAGE_STATUS_STYLES,
                           r.overageStatus,
                         )}`}

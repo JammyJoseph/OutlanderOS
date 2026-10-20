@@ -231,7 +231,7 @@ export function Dot({ color, className }: { color: string; className?: string })
 }
 
 /** Initials in a circle. */
-export function Avatar({ name, size = 40, tone = "surface", className }: { name?: string | null; size?: 28 | 32 | 40 | 44; tone?: "surface" | "accent" | "card"; className?: string }) {
+export function Avatar({ name, size = 40, tone = "surface", className }: { name?: string | null; size?: 28 | 32 | 40 | 44 | 56; tone?: "surface" | "accent" | "card"; className?: string }) {
   const initials = (name ?? "")
     .split(/\s+/)
     .filter(Boolean)
@@ -244,7 +244,7 @@ export function Avatar({ name, size = 40, tone = "surface", className }: { name?
       aria-hidden
       className={cn(
         "flex shrink-0 items-center justify-center rounded-full font-semibold",
-        size <= 32 ? "text-[11px]" : "text-[13px]",
+        size <= 32 ? "text-[11px]" : size >= 56 ? "text-lg" : "text-[13px]",
         tone === "accent" ? "bg-accent" : tone === "card" ? "bg-background" : "bg-surface",
         className,
       )}

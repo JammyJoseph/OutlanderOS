@@ -456,17 +456,36 @@ Done in the first pass:
 - [x] Bulk passes over every page: black/brass buttons → pills, section cards → grey,
       tiny grey caps → 20px titles / 13px labels, page titles.
 
-Still to bring to the boards (each page works today in the new styling, but isn't laid out
-like its board yet):
-- [ ] Pipeline board (4.2) — white cards on grey columns, "19 days in stage" flag, filter chips.
-- [ ] New deal as a focused flow (4.3) — Client → Details → Value → Review, replacing the modal.
-- [ ] Deal page (4.4) — stage bar, details card, production / signed IO / people side cards.
-- [ ] Production project budget tab (5.2) and the call sheet wizard as a 5-step flow (5.3).
-- [ ] Shared call sheet (5.4) — navy "your call time" card, confirm / can't make it.
-- [ ] Finance dashboard (6.1) — revenue/costs chart, "Needs your approval", "Owed to us";
-      the money-position cards are still the older outlined style.
-- [ ] Invoice approval (6.2), Print flat plan (6.3), Directory list (6.4), Admin team (6.5).
-- [ ] 24 inline `#9C7C2E` brass values in style props and charts.
+Second pass (2026-10-20) — the remaining boards, every existing control kept:
+- [x] Pipeline (4.2): white cards on grey columns, "N days in stage", owner/type/search filters.
+- [x] New deal (4.3): Client → Details → Value → Review flow replacing the modal.
+- [x] Deal page (4.4): back button, client avatar + title, value figure, one primary
+      ("Move to {next stage}", or Clear for production / Mark as live when those apply),
+      stage track, Stage / Client / Deal owner pickers, pill tabs.
+- [x] Production project (5.2): header with "New call sheet" as the primary, pill tabs in
+      board order; budget tab has the status track, four figure cards and "Cost lines".
+- [x] Call sheet wizard (5.3): full-screen Shoot day → Location → People → Schedule → Review.
+      People can now get their own call time (blank = unit call); the sheet already
+      supported per-person times.
+- [x] Shared call sheet (5.4): logo header, the day, a navy "Unit call" card with the
+      location and Open in Maps. Screen only — the printed / PDF document is unchanged.
+      Crew receipt confirmation ends on the navy success screen.
+- [x] Finance dashboard (6.1): cash figure + actions, year in four numbers, "Needs your
+      approval" and "Owed to us" lists, money-position cards restyled.
+- [x] Invoice approval (6.2): queue on the left, one invoice on the right (figure, details,
+      Approve / Mark paid / Flag, over-budget confirmation). `?invoice=<id>` deep-links.
+- [x] Flat plan (6.3) header, view tabs and signature cards; Directory (6.4) search, chips
+      and pills; Admin team (6.5) table, deactivated accounts behind a toggle.
+- [x] Brass: fills, text links and charts moved to the redesign tokens. What's left of
+      `#9C7C2E` is the Commercial workspace dot and stage / billing markers, which is allowed.
+
+Not built, because the data isn't there:
+- [ ] Finance "Revenue and costs" monthly chart (6.1) — needs a per-month P&L series;
+      `/api/finance/overview` only answers one date range per call.
+- [ ] Call sheet "I can't make it" (5.4) — the shared link isn't per person, and receipt
+      confirmation has no decline state.
+- [ ] Flat plan ad booking states (6.3: booked / on hold / open) — pages carry section and
+      status, not ad bookings.
 
 ## 1g. Held until TLS (see ROADMAP Phase 1b)
 

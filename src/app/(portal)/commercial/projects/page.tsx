@@ -43,8 +43,8 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 const SPLITS: { key: keyof Project; label: string; color: string }[] = [
-  { key: "productionBudget", label: "Production", color: "#9C7C2E" },
-  { key: "mediaBudget", label: "Media", color: "#5B8DEF" },
+  { key: "productionBudget", label: "Production", color: "#0A2540" },
+  { key: "mediaBudget", label: "Media", color: "#A9D4FF" },
   { key: "internalBudget", label: "Internal", color: "#2E5E44" },
   { key: "otherBudget", label: "Other", color: "#9CA3AF" },
 ];
@@ -154,7 +154,7 @@ export default function CommercialProjectsPage() {
                       className="mt-4 flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50/40 px-4 py-2.5 transition-colors hover:bg-amber-50"
                     >
                       <span className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300">
-                        <Film size={14} className="text-[var(--portal-commercial)]" />
+                        <Film size={14} className="text-brand" />
                         Production · {p.production.status} ·{" "}
                         {gbp(p.production.budgetTotal)} allocated
                       </span>

@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useMagazinePlan } from "@/components/print/usePlan";
+import { pill } from "@/components/os";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import BudgetView from "@/components/print/BudgetView";
 import PrintBudgetView from "@/components/print/PrintBudgetView";
@@ -51,7 +52,7 @@ export default function FlatPlanPage() {
     <Suspense
       fallback={
         <div className="flex h-full items-center justify-center bg-background">
-          <Loader2 className="h-6 w-6 animate-spin text-[#2E5E44]" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       }
     >
@@ -209,19 +210,19 @@ function FlatPlanInner() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E5E44]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (!plan) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-background text-center text-gray-500 dark:text-gray-400">
-        <Cloud className="mb-3 h-8 w-8 text-gray-400 dark:text-gray-500" />
-        <p className="text-sm">Couldn&apos;t load the magazine plan.</p>
-        {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
-        <Link href="/print" className="mt-3 text-xs text-[#2E5E44] hover:underline">
-          ← Back to all issues
+      <div className="flex h-full flex-col items-center justify-center bg-background px-6 text-center">
+        <Cloud className="mb-3 h-8 w-8 text-muted-foreground" />
+        <p className="text-[15px] font-semibold">Couldn&apos;t load the magazine plan.</p>
+        {error && <p className="mt-1 text-sm text-bad">{error}</p>}
+        <Link href="/print" className={`${pill("outline", "sm")} mt-4`}>
+          <ArrowLeft size={14} /> All issues
         </Link>
       </div>
     );
@@ -231,89 +232,85 @@ function FlatPlanInner() {
     <div className="flex h-full flex-col bg-background text-foreground">
       {notice && (
         <div className="fixed inset-x-0 top-4 z-[60] flex justify-center px-4">
-          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 shadow-lg dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+          <div role="status" className="flex items-center gap-3 rounded-full bg-warn-bg px-5 py-2.5 text-[15px] font-medium text-warn shadow-lg">
             {notice}
             <button
               onClick={() => setNotice(null)}
-              className="text-amber-600 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-100"
+              aria-label="Dismiss"
+              className="text-warn hover:opacity-70"
             >
               <X size={14} />
             </button>
           </div>
         </div>
       )}
-      {/* Header */}
-      <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 bg-background/90 py-3 px-4 sm:px-8 lg:px-12 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/print"
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-secondary text-gray-500 dark:text-gray-400 hover:text-foreground"
-            title="All issues"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </Link>
-          <div>
-            <h1 className="flex items-center gap-2 text-foreground text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">
-              <span className="h-2 w-2 rounded-full bg-[#2E5E44]" />
-              Issue {String(plan.issueNumber).padStart(2, "0")} — {plan.issueName}
-            </h1>
-            <p className="mt-1.5 text-base text-muted-foreground">
-              {pages.length} pages · {signatures.length} signature{signatures.length === 1 ? "" : "s"}
-              {saving ? " · saving…" : plan.updatedBy ? ` · last edit ${plan.updatedBy}` : ""}
-            </p>
+      {/* Header (redesign board 6.3): the issue and its progress in four
+          figures, then the views as pill tabs with the actions beside them —
+          one row, so the tracker keeps its height. */}
+      <div className="flex flex-col gap-5 px-4 pb-5 pt-6 sm:px-8 lg:px-12">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-4">
+            <Link
+              href="/print"
+              aria-label="All issues"
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+            >
+              <ArrowLeft size={18} />
+            </Link>
+            <div className="min-w-0">
+              <p className="mb-1 text-base text-muted-foreground">
+                Issue {String(plan.issueNumber).padStart(2, "0")} · {plan.issueName} · {pages.length} pages ·{" "}
+                {signatures.length} signature{signatures.length === 1 ? "" : "s"}
+                {saving ? " · saving…" : plan.updatedBy ? ` · last edit ${plan.updatedBy}` : ""}
+              </p>
+              <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Flat plan</h1>
+            </div>
           </div>
+          <dl className="flex flex-wrap gap-x-7 gap-y-2">
+            <Total label="Content in" value={`${stats.contentReceivedPct}%`} />
+            <Total label="In progress" value={`${stats.inProgressPct}%`} />
+            <Total label="Progress" value={`${stats.progressPct}%`} />
+            <Total label="Complete" value={`${stats.completePct}%`} />
+          </dl>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* View toggle */}
-          <div className="flex gap-1 rounded-full bg-surface p-1">
-            <button
-              onClick={() => setView("tracker")}
-              className={`flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition ${
-                view === "tracker" ? "bg-foreground text-background" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
-              }`}
-            >
-              <Table2 className="h-3.5 w-3.5" /> Tracker
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div role="tablist" aria-label="Flat plan views" className="scrollbar-none flex gap-1 overflow-x-auto">
+            {(
+              [
+                { key: "tracker", label: "Tracker", Icon: Table2 },
+                { key: "flatplan", label: "Flat plan", Icon: LayoutGrid },
+                { key: "sections", label: "Budget", Icon: Wallet },
+                { key: "budget", label: "Feature P&L", Icon: PoundSterling },
+              ] as const
+            ).map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={view === key}
+                onClick={() => setView(key)}
+                className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors ${
+                  view === key ? "bg-foreground text-background" : "text-ink-2 hover:bg-surface hover:text-foreground"
+                }`}
+              >
+                <Icon className="size-4" /> {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={printFlatPlan} className={pill("primary", "sm")}>
+              <Printer /> Print flat plan
             </button>
-            <button
-              onClick={() => setView("flatplan")}
-              className={`flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition ${
-                view === "flatplan" ? "bg-foreground text-background" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
-              }`}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" /> Flat Plan
+            <button onClick={() => addSignature(8)} className={pill("secondary", "sm")} title="Add an 8-page signature at the end">
+              <Plus /> 8pp signature
             </button>
-            <button
-              onClick={() => setView("sections")}
-              className={`flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition ${
-                view === "sections" ? "bg-foreground text-background" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
-              }`}
-            >
-              <Wallet className="h-3.5 w-3.5" /> Budget
+            <button onClick={() => addSignature(16)} className={pill("secondary", "sm")} title="Add a 16-page signature at the end">
+              <Plus /> 16pp signature
             </button>
-            <button
-              onClick={() => setView("budget")}
-              className={`flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition ${
-                view === "budget" ? "bg-foreground text-background" : "text-gray-500 dark:text-gray-400 hover:text-foreground"
-              }`}
-            >
-              <PoundSterling className="h-3.5 w-3.5" /> Feature P&amp;L
+            <button onClick={removeLastSignature} className={pill("ghost", "sm")} title="Remove the last signature">
+              <Minus /> Last signature
             </button>
           </div>
-
-          {/* Signature management */}
-          <button onClick={() => addSignature(8)} className={btnGhost} title="Add an 8-page signature at the end">
-            <Plus className="h-3.5 w-3.5" /> Sig 8pp
-          </button>
-          <button onClick={() => addSignature(16)} className={btnGhost} title="Add a 16-page signature at the end">
-            <Plus className="h-3.5 w-3.5" /> Sig 16pp
-          </button>
-          <button onClick={removeLastSignature} className={btnGhost} title="Remove the last signature">
-            <Minus className="h-3.5 w-3.5" /> Sig
-          </button>
-          <button onClick={printFlatPlan} className={btnSolid}>
-            <Printer className="h-3.5 w-3.5" /> Print
-          </button>
         </div>
       </div>
 
@@ -349,21 +346,15 @@ function FlatPlanInner() {
         )}
       </div>
 
-      {/* Totals bar */}
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-1 border-t border-line bg-background py-3 text-xs px-4 sm:px-8 lg:px-12">
-        <Total label="Total Sections" value={stats.sections} />
-        <Total label="Total Content Received" value={`${stats.contentReceivedPct}%`} accent="#fbbf24" />
-        <Total label="Total In Progress" value={`${stats.inProgressPct}%`} accent="#c084fc" />
-        <Total label="% Progress" value={`${stats.progressPct}%`} accent="#60a5fa" />
-        <Total label="Total Complete" value={`${stats.completePct}%`} accent="#34d399" />
-        <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-gray-700 dark:text-gray-300">
-          {SECTION_KEYS.map((k) => (
-            <span key={k} className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full" style={{ background: SECTIONS[k].hex }} />
-              {SECTIONS[k].label}
-            </span>
-          ))}
-        </div>
+      {/* Section key — colour means section here, so it is always labelled. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line bg-background px-4 py-3 text-[13px] text-ink-2 sm:px-8 lg:px-12">
+        <span className="text-muted-foreground">{stats.sections} sections</span>
+        {SECTION_KEYS.map((k) => (
+          <span key={k} className="flex items-center gap-1.5">
+            <span className="size-2 rounded-full" style={{ background: SECTIONS[k].hex }} />
+            {SECTIONS[k].label}
+          </span>
+        ))}
       </div>
 
       {editing !== null && pages[editing] && (
@@ -383,18 +374,11 @@ function renumber(pages: MagazinePage[]): MagazinePage[] {
   return pages.map((p, i) => (p.pageNumber === i + 1 ? p : { ...p, pageNumber: i + 1 }));
 }
 
-const btnGhost =
-  "flex items-center gap-1 rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-muted";
-const btnSolid =
-  "flex items-center gap-1 rounded-full bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground hover:brightness-[0.97]";
-
-function Total({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
+function Total({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-[13px] text-muted-foreground">{label}</span>
-      <span className="font-mono text-sm font-bold" style={{ color: accent ?? "var(--foreground)" }}>
-        {value}
-      </span>
+    <div>
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="text-2xl font-semibold leading-tight tabular-nums">{value}</dd>
     </div>
   );
 }
@@ -425,7 +409,7 @@ function TrackerView({
   removeRow: (i: number) => void;
 }) {
   return (
-    <div className="h-full overflow-auto">
+    <div className="h-full overflow-auto px-4 sm:px-8 lg:px-12">
       <table className="w-full border-separate border-spacing-0 text-[11px]">
         <thead>
           <tr className="text-left text-[13px] text-muted-foreground">
@@ -464,7 +448,7 @@ function TrackerView({
                   if (dragIndex !== null) reorder(dragIndex, i);
                   setDragIndex(null);
                 }}
-                className={`group h-7 ${dragIndex === i ? "opacity-40" : ""} ${i % 2 ? "bg-muted/40" : ""}`}
+                className={`group h-8 ${dragIndex === i ? "opacity-40" : ""}`}
               >
                 <td className={td} style={{ borderLeft: `3px solid ${colour}` }}>
                   <span className="flex items-center gap-1 font-semibold text-gray-900 dark:text-gray-100">
@@ -540,8 +524,8 @@ function TrackerView({
 }
 
 const th =
-  "sticky top-0 z-20 border-b border-border bg-secondary px-2 py-1.5 font-semibold whitespace-nowrap";
-const td = "border-b border-border px-2 py-0.5 align-middle";
+  "sticky top-0 z-20 border-b border-line bg-surface px-2 py-2 font-medium whitespace-nowrap";
+const td = "border-b border-line px-2 py-0.5 align-middle";
 const cellSelect =
   "w-full bg-transparent text-[11px] font-semibold focus:outline-none cursor-pointer";
 
@@ -744,7 +728,7 @@ function FlatPlanView({
   }
 
   return (
-    <div className="h-full overflow-auto p-4 pl-6" onDragEnd={endDrag}>
+    <div className="h-full overflow-auto px-4 pb-6 pt-1 sm:px-8 lg:px-12" onDragEnd={endDrag}>
       <div className="flex min-w-max flex-col gap-[9px]">
         {signatures.map((sig, si) => (
           <SignatureBlock
@@ -899,8 +883,8 @@ function SignatureBlock({
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
-          <div className="absolute -left-3 top-[58px] z-30 w-36 overflow-hidden rounded-md border border-border bg-popover text-foreground shadow-lg">
-            <div className="border-b border-border px-2.5 py-1.5 text-[13px] text-muted-foreground">
+          <div className="absolute -left-3 top-[58px] z-30 w-44 overflow-hidden rounded-2xl bg-background p-1.5 text-foreground shadow-[0_12px_32px_rgba(11,18,32,0.14)] ring-1 ring-line">
+            <div className="px-2.5 py-1.5 text-[13px] text-muted-foreground">
               Sig {si + 1} · {sig.pageCount}pp
             </div>
             {(["coated", "uncoated"] as StockType[]).map((st) => (
@@ -910,7 +894,7 @@ function SignatureBlock({
                   setSignatureStock(si, st);
                   setMenuOpen(false);
                 }}
-                className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[11px] hover:bg-muted ${
+                className={`flex min-h-9 w-full items-center gap-2 rounded-xl px-2.5 text-left text-sm hover:bg-surface ${
                   sig.stockType === st ? "font-bold" : ""
                 }`}
               >
@@ -928,7 +912,7 @@ function SignatureBlock({
                   setMenuOpen(false);
                   removeSignature(si);
                 }}
-                className="flex w-full items-center gap-2 border-t border-border px-2.5 py-1.5 text-left text-[11px] text-red-500 hover:bg-red-500/10"
+                className="flex min-h-9 w-full items-center gap-2 rounded-xl px-2.5 text-left text-sm text-bad hover:bg-bad-bg"
               >
                 <Trash2 className="h-3 w-3" /> Remove signature
               </button>
@@ -938,16 +922,7 @@ function SignatureBlock({
       )}
 
       {/* ── Signature block ── */}
-      <div
-        className="rounded-lg p-2 pl-3.5"
-        style={{
-          border: coated ? "1px solid rgba(37,99,235,0.40)" : "1px solid var(--border)",
-          background: coated
-            ? "linear-gradient(180deg, rgba(219,234,254,0.45), rgba(255,255,255,0))"
-            : "var(--card)",
-          boxShadow: coated ? "inset 0 1px 0 rgba(255,255,255,0.7)" : undefined,
-        }}
-      >
+      <div className={`rounded-2xl p-2.5 pl-4 ${coated ? "bg-info-bg" : "bg-surface"}`}>
         {/* ── Pages ── */}
         <div className="flex flex-col gap-[3px]">
           {/* Cover treatment row (first signature only) */}
@@ -960,7 +935,7 @@ function SignatureBlock({
                   {coverSpread[1] !== null ? (
                     <PageSlot {...slotProps(coverSpread[1])} />
                   ) : (
-                    <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-border" />
+                    <div className="h-[86px] w-[64px] rounded-[6px] border border-dashed border-field" />
                   )}
                 </div>
               )}
@@ -1032,7 +1007,7 @@ function PageSlot({
   onPageDrop: () => void;
 }) {
   if (!page) {
-    return <div className="h-[86px] w-[64px] rounded-sm border border-dashed border-border" />;
+    return <div className="h-[86px] w-[64px] rounded-[6px] border border-dashed border-field" />;
   }
   const colour = sectionColour(page.section);
   const isSpace = page.section === "Space" && !page.feature.trim();
@@ -1068,11 +1043,11 @@ function PageSlot({
         onDragOver={onDragOver}
         onDrop={onPageDrop}
         onClick={() => onOpen(globalIndex)}
-        className={`group relative flex h-[86px] w-[64px] cursor-grab flex-col overflow-hidden rounded-sm p-1 text-left ring-1 transition hover:ring-2 active:cursor-grabbing ${
+        className={`group relative flex h-[86px] w-[64px] cursor-grab flex-col overflow-hidden rounded-[6px] p-1 text-left ring-1 transition hover:ring-2 active:cursor-grabbing ${
           dragging ? "opacity-40" : ""
         }`}
         style={{
-          background: isSpace ? "var(--secondary)" : `${colour}5e`, // ~37% tint
+          background: isSpace ? "var(--background)" : `${colour}5e`, // ~37% tint
           // @ts-expect-error CSS custom prop for hover ring
           "--tw-ring-color": `${colour}99`,
           outline: isGatefold ? `1px dashed ${colour}` : undefined,

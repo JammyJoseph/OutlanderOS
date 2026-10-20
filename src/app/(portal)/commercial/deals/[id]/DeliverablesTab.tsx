@@ -112,7 +112,7 @@ export default function DeliverablesTab({
       <div className="bg-surface rounded-2xl p-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-            <PackageCheck size={15} className="text-[var(--portal-commercial)]" />
+            <PackageCheck size={15} className="text-brand" />
             Contracted Deliverables
           </h3>
           {contractedLocked && (
@@ -355,8 +355,6 @@ function AddDeliverableForm({
   const [approvedBy, setApprovedBy] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const accent = additional ? "amber" : "[#9C7C2E]";
-
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
@@ -385,7 +383,7 @@ function AddDeliverableForm({
       <button
         onClick={() => setOpen(true)}
         className={`inline-flex items-center gap-1.5 text-sm font-medium ${
-          additional ? "text-amber-700 hover:text-amber-800" : "text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)]"
+          additional ? "text-amber-700 hover:text-amber-800" : "text-brand hover:text-brand"
         }`}
       >
         <Plus size={14} /> Add {additional ? "Additional" : "Contracted"} Deliverable

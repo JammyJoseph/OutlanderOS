@@ -28,7 +28,6 @@ import {
   Archive as ArchiveIcon,
   ArchiveRestore,
   Palette,
-  Package,
   LinkIcon,
   MessageSquare,
   History,
@@ -58,6 +57,7 @@ import { clearForProductionChecklist, type ChecklistItem } from "@/lib/deal-stag
 import MediaPlanTab from "../../_components/MediaPlanTab";
 import DeliverablesTab, { type Deliverable } from "./DeliverablesTab";
 import CreativeRoundsTab, { type CreativeRound } from "./CreativeRoundsTab";
+import { Page, Tag, Avatar, pill } from "@/components/os";
 
 interface ActivityEntry {
   id: string;
@@ -327,7 +327,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">Deal not found</p>
           <Link
             href="/commercial/pipeline"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--portal-commercial)] hover:text-[var(--portal-commercial)]"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:text-brand"
           >
             <ArrowLeft size={14} /> Back to pipeline
           </Link>
@@ -392,169 +392,191 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     { key: "documents", label: "Documents" },
   ];
 
+  // Where the deal sits on its own stage track — the progress bar under the
+  // header. A legacy stage that isn't on the track shows no current segment.
+  const stageIndex = stageOptions.indexOf(normalizedStage);
+  const nextStage = stageIndex >= 0 ? stageOptions[stageIndex + 1] : undefined;
+  const outstandingCount = checklist.items.filter((i) => !i.ok).length;
+  // One primary action: the dedicated flows first, otherwise the next stage.
+  // In Production is reached through Clear for Production, never a bare move.
+  const primaryAction: "live" | "clear" | "move" | null = canMarkLive
+    ? "live"
+    : showClearButton && checklist.ready
+      ? "clear"
+      : nextStage && nextStage !== "IN_PRODUCTION"
+        ? "move"
+        : null;
+
   return (
     <div className="min-h-full">
-      <div className="max-w-[1176px] px-4 pb-20 pt-6 sm:px-8 lg:px-12">
-        {/* Breadcrumb + saved indicator */}
-        <div className="flex items-center justify-between mb-4">
+      <Page>
+        <div className="flex items-center justify-between">
           <Link
             href="/commercial/pipeline"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Back to pipeline"
+            className="flex size-11 items-center justify-center rounded-full bg-surface transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
           >
-            <ArrowLeft size={13} /> Pipeline
+            <ArrowLeft size={18} />
           </Link>
           <span
-            className={`inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition-opacity duration-300 ${
+            role="status"
+            className={`inline-flex items-center gap-1.5 text-sm font-medium text-ok transition-opacity duration-300 ${
               saved ? "opacity-100" : "opacity-0"
             }`}
           >
-            <CheckCircle2 size={13} /> Saved
+            <CheckCircle2 size={15} /> {saved ? "Saved" : ""}
           </span>
         </div>
 
-        {/* Archived banner */}
         {deal.archived && (
-          <div className="mb-5 rounded-2xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
-            <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2">
-              <ArchiveIcon size={15} />
+          <div className="-mt-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface px-6 py-4">
+            <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
+              <ArchiveIcon size={16} className="text-muted-foreground" />
               This deal is archived
               {deal.archivedAt && (
-                <span className="font-normal text-gray-400 text-xs">
+                <span className="text-sm font-normal text-muted-foreground">
                   since {format(parseISO(deal.archivedAt), "d MMM yyyy")}
                 </span>
               )}
               {deal.production && (
-                <span className="font-normal text-gray-400 text-xs">
+                <span className="text-sm font-normal text-muted-foreground">
                   · the linked production is archived with it
                 </span>
               )}
             </p>
-            <button
-              onClick={unarchiveDeal}
-              disabled={archiveBusy}
-              className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-            >
-              {archiveBusy ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : (
-                <ArchiveRestore size={13} />
-              )}
+            <button onClick={unarchiveDeal} disabled={archiveBusy} className={pill("outline", "sm")}>
+              {archiveBusy ? <Loader2 size={14} className="animate-spin" /> : <ArchiveRestore size={14} />}
               Unarchive
             </button>
           </div>
         )}
 
-        {/* Header */}
-        <div className="bg-surface rounded-2xl p-6 mb-5">
-          <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${stage.bg} ${stage.text}`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${stage.dot}`} />
-                  {stage.label}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${workflowStyle.bg} ${workflowStyle.text}`}
-                  title={
-                    creativeWorkflow
-                      ? "Creative brief workflow — creative response, client approval, then production"
-                      : "Supplied assets — client provides content, no creative or production"
-                  }
-                >
-                  {creativeWorkflow ? <Palette size={11} /> : <Package size={11} />}
-                  {workflowStyle.label}
-                </span>
-                {projectStarted && (
-                  <Link
-                    href={`/production/${deal.production!.id}`}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
-                  >
-                    <Film size={11} /> In Production: {deal.production!.title}{" "}
-                    <ArrowUpRight size={11} />
-                  </Link>
-                )}
-                {creativeWorkflow && !projectStarted && deal.creativeStatus && (
-                  <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${CREATIVE_STATUS_STYLES[deal.creativeStatus]?.bg ?? "bg-gray-100"} ${CREATIVE_STATUS_STYLES[deal.creativeStatus]?.text ?? "text-gray-600"}`}
-                  >
-                    <FileText size={11} />{" "}
-                    {CREATIVE_STATUS_STYLES[deal.creativeStatus]?.label ?? deal.creativeStatus}
-                  </span>
-                )}
-                {deal.financeBudget && (
-                  <Link
-                    href={`/finance?tab=projects&project=${deal.financeBudget.id}`}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-                  >
-                    <Banknote size={11} /> Finance: View project P&amp;L <ArrowUpRight size={11} />
-                  </Link>
-                )}
-                {printRelated && (
-                  <Link
-                    href="/print"
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-emerald-600 hover:bg-teal-100 transition-colors"
-                  >
-                    <Newspaper size={11} /> Print: View in magazine planning{" "}
-                    <ArrowUpRight size={11} />
-                  </Link>
-                )}
-              </div>
-              <EditableTitle title={deal.title} onSave={(t) => patchDeal({ title: t })} />
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{deal.client.name}</p>
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
-                <TypePills
-                  types={types}
-                  onChange={(next) => patchDeal({ dealTypes: next })}
-                />
-                <WhiteLabelToggle
-                  value={deal.isWhiteLabel}
-                  onChange={(v) => patchDeal({ isWhiteLabel: v })}
-                />
+        {/* Header: client, title, value, then one row of actions */}
+        <section className="-mt-4 flex flex-col gap-5">
+          <div className="flex flex-wrap items-start justify-between gap-6">
+            <div className="flex min-w-0 flex-[1_1_420px] items-start gap-4">
+              <Avatar name={deal.client.name} size={56} className="hidden sm:flex" />
+              <div className="min-w-0 flex-1">
+                <p className="mb-1 text-base text-muted-foreground">
+                  {deal.client.name} · {workflowStyle.label} deal
+                </p>
+                <EditableTitle title={deal.title} onSave={(t) => patchDeal({ title: t })} />
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <TypePills types={types} onChange={(next) => patchDeal({ dealTypes: next })} />
+                  <WhiteLabelToggle
+                    value={deal.isWhiteLabel}
+                    onChange={(v) => patchDeal({ isWhiteLabel: v })}
+                  />
+                  {creativeWorkflow && !projectStarted && deal.creativeStatus && (
+                    <Tag tone="info">
+                      <FileText size={12} />
+                      {CREATIVE_STATUS_STYLES[deal.creativeStatus]?.label ?? deal.creativeStatus}
+                    </Tag>
+                  )}
+                </div>
               </div>
             </div>
-
-            <div className="flex flex-col items-end gap-3 shrink-0">
+            <div className="shrink-0 sm:text-right">
               <EditableValue value={deal.value} onSave={(v) => patchDeal({ value: v })} />
-              {showClearButton && (
-                <button
-                  onClick={() => checklist.ready && setShowClearProduction(true)}
-                  disabled={!checklist.ready}
-                  title={
-                    checklist.ready
-                      ? "Everything's ready — send this deal to the production team"
-                      : `Not ready yet — ${checklist.items.filter((i) => !i.ok).length} item${checklist.items.filter((i) => !i.ok).length === 1 ? "" : "s"} outstanding on the launch checklist`
-                  }
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm ${
-                    checklist.ready
-                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700"
-                  }`}
-                >
-                  <CheckCircle2 size={15} />
-                  Clear for Production
-                </button>
-              )}
-              {canMarkLive && (
-                <button
-                  onClick={() => setShowMarkLive(true)}
-                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
-                >
-                  <Rocket size={15} />
-                  Mark as Live
-                </button>
-              )}
+              <p className="mt-1 text-sm text-muted-foreground">Deal value</p>
             </div>
           </div>
 
-          {/* Inline editable controls */}
-          <div className="mt-5 pt-5 border-t border-gray-50 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="flex flex-wrap gap-2.5">
+            {primaryAction === "live" && (
+              <button onClick={() => setShowMarkLive(true)} className={pill("primary")}>
+                <Rocket /> Mark as live
+              </button>
+            )}
+            {primaryAction === "clear" && (
+              <button onClick={() => setShowClearProduction(true)} className={pill("primary")}>
+                <CheckCircle2 /> Clear for production
+              </button>
+            )}
+            {primaryAction === "move" && nextStage && (
+              <button onClick={() => patchDeal({ stage: nextStage })} className={pill("primary")}>
+                Move to {STAGE_STYLES[nextStage]?.label ?? nextStage}
+              </button>
+            )}
+            {/* Not ready yet: still visible, explains what's missing. */}
+            {showClearButton && !checklist.ready && (
+              <button
+                aria-disabled
+                title={`Not ready yet — ${outstandingCount} item${outstandingCount === 1 ? "" : "s"} outstanding on the launch checklist`}
+                className={pill("outline")}
+              >
+                <CheckCircle2 /> Clear for production
+              </button>
+            )}
+            {projectStarted && (
+              <Link href={`/production/${deal.production!.id}`} className={pill("secondary")}>
+                <Film /> Open production
+              </Link>
+            )}
+            {deal.ioUrl && (
+              <a
+                href={deal.ioUrl.startsWith("http") ? deal.ioUrl : `https://${deal.ioUrl}`}
+                target="_blank"
+                rel="noreferrer"
+                className={pill("secondary")}
+              >
+                <FileText /> View signed IO
+              </a>
+            )}
+            {deal.financeBudget && (
+              <Link href={`/finance?tab=projects&project=${deal.financeBudget.id}`} className={pill("outline")}>
+                <Banknote /> Project P&amp;L
+              </Link>
+            )}
+            {printRelated && (
+              <Link href="/print" className={pill("outline")}>
+                <Newspaper /> Magazine planning
+              </Link>
+            )}
+          </div>
+        </section>
+
+        {/* Stage track + the three fields that move a deal */}
+        <section aria-label="Stage" className="rounded-2xl bg-surface px-6 py-6 sm:px-7">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 className="text-xl font-semibold">Stage</h2>
+            <p className="text-sm text-muted-foreground">
+              {stage.label}
+              {deal.stageUpdatedAt &&
+                ` for ${formatDistanceToNow(parseISO(deal.stageUpdatedAt))}`}
+            </p>
+          </div>
+          <ol
+            className="grid gap-1.5"
+            style={{ gridTemplateColumns: `repeat(${stageOptions.length}, minmax(0, 1fr))` }}
+          >
+            {stageOptions.map((s, i) => {
+              const state = stageIndex < 0 || i > stageIndex ? "next" : i === stageIndex ? "now" : "done";
+              return (
+                <li key={s} aria-current={state === "now" ? "step" : undefined} className="min-w-0">
+                  <span
+                    className={`block h-1.5 rounded-full ${
+                      state === "done" ? "bg-foreground" : state === "now" ? "bg-primary" : "bg-line"
+                    }`}
+                  />
+                  <span
+                    className={`mt-2 hidden truncate text-xs md:block ${
+                      state === "now" ? "font-semibold text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    {STAGE_STYLES[s]?.label ?? s}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <HeaderField label="Stage">
               <select
                 value={deal.stage}
                 onChange={(e) => patchDeal({ stage: e.target.value })}
-                className="w-full text-sm font-medium text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none cursor-pointer"
+                className={HEADER_SELECT}
               >
                 {(stageOptions.includes(deal.stage)
                   ? stageOptions
@@ -570,7 +592,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               <select
                 value={deal.client.id}
                 onChange={(e) => patchDeal({ clientId: e.target.value })}
-                className="w-full text-sm font-medium text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none cursor-pointer"
+                className={HEADER_SELECT}
               >
                 {!clients.some((c) => c.id === deal.client.id) && (
                   <option value={deal.client.id}>{deal.client.name}</option>
@@ -582,11 +604,11 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 ))}
               </select>
             </HeaderField>
-            <HeaderField label="Assigned To">
+            <HeaderField label="Deal owner">
               <select
                 value={deal.assignedTo?.id ?? ""}
                 onChange={(e) => patchDeal({ assignedToId: e.target.value || null })}
-                className="w-full text-sm font-medium text-gray-800 dark:text-gray-200 bg-transparent focus:outline-none cursor-pointer"
+                className={HEADER_SELECT}
               >
                 <option value="">Unassigned</option>
                 {/* Commercial officers only. Keep the current assignee listed even
@@ -599,32 +621,26 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
               </select>
             </HeaderField>
           </div>
-        </div>
+        </section>
 
         {/* Sync banner — changes made since the last push to production */}
         {pendingSync && (
-          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="-mt-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-warn-bg px-6 py-4">
             <div className="flex items-start gap-3">
-              <RefreshCw size={16} className="text-amber-600 mt-0.5 shrink-0" />
+              <RefreshCw size={16} className="mt-0.5 shrink-0 text-warn" />
               <div>
-                <p className="text-sm font-semibold text-amber-800">
-                  Changes made since last submission to production
-                </p>
-                <p className="text-xs text-amber-700 mt-0.5">
+                <p className="text-[15px] font-semibold">Changes made since the last update to production</p>
+                <p className="mt-0.5 text-sm text-ink-2">
                   Last synced{" "}
                   {formatDistanceToNow(parseISO(deal.lastSyncedToProduction!), { addSuffix: true })}{" "}
-                  — click &ldquo;Update Production&rdquo; to push the latest brief and budget across.
+                  — update production to push the latest brief and budget across.
                 </p>
-                {syncError && <p className="text-xs text-red-600 mt-1">{syncError}</p>}
+                {syncError && <p className="mt-1 text-sm text-bad">{syncError}</p>}
               </div>
             </div>
-            <button
-              onClick={syncToProduction}
-              disabled={syncing}
-              className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50 shrink-0"
-            >
+            <button onClick={syncToProduction} disabled={syncing} className={pill("outline", "sm")}>
               {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              Update Production
+              Update production
             </button>
           </div>
         )}
@@ -638,17 +654,20 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           />
         )}
 
+        <div>
         {/* Tabs */}
-        <div className="flex items-center gap-1 mb-5 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-1 w-fit">
+        <div role="tablist" aria-label="Deal sections" className="mb-6 flex flex-wrap gap-2">
           {TABS.map((t) => (
             <button
               key={t.key}
+              role="tab"
+              aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
- tab === t.key
- ? "bg-accent dark:bg-foreground/10 text-[var(--portal-commercial)]"
- : "text-gray-500 dark:text-gray-400 hover:text-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
- }`}
+              className={`min-h-10 rounded-full px-4 text-sm font-semibold transition-colors ${
+                tab === t.key
+                  ? "bg-foreground text-background"
+                  : "bg-surface text-ink-2 hover:bg-surface-2 hover:text-foreground"
+              }`}
             >
               {t.label}
             </button>
@@ -686,19 +705,17 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
           <MediaPlanTab dealId={deal.id} workflowType={deal.workflowType} onSaved={reload} />
         )}
         {tab === "documents" && <DocumentsTab deal={deal} onPatch={patchDeal} />}
+        </div>
 
         {/* Archive — quiet, at the bottom. Replaces delete platform-wide. */}
         {!deal.archived && (
-          <div className="mt-10 pt-5 border-t border-gray-100 dark:border-gray-800 flex justify-end">
-            <button
-              onClick={() => setShowArchiveConfirm(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-red-500 transition-colors px-2 py-1"
-            >
-              <ArchiveIcon size={13} /> Archive Deal
+          <div className="flex justify-end">
+            <button onClick={() => setShowArchiveConfirm(true)} className={pill("ghost", "sm")}>
+              <ArchiveIcon size={14} /> Archive deal
             </button>
           </div>
         )}
-      </div>
+      </Page>
 
       {showMarkLive && (
         <MarkAsLiveModal
@@ -770,14 +787,15 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   );
 }
 
+const HEADER_SELECT =
+  "h-11 w-full cursor-pointer rounded-xl bg-background px-3 text-[15px] font-medium focus:outline-none focus-visible:outline-2 focus-visible:outline-foreground";
+
 function HeaderField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 px-3 py-2">
-      <p className="mb-0.5 text-[13px] text-muted-foreground">
-        {label}
-      </p>
+    <label className="block">
+      <span className="mb-1.5 block text-sm text-muted-foreground">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 
@@ -810,7 +828,7 @@ function EditableTitle({ title, onSave }: { title: string; onSave: (t: string) =
             setEditing(false);
           }
         }}
-        className="w-full text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight bg-transparent border-b-2 border-foreground dark:border-foreground focus:outline-none"
+        className="w-full border-b-2 border-foreground bg-transparent text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] focus:outline-none sm:text-[34px]"
       />
     );
   }
@@ -818,7 +836,7 @@ function EditableTitle({ title, onSave }: { title: string; onSave: (t: string) =
     <h1
       onClick={() => setEditing(true)}
       title="Click to edit title"
-      className="text-2xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight cursor-text rounded-lg -mx-1 px-1 hover:bg-amber-50/60 transition-colors"
+      className="-mx-1 cursor-text rounded-lg px-1 text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] transition-colors hover:bg-surface sm:text-[34px]"
     >
       {title}
     </h1>
@@ -862,7 +880,7 @@ function EditableValue({
               setEditing(false);
             }
           }}
-          className="w-44 pl-8 pr-3 py-1.5 text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums rounded-xl border-2 border-foreground dark:border-foreground focus:outline-none"
+          className="w-52 rounded-xl border-2 border-foreground py-1.5 pl-8 pr-3 text-[32px] font-semibold tabular-nums focus:outline-none"
         />
       </div>
     );
@@ -871,7 +889,7 @@ function EditableValue({
     <p
       onClick={() => setEditing(true)}
       title="Click to edit value"
-      className="text-3xl font-bold text-gray-900 dark:text-gray-100 tabular-nums cursor-text rounded-lg px-1 hover:bg-amber-50/60 transition-colors"
+      className="cursor-text rounded-lg px-1 text-[36px] font-semibold leading-none tracking-[-0.02em] tabular-nums transition-colors hover:bg-surface sm:text-[44px]"
     >
       {formatMoney(value)}
     </p>
@@ -922,7 +940,7 @@ function TypePills({
           <button
             onClick={() => setAdding((a) => !a)}
             title="Add type"
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-foreground dark:hover:border-foreground hover:text-[var(--portal-commercial)] transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-foreground dark:hover:border-foreground hover:text-brand transition-colors"
           >
             <Plus size={11} /> Add
           </button>
@@ -1084,7 +1102,7 @@ function OverviewTab({
             <p className="text-[13px] text-muted-foreground">
               Total budget
             </p>
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-accent dark:bg-foreground/10 text-[var(--portal-commercial)]">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-accent dark:bg-foreground/10 text-brand">
               {phase.label}
             </span>
           </div>
@@ -1096,7 +1114,7 @@ function OverviewTab({
               <div key={step} className="flex-1">
                 <div
                   className={`h-1.5 rounded-full ${
- i <= phase.index ? "bg-[#9C7C2E] dark:bg-foreground" : "bg-gray-100 dark:bg-gray-800"
+ i <= phase.index ? "bg-foreground" : "bg-line"
  }`}
                 />
                 <p
@@ -1162,7 +1180,7 @@ function OverviewTab({
           <div className="bg-surface rounded-2xl p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                <ListChecks size={15} className="text-[var(--portal-commercial)]" />
+                <ListChecks size={15} className="text-brand" />
                 What needs doing
               </h3>
               <span className="text-xs font-semibold text-gray-400">
@@ -1205,7 +1223,7 @@ function OverviewTab({
         {/* Recent activity — compact timeline */}
         <div className="bg-surface rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
-            <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
+            <ActivityIcon size={15} className="text-brand" />
             Recent activity
           </h3>
           {recent.length === 0 ? (
@@ -1241,7 +1259,7 @@ function OverviewTab({
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Media plan</h3>
             <button
               onClick={() => onGoToTab("mediaplan")}
-              className="text-[11px] font-medium text-[var(--portal-commercial)] hover:underline"
+              className="text-[11px] font-medium text-brand hover:underline"
             >
               Open
             </button>
@@ -1261,7 +1279,7 @@ function OverviewTab({
               href={deal.mediaPlanLink.startsWith("http") ? deal.mediaPlanLink : `https://${deal.mediaPlanLink}`}
               target="_blank"
               rel="noreferrer"
-              className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[var(--portal-commercial)] hover:underline"
+              className="mt-3 flex items-center gap-1.5 text-xs font-medium text-brand hover:underline"
             >
               <LinkIcon size={12} /> View media plan <ArrowUpRight size={11} />
             </a>
@@ -1321,7 +1339,7 @@ function OverviewTab({
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Client</h3>
           <Link
             href={`/commercial/clients/${deal.client.id}`}
-            className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-[var(--portal-commercial)] transition-colors"
+            className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-brand transition-colors"
           >
             {deal.client.name}
           </Link>
@@ -1413,7 +1431,7 @@ function BudgetDeliverablesTab({
       {/* Budget summary — the deal economics alongside deliverables */}
       <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-4">
-          <Banknote size={15} className="text-[var(--portal-commercial)]" />
+          <Banknote size={15} className="text-brand" />
           Budget
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1562,7 +1580,7 @@ function DocumentsTab({
       <div className="bg-surface rounded-2xl p-6">
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-            <FileText size={15} className="text-[var(--portal-commercial)]" />
+            <FileText size={15} className="text-brand" />
             Insertion Orders
           </h3>
           <button
@@ -1613,7 +1631,7 @@ function DocumentsTab({
       {/* Manual IO / contract link — fallback for externally-produced IOs */}
       <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-1">
-          <LinkIcon size={15} className="text-[var(--portal-commercial)]" />
+          <LinkIcon size={15} className="text-brand" />
           External IO / contract link
         </h3>
         <p className="text-xs text-gray-400 mb-3">
@@ -1633,7 +1651,7 @@ function DocumentsTab({
               href={docLink(deal.ioUrl)}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-medium text-[var(--portal-commercial)] px-2.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
+              className="inline-flex items-center gap-1 text-xs font-medium text-brand px-2.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
             >
               Open <ArrowUpRight size={12} />
             </a>
@@ -1644,7 +1662,7 @@ function DocumentsTab({
       {/* Media plan documents */}
       <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
-          <Newspaper size={15} className="text-[var(--portal-commercial)]" />
+          <Newspaper size={15} className="text-brand" />
           Media plan
         </h3>
         {deal.mediaPlanLink || deal.mediaPlanFile ? (
@@ -1654,7 +1672,7 @@ function DocumentsTab({
                 href={docLink(deal.mediaPlanLink)}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 text-sm text-[var(--portal-commercial)] hover:underline"
+                className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 text-sm text-brand hover:underline"
               >
                 <LinkIcon size={13} /> Media plan (Google Sheet) <ArrowUpRight size={12} />
               </a>
@@ -1664,7 +1682,7 @@ function DocumentsTab({
                 href={docLink(deal.mediaPlanFile)}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 text-sm text-[var(--portal-commercial)] hover:underline"
+                className="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 px-3 py-2 text-sm text-brand hover:underline"
               >
                 <FileText size={13} /> Media plan (PDF) <ArrowUpRight size={12} />
               </a>
@@ -1678,7 +1696,7 @@ function DocumentsTab({
       {/* Creative decks — pulled from the rounds */}
       <div className="bg-surface rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-3">
-          <Palette size={15} className="text-[var(--portal-commercial)]" />
+          <Palette size={15} className="text-brand" />
           Creative decks
         </h3>
         {decks.length === 0 ? (
@@ -1734,7 +1752,7 @@ function LaunchChecklist({
     >
       <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <Rocket size={15} className={ready ? "text-emerald-600" : "text-[var(--portal-commercial)]"} />
+          <Rocket size={15} className={ready ? "text-emerald-600" : "text-brand"} />
           Production launch checklist
         </h3>
         {ready ? (
@@ -2488,7 +2506,7 @@ function ActivityTab({ activities }: { activities: ActivityEntry[] }) {
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden max-w-2xl">
       <div className="px-6 py-4 border-b border-gray-50">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <ActivityIcon size={15} className="text-[var(--portal-commercial)]" />
+          <ActivityIcon size={15} className="text-brand" />
           Activity
         </h3>
       </div>
@@ -2498,7 +2516,7 @@ function ActivityTab({ activities }: { activities: ActivityEntry[] }) {
         <div className="divide-y divide-gray-50">
           {activities.map((a) => (
             <div key={a.id} className="flex items-start gap-3 px-6 py-3.5">
-              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-[var(--portal-commercial)] flex items-center justify-center shrink-0">
+              <div className="mt-0.5 w-6 h-6 rounded-lg bg-amber-50 text-brand flex items-center justify-center shrink-0">
                 {ACTIVITY_ICONS[a.type] ?? <ActivityIcon size={13} />}
               </div>
               <div className="min-w-0">

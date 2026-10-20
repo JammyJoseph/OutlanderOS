@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { Check, Loader2, CalendarDays } from "lucide-react";
+import { SuccessScreen, pill } from "@/components/os";
 
 interface Info {
   shootTitle: string;
@@ -58,55 +59,51 @@ export default function ConfirmReceiptPage({
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl bg-surface p-8 text-center">
-        {loading ? (
-          <Loader2 size={24} className="animate-spin text-gray-400 mx-auto" />
-        ) : error || !info ? (
-          <>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">Link not found</p>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              This confirmation link is invalid or has expired.
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/30">
-              <Check size={26} className="text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              {info.shootTitle}
-            </h1>
-            <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-              <CalendarDays size={14} /> {fmtDate(info.shootDate)}
-            </p>
-            {info.recipientName && (
-              <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-                Hi {info.recipientName.split(" ")[0]}, please confirm you&apos;ve received this call
-                sheet.
-              </p>
-            )}
+  if (!loading && info && confirmed) {
+    return (
+      <SuccessScreen title="Confirmed">
+        Thanks{info.recipientName ? `, ${info.recipientName.split(" ")[0]}` : ""}. The production team can see
+        you&apos;ve got the call sheet for {info.shootTitle}, {fmtDate(info.shootDate)}.
+      </SuccessScreen>
+    );
+  }
 
-            {confirmed ? (
-              <div className="mt-6 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 px-4 py-3">
-                <p className="flex items-center justify-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                  <Check size={16} /> Receipt confirmed — thank you!
+  return (
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <header className="border-b border-line px-4 py-5 sm:px-8">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/OutlanderOS_Logo_Ink.svg" alt="OutlanderOS" className="h-5 w-auto" />
+      </header>
+      <main className="flex flex-1 items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md rounded-[24px] bg-surface p-8 text-center">
+          {loading ? (
+            <Loader2 size={24} className="mx-auto animate-spin text-muted-foreground" />
+          ) : error || !info ? (
+            <>
+              <h1 className="text-2xl font-semibold">Link not found</h1>
+              <p className="mt-2 text-[15px] text-muted-foreground">
+                This confirmation link is invalid or has expired.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-semibold leading-tight">{info.shootTitle}</h1>
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-[15px] text-muted-foreground">
+                <CalendarDays size={16} /> {fmtDate(info.shootDate)}
+              </p>
+              {info.recipientName && (
+                <p className="mt-4 text-[15px] text-ink-2">
+                  Hi {info.recipientName.split(" ")[0]}, please confirm you&apos;ve received this call sheet.
                 </p>
-              </div>
-            ) : (
-              <button
-                onClick={confirmReceipt}
-                disabled={busy}
-                className="mt-6 inline-flex items-center justify-center gap-2 w-full rounded-full bg-primary dark:bg-gray-100 text-primary-foreground px-4 py-3 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {busy ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+              )}
+              <button onClick={confirmReceipt} disabled={busy} className={`${pill("primary")} mt-6 w-full`}>
+                {busy ? <Loader2 className="animate-spin" /> : <Check />}
                 Confirm receipt
               </button>
-            )}
-          </>
-        )}
-      </div>
+            </>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

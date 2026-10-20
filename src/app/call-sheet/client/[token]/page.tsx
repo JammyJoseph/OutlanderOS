@@ -10,13 +10,12 @@ export const metadata: Metadata = {
 
 function NotAvailable() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-6">
-      <div className="text-center max-w-sm">
-        <p className="text-sm font-extrabold tracking-[0.3em] uppercase text-gray-900 mb-6">
-          Outlander
-        </p>
-        <h1 className="text-lg font-semibold text-gray-900 mb-2">Call sheet not available</h1>
-        <p className="text-sm text-gray-500">
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+      <div className="max-w-sm text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/OutlanderOS_Logo_Ink.svg" alt="OutlanderOS" className="mx-auto mb-10 h-5 w-auto" />
+        <h1 className="mb-2 text-2xl font-semibold">Call sheet not available</h1>
+        <p className="text-[15px] text-muted-foreground">
           This link is invalid or the call sheet is no longer published. Ask the
           production team for an updated link.
         </p>

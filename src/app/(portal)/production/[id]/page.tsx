@@ -16,6 +16,8 @@ import TimelineTab from "./_components/TimelineTab";
 import CallSheetsTab from "./_components/CallSheetsTab";
 import WorkflowsTab from "./_components/WorkflowsTab";
 import DeliverablesTab from "./_components/DeliverablesTab";
+import CallSheetWizard from "./_components/CallSheetWizard";
+import { Page, pill } from "@/components/os";
 import { useUser } from "@/components/user-context";
 import { useConfirm } from "@/components/ui/confirm-provider";
 
@@ -27,6 +29,7 @@ export default function ProjectDetail() {
   const [production, setProduction] = useState<ProductionFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [creatingSheet, setCreatingSheet] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [tab, setTab] = useState<TabKey>("overview");
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -307,78 +310,56 @@ export default function ProjectDetail() {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1176px] px-4 pb-20 pt-6 sm:px-8 lg:px-12">
-        <div className="flex items-center justify-between mb-5">
+      {wizardOpen && <CallSheetWizard production={production} onClose={() => setWizardOpen(false)} />}
+      <Page>
+        <div className="flex items-center justify-between gap-4">
           <Link
             href="/production"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            aria-label="Back to productions"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
           >
-            <ArrowLeft size={15} />
-            Productions
+            <ArrowLeft size={18} />
           </Link>
           {production.campaignId && (
-            <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 px-2 py-1">
-              <Briefcase size={12} />
-              This project is managed from Commercial
+            <span className="inline-flex flex-wrap items-center justify-end gap-x-1.5 text-sm text-muted-foreground">
+              <Briefcase size={14} />
+              Managed from Commercial
               <Link
                 href={`/commercial/deals/${production.campaignId}`}
-                className="inline-flex items-center gap-0.5 font-medium text-brand hover:text-brand"
+                className="inline-flex items-center gap-0.5 font-medium text-foreground underline decoration-line underline-offset-4 hover:decoration-foreground"
               >
-                View deal <ArrowUpRight size={11} />
+                View deal <ArrowUpRight size={13} />
               </Link>
             </span>
-          )}
-          {/* Always offered. Deal-linked projects explain themselves on click
-              rather than hiding the control — a missing button reads as a bug. */}
-          {!production.archived && (
-            <button
-              onClick={() => setArchived(true)}
-              disabled={archiveBusy}
-              className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 transition-colors px-2 py-1 disabled:opacity-50"
-            >
-              <Archive size={12} />
-              Archive project
-            </button>
           )}
         </div>
 
         {archiveError && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+          <div role="alert" className="-mt-4 rounded-2xl bg-bad-bg px-5 py-3.5 text-[15px] text-bad">
             {archiveError}
           </div>
         )}
 
         {production.archived && (
-          <div className="mb-5 rounded-2xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
-            <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2">
-              <Archive size={15} />
+          <div className="-mt-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface px-6 py-4">
+            <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
+              <Archive size={16} className="text-muted-foreground" />
               This project is archived
               {production.campaignId && !isAdmin && (
-                <span className="font-normal text-gray-400 text-xs">
+                <span className="text-sm font-normal text-muted-foreground">
                   — it&rsquo;s bound by a commercial agreement, so Commercial or an admin can restore it
                 </span>
               )}
             </p>
             <div className="flex items-center gap-2">
               {production.campaignId && (
-                <Link
-                  href={`/commercial/deals/${production.campaignId}`}
-                  className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <Briefcase size={13} /> Open deal <ArrowUpRight size={12} />
+                <Link href={`/commercial/deals/${production.campaignId}`} className={pill("outline", "sm")}>
+                  <Briefcase size={14} /> Open deal
                 </Link>
               )}
               {(!production.campaignId || isAdmin) && (
-                <button
-                  onClick={() => setArchived(false)}
-                  disabled={archiveBusy}
-                  className="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-                >
-                  {archiveBusy ? (
-                    <Loader2 size={13} className="animate-spin" />
-                  ) : (
-                    <ArchiveRestore size={13} />
-                  )}
+                <button onClick={() => setArchived(false)} disabled={archiveBusy} className={pill("outline", "sm")}>
+                  {archiveBusy ? <Loader2 size={14} className="animate-spin" /> : <ArchiveRestore size={14} />}
                   Unarchive
                 </button>
               )}
@@ -386,18 +367,20 @@ export default function ProjectDetail() {
           </div>
         )}
 
-        <div className="mb-5">
+        <div className="-mt-4">
           <ProjectHeader
             production={production}
             saving={saving}
             saved={savedFlash}
             onPatch={(patch) => savePatch(patch)}
+            onNewCallSheet={() => setWizardOpen(true)}
           />
         </div>
 
+        <div>
         <TabBar active={tab} onSelect={setTab} counts={counts} />
 
-        <div className="pt-5">
+        <div className="pt-6">
           {tab === "overview" && (
             <OverviewTab
               production={production}
@@ -451,6 +434,7 @@ export default function ProjectDetail() {
               production={production}
               creatingSheet={creatingSheet}
               onCreateCallSheet={createCallSheet}
+              onOpenWizard={() => setWizardOpen(true)}
             />
           )}
           {tab === "deliverables" && (
@@ -463,7 +447,19 @@ export default function ProjectDetail() {
             />
           )}
         </div>
-      </div>
+        </div>
+
+        {/* Always offered. Deal-linked projects explain themselves on click
+            rather than hiding the control — a missing button reads as a bug. */}
+        {!production.archived && (
+          <div className="flex justify-end">
+            <button onClick={() => setArchived(true)} disabled={archiveBusy} className={pill("ghost", "sm")}>
+              <Archive size={14} />
+              Archive project
+            </button>
+          </div>
+        )}
+      </Page>
     </div>
   );
 }

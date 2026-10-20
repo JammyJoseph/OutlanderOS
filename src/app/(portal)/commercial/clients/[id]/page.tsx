@@ -155,7 +155,7 @@ function InviteButton() {
       {show && (
         <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-gray-200 bg-white p-3 shadow-lg z-10">
           <div className="flex items-start gap-2">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--portal-commercial)]" />
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
             <p className="text-xs text-gray-500 leading-snug">
               Client portal invitations are <span className="font-semibold text-gray-700">coming soon</span>.
             </p>
@@ -268,8 +268,10 @@ export default function ClientDetailPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div
-              className="flex h-14 w-14 items-center justify-center rounded-xl text-white font-bold text-lg"
-              style={{ backgroundColor: client.brandColor ?? "#9C7C2E" }}
+              className={`flex h-14 w-14 items-center justify-center rounded-xl font-bold text-lg ${
+                client.brandColor ? "text-white" : "bg-surface-2 text-foreground"
+              }`}
+              style={client.brandColor ? { backgroundColor: client.brandColor } : undefined}
             >
               {initials(client.name)}
             </div>
@@ -284,7 +286,7 @@ export default function ClientDetailPage() {
               </div>
               <div className="mt-0.5 flex items-center gap-3 text-sm text-gray-500">
                 {client.industry && <span>{client.industry}</span>}
-                <span className="text-[var(--portal-commercial)] font-semibold">
+                <span className="text-brand font-semibold">
                   {fmt(totalSpend, primaryCurrency)} total
                 </span>
                 <span>{client.campaigns.length} campaign{client.campaigns.length !== 1 ? "s" : ""}</span>

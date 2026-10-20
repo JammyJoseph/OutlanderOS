@@ -362,7 +362,6 @@ function DeliverableRow({
           shots={shots}
           selected={deliverable.linkedShots ?? []}
           onChange={(next) => onUpdate({ linkedShots: next })}
-          accent="#9C7C2E"
         />
       </div>
     </div>

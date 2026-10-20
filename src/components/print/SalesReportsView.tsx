@@ -681,7 +681,7 @@ export default function SalesReportsView() {
               <div className="px-4 py-4">
                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-40 w-full" role="img"
                      aria-label={`Daily units sold, peaking at ${curvePath.maxUnits}`}>
-                  <path d={curvePath.line} fill="none" stroke="#9C7C2E" strokeWidth="0.8"
+                  <path d={curvePath.line} fill="none" stroke="currentColor" className="text-foreground" strokeWidth="0.8"
                         vectorEffect="non-scaling-stroke" />
                 </svg>
                 <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">

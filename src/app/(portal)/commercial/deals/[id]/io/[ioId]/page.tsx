@@ -14,8 +14,6 @@ import { IO_SIGNATORY, type IOLineItem, type IOStatus } from "@/lib/io-template"
 //   preview — the printable IODocument; window.print() captures it as the PDF.
 type Mode = "editor" | "preview";
 
-const BRASS = "#9C7C2E";
-
 const STATUS_BADGES: Record<IOStatus, { cls: string; label: string }> = {
   DRAFT: { cls: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400", label: "Draft" },
   SENT: { cls: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300", label: "Sent" },
@@ -569,7 +567,7 @@ export default function InsertionOrderPage({
                 </button>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
                   Total Net Cost{" "}
-                  <span style={{ color: BRASS }}>
+                  <span>
                     £{totalNet.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} GBP
                   </span>
                 </p>

@@ -1,127 +1,217 @@
 'use client'
 
 import Link from 'next/link'
-import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Flag, Landmark } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Flag, Landmark } from 'lucide-react'
+import { Avatar, Panel, Row, Rows, Split, Stat, StatGrid, Tag, TextLink, pill } from '@/components/os'
 import PositionPanel from './PositionPanel'
-import { StatusBadge, XeroDisconnectedBanner, ErrorBox, TabSkeleton, BudgetBar } from './FinanceBits'
+import { StatusBadge, XeroDisconnectedBanner, ErrorBox, TabSkeleton, XeroStatusDot } from './FinanceBits'
 import {
   useFinanceFetch,
   fmtGBP,
   fmtPct,
   fmtDate,
+  daysUntil,
   marginPct,
   displayStatus,
-  badgeClass,
   SUBMISSION_STATUS_STYLES,
   INVOICE_STATUS_STYLES,
-  OVERAGE_STATUS_STYLES,
   OVERAGE_STATUS_LABELS,
+  type InvoicesResponse,
   type OverviewResponse,
+  type ProjectsResponse,
 } from './finance-utils'
+
+// Redesign board 6.1: the cash figure and one row of actions, the year in
+// four numbers, then the two lists finance acts on — what needs approving and
+// who owes us — with the full provenance panel underneath.
+
+interface AgedRow {
+  contact: string
+  total: number
+  current: number
+  period1: number
+  period2: number
+  period3: number
+}
+
+interface AgedResponse {
+  xeroConnected: boolean
+  rows: AgedRow[]
+  total: number
+  count: number
+  error?: string
+}
+
+const APPROVABLE = new Set(['RECEIVED', 'UNDER_REVIEW', 'REVIEWED'])
+
+function NeedsApproval() {
+  const inv = useFinanceFetch<InvoicesResponse>('/api/finance/invoices')
+  const proj = useFinanceFetch<ProjectsResponse>('/api/finance/projects')
+  const projects = new Map((proj.data?.projects ?? []).map((p) => [p.id, p]))
+  const queue = (inv.data?.invoices ?? []).filter((i) => APPROVABLE.has(i.status))
+
+  return (
+    <Panel
+      title={`Needs your approval${queue.length ? ` · ${queue.length}` : ''}`}
+      action={queue.length > 0 ? <TextLink href="/finance?tab=invoices">See all</TextLink> : undefined}
+    >
+      {inv.loading ? (
+        <div className="h-40 animate-pulse rounded-xl bg-surface-2" />
+      ) : inv.error || inv.data?.error ? (
+        <p className="py-4 text-[15px] text-bad">Couldn&rsquo;t load supplier invoices.</p>
+      ) : queue.length === 0 ? (
+        <p className="py-4 text-[15px] text-muted-foreground">Nothing waiting. Every supplier invoice has been dealt with.</p>
+      ) : (
+        <Rows>
+          {queue.slice(0, 5).map((i) => {
+            const project = i.campaignBudgetId ? projects.get(i.campaignBudgetId) : null
+            const days = daysUntil(i.paymentDeadline)
+            return (
+              <Row
+                key={i.id}
+                href={`/finance?tab=invoices&invoice=${i.id}`}
+                lead={<Avatar name={i.supplierName} tone="card" />}
+                title={
+                  <span className="inline-flex items-center gap-1.5">
+                    {i.flagged && <Flag className="size-3.5 shrink-0 text-bad" aria-label="Flagged" />}
+                    {i.supplierName}
+                  </span>
+                }
+                meta={
+                  <span className="truncate">
+                    {[project?.campaignName, i.description].filter(Boolean).join(' · ') || 'No project'}
+                    {days !== null && days < 0 ? ` · ${Math.abs(days)} days overdue` : ''}
+                  </span>
+                }
+                trail={<span className="shrink-0 font-semibold tabular-nums">{i.amount != null ? fmtGBP(i.amount) : '—'}</span>}
+              />
+            )
+          })}
+        </Rows>
+      )}
+    </Panel>
+  )
+}
+
+function OwedToUs() {
+  const res = useFinanceFetch<AgedResponse>('/api/finance/aged-receivables')
+  const rows = (res.data?.rows ?? []).slice().sort((a, b) => b.period3 + b.period2 + b.period1 - (a.period3 + a.period2 + a.period1) || b.total - a.total)
+
+  return (
+    <Panel title="Owed to us" action={<span className="text-sm text-muted-foreground">By age</span>}>
+      {res.loading ? (
+        <div className="h-40 animate-pulse rounded-xl bg-surface-2" />
+      ) : res.error || res.data?.error ? (
+        <p className="py-4 text-[15px] text-bad">Couldn&rsquo;t load receivables.</p>
+      ) : !res.data?.xeroConnected ? (
+        <p className="py-4 text-[15px] text-muted-foreground">Xero isn&rsquo;t connected, so client invoices can&rsquo;t be shown.</p>
+      ) : rows.length === 0 ? (
+        <p className="py-4 text-[15px] text-muted-foreground">Nothing outstanding. Everything is collected.</p>
+      ) : (
+        <Rows>
+          {rows.slice(0, 5).map((r) => {
+            const overdue = r.period1 + r.period2 + r.period3
+            const worst = r.period3 > 0 ? '60+ days' : r.period2 > 0 ? '31–60 days' : r.period1 > 0 ? '1–30 days' : null
+            return (
+              <Row
+                key={r.contact}
+                lead={<Avatar name={r.contact} tone="card" />}
+                title={r.contact || '—'}
+                meta={overdue > 0 ? `${fmtGBP(overdue)} overdue` : 'Not yet due'}
+                trail={
+                  <span className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="font-semibold tabular-nums">{fmtGBP(r.total)}</span>
+                    {worst ? <Tag tone={r.period3 > 0 || r.period2 > 0 ? 'bad' : 'warn'}>Overdue {worst}</Tag> : <Tag tone="plain">Current</Tag>}
+                  </span>
+                }
+              />
+            )
+          })}
+        </Rows>
+      )}
+      {rows.length > 5 && (
+        <TextLink href="/finance?tab=invoices&section=outgoing" className="mt-3 inline-block">
+          All {rows.length} clients
+        </TextLink>
+      )}
+    </Panel>
+  )
+}
 
 function OverageAlerts({ o }: { o: OverviewResponse }) {
   const alerts = o.overageAlerts ?? []
   if (alerts.length === 0) return null
   return (
-    <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/60 dark:bg-red-900/30 p-4">
-      <p className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
-        <AlertTriangle className="h-3 w-3" /> Budget Alerts — {alerts.length} project{alerts.length === 1 ? '' : 's'} need attention
-      </p>
-      <ul className="space-y-2">
+    <Panel title={`Budget alerts · ${alerts.length}`}>
+      <Rows>
         {alerts.map((a) => (
-          <li key={a.id}>
-            <Link
-              href={`/finance?tab=projects&project=${a.id}`}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-100 dark:border-red-800 bg-white dark:bg-gray-900 px-3 py-2 transition-colors hover:border-red-300 dark:hover:border-red-800"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">{a.campaignName}</p>
-                <p className="truncate text-[10px] text-gray-500 dark:text-gray-400">{a.clientName}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400">
-                  {fmtGBP(a.totalCosts)} / {fmtGBP(a.totalBudget)}
-                </span>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass(OVERAGE_STATUS_STYLES, a.overageStatus)}`}>
-                  {a.overageStatus === 'OVERAGE' ? `${fmtGBP(Math.abs(a.overBy))} over` : OVERAGE_STATUS_LABELS[a.overageStatus]}
-                </span>
-              </div>
-            </Link>
-          </li>
+          <Row
+            key={a.id}
+            href={`/finance?tab=projects&project=${a.id}`}
+            title={a.campaignName}
+            meta={
+              <span className="truncate">
+                {a.clientName} · {fmtGBP(a.totalCosts)} of {fmtGBP(a.totalBudget)}
+              </span>
+            }
+            trail={
+              <Tag tone={a.overageStatus === 'OVERAGE' ? 'bad' : 'warn'}>
+                {a.overageStatus === 'OVERAGE' ? `${fmtGBP(Math.abs(a.overBy))} over` : OVERAGE_STATUS_LABELS[a.overageStatus]}
+              </Tag>
+            }
+          />
         ))}
-      </ul>
-    </div>
-  )
-}
-
-function CashPosition({ o }: { o: OverviewResponse }) {
-  return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <div className="rounded-2xl bg-surface p-6">
-        <p className="mb-1.5 text-[13px] text-muted-foreground">Bank Balance (Xero)</p>
-        <p className={`font-mono text-2xl font-bold tabular-nums ${(o.bankBalance?.balance ?? 0) >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-500 dark:text-red-400'}`}>
-          {o.xeroConnected ? fmtGBP(o.bankBalance?.balance) : '—'}
-        </p>
-        {o.bankBalance?.accountName && <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{o.bankBalance.accountName}</p>}
-      </div>
-      <div className="flex items-center justify-between rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/60 dark:bg-gray-800/60 p-5">
-        <div>
-          <p className="mb-1 flex items-center gap-1.5 text-[13px] text-muted-foreground">
-            <Landmark className="h-3 w-3" /> Cash Position — Wize
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Connect Wize to see multi-currency balances and upcoming transfers alongside Xero.</p>
-        </div>
-        <button
-          disabled
-          className="shrink-0 cursor-not-allowed rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500"
-          title="Wize integration coming soon"
-        >
-          Connect Wize
-        </button>
-      </div>
-    </div>
+      </Rows>
+    </Panel>
   )
 }
 
 function ActivityFeed({ o }: { o: OverviewResponse }) {
   const items = o.recentActivity ?? []
   return (
-    <div className="rounded-2xl bg-surface p-6">
-      <p className="mb-3 text-xl font-semibold text-foreground">Recent Invoice Activity</p>
+    <Panel title="Recent invoice activity">
       {items.length === 0 ? (
-        <p className="py-6 text-center text-xs text-gray-400 dark:text-gray-500">No invoice activity yet.</p>
+        <p className="py-4 text-[15px] text-muted-foreground">No invoice activity yet.</p>
       ) : (
-        <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+        <Rows>
           {items.map((a) => (
-            <li key={`${a.type}-${a.id}`} className="flex items-center justify-between gap-3 py-2">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${a.type === 'incoming' ? 'bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
-                  {a.type === 'incoming' ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
+            <Row
+              key={`${a.type}-${a.id}`}
+              lead={
+                <span
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-background"
+                  aria-label={a.type === 'incoming' ? 'Supplier invoice' : 'Client invoice'}
+                >
+                  {a.type === 'incoming' ? <ArrowDownLeft className="size-4" /> : <ArrowUpRight className="size-4" />}
                 </span>
-                <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 truncate text-xs font-medium text-gray-900 dark:text-gray-100">
-                    {a.label}
-                    {a.flagged && <Flag className="h-3 w-3 shrink-0 text-red-500 dark:text-red-400" />}
-                  </p>
-                  <p className="truncate text-[10px] text-gray-400 dark:text-gray-500">
-                    {a.type === 'incoming' ? 'Supplier invoice' : 'Client invoice'}
-                    {a.detail ? ` · ${a.detail}` : ''} · {fmtDate(a.date)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="font-mono text-xs text-gray-700 dark:text-gray-300">{a.amount != null ? fmtGBP(a.amount) : '—'}</span>
-                <StatusBadge
-                  status={displayStatus(a.status)}
-                  map={a.type === 'incoming' ? SUBMISSION_STATUS_STYLES : INVOICE_STATUS_STYLES}
-                  rawKey={a.status}
-                />
-              </div>
-            </li>
+              }
+              title={
+                <span className="inline-flex items-center gap-1.5">
+                  {a.label}
+                  {a.flagged && <Flag className="size-3.5 shrink-0 text-bad" aria-label="Flagged" />}
+                </span>
+              }
+              meta={
+                <span className="truncate">
+                  {a.type === 'incoming' ? 'Supplier invoice' : 'Client invoice'}
+                  {a.detail ? ` · ${a.detail}` : ''} · {fmtDate(a.date)}
+                </span>
+              }
+              trail={
+                <span className="flex shrink-0 items-center gap-3">
+                  <span className="font-semibold tabular-nums">{a.amount != null ? fmtGBP(a.amount) : '—'}</span>
+                  <StatusBadge
+                    status={displayStatus(a.status)}
+                    map={a.type === 'incoming' ? SUBMISSION_STATUS_STYLES : INVOICE_STATUS_STYLES}
+                    rawKey={a.status}
+                  />
+                </span>
+              }
+            />
           ))}
-        </ul>
+        </Rows>
       )}
-    </div>
+    </Panel>
   )
 }
 
@@ -135,50 +225,85 @@ export default function DashboardTab() {
   const connected = o.xeroConnected
   const pl = o.profitAndLoss
   const margin = marginPct(pl.profit, pl.revenue)
+  const approvals = o.pendingApprovals ?? 0
 
   return (
-    <div className="space-y-5">
-      {/* The money position, every figure labelled with where it came from.
-          This replaces the old four-card KPI row, which showed Xero actuals and
-          OutlanderOS forecasts in identical type — the exact confusion this
-          panel exists to remove. Connection state lives in its own banner
-          inside the panel, so XeroStatusDot is redundant here too. */}
-      <PositionPanel />
+    <div className="flex flex-col gap-10">
+      <section className="flex flex-col gap-5">
+        <div>
+          <p className="mb-1.5 flex flex-wrap items-center gap-2.5 text-base text-muted-foreground">
+            Cash in the bank
+            <XeroStatusDot connected={connected} error={o.xeroError} organisation={o.organisation} />
+          </p>
+          <p
+            className={`text-[36px] font-semibold leading-none tracking-[-0.02em] tabular-nums sm:text-[44px] ${
+              connected && (o.bankBalance?.balance ?? 0) < 0 ? 'text-bad' : ''
+            }`}
+          >
+            {connected ? fmtGBP(o.bankBalance?.balance, { decimals: true }) : '—'}
+          </p>
+          {connected && o.bankBalance?.accountName && (
+            <p className="mt-2 text-sm text-muted-foreground">{o.bankBalance.accountName}</p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2.5">
+          <Link href="/finance?tab=invoices" className={pill(approvals > 0 ? 'primary' : 'secondary')}>
+            {approvals > 0 ? `Review ${approvals} approval${approvals === 1 ? '' : 's'}` : 'Invoices and approvals'}
+          </Link>
+          <Link href="/finance?tab=expenses" className={pill('secondary')}>
+            Expenses
+          </Link>
+          <Link href="/finance?tab=projects" className={pill('secondary')}>
+            Project folders
+          </Link>
+          <Link href="/finance?tab=pl" className={pill('secondary')}>
+            P&amp;L and history
+          </Link>
+        </div>
+      </section>
 
-      {!connected && <XeroDisconnectedBanner message={`Xero is disconnected${o.xeroError ? ` (${o.xeroError})` : ''} — receivables, payables and P&L are unavailable.`} />}
+      {!connected && (
+        <XeroDisconnectedBanner message={`Xero is disconnected${o.xeroError ? ` (${o.xeroError})` : ''} — receivables, payables and P&L are unavailable.`} />
+      )}
+
+      <StatGrid aria-label="Year to date, from Xero">
+        <Stat label="Revenue this year" value={connected ? fmtGBP(pl.revenue) : '—'} note="Year to date · Xero" />
+        <Stat
+          label="Owed to us"
+          value={connected ? fmtGBP(o.outstandingReceivables) : '—'}
+          note={connected && o.overdueReceivables > 0 ? `${fmtGBP(o.overdueReceivables)} overdue` : `${o.receivableCount ?? 0} invoices`}
+          noteTone={connected && o.overdueReceivables > 0 ? 'bad' : undefined}
+        />
+        <Stat
+          label="Bills to pay"
+          value={connected ? fmtGBP(o.outstandingPayables) : '—'}
+          note={`${o.payableCount ?? 0} bill${o.payableCount === 1 ? '' : 's'}`}
+        />
+        <Stat
+          label="Margin this year"
+          value={connected ? fmtPct(margin) : '—'}
+          note={connected ? `${fmtGBP(pl.profit)} profit · ${fmtGBP(pl.expenses)} costs` : undefined}
+          noteTone={connected && (margin ?? 0) < 0 ? 'bad' : undefined}
+        />
+      </StatGrid>
+
+      <Split main={<NeedsApproval />} side={<OwedToUs />} />
 
       <OverageAlerts o={o} />
 
-      {/* P&L snapshot */}
-      <div className="rounded-2xl bg-surface p-6">
-        <p className="mb-3 text-xl font-semibold text-foreground">P&amp;L Snapshot — Year to Date (Xero)</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">Revenue</p>
-            <p className="font-mono text-lg font-bold text-emerald-600 dark:text-emerald-400">{connected ? fmtGBP(pl.revenue) : '—'}</p>
-          </div>
-          <div>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">Expenses</p>
-            <p className="font-mono text-lg font-bold text-red-500 dark:text-red-400">{connected ? fmtGBP(pl.expenses) : '—'}</p>
-          </div>
-          <div>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">Profit</p>
-            <p className="font-mono text-lg font-bold text-brand">{connected ? fmtGBP(pl.profit) : '—'}</p>
-          </div>
-          <div>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">Margin</p>
-            <p className={`font-mono text-lg font-bold ${(margin ?? 0) >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-500 dark:text-red-400'}`}>{connected ? fmtPct(margin) : '—'}</p>
-          </div>
+      <section className="flex flex-col gap-4">
+        <h2 className="text-xl font-semibold">Where the money stands</h2>
+        <PositionPanel />
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface px-6 py-4">
+          <p className="flex items-center gap-2 text-[15px] text-ink-2">
+            <Landmark className="size-4 shrink-0" /> Wize multi-currency balances will show here once it&rsquo;s connected.
+          </p>
+          <button disabled className={pill('outline', 'sm')} title="Wize integration coming soon">
+            Connect Wize
+          </button>
         </div>
-        {connected && pl.revenue > 0 && (
-          <div className="mt-4 max-w-xs">
-            <BudgetBar spent={pl.expenses} budget={pl.revenue} />
-            <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500">Expenses as a share of revenue</p>
-          </div>
-        )}
-      </div>
+      </section>
 
-      <CashPosition o={o} />
       <ActivityFeed o={o} />
     </div>
   )

@@ -15,7 +15,7 @@ export function LinkedShotsPicker({
   shots,
   selected,
   onChange,
-  accent = "#9C7C2E",
+  accent = "var(--foreground)",
 }: {
   shots: ShotOption[];
   selected: string[];
@@ -47,7 +47,7 @@ export function LinkedShotsPicker({
           <span
             key={n}
             title={descOf(n)}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-white px-2 py-0.5 rounded-full"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-background px-2 py-0.5 rounded-full"
             style={{ backgroundColor: accent }}
           >
             Shot {n}
@@ -86,7 +86,7 @@ export function LinkedShotsPicker({
                     title={s.description || ""}
                     className={`text-[11px] font-medium px-2 py-1 rounded-lg border transition-colors ${
                       on
-                        ? "text-white border-transparent"
+                        ? "text-background border-transparent"
                         : "text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800"
                     }`}
                     style={on ? { backgroundColor: accent } : undefined}

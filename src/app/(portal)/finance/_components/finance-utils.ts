@@ -42,43 +42,51 @@ export function marginPct(profit: number, revenue: number): number | null {
 
 // ===== Status styling =====
 
+// Status tags use the redesign's tag pairs (TAG_TONES): green done, amber
+// waiting on someone, red wrong, blue in motion, grey not started.
+const OK = 'bg-ok-bg text-ok'
+const WARN = 'bg-warn-bg text-warn'
+const BAD = 'bg-bad-bg text-bad'
+const INFO = 'bg-info-bg text-info'
+const NEUTRAL = 'bg-surface-2 text-ink-2'
+
 // CampaignBudget.status: DRAFT, SUBMITTED, APPROVED, RECONCILED
 export const BUDGET_STATUS_STYLES: Record<string, string> = {
-  DRAFT: 'bg-gray-100 text-gray-600',
-  SUBMITTED: 'bg-blue-100 text-blue-700',
-  APPROVED: 'bg-emerald-100 text-emerald-700',
-  RECONCILED: 'bg-purple-100 text-purple-700',
-  REJECTED: 'bg-red-100 text-red-700',
+  DRAFT: NEUTRAL,
+  SUBMITTED: INFO,
+  APPROVED: OK,
+  RECONCILED: OK,
+  REJECTED: BAD,
 }
 
 // InvoiceSubmission.status pipeline: RECEIVED → UNDER_REVIEW → APPROVED → PAID
 // (REVIEWED is the legacy name for UNDER_REVIEW; kept for old rows.)
 export const SUBMISSION_STATUS_STYLES: Record<string, string> = {
-  RECEIVED: 'bg-gray-100 text-gray-600',
-  UNDER_REVIEW: 'bg-blue-100 text-blue-700',
-  REVIEWED: 'bg-blue-100 text-blue-700',
-  APPROVED: 'bg-amber-100 text-amber-700',
-  PAID: 'bg-emerald-100 text-emerald-700',
-  REJECTED: 'bg-red-100 text-red-700',
+  RECEIVED: NEUTRAL,
+  UNDER_REVIEW: INFO,
+  REVIEWED: INFO,
+  APPROVED: WARN,
+  PAID: OK,
+  REJECTED: BAD,
 }
 
 // Xero invoice status
 export const INVOICE_STATUS_STYLES: Record<string, string> = {
-  PAID: 'bg-emerald-100 text-emerald-700',
-  AUTHORISED: 'bg-amber-100 text-amber-700',
-  SENT: 'bg-blue-100 text-blue-700',
-  DRAFT: 'bg-gray-100 text-gray-600',
-  OVERDUE: 'bg-red-100 text-red-700',
-  VOIDED: 'bg-gray-100 text-gray-400',
-  'PARTIALLY PAID': 'bg-blue-100 text-blue-700',
+  PAID: OK,
+  AUTHORISED: WARN,
+  SENT: INFO,
+  DRAFT: NEUTRAL,
+  OVERDUE: BAD,
+  VOIDED: NEUTRAL,
+  'PARTIALLY PAID': INFO,
 }
 
 // Project budget health
 export const OVERAGE_STATUS_STYLES: Record<string, string> = {
-  HEALTHY: 'bg-emerald-100 text-emerald-700',
-  WARNING: 'bg-amber-100 text-amber-700',
-  OVERAGE: 'bg-red-100 text-red-700',
-  NO_BUDGET: 'bg-gray-100 text-gray-500',
+  HEALTHY: OK,
+  WARNING: WARN,
+  OVERAGE: BAD,
+  NO_BUDGET: NEUTRAL,
 }
 
 export const OVERAGE_STATUS_LABELS: Record<string, string> = {
@@ -89,13 +97,14 @@ export const OVERAGE_STATUS_LABELS: Record<string, string> = {
 }
 
 export function badgeClass(map: Record<string, string>, status?: string): string {
-  return map[status ?? ''] ?? 'bg-gray-100 text-gray-600'
+  return map[status ?? ''] ?? NEUTRAL
 }
 
+// Sentence case for display: UNDER_REVIEW → "Under review".
 export function displayStatus(status?: string): string {
   if (!status) return '—'
-  if (status === 'REVIEWED') return 'UNDER REVIEW'
-  return status.replace(/_/g, ' ')
+  const words = (status === 'REVIEWED' ? 'UNDER_REVIEW' : status).replace(/_/g, ' ').toLowerCase()
+  return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
 // ===== Data fetching =====

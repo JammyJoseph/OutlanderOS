@@ -46,6 +46,7 @@ import {
 import ScannerPanel from "@/components/directory/ScannerPanel";
 import NetworkPanel from "@/components/directory/NetworkPanel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { pill } from "@/components/os";
 import { isValidEmail, isValidUrl } from "@/lib/validation";
 import { igHandle, fmtFollowers } from "@/lib/directory-utils";
 import { InstagramIcon as Instagram } from "@/components/icons/InstagramIcon";
@@ -276,6 +277,8 @@ function Avatar({
 const inputCls =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-[var(--ring)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]/20";
 const labelCls = "block mb-1 text-[13px] text-muted-foreground";
+const FILTER_SELECT =
+  "h-11 cursor-pointer rounded-full bg-surface px-4 text-sm font-semibold text-ink-2 outline-none hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-foreground";
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
@@ -688,8 +691,13 @@ function Directory() {
     <div className="min-h-full px-4 pb-28 pt-6 sm:px-8 lg:px-12">
       <div className="max-w-[1080px]">
         {/* Header */}
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div className="mb-6 flex flex-col gap-5">
           <div>
+            <p className="mb-1.5 text-base text-muted-foreground">
+              {contactsTotal
+                ? `${contactsTotal.toLocaleString("en-GB")} contact${contactsTotal === 1 ? "" : "s"}`
+                : "Directory"}
+            </p>
             <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">
               {view === "dashboard"
                 ? "Directory"
@@ -705,7 +713,7 @@ function Directory() {
                 ? "Recently Added"
                 : "Contact Directory"}
             </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-2 text-[15px] text-muted-foreground">
               {view === "dashboard"
                 ? "Your directory at a glance — contacts, scanning, network & radar."
                 : view === "radar"
@@ -721,34 +729,28 @@ function Directory() {
                 : "Outlander's network of contacts, collaborators & talent."}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {isToolView ? null : view === "radar" ? (
-              <button
-                onClick={() => setAddingRadar(null)}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
-                style={{ backgroundColor: ACCENT }}
-              >
-                <Plus size={16} /> Add to Radar
-              </button>
-            ) : (
-              <button
-                onClick={() => setEditing(null)}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
-                style={{ backgroundColor: ACCENT }}
-              >
-                <Plus size={16} /> Add Contact
-              </button>
-            )}
-          </div>
+          {!isToolView && (
+            <div className="flex flex-wrap items-center gap-2.5">
+              {view === "radar" ? (
+                <button onClick={() => setAddingRadar(null)} className={pill("primary")}>
+                  <Plus /> Add to radar
+                </button>
+              ) : (
+                <button onClick={() => setEditing(null)} className={pill("primary")}>
+                  <Plus /> Add contact
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* View tabs */}
-        <div className="mb-5 flex flex-wrap gap-1 rounded-xl border border-border bg-card p-1 w-fit">
+        <div role="tablist" aria-label="Directory views" className="scrollbar-none mb-6 flex gap-1 overflow-x-auto">
           {VIEW_TABS.map((t) => {
             const Icon = t.icon;
             const isActive = view === t.key;
-            const cls = `inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-              isActive ? "text-black" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+            const cls = `inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors ${
+              isActive ? "bg-foreground text-background" : "text-ink-2 hover:bg-surface hover:text-foreground"
             }`;
             // Lighthouse is its own route — render it as a link, everything else
             // switches the in-page view.
@@ -763,9 +765,10 @@ function Directory() {
             return (
               <button
                 key={t.key}
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setView(t.key)}
                 className={cls}
-                style={isActive ? { backgroundColor: ACCENT } : undefined}
               >
                 <Icon size={14} />
                 {t.label}
@@ -777,13 +780,14 @@ function Directory() {
         {/* Search + filters + tools */}
         {view !== "categories" && !isToolView && (
           <div className="mb-4 flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400" />
+            <div className="relative min-w-0 flex-[1_1_320px]">
+              <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={view === "radar" ? "Search radar…" : "Search name, company, anything…"}
-                className={`${inputCls} pl-8 w-72`}
+                aria-label={view === "radar" ? "Search radar" : "Search contacts"}
+                placeholder={view === "radar" ? "Search radar" : "Search by name, role, company or @handle"}
+                className="h-[52px] w-full rounded-xl bg-surface pl-12 pr-4 text-base text-foreground outline-none placeholder:text-muted-foreground focus:bg-background focus:shadow-[inset_0_0_0_1px_var(--foreground),0_0_0_3px_var(--focus)]"
               />
             </div>
             {showContactTools && (
@@ -791,7 +795,7 @@ function Directory() {
                 <select
                   value={sortKey}
                   onChange={(e) => setSortKey(e.target.value as SortKey)}
-                  className={`${inputCls} w-auto`}
+                  className={FILTER_SELECT}
                   title="Sort"
                 >
                   <option value="name">Name (A–Z)</option>
@@ -804,7 +808,7 @@ function Directory() {
                   <select
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className={`${inputCls} w-auto`}
+                    className={FILTER_SELECT}
                     title="Filter by country"
                   >
                     <option value="">All countries</option>
@@ -818,17 +822,12 @@ function Directory() {
                 <button
                   onClick={() => setFavouritesOnly((v) => !v)}
                   title="Show favourites only"
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
- favouritesOnly
- ? "border-foreground dark:border-foreground text-gray-900 dark:text-gray-100"
- : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
- }`}
-                  style={favouritesOnly ? { backgroundColor: "rgba(156,124,46,0.12)" } : undefined}
+                  aria-pressed={favouritesOnly}
+                  className={`inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors ${
+                    favouritesOnly ? "bg-foreground text-background" : "bg-surface text-ink-2 hover:bg-surface-2 hover:text-foreground"
+                  }`}
                 >
-                  <Star
-                    size={14}
-                    className={favouritesOnly ? "fill-brand text-brand dark:fill-brand dark:text-brand" : "text-gray-400 dark:text-gray-500"}
-                  />
+                  <Star size={15} className={favouritesOnly ? "fill-current" : ""} />
                   Favourites
                 </button>
               </>
@@ -837,7 +836,8 @@ function Directory() {
               <select
                 value={radarStatusFilter}
                 onChange={(e) => setRadarStatusFilter(e.target.value)}
-                className={`${inputCls} w-auto`}
+                aria-label="Radar status"
+                className={FILTER_SELECT}
               >
                 <option value="">All statuses</option>
                 {RADAR_STATUSES.map((s) => (
@@ -857,7 +857,7 @@ function Directory() {
                   setFavouritesOnly(false);
                   setSortKey("name");
                 }}
-                className="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                className={pill("ghost", "sm")}
               >
                 Clear
               </button>
@@ -870,12 +870,10 @@ function Directory() {
           <div className="mb-5 flex flex-wrap items-center gap-2">
             <button
               onClick={() => setCategory("")}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                category === ""
-                  ? "border-transparent text-black"
-                  : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+              aria-pressed={category === ""}
+              className={`min-h-9 rounded-full px-4 text-sm font-medium transition-colors ${
+                category === "" ? "bg-foreground text-background" : "bg-surface text-ink-2 hover:bg-surface-2 hover:text-foreground"
               }`}
-              style={category === "" ? { backgroundColor: ACCENT } : undefined}
             >
               All
             </button>
@@ -887,15 +885,13 @@ function Directory() {
                   <button
                     key={c.category}
                     onClick={() => setCategory(active ? "" : c.category)}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                      active
-                        ? "border-transparent text-black"
-                        : "border-border text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    aria-pressed={active}
+                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors ${
+                      active ? "bg-foreground text-background" : "bg-surface text-ink-2 hover:bg-surface-2 hover:text-foreground"
                     }`}
-                    style={active ? { backgroundColor: ACCENT } : undefined}
                   >
                     {c.category}
-                    <span className={active ? "text-black/60" : "text-gray-600 dark:text-gray-400"}>{c.count}</span>
+                    <span className={`tabular-nums ${active ? "text-background/70" : "text-muted-foreground"}`}>{c.count}</span>
                   </button>
                 );
               })}
@@ -918,12 +914,12 @@ function Directory() {
           </div>
         ) : loadFailed ? (
           <div className="flex flex-col items-center justify-center gap-3 py-24">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-[15px] text-muted-foreground">
               Couldn&apos;t load the directory.
             </p>
             <button
               onClick={() => setReloadNonce((n) => n + 1)}
-              className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground  "
+              className={pill("primary", "sm")}
             >
               Retry
             </button>
@@ -953,10 +949,10 @@ function Directory() {
           />
         ) : view === "print" ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 w-fit">
+            <div className="flex w-fit items-center gap-1 rounded-full bg-surface p-1">
               <button
                 onClick={() => setPrintTab("tiers")}
-                className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                className={`min-h-9 rounded-full px-4 text-sm font-medium transition-colors ${
                   printTab === "tiers" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -964,7 +960,7 @@ function Directory() {
               </button>
               <button
                 onClick={() => setPrintTab("credits")}
-                className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                className={`min-h-9 rounded-full px-4 text-sm font-medium transition-colors ${
                   printTab === "credits" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -1000,23 +996,15 @@ function Directory() {
       {/* Floating share bar */}
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-5">
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-2xl backdrop-blur">
-            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <div className="flex items-center gap-3 rounded-full bg-background py-2 pl-5 pr-2 shadow-[0_12px_32px_rgba(11,18,32,0.18)] ring-1 ring-line">
+            <span className="text-[15px] font-semibold">
               {selected.size} selected
             </span>
-            <div className="h-5 w-px bg-border" />
-            <button
-              onClick={copyShare}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
-              style={{ boxShadow: "0 0 22px -6px #22c55e" }}
-            >
-              <Share2 size={15} /> Share
+            <button onClick={copyShare} className={pill("primary", "sm")}>
+              <Share2 /> Share
             </button>
-            <button
-              onClick={() => setSelected(new Set())}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"
-            >
-              <X size={15} /> Clear selection
+            <button onClick={() => setSelected(new Set())} className={pill("ghost", "sm")}>
+              <X /> Clear selection
             </button>
           </div>
         </div>
@@ -1025,7 +1013,7 @@ function Directory() {
       {/* Toast */}
       {toast && (
         <div className="fixed inset-x-0 bottom-24 z-50 flex justify-center px-4">
-          <div className="rounded-xl border border-border bg-popover px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-gray-100 shadow-xl">
+          <div role="status" className="rounded-full bg-foreground px-5 py-2.5 text-[15px] font-medium text-background shadow-xl">
             {toast}
           </div>
         </div>
@@ -1034,11 +1022,11 @@ function Directory() {
       {/* Undo-archive toast — auto-dismisses after 5s, Undo restores the contact. */}
       {undoItem && (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 px-4">
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg">
-            <span className="text-sm text-foreground">{undoItem.contact.name} archived</span>
+          <div role="status" className="flex items-center gap-4 rounded-full bg-foreground py-2 pl-5 pr-2 text-background shadow-xl">
+            <span className="text-[15px]">{undoItem.contact.name} archived</span>
             <button
               onClick={undoArchive}
-              className="text-sm font-semibold text-brand dark:text-brand hover:underline"
+              className="min-h-9 rounded-full px-4 text-sm font-semibold text-primary hover:bg-white/10"
             >
               Undo
             </button>
@@ -1269,7 +1257,7 @@ function SplitRow({
       className={`relative flex cursor-pointer items-center gap-2.5 border-b border-border px-3 py-2.5 transition-colors ${
         active ? "bg-secondary" : "hover:bg-secondary/60"
       }`}
-      style={active ? { boxShadow: `inset 3px 0 0 ${ACCENT}` } : undefined}
+      style={active ? { boxShadow: "inset 3px 0 0 var(--foreground)" } : undefined}
     >
       <SelectBox selected={selected} onToggle={onToggleSelect} />
       <FavouriteStar favourite={Boolean(c.isFavourite)} onToggle={onToggleFavourite} />
@@ -1340,7 +1328,7 @@ function SelectBox({ selected, onToggle }: { selected: boolean; onToggle: () => 
         onToggle();
       }}
       className={selected ? "" : "text-gray-600 dark:text-gray-400 hover:text-gray-300 dark:hover:text-gray-600"}
-      style={selected ? { color: ACCENT } : undefined}
+      style={selected ? { color: "var(--foreground)" } : undefined}
       title={selected ? "Deselect" : "Select"}
     >
       {selected ? <CheckSquare size={18} /> : <Square size={18} />}
@@ -1522,10 +1510,9 @@ function ContactDetailPanel({
           </button>
           <Link
             href={`/directory/${c.id}`}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-black transition-opacity hover:opacity-90"
-            style={{ backgroundColor: ACCENT }}
+            className={pill("secondary", "sm")}
           >
-            Open Full Profile <ChevronRight size={13} />
+            Open full profile <ChevronRight />
           </Link>
         </div>
       </div>
@@ -2040,7 +2027,7 @@ function Dashboard({
             <>
               <span
                 className="flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{ backgroundColor: `${ACCENT}1a`, color: ACCENT }}
+                style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}
               >
                 <Icon size={18} />
               </span>
@@ -2193,7 +2180,6 @@ function RadarList({
           <div
             key={e.id}
             className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface p-6"
-            style={{ boxShadow: `0 0 0 1px rgba(224,224,224,0.04), 0 0 24px -12px ${ACCENT}` }}
           >
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -2320,10 +2306,9 @@ function PrintDirectory({
         </div>
         <button
           onClick={() => window.print()}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
-          style={{ backgroundColor: ACCENT }}
+          className={pill("primary", "sm")}
         >
-          <FileText size={15} /> Print / Export
+          <FileText /> Print or export
         </button>
       </div>
 
@@ -2447,8 +2432,7 @@ function EmptyState({
       {action && onAction && (
         <button
           onClick={onAction}
-          className="mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-black"
-          style={{ backgroundColor: ACCENT }}
+          className={`${pill("primary", "sm")} mt-5`}
         >
           <Plus size={15} /> {action}
         </button>
@@ -2580,8 +2564,7 @@ function ContactModal({
             <button
               onClick={submit}
               disabled={saving || !form.name.trim()}
-              className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
-              style={{ backgroundColor: ACCENT }}
+              className={pill("primary", "sm")}
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
               {contact ? "Save changes" : "Add contact"}
@@ -2730,8 +2713,7 @@ function RadarModal({
             <button
               onClick={submit}
               disabled={saving || !form.name.trim()}
-              className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
-              style={{ backgroundColor: ACCENT }}
+              className={pill("primary", "sm")}
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
               {entry ? "Save changes" : "Add to radar"}

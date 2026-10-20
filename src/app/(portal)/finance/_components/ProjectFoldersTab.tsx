@@ -136,7 +136,7 @@ function ProjectCard({ p, onOpen }: { p: ProjectSummary; onOpen: () => void }) {
       </dl>
       <BudgetBar spent={p.totalCosts} budget={p.totalBudget} />
       <div className="mt-2 flex items-center justify-between">
-        <StatusBadge status={p.status} map={BUDGET_STATUS_STYLES} />
+        <StatusBadge status={displayStatus(p.status)} rawKey={p.status} map={BUDGET_STATUS_STYLES} />
         {p.pendingInvoices > 0 && (
           <span className="text-[10px] font-medium text-amber-600">{p.pendingInvoices} open invoice{p.pendingInvoices === 1 ? '' : 's'}</span>
         )}
@@ -197,7 +197,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
           <ArrowLeft className="h-3.5 w-3.5" /> All projects
         </button>
         <div className="flex items-center gap-2">
-          <StatusBadge status={project.status} map={BUDGET_STATUS_STYLES} />
+          <StatusBadge status={displayStatus(project.status)} rawKey={project.status} map={BUDGET_STATUS_STYLES} />
           {project.status === 'SUBMITTED' && (
             <button
               onClick={approveBudget}
@@ -276,8 +276,8 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
               <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`} />
               <Tooltip formatter={(v) => `£${Number(v ?? 0).toLocaleString('en-GB')}`} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="budget" name="Budget" fill="#9C7C2E" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="actual" name="Actual" fill={over ? '#c33b2a' : '#2E5E44'} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="budget" name="Budget" fill="#0A2540" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="actual" name="Actual" fill={over ? '#c33b2a' : '#A9D4FF'} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -455,7 +455,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                     )}
                   </div>
                   <div className="mt-1.5 flex items-center gap-4 text-[10px] text-gray-500 dark:text-gray-400">
-                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#9C7C2E]" /> Target margin</span>
+                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-foreground" /> Target margin</span>
                     {eco.productionSavings > 0 && (
                       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Production savings</span>
                     )}
@@ -669,7 +669,7 @@ function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
                     <span className="text-gray-500 dark:text-gray-400">{fmtDate(inv.date)}</span>
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-gray-700 dark:text-gray-300">{fmtGBP(inv.amount, { decimals: true })}</span>
-                      <StatusBadge status={inv.status} map={INVOICE_STATUS_STYLES} />
+                      <StatusBadge status={displayStatus(inv.status)} rawKey={inv.status} map={INVOICE_STATUS_STYLES} />
                     </div>
                   </li>
                 ))}

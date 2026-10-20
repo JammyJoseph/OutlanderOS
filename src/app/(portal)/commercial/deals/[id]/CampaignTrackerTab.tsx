@@ -227,7 +227,7 @@ export default function CampaignTrackerTab({
         <div className="bg-surface rounded-2xl p-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-              <LinkIcon size={15} className="text-[var(--portal-commercial)]" />
+              <LinkIcon size={15} className="text-brand" />
               Link Banking
             </h3>
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -306,7 +306,7 @@ export default function CampaignTrackerTab({
       <div className="bg-surface rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-            <CalendarDays size={15} className="text-[var(--portal-commercial)]" />
+            <CalendarDays size={15} className="text-brand" />
             Campaign Calendar
           </h3>
           <div className="flex items-center gap-2">

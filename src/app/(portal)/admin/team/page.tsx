@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Mail, Plus, Pencil, Loader2, ShieldCheck, X, Check, Copy, KeyRound, Search } from "lucide-react";
+import { Mail, Plus, Pencil, Loader2, ShieldCheck, X, Check, Copy, KeyRound, Search, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isValidEmail } from "@/lib/validation";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Avatar, Page, PageHead, Tag, pill } from "@/components/os";
+import { MIN_PASSWORD_LENGTH } from "@/lib/password-rules";
 
 interface Staff {
   id: string;
@@ -26,25 +28,15 @@ interface NewCredentials {
 }
 
 const TEAMS = [
-  { key: "COMMERCIAL", label: "Commercial", chip: "bg-accent text-brand dark:text-brand" },
-  { key: "PRODUCTION", label: "Production", chip: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
-  { key: "FINANCE", label: "Finance", chip: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
-  { key: "OPERATIONS", label: "Operations", chip: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
-  { key: "ADMIN", label: "Admin", chip: "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  { key: "COMMERCIAL", label: "Commercial" },
+  { key: "PRODUCTION", label: "Production" },
+  { key: "FINANCE", label: "Finance" },
+  { key: "OPERATIONS", label: "Operations" },
+  { key: "ADMIN", label: "Admin" },
 ] as const;
 
 function teamChip(key: string) {
   return TEAMS.find((t) => t.key === key);
-}
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 }
 
 function lastLoginLabel(iso: string | null): string {
@@ -67,6 +59,7 @@ export default function TeamPage() {
   const [confirmDeactivate, setConfirmDeactivate] = useState<Staff | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [showDeactivated, setShowDeactivated] = useState(false);
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
@@ -110,167 +103,148 @@ export default function TeamPage() {
     }
   }
 
-  const activeCount = staff.filter((s) => s.isActive).length;
+  const active = staff.filter((s) => s.isActive);
+  const deactivated = staff.filter((s) => !s.isActive);
+  const shown = showDeactivated ? [...active, ...deactivated] : active;
 
   return (
-    <div className="max-w-[1176px] space-y-6 px-4 pb-20 pt-6 sm:px-8 lg:px-12">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] sm:text-4xl">Team</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {staff.length} member{staff.length !== 1 ? "s" : ""} · {activeCount} active
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search staff…"
-              className="w-52 rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-xs text-gray-900 outline-none focus:border-foreground focus:ring-2 focus:ring-focus dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-            />
-          </div>
-          <button
-            onClick={() => setCreating(true)}
-            className="flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold transition-colors hover:brightness-95"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Staff
+    <Page>
+      <PageHead
+        eyebrow={`${active.length} active${deactivated.length ? ` · ${deactivated.length} deactivated` : ""}`}
+        title="Team"
+        aside={
+          <button onClick={() => setCreating(true)} className={pill("primary")}>
+            <Plus /> Add staff member
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      {statusError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
-          {statusError}
-        </div>
-      )}
+      <div className="-mt-4 flex flex-col gap-4">
+        <p className="flex items-start gap-3 rounded-2xl bg-surface px-5 py-4 text-[15px] text-ink-2">
+          <ShieldCheck className="mt-0.5 size-5 shrink-0 text-foreground" />
+          Admins see Finance and Admin. Changing someone&rsquo;s role, setting their password or deactivating them
+          signs them out everywhere straight away.
+        </p>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+        <div className="relative max-w-md">
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search staff"
+            placeholder="Search by name or email"
+            className="h-11 w-full rounded-xl bg-surface pl-11 pr-4 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:bg-background focus:shadow-[inset_0_0_0_1px_var(--foreground),0_0_0_3px_var(--focus)]"
+          />
+        </div>
+
+        {statusError && (
+          <p role="alert" className="rounded-2xl bg-bad-bg px-5 py-3.5 text-[15px] text-bad">
+            {statusError}
+          </p>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-5 w-5 animate-spin text-gray-400 dark:text-gray-500" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50/60 text-left dark:border-gray-700 dark:bg-gray-800/60">
-                <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Name</th>
-                <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Role</th>
-                <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Teams</th>
-                <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Status</th>
-                <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Last login</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {staff.map((s) => (
-                <tr
-                  key={s.id}
-                  className={cn("transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-800/60", !s.isActive && "opacity-60")}
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs font-bold text-white">
-                        {initials(s.name)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-900 dark:text-gray-100">{s.name}</p>
-                        <p className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-                          <Mail className="h-3 w-3" />
-                          <span className="truncate">{s.email}</span>
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                        s.role === "ADMIN"
-                          ? "bg-gray-900 text-white"
-                          : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                      )}
-                    >
-                      {s.role === "ADMIN" && <ShieldCheck className="h-3 w-3" />}
-                      {s.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {(s.teams ?? []).length === 0 ? (
-                        <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
-                      ) : (
-                        (s.teams ?? []).map((t) => {
-                          const c = teamChip(t);
-                          return (
-                            <span
-                              key={t}
-                              className={cn(
-                                "rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                                c?.chip ?? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                              )}
-                            >
-                              {c?.label ?? t}
-                            </span>
-                          );
-                        })
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                        s.isActive ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          s.isActive ? "bg-emerald-500" : "bg-gray-400"
-                        )}
-                      />
-                      {s.isActive ? "Active" : "Deactivated"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{lastLoginLabel(s.lastLoginAt)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => setEditing(s)}
-                        title="Edit"
-                        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => (s.isActive ? setConfirmDeactivate(s) : toggleActive(s))}
-                        disabled={busyId === s.id}
-                        className={cn(
-                          "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
-                          s.isActive
-                            ? "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-                            : "border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
-                        )}
-                      >
-                        {busyId === s.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : s.isActive ? (
-                          "Deactivate"
-                        ) : (
-                          "Activate"
-                        )}
-                      </button>
-                    </div>
-                  </td>
+          <div className="-mx-2 overflow-x-auto">
+            <table className="w-full min-w-[820px] text-[15px]">
+              <thead>
+                <tr className="border-b border-line text-left">
+                  {["Person", "Role", "Teams", "Status", "Last login"].map((h) => (
+                    <th key={h} className="px-2 pb-3 text-[13px] font-medium text-muted-foreground">
+                      {h}
+                    </th>
+                  ))}
+                  <th className="px-2 pb-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="[&>tr]:border-b [&>tr]:border-line">
+                {shown.map((s) => (
+                  <tr key={s.id} className={cn("transition-colors hover:bg-surface/60", !s.isActive && "text-muted-foreground")}>
+                    <td className="px-2 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={s.name} />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground">{s.name}</p>
+                          <p className="flex items-center gap-1 truncate text-sm text-muted-foreground">
+                            <Mail className="size-3.5 shrink-0" />
+                            <span className="truncate">
+                              {s.email}
+                              {s.department ? ` · ${s.department}` : ""}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-2 py-3.5">
+                      {s.role === "ADMIN" ? (
+                        <Tag tone="info">
+                          <ShieldCheck className="size-3.5" /> Admin
+                        </Tag>
+                      ) : (
+                        <Tag>Member</Tag>
+                      )}
+                    </td>
+                    <td className="px-2 py-3.5">
+                      <div className="flex flex-wrap gap-1">
+                        {(s.teams ?? []).length === 0 ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          (s.teams ?? []).map((t) => <Tag key={t}>{teamChip(t)?.label ?? t}</Tag>)
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-2 py-3.5">
+                      <Tag tone={s.isActive ? "ok" : "neutral"}>{s.isActive ? "Active" : "Deactivated"}</Tag>
+                    </td>
+                    <td className="px-2 py-3.5 text-ink-2">{lastLoginLabel(s.lastLoginAt)}</td>
+                    <td className="px-2 py-3.5">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => setEditing(s)}
+                          aria-label={`Edit ${s.name}`}
+                          title="Edit"
+                          className="flex size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          onClick={() => (s.isActive ? setConfirmDeactivate(s) : toggleActive(s))}
+                          disabled={busyId === s.id}
+                          className={pill(s.isActive ? "ghost" : "outline", "sm")}
+                        >
+                          {busyId === s.id ? (
+                            <Loader2 className="animate-spin" />
+                          ) : s.isActive ? (
+                            "Deactivate"
+                          ) : (
+                            "Activate"
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {!loading && deactivated.length > 0 && (
+          <button
+            onClick={() => setShowDeactivated((v) => !v)}
+            aria-expanded={showDeactivated}
+            className="inline-flex min-h-11 w-fit items-center gap-2 font-semibold hover:underline"
+          >
+            {showDeactivated
+              ? "Hide deactivated accounts"
+              : `Show ${deactivated.length} deactivated account${deactivated.length === 1 ? "" : "s"}`}
+            <ChevronDown className={cn("size-4 transition-transform", showDeactivated && "rotate-180")} />
+          </button>
         )}
       </div>
 
@@ -311,7 +285,7 @@ export default function TeamPage() {
         }}
         onCancel={() => setConfirmDeactivate(null)}
       />
-    </div>
+    </Page>
   );
 }
 
@@ -338,59 +312,51 @@ function CredentialsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900">
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
-              <KeyRound className="h-4 w-4 text-brand dark:text-brand" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div role="dialog" aria-modal="true" className="w-full max-w-md overflow-hidden rounded-[24px] bg-background shadow-2xl">
+        <div className="flex items-center justify-between px-6 pt-6">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-full bg-secondary">
+              <KeyRound className="size-5" />
             </span>
-            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Account created</h2>
+            <h2 className="text-xl font-semibold">Account created</h2>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-800">
-            <X className="h-4 w-4" />
+          <button onClick={onClose} aria-label="Close" className="flex size-10 items-center justify-center rounded-full bg-surface hover:bg-surface-2">
+            <X className="size-4" />
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Temporary password for <span className="font-medium text-gray-900 dark:text-gray-100">{creds.name}</span>.
+        <div className="space-y-4 px-6 py-5">
+          <p className="text-[15px] text-ink-2">
+            Temporary password for <span className="font-semibold text-foreground">{creds.name}</span>.
             Share it with the team member securely — they&apos;ll be prompted to change it on first
             login.
           </p>
 
-          <div className="space-y-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+          <div className="space-y-2 rounded-2xl bg-surface px-4 py-3">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Email</span>
-              <span className="truncate font-mono text-sm text-gray-800 dark:text-gray-200">{creds.email}</span>
+              <span className="text-sm text-muted-foreground">Email</span>
+              <span className="truncate font-mono text-sm">{creds.email}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                Password
-              </span>
-              <span className="select-all font-mono text-base font-semibold tracking-wider text-gray-900 dark:text-gray-100">
+              <span className="text-sm text-muted-foreground">Password</span>
+              <span className="select-all font-mono text-base font-semibold tracking-wider">
                 {creds.password}
               </span>
             </div>
           </div>
 
-          <p className="text-xs text-amber-600 dark:text-amber-400">
+          <p className="text-sm font-medium text-warn">
             This password won&apos;t be shown again. Copy it now if you need it.
           </p>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4 dark:border-gray-800">
-          <button
-            onClick={copyCredentials}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-          >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+        <div className="flex justify-end gap-2 px-6 pb-6">
+          <button onClick={copyCredentials} className={pill("outline", "sm")}>
+            {copied ? <Check /> : <Copy />}
             {copied ? "Copied" : "Copy credentials"}
           </button>
-          <button
-            onClick={onClose}
-            className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold"
-          >
+          <button onClick={onClose} className={pill("primary", "sm")}>
             Done
           </button>
         </div>
@@ -436,8 +402,8 @@ function StaffModal({
     }
     // Password is optional on edit, required (auto-generated) on create. When an
     // admin does set one, enforce a minimum length.
-    if (!isNew && password && password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (!isNew && password && password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
     setSaving(true);
@@ -472,27 +438,26 @@ function StaffModal({
   }
 
   const inputCls =
-    "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 focus:border-foreground focus:outline-none focus:ring-2 focus:ring-focus";
+    "block h-11 w-full rounded-lg border border-field bg-card px-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:border-foreground focus:shadow-[0_0_0_3px_var(--focus)]";
+  const labelCls = "mb-1.5 block text-sm text-ink-2";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900">
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-            {isNew ? "Add Staff" : `Edit ${staff?.name}`}
-          </h2>
-          <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-800">
-            <X className="h-4 w-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div role="dialog" aria-modal="true" className="w-full max-w-md overflow-hidden rounded-[24px] bg-background shadow-2xl">
+        <div className="flex items-center justify-between px-6 pt-6">
+          <h2 className="text-xl font-semibold">{isNew ? "Add a staff member" : `Edit ${staff?.name}`}</h2>
+          <button onClick={onClose} aria-label="Close" className="flex size-10 items-center justify-center rounded-full bg-surface hover:bg-surface-2">
+            <X className="size-4" />
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="max-h-[70vh] space-y-4 overflow-y-auto px-6 py-5">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Name</label>
+            <label className={labelCls}>Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Email</label>
+            <label className={labelCls}>Email</label>
             <input
               type="email"
               value={email}
@@ -501,16 +466,16 @@ function StaffModal({
             />
           </div>
           {isNew ? (
-            <div className="flex items-start gap-2 rounded-lg border border-foreground/40 bg-accent px-3 py-2.5">
-              <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand dark:text-brand" />
-              <p className="text-xs text-gray-600 dark:text-gray-400">
+            <div className="flex items-start gap-2.5 rounded-xl bg-secondary px-4 py-3">
+              <KeyRound className="mt-0.5 size-4 shrink-0" />
+              <p className="text-sm text-ink-2">
                 A temporary password will be generated and shown once after creation. They&apos;ll be
                 prompted to change it on first login.
               </p>
             </div>
           ) : (
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+              <label className={labelCls}>
                 New password (leave blank to keep)
               </label>
               <input
@@ -523,7 +488,7 @@ function StaffModal({
             </div>
           )}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Department</label>
+            <label className={labelCls}>Department</label>
             <input
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
@@ -532,26 +497,26 @@ function StaffModal({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Role</label>
-            <div className="flex gap-2">
+            <label className={labelCls}>Role</label>
+            <div role="radiogroup" aria-label="Role" className="flex gap-1 rounded-full bg-surface p-1">
               {(["MEMBER", "ADMIN"] as const).map((r) => (
                 <button
                   key={r}
+                  role="radio"
+                  aria-checked={role === r}
                   onClick={() => setRole(r)}
                   className={cn(
-                    "flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
-                    role === r
-                      ? "border-gray-900 bg-gray-900 text-white"
-                      : "border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+                    "min-h-10 flex-1 rounded-full text-sm font-semibold transition-colors",
+                    role === r ? "bg-background text-foreground shadow-[0_1px_2px_rgba(11,18,32,0.08)]" : "text-ink-2 hover:text-foreground"
                   )}
                 >
-                  {r}
+                  {r === "ADMIN" ? "Admin" : "Member"}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Teams</label>
+            <label className={labelCls}>Teams</label>
             <div className="flex flex-wrap gap-2">
               {TEAMS.map((t) => {
                 const on = teams.includes(t.key);
@@ -559,11 +524,10 @@ function StaffModal({
                   <button
                     key={t.key}
                     onClick={() => toggleTeam(t.key)}
+                    aria-pressed={on}
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                      on
-                        ? "border-foreground bg-accent text-gray-800 dark:text-gray-200"
-                        : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+                      "inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors",
+                      on ? "bg-foreground text-background" : "bg-surface text-ink-2 hover:bg-surface-2 hover:text-foreground"
                     )}
                   >
                     {on && <Check className="h-3 w-3" />}
@@ -574,22 +538,19 @@ function StaffModal({
             </div>
           </div>
 
-          {error && <p className="text-xs font-medium text-red-500 dark:text-red-400">{error}</p>}
+          {error && (
+            <p role="alert" className="rounded-xl bg-bad-bg px-4 py-3 text-[15px] font-medium text-bad">
+              {error}
+            </p>
+          )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4 dark:border-gray-800">
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-          >
+        <div className="flex justify-end gap-2 px-6 pb-6">
+          <button onClick={onClose} className={pill("ghost", "sm")}>
             Cancel
           </button>
-          <button
-            onClick={save}
-            disabled={saving}
-            className="flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold disabled:opacity-50"
-          >
-            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          <button onClick={save} disabled={saving} className={pill("primary", "sm")}>
+            {saving && <Loader2 className="animate-spin" />}
             {isNew ? "Create" : "Save changes"}
           </button>
         </div>

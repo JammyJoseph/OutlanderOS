@@ -57,10 +57,12 @@ interface Position {
   }
 }
 
-const LAYER: Record<Layer, { label: string; dot: string; text: string }> = {
-  ACTUAL: { label: 'Actual', dot: '#2E5E44', text: 'text-[#2E5E44] dark:text-[#4E8F6C]' },
-  COMMITTED: { label: 'Committed', dot: '#9C7C2E', text: 'text-brand dark:text-brand' },
-  FORECAST: { label: 'Forecast', dot: '#2F4B8F', text: 'text-[#2F4B8F] dark:text-[#7C97D6]' },
+// The layer is an 8px dot and a word, never a coloured figure (redesign rule:
+// colour marks meaning, the numbers stay ink).
+const LAYER: Record<Layer, { label: string; dot: string }> = {
+  ACTUAL: { label: 'Actual', dot: 'var(--ok)' },
+  COMMITTED: { label: 'Committed', dot: 'var(--warn)' },
+  FORECAST: { label: 'Forecast', dot: 'var(--info)' },
 }
 
 function ago(iso: string | null): string {
@@ -87,30 +89,30 @@ function FigureCard({
 }) {
   const layer = LAYER[f.layer]
   return (
-    <div className="rounded-lg border border-border bg-card px-5 py-4">
-      <p className="mb-1.5 flex items-center gap-2 text-[13px] text-muted-foreground">
-        <span className="h-2 w-2 shrink-0" style={{ backgroundColor: layer.dot }} />
+    <div className="min-w-0 rounded-2xl bg-surface p-5 sm:p-6">
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: layer.dot }} />
         <span className="truncate">{label}</span>
       </p>
 
       {unknown ? (
-        <p className="font-mono text-2xl font-bold text-gray-300 dark:text-gray-600">—</p>
+        <p className="mt-2.5 text-2xl font-semibold leading-none text-muted-foreground sm:text-[30px]">—</p>
       ) : (
         <p
-          className={`font-mono font-bold tabular-nums ${emphasis ? 'text-3xl' : 'text-2xl'} ${layer.text}`}
+          className={`mt-2.5 truncate font-semibold leading-none tracking-[-0.01em] tabular-nums ${emphasis ? 'text-[28px] sm:text-[34px]' : 'text-2xl sm:text-[30px]'} ${f.value < 0 ? 'text-bad' : ''}`}
         >
           {fmtGBP(f.value)}
         </p>
       )}
 
-      <p className="mt-1.5 text-[11px] leading-snug text-gray-400 dark:text-gray-500">
-        <span className="font-medium">{layer.label}</span>
+      <p className="mt-2 text-sm leading-snug text-muted-foreground">
+        <span className="font-medium text-ink-2">{layer.label}</span>
         {' · '}
         {unknown ? 'not synced yet' : f.source}
         {f.count !== undefined && !unknown ? ` · ${f.count}` : ''}
       </p>
       {f.note && !unknown && (
-        <p className="mt-1 text-[11px] leading-snug text-gray-400 dark:text-gray-500">{f.note}</p>
+        <p className="mt-1 text-sm leading-snug text-muted-foreground">{f.note}</p>
       )}
     </div>
   )
@@ -123,14 +125,14 @@ export default function PositionPanel() {
     return (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="h-28 animate-pulse rounded-lg border border-border bg-card" />
+          <div key={i} className="h-32 animate-pulse rounded-2xl bg-surface" />
         ))}
       </div>
     )
   }
   if (error || !p) {
     return (
-      <div className="rounded-lg border border-border bg-card p-4 text-sm text-gray-500">
+      <div role="alert" className="rounded-2xl bg-bad-bg px-5 py-3.5 text-[15px] text-bad">
         Could not load the finance position. {error}
       </div>
     )
@@ -144,10 +146,8 @@ export default function PositionPanel() {
     <div className="space-y-3">
       {/* Provenance banner — what is behind the ACTUAL numbers, and how old. */}
       <div
-        className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-4 py-2.5 text-[12px] ${
-          p.xero.connected && !unknown
-            ? 'border-border bg-card text-gray-500 dark:text-gray-400'
-            : 'border-[#e5c9a0] bg-[#fdf6ea] text-[#7a5a1e] dark:border-[#5a4520] dark:bg-[#2a2008] dark:text-brand'
+        className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl px-5 py-3 text-sm ${
+          p.xero.connected && !unknown ? 'bg-surface text-ink-2' : 'bg-warn-bg text-warn'
         }`}
       >
         {p.xero.connected && !unknown ? (
@@ -183,10 +183,10 @@ export default function PositionPanel() {
               Forecast and committed figures come from OutlanderOS and are unaffected.
             </span>
             {p.xero.error && (
-              <span className="basis-full text-[11px] opacity-80">{p.xero.error}</span>
+              <span className="basis-full text-[13px] opacity-80">{p.xero.error}</span>
             )}
             {p.xero.lastRunStatus && (
-              <span className="basis-full text-[11px] opacity-70">
+              <span className="basis-full text-[13px] opacity-80">
                 Last sync {p.xero.lastRunStatus.toLowerCase()} {ago(p.xero.freshAsOf)}.
               </span>
             )}
@@ -222,7 +222,7 @@ export default function PositionPanel() {
           a permanent "£0 unattributed" badge is noise that trains people to
           ignore the place a real number will one day appear. */}
       {p.uncodedSpend.value > 0 && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-[#e5c9a0] bg-[#fdf6ea] px-4 py-3 text-[12px] text-[#7a5a1e] dark:border-[#5a4520] dark:bg-[#2a2008] dark:text-brand">
+        <div className="flex items-start gap-2.5 rounded-2xl bg-warn-bg px-5 py-3.5 text-sm text-warn">
           <CircleDot className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
             <strong>{fmtGBP(p.uncodedSpend.value)}</strong> of spend across{' '}

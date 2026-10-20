@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  X, ChevronLeft, ChevronRight, Loader2, Check, Calendar, Users, MapPin, Clock, ClipboardCheck,
-} from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
+import { Avatar, FlowFrame, FlowTitle, KV, Overlay, pill } from "@/components/os";
 import { ProductionFull, TeamMember } from "./types";
 
 interface Props {
@@ -65,12 +64,24 @@ const SCHEDULE_TEMPLATES: { key: string; label: string; rows: ScheduleRow[] }[] 
   },
 ];
 
-const STEPS = ["Date & Type", "Crew", "Location", "Schedule", "Review"];
+// Redesign board 5.3: one question per screen, the step bar across the top.
+const STEPS = ["Shoot day", "Location", "People", "Schedule", "Review"];
+
+const FIELD =
+  "block h-[52px] w-full rounded-lg border border-field bg-card px-4 text-base text-foreground outline-none placeholder:text-muted-foreground focus:border-foreground focus:shadow-[0_0_0_3px_var(--focus)]";
+const LABEL = "mb-2 block text-[15px] text-ink-2";
+
+function longDate(iso: string) {
+  return iso
+    ? new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+    : "";
+}
 
 export default function CallSheetWizard({ production, onClose }: Props) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const usedDates = useMemo(
     () => new Set((production.callSheets ?? []).map((cs) => cs.shootDate.split("T")[0])),
@@ -80,15 +91,17 @@ export default function CallSheetWizard({ production, onClose }: Props) {
     .map((d) => d.split("T")[0])
     .find((d) => d && !usedDates.has(d));
 
-  // Step 1
+  // Shoot day
   const [shootDate, setShootDate] = useState(firstFreeShoot || "");
   const [shootType, setShootType] = useState<ShootType>("shoot");
 
-  // Step 2 — crew (default all team members selected)
+  // People — everyone on the Team tab starts selected
   const team = production.teamMembers ?? [];
   const [selected, setSelected] = useState<Set<string>>(new Set(team.map((m) => m.id)));
+  // Optional per-person call times; blank means "on the unit call".
+  const [callTimes, setCallTimes] = useState<Record<string, string>>({});
 
-  // Step 3 — location (pre-fill from the most recent call sheet's address)
+  // Location (pre-filled from the most recent call sheet's address)
   const lastAddr =
     ((production.callSheets ?? [])
       .slice()
@@ -97,7 +110,7 @@ export default function CallSheetWizard({ production, onClose }: Props) {
   const [locationName, setLocationName] = useState("Location 1");
   const [address, setAddress] = useState(lastAddr);
 
-  // Step 4 — schedule template
+  // Schedule template
   const [templateKey, setTemplateKey] = useState("full");
   const template = SCHEDULE_TEMPLATES.find((t) => t.key === templateKey) ?? SCHEDULE_TEMPLATES[0];
   const callTime = template.rows[0]?.time || "08:00";
@@ -117,18 +130,16 @@ export default function CallSheetWizard({ production, onClose }: Props) {
     return members.map((m) => ({
       role: m.role || "",
       name: m.name,
-      // No per-person override — the whole unit starts on the unit call.
-      callTime: "",
+      // Blank = the unit call; only a time set on the People step overrides it.
+      callTime: callTimes[m.id] || "",
       email: m.email || "",
       phone: m.phone || "",
     }));
   }
 
   const typeLabel = SHOOT_TYPES.find((t) => t.key === shootType)?.label ?? "Shoot";
-  const shootTitle =
-    shootType === "shoot"
-      ? production.title
-      : `${typeLabel} — ${production.title}`;
+  const shootTitle = shootType === "shoot" ? production.title : `${typeLabel} — ${production.title}`;
+  const context = [production.title, longDate(shootDate), `Unit call ${callTime}`].filter(Boolean).join(" · ");
 
   async function create() {
     if (!shootDate) {
@@ -136,6 +147,7 @@ export default function CallSheetWizard({ production, onClose }: Props) {
       return;
     }
     setBusy(true);
+    setError(null);
     try {
       const locations = address
         ? [
@@ -173,247 +185,227 @@ export default function CallSheetWizard({ production, onClose }: Props) {
       if (data.sheet) {
         router.push(`/production/${production.id}/call-sheets/${data.sheet.id}`);
       } else {
+        setError(data.error || "Couldn't create the call sheet. Try again.");
         setBusy(false);
       }
     } catch {
+      setError("Couldn't create the call sheet. Check your connection and try again.");
       setBusy(false);
     }
   }
 
-  const canNext =
-    step === 0 ? !!shootDate : true;
+  const back = step > 0 && (
+    <button
+      type="button"
+      onClick={() => setStep((s) => s - 1)}
+      disabled={busy}
+      className="mb-4 inline-flex min-h-11 items-center gap-2 font-semibold hover:text-brand disabled:opacity-50"
+    >
+      <ChevronLeft className="size-5" strokeWidth={1.75} /> Back
+    </button>
+  );
+  const next = (label: string, disabled = false) => (
+    <button type="button" onClick={() => setStep((s) => s + 1)} disabled={disabled} className={`${pill("primary")} w-full`}>
+      {label}
+    </button>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-10 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl">
-        {/* Header + step indicator */}
-        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">New Call Sheet</h2>
-            <p className="text-xs text-gray-400">
-              Step {step + 1} of {STEPS.length} — {STEPS[step]}
-            </p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-            <X size={18} />
-          </button>
-        </div>
+    <Overlay label="New call sheet" onClose={busy ? undefined : onClose}>
+      <FlowFrame steps={STEPS} current={step} onClose={busy ? undefined : onClose}>
+        {back}
 
-        {/* Progress */}
-        <div className="flex gap-1 px-5 pt-3">
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1 flex-1 rounded-full transition-colors ${
- i <= step ? "bg-[#9C7C2E]" : "bg-gray-100 dark:bg-gray-800"
- }`}
-            />
-          ))}
-        </div>
-
-        <div className="px-5 py-5 min-h-[240px]">
-          {step === 0 && (
-            <div className="space-y-4">
-              <StepHead icon={<Calendar size={15} />} title="When & what" />
-              <div>
-                <label className={wLabel}>Date</label>
-                <input
-                  type="date"
-                  value={shootDate}
-                  onChange={(e) => setShootDate(e.target.value)}
-                  className={wInput}
-                />
-              </div>
-              <div>
-                <label className={wLabel}>Type</label>
-                <div className="flex gap-2">
-                  {SHOOT_TYPES.map((t) => (
+        {step === 0 && (
+          <div className="flex flex-col gap-6">
+            <FlowTitle sub={production.title}>Which day is it for?</FlowTitle>
+            <div>
+              <label htmlFor="cs-date" className={LABEL}>
+                Date
+              </label>
+              <input id="cs-date" type="date" value={shootDate} onChange={(e) => setShootDate(e.target.value)} className={FIELD} />
+              {firstFreeShoot && shootDate === firstFreeShoot && (
+                <p className="mt-2 text-sm text-muted-foreground">The next shoot day without a call sheet.</p>
+              )}
+            </div>
+            <div>
+              <span id="cs-type" className={LABEL}>
+                What kind of day
+              </span>
+              <div role="radiogroup" aria-labelledby="cs-type" className="flex gap-1 rounded-full bg-surface p-1">
+                {SHOOT_TYPES.map((t) => {
+                  const on = shootType === t.key;
+                  return (
                     <button
                       key={t.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
                       onClick={() => setShootType(t.key)}
-                      className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
- shootType === t.key
- ? "border-foreground bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-gray-100"
- : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300"
- }`}
+                      className={`min-h-11 flex-1 rounded-full text-[15px] font-semibold transition-colors ${
+                        on ? "bg-background text-foreground shadow-[0_1px_2px_rgba(11,18,32,0.08)]" : "text-ink-2 hover:text-foreground"
+                      }`}
                     >
                       {t.label}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
-          )}
+            {next("Continue to location", !shootDate)}
+          </div>
+        )}
 
-          {step === 1 && (
-            <div className="space-y-3">
-              <StepHead
-                icon={<Users size={15} />}
-                title={`Crew (${chosenCrew.length}/${team.length})`}
+        {step === 1 && (
+          <div className="flex flex-col gap-6">
+            <FlowTitle sub={context}>Where are you shooting?</FlowTitle>
+            <div>
+              <label htmlFor="cs-loc-name" className={LABEL}>
+                Location name
+              </label>
+              <input
+                id="cs-loc-name"
+                type="text"
+                value={locationName}
+                onChange={(e) => setLocationName(e.target.value)}
+                placeholder="Location 1"
+                className={FIELD}
               />
-              {team.length === 0 ? (
-                <p className="text-sm text-gray-400 py-6 text-center">
-                  No team members yet — add crew in the Team tab first, or continue and add them later.
+            </div>
+            <div>
+              <label htmlFor="cs-address" className={LABEL}>
+                Address
+              </label>
+              <textarea
+                id="cs-address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                rows={3}
+                placeholder="Full address"
+                className={`${FIELD} h-auto resize-none py-3`}
+              />
+              {lastAddr && address === lastAddr && (
+                <p className="mt-2 text-sm text-muted-foreground">Filled in from your last call sheet.</p>
+              )}
+            </div>
+            {next("Continue to people")}
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="flex flex-col gap-6">
+            <FlowTitle sub={context}>Who&rsquo;s on set, and when?</FlowTitle>
+            {team.length === 0 ? (
+              <p className="rounded-2xl bg-surface px-5 py-6 text-center text-[15px] text-muted-foreground">
+                No one on the Team tab yet. Carry on and add people to the call sheet later, or add crew in the Team
+                tab first.
+              </p>
+            ) : (
+              <div>
+                <p className="mb-2 text-[15px] text-ink-2">
+                  <strong className="font-semibold text-foreground">
+                    {chosenCrew.length} of {team.length}
+                  </strong>{" "}
+                  pulled from the Team tab. Leave a time blank for the unit call.
                 </p>
-              ) : (
-                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                <ul className="[&>*+*]:border-t [&>*+*]:border-line">
                   {team.map((m) => {
                     const on = selected.has(m.id);
                     return (
-                      <button
-                        key={m.id}
-                        onClick={() => toggle(m.id)}
-                        className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${
- on
- ? "border-foreground bg-amber-50/50 dark:bg-amber-900/20"
- : "border-gray-200 dark:border-gray-700"
- }`}
-                      >
-                        <span
-                          className={`flex h-5 w-5 items-center justify-center rounded border ${
- on ? "bg-foreground border-foreground" : "border-gray-300 dark:border-gray-600"
- }`}
+                      <li key={m.id} className="flex items-center gap-3.5 py-3">
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={on}
+                          aria-label={`${on ? "Remove" : "Include"} ${m.name}`}
+                          onClick={() => toggle(m.id)}
+                          className="relative shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                         >
-                          {on && <Check size={13} className="text-black" />}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {m.name}
-                          </span>
-                          <span className="block truncate text-xs text-gray-400">{m.role}</span>
-                        </span>
-                      </button>
+                          <Avatar name={m.name} tone={on ? "accent" : "surface"} className={on ? "" : "opacity-50"} />
+                          {on && (
+                            <span className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-foreground text-background">
+                              <Check size={10} strokeWidth={3} />
+                            </span>
+                          )}
+                        </button>
+                        <div className={`min-w-0 flex-1 ${on ? "" : "opacity-50"}`}>
+                          <div className="truncate font-semibold">{m.name}</div>
+                          <div className="truncate text-sm text-muted-foreground">{m.role || "No role set"}</div>
+                        </div>
+                        <input
+                          type="time"
+                          value={callTimes[m.id] ?? ""}
+                          onChange={(e) => setCallTimes((t) => ({ ...t, [m.id]: e.target.value }))}
+                          disabled={!on}
+                          aria-label={`Call time for ${m.name}`}
+                          className="h-11 w-[104px] shrink-0 rounded-[10px] border border-field bg-card px-2 text-center text-[15px] tabular-nums outline-none focus:border-foreground focus:shadow-[0_0_0_3px_var(--focus)] disabled:opacity-40"
+                        />
+                      </li>
                     );
                   })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-4">
-              <StepHead icon={<MapPin size={15} />} title="Location" />
-              <div>
-                <label className={wLabel}>Location name</label>
-                <input
-                  type="text"
-                  value={locationName}
-                  onChange={(e) => setLocationName(e.target.value)}
-                  placeholder="Location 1"
-                  className={wInput}
-                />
+                </ul>
               </div>
-              <div>
-                <label className={wLabel}>Address</label>
-                <textarea
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  rows={3}
-                  placeholder="Full address"
-                  className={`${wInput} resize-none`}
-                />
-                {lastAddr && address === lastAddr && (
-                  <p className="mt-1 text-[11px] text-gray-400">Pre-filled from your last call sheet.</p>
-                )}
-              </div>
-            </div>
-          )}
+            )}
+            {next("Continue to schedule")}
+          </div>
+        )}
 
-          {step === 3 && (
-            <div className="space-y-3">
-              <StepHead icon={<Clock size={15} />} title="Schedule" />
-              <div className="grid grid-cols-3 gap-2">
-                {SCHEDULE_TEMPLATES.map((t) => (
+        {step === 3 && (
+          <div className="flex flex-col gap-6">
+            <FlowTitle sub="Start from a template. Every row can be edited on the call sheet.">How does the day run?</FlowTitle>
+            <div role="radiogroup" aria-label="Schedule template" className="flex gap-1 rounded-full bg-surface p-1">
+              {SCHEDULE_TEMPLATES.map((t) => {
+                const on = templateKey === t.key;
+                return (
                   <button
                     key={t.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
                     onClick={() => setTemplateKey(t.key)}
-                    className={`rounded-xl border px-2 py-2 text-xs font-medium transition-colors ${
- templateKey === t.key
- ? "border-foreground bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-gray-100"
- : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
- }`}
+                    className={`min-h-11 flex-1 rounded-full px-2 text-sm font-semibold transition-colors ${
+                      on ? "bg-background text-foreground shadow-[0_1px_2px_rgba(11,18,32,0.08)]" : "text-ink-2 hover:text-foreground"
+                    }`}
                   >
                     {t.label}
                   </button>
-                ))}
-              </div>
-              <div className="rounded-xl border border-gray-100 dark:border-gray-800 divide-y divide-gray-50 dark:divide-gray-800">
-                {template.rows.map((r, i) => (
-                  <div key={i} className="flex items-center gap-3 px-3 py-1.5 text-sm">
-                    <span className="tabular-nums text-gray-400 w-12">{r.time}</span>
-                    <span className="text-gray-700 dark:text-gray-300">{r.description}</span>
-                  </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          )}
+            <ol className="rounded-2xl bg-surface px-5 py-1 [&>*+*]:border-t [&>*+*]:border-line">
+              {template.rows.map((r, i) => (
+                <li key={i} className="flex items-center gap-4 py-3 text-[15px]">
+                  <span className="w-12 shrink-0 font-semibold tabular-nums">{r.time}</span>
+                  <span className="text-ink-2">{r.description}</span>
+                </li>
+              ))}
+            </ol>
+            {next("Review")}
+          </div>
+        )}
 
-          {step === 4 && (
-            <div className="space-y-3">
-              <StepHead icon={<ClipboardCheck size={15} />} title="Review" />
-              <dl className="space-y-2 text-sm">
-                <ReviewRow label="Title" value={shootTitle} />
-                <ReviewRow label="Type" value={typeLabel} />
-                <ReviewRow label="Date" value={shootDate || "—"} />
-                <ReviewRow label="Unit call" value={callTime} />
-                <ReviewRow label="Crew" value={`${chosenCrew.length} selected`} />
-                <ReviewRow label="Location" value={address || "—"} />
-                <ReviewRow label="Schedule" value={`${template.label} (${template.rows.length} rows)`} />
-              </dl>
+        {step === 4 && (
+          <div className="flex flex-col gap-6">
+            <FlowTitle sub="Check it over. It's saved as a draft, ready to finish and send.">Review the call sheet</FlowTitle>
+            <div className="rounded-2xl bg-surface px-5 py-2 [&>*+*]:border-t [&>*+*]:border-line">
+              <KV k="Title" v={shootTitle} />
+              <KV k="Type" v={typeLabel} />
+              <KV k="Date" v={longDate(shootDate) || "—"} />
+              <KV k="Unit call" v={callTime} />
+              <KV k="People" v={`${chosenCrew.length} on the sheet`} />
+              <KV k="Location" v={address || "—"} />
+              <KV k="Schedule" v={`${template.label}, ${template.rows.length} rows`} />
             </div>
-          )}
-        </div>
-
-        {/* Footer nav */}
-        <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 px-5 py-3">
-          <button
-            onClick={() => (step === 0 ? onClose() : setStep((s) => s - 1))}
-            disabled={busy}
-            className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
-          >
-            <ChevronLeft size={15} /> {step === 0 ? "Cancel" : "Back"}
-          </button>
-          {step < STEPS.length - 1 ? (
-            <button
-              onClick={() => setStep((s) => s + 1)}
-              disabled={!canNext}
-              className="inline-flex items-center gap-1 rounded-full bg-primary dark:bg-gray-100 px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-40"
-            >
-              Next <ChevronRight size={15} />
+            {error && (
+              <p role="alert" className="rounded-xl bg-bad-bg px-4 py-3 text-[15px] font-medium text-bad">
+                {error}
+              </p>
+            )}
+            <button type="button" onClick={create} disabled={busy} className={`${pill("primary")} w-full`}>
+              {busy ? "Creating…" : "Create call sheet"}
             </button>
-          ) : (
-            <button
-              onClick={create}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              {busy ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
-              Create call sheet
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const wLabel = "block mb-1.5 text-[13px] text-muted-foreground";
-const wInput =
-  "w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-focus focus:border-foreground";
-
-function StepHead({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <p className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
-      <span className="text-brand">{icon}</span> {title}
-    </p>
-  );
-}
-
-function ReviewRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-gray-50 dark:border-gray-800 pb-1.5">
-      <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</dt>
-      <dd className="text-sm text-gray-800 dark:text-gray-200 text-right">{value}</dd>
-    </div>
+          </div>
+        )}
+      </FlowFrame>
+    </Overlay>
   );
 }

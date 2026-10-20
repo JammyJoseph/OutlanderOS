@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { STRANDS, STRAND_LABELS, strandOf } from "@/lib/production-strand";
-import { Film, ChevronDown, Check, ExternalLink, Link2, Loader2 } from "lucide-react";
+import { ChevronDown, Check, ExternalLink, Link2, Loader2, Wand2 } from "lucide-react";
+import { pill } from "@/components/os";
 import {
   ProductionFull,
   PRODUCTION_STATUS_STYLES,
@@ -16,9 +18,13 @@ interface Props {
   onPatch: (patch: Record<string, unknown>) => void;
   saving: boolean;
   saved: boolean;
+  /** Opens the five-step call sheet wizard — the screen's one primary action. */
+  onNewCallSheet: () => void;
 }
 
-export default function ProjectHeader({ production, onPatch, saving, saved }: Props) {
+// The top of a project: where it came from, its title, then one row of pill
+// actions (redesign board 5.2). Title and client stay editable in place.
+export default function ProjectHeader({ production, onPatch, saving, saved, onNewCallSheet }: Props) {
   const [showStatus, setShowStatus] = useState(false);
   const [title, setTitle] = useState(production.title);
   const [client, setClient] = useState(getClientName(production));
@@ -52,12 +58,82 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
   }
 
   return (
-    <div className="bg-surface rounded-2xl p-6">
-      <div className="flex items-start gap-4">
-        <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5">
-          <Film size={22} className="text-brand" />
+    <section className="flex flex-col gap-5">
+      <div className="min-w-0">
+        <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-base text-muted-foreground">
+          <label className="min-w-0">
+            <span className="sr-only">Client</span>
+            <input
+              type="text"
+              value={client}
+              onChange={(e) => setClient(e.target.value)}
+              onBlur={() => {
+                if (client !== getClientName(production)) onPatch({ clientName: client });
+              }}
+              placeholder="Client name"
+              size={Math.max(8, client.length + 1)}
+              className="-ml-1 max-w-full rounded-md bg-transparent px-1 text-base text-muted-foreground outline-none placeholder:text-muted-foreground/60 hover:bg-surface focus:bg-surface"
+            />
+          </label>
+          {production.campaign && production.campaignId && (
+            <>
+              <span aria-hidden>·</span>
+              <Link
+                href={`/commercial/deals/${production.campaignId}`}
+                className="underline decoration-line underline-offset-4 hover:text-foreground hover:decoration-foreground"
+              >
+                {production.campaign.title} deal
+              </Link>
+            </>
+          )}
+          <span aria-hidden>·</span>
+          <div className="relative">
+            <button
+              onClick={() => setShowStatus((v) => !v)}
+              aria-haspopup="listbox"
+              aria-expanded={showStatus}
+              className="inline-flex h-7 items-center gap-1.5 rounded-full bg-surface px-3 text-xs font-semibold text-ink-2 transition-colors hover:bg-surface-2"
+            >
+              <span className={`size-2 rounded-full ${style.dot}`} />
+              {style.label}
+              <ChevronDown size={12} />
+            </button>
+            {showStatus && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowStatus(false)} />
+                <div role="listbox" className="absolute left-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-2xl bg-background p-1.5 shadow-[0_12px_32px_rgba(11,18,32,0.14)] ring-1 ring-line">
+                  {(STATUS_OPTIONS ?? []).map((s: ProductionStatus) => {
+                    const st = PRODUCTION_STATUS_STYLES[s];
+                    return (
+                      <button
+                        key={s}
+                        role="option"
+                        aria-selected={s === production.status}
+                        onClick={() => {
+                          setShowStatus(false);
+                          onPatch({ status: s });
+                        }}
+                        className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-[15px] text-foreground transition-colors hover:bg-surface"
+                      >
+                        <span className={`size-2 rounded-full ${st.dot}`} />
+                        {st.label}
+                        {s === production.status && <Check size={14} className="ml-auto" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+          <span
+            role="status"
+            className={`text-sm font-medium transition-opacity ${saving || saved ? "opacity-100" : "opacity-0"} ${saving ? "text-muted-foreground" : "text-ok"}`}
+          >
+            {saving ? "Saving…" : saved ? "Saved" : ""}
+          </span>
         </div>
-        <div className="flex-1 min-w-0">
+        <label className="block">
+          <span className="sr-only">Project title</span>
           <input
             type="text"
             value={title}
@@ -65,117 +141,51 @@ export default function ProjectHeader({ production, onPatch, saving, saved }: Pr
             onBlur={() => {
               if (title !== production.title) onPatch({ title });
             }}
-            placeholder="Untitled Project"
-            className="text-2xl font-semibold text-gray-900 tracking-tight bg-transparent border-none outline-none w-full placeholder-gray-300 -ml-1 px-1 rounded-md focus:bg-amber-50/40"
+            placeholder="Untitled project"
+            className="-ml-1 w-full rounded-lg bg-transparent px-1 text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] outline-none placeholder:text-muted-foreground/50 hover:bg-surface focus:bg-surface sm:text-4xl"
           />
-          <input
-            type="text"
-            value={client}
-            onChange={(e) => setClient(e.target.value)}
-            onBlur={() => {
-              if (client !== getClientName(production)) onPatch({ clientName: client });
-            }}
-            placeholder="Client name"
-            className="text-sm text-gray-500 bg-transparent border-none outline-none w-full placeholder-gray-300 -ml-1 px-1 mt-0.5 rounded-md focus:bg-amber-50/40"
-          />
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
-            <div className="relative">
-              <button
-                onClick={() => setShowStatus((v) => !v)}
-                className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full cursor-pointer ${style.bg} ${style.text}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-                {style.label}
-                <ChevronDown size={12} />
-              </button>
-              {showStatus && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowStatus(false)} />
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg z-50 overflow-hidden w-48 py-1">
-                    {(STATUS_OPTIONS ?? []).map((s: ProductionStatus) => {
-                      const st = PRODUCTION_STATUS_STYLES[s];
-                      return (
-                        <button
-                          key={s}
-                          onClick={() => {
-                            setShowStatus(false);
-                            onPatch({ status: s });
-                          }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 transition-colors text-left"
-                        >
-                          <span className={`w-2 h-2 rounded-full ${st.dot}`} />
-                          {st.label}
-                          {s === production.status && (
-                            <Check size={13} className="ml-auto text-brand" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-            {/* Strand — which part of the business this belongs to, and how the
-                Projects list groups it. Left on "Auto" the strand is worked out
-                from the project's data; setting it here is the only way to reach
-                White Label, since nothing in the data implies it. */}
-            <label className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className="sr-only">Strand</span>
-              <select
-                value={production.strand ?? ""}
-                onChange={(e) => onPatch({ strand: e.target.value })}
-                className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-focus dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
-                title="Which strand this project belongs to in the Projects list"
-              >
-                <option value="">Auto — {STRAND_LABELS[derivedStrand]}</option>
-                {STRANDS.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {production.campaign && (
-              <span className="text-xs text-gray-500">
-                Campaign: <span className="font-medium text-gray-700">{production.campaign.title}</span>
-              </span>
-            )}
-            {production.figmaUrl && (
-              <a
-                href={production.figmaUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
-              >
-                Figma <ExternalLink size={11} />
-              </a>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={copyInternalLink}
-            disabled={linking}
-            title="Copy an internal link to share this project with Outlander staff"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-          >
-            {linking ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : copied ? (
-              <Check size={13} className="text-emerald-600" />
-            ) : (
-              <Link2 size={13} />
-            )}
-            {copied ? "Copied!" : "Copy Internal Link"}
-          </button>
-          {saving && <span className="text-xs text-gray-400">Saving…</span>}
-          {!saving && saved && (
-            <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
-              <Check size={12} /> Saved
-            </span>
-          )}
-        </div>
+        </label>
       </div>
-    </div>
+
+      <div className="flex flex-wrap items-center gap-2.5">
+        <button onClick={onNewCallSheet} className={pill("primary")}>
+          <Wand2 /> New call sheet
+        </button>
+        <button
+          onClick={copyInternalLink}
+          disabled={linking}
+          title="Copy an internal link to share this project with Outlander staff"
+          className={pill("secondary")}
+        >
+          {linking ? <Loader2 className="animate-spin" /> : copied ? <Check /> : <Link2 />}
+          {copied ? "Link copied" : "Copy internal link"}
+        </button>
+        {production.figmaUrl && (
+          <a href={production.figmaUrl} target="_blank" rel="noopener noreferrer" className={pill("outline")}>
+            Figma <ExternalLink />
+          </a>
+        )}
+        {/* Strand — which part of the business this belongs to, and how the
+            Projects list groups it. Left on "Auto" the strand is worked out
+            from the project's data; setting it here is the only way to reach
+            White Label, since nothing in the data implies it. */}
+        <label className="flex items-center">
+          <span className="sr-only">Strand</span>
+          <select
+            value={production.strand ?? ""}
+            onChange={(e) => onPatch({ strand: e.target.value })}
+            className="h-11 cursor-pointer rounded-full bg-background px-4 text-[15px] font-semibold text-foreground shadow-[inset_0_0_0_1px_var(--field)] outline-none focus-visible:outline-2 focus-visible:outline-foreground"
+            title="Which strand this project belongs to in the Projects list"
+          >
+            <option value="">Strand: Auto — {STRAND_LABELS[derivedStrand]}</option>
+            {STRANDS.map((s) => (
+              <option key={s.key} value={s.key}>
+                Strand: {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </section>
   );
 }

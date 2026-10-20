@@ -164,10 +164,10 @@ export default function ClientsPage() {
                   {/* Logo + name row */}
                   <div className="flex items-center gap-3 mb-4">
                     <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white font-bold text-sm ${
-                        client.archived ? "grayscale" : ""
-                      }`}
-                      style={{ backgroundColor: client.brandColor ?? "#9C7C2E" }}
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-bold text-sm ${
+                        client.brandColor ? "text-white" : "bg-surface-2 text-foreground"
+                      } ${client.archived ? "grayscale" : ""}`}
+                      style={client.brandColor ? { backgroundColor: client.brandColor } : undefined}
                     >
                       {initials(client.name)}
                     </div>
@@ -177,7 +177,7 @@ export default function ClientsPage() {
                           className={`font-semibold truncate transition-colors ${
                             client.archived
                               ? "text-gray-500 dark:text-gray-400"
-                              : "text-gray-900 dark:text-gray-100 group-hover:text-[var(--portal-commercial)]"
+                              : "text-gray-900 dark:text-gray-100 group-hover:text-brand"
                           }`}
                         >
                           {client.name}
