@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { getOptionalAuthUser, isAdminInDb } from '@/lib/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { sendPasswordReset } from '@/lib/auth-email'
+import { hashResetToken } from '@/lib/password-policy'
 
 const TOKEN_TTL_MS = 60 * 60 * 1000
 
@@ -44,7 +45,8 @@ export async function POST(request: NextRequest) {
   const token = crypto.randomBytes(32).toString('hex')
   await prisma.user.update({
     where: { id: user.id },
-    data: { resetToken: token, resetTokenExpiry: new Date(Date.now() + TOKEN_TTL_MS) },
+    // Only the hash is stored. The raw token goes in the email and nowhere else.
+    data: { resetToken: hashResetToken(token), resetTokenExpiry: new Date(Date.now() + TOKEN_TTL_MS) },
   })
 
   // Absolute, because it goes in an email. NEXTAUTH_URL is the staff host —

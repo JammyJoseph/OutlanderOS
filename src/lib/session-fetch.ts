@@ -18,7 +18,10 @@ export class SessionExpiredError extends Error {
 }
 
 export function redirectToLogin(): void {
-  if (typeof window !== "undefined") window.location.href = "/login";
+  if (typeof window === "undefined") return;
+  // Come back to this page after signing in, not to the dashboard.
+  const here = window.location.pathname + window.location.search;
+  window.location.href = here && here !== "/login" ? `/login?next=${encodeURIComponent(here)}` : "/login";
 }
 
 // Fetches JSON, sending an expired session to /login and turning any other

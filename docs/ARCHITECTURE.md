@@ -20,8 +20,12 @@ past one instance.
 ```
 browser → proxy.ts (rate limit /api/*, allowlist public pages, redirect on missing cookie)
         → page  → layout guard (requireAdminPage for finance/admin)
-        → route → getCurrentUser() / withAuth / withAdmin → prisma
+        → route → getCurrentUser() / withAuth / withAdmin → resolveSession() → prisma
 ```
+
+All three auth helpers end in `resolveSession()` (`src/lib/session.ts`), which checks
+the token against the `User` row — active, and on the current `sessionVersion` — on
+every request. That is one indexed lookup by primary key; at seven staff it is free.
 
 `src/proxy.ts` is Next 16's renamed middleware. It gates *pages*; API routes each gate
 themselves. See `AGENTS.md` for the auth rules and the two known proxy weaknesses.
@@ -106,7 +110,10 @@ Nothing in the app calls Xero live any more. Three reasons:
 
 `XeroConnection` holds one row, id `singleton`. The access and refresh tokens are
 AES-256-GCM sealed under a key derived from `NEXTAUTH_SECRET` (`src/lib/secret-box.ts`),
-so **rotating `NEXTAUTH_SECRET` invalidates them and Xero must be re-consented.**
+so **rotating `NEXTAUTH_SECRET` invalidates them and Xero must be re-consented.** The
+same goes for every user's Google tokens (sealed the same way since 2026-10-20 — a
+rotation means each person reconnects Google) and for every session (all staff sign in
+again).
 Expiry is a `DateTime`, not a number — the previous store wrote milliseconds and
 compared seconds, so its refresh never fired once.
 

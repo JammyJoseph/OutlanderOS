@@ -30,6 +30,26 @@ model User {
   // Onboarding: new staff get a temporary password and must change it on first
   // login; hasSeenWelcome gates the one-time welcome screen after that.
   mustChangePassword Boolean @default(false)
+
+  // Bumped whenever this person's existing sessions must stop working: a
+  // password change or reset, deactivation, a change of role, or "sign out
+  // everywhere". Every session token carries the version it was issued under,
+  // and a request whose token is behind is refused.
+  //
+  // Before this existed, a session was a signed token and nothing more. The app
+  // never asked the database whether the person still existed, was still
+  // active, or was still an admin — verified 2026-10-20 by presenting a token
+  // for a user who had never existed, claiming ADMIN, and getting 200 from the
+  // admin user list. A deactivated member of staff kept full access for the
+  // rest of their 30-day cookie, and a stolen cookie could not be revoked.
+  sessionVersion Int @default(0)
+
+  // Failed sign-ins, for per-account throttling. Kept on the row rather than in
+  // the in-memory IP limiter because the IP limiter can be dodged by an attacker
+  // who rotates addresses, and an account under attack should slow down no
+  // matter where the guesses come from.
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
   hasSeenWelcome     Boolean @default(false)
   // Smart-tip ids this user has dismissed. On the user, not localStorage, so
   // "got it" survives browsers and devices. Guardrail dialogs are deliberately

@@ -5,7 +5,7 @@ import { isAdminInDb } from '@/lib/auth'
 import { parsePagination, paginate } from '@/lib/pagination'
 
 export async function GET(request: NextRequest) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ data: [], total: 0, page: 1, pages: 1, unreadCount: 0 }, { status: 401 })
 
   try {
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json()
   if (!body.userId || !body.type || !body.message) {

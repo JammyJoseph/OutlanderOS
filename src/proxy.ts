@@ -5,6 +5,17 @@ import { rateLimitResponse } from '@/lib/rate-limit'
 const STATIC_ASSET =
   /\.(?:ico|png|jpe?g|gif|svg|webp|avif|css|js|map|woff2?|ttf|otf|eot|txt|xml|webmanifest|pdf)$/i
 
+// Sends a signed-out visitor to sign in, remembering where they were going so
+// a link from an email lands on the page it pointed to rather than the
+// dashboard. Only the path and query are kept — never a host — and the login
+// page refuses anything that is not a path on this site.
+function toLogin(request: NextRequest): NextResponse {
+  const { pathname, search } = request.nextUrl
+  const url = new URL('/login', request.url)
+  if (pathname !== '/' && pathname !== '/login') url.searchParams.set('next', pathname + search)
+  return NextResponse.redirect(url)
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -36,7 +47,7 @@ export function proxy(request: NextRequest) {
 
   const token = request.cookies.get('auth_token')?.value
   if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return toLogin(request)
   }
 
   try {
@@ -48,7 +59,7 @@ export function proxy(request: NextRequest) {
     // userId — without this check it reaches the page, fails jwt.verify there,
     // and the user sees an empty portal instead of the login screen.
     if (typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now()) {
-      const expired = NextResponse.redirect(new URL('/login', request.url))
+      const expired = toLogin(request)
       expired.cookies.delete('auth_token')
       expired.cookies.delete('must_change_pw')
       return expired
@@ -69,7 +80,7 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/hub', request.url))
     }
   } catch {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return toLogin(request)
   }
 
   return NextResponse.next()

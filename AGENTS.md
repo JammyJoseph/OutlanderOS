@@ -27,19 +27,36 @@ deliberately removed (commit `239334d`) — do not reintroduce a notification be
 ## Auth
 
 Custom email/password → bcrypt (10 rounds) → 30-day JWT in an httpOnly `auth_token` cookie.
-NextAuth is installed and partly configured but is **not** the live login path.
+NextAuth was removed in July; there is no other login path.
 
 - Page gating: `src/proxy.ts` (Next 16's renamed middleware). Public paths are allowlisted
   explicitly — `/login`, `/reset-password`, `/auth/google/callback`, `/call-sheet/*`.
   **Anything not listed redirects to `/login`.** New public pages must be added there.
 - API gating: each route calls `getCurrentUser()` or the `withAuth`/`withAdmin` wrappers in
   `src/lib/auth.ts`. 130 of 139 routes authenticate; the 9 that don't are intentional.
-- **The JWT bakes `role` in at login.** A user promoted to ADMIN still carries `MEMBER` until
-  they sign in again. Server-side role gates must use `isAdminInDb(user)`, never
-  `user.role === 'ADMIN'`. This has caused real bugs ("can't unlock budget as admin").
+- **Every session is checked against the database, every request** (`src/lib/session.ts`,
+  since 2026-10-20). `resolveSession()` verifies the JWT, then loads the user: a deleted or
+  deactivated account, or a token whose `sv` claim doesn't match `User.sessionVersion`, is
+  signed out. `role`, `name` and `email` come from the row, not the token — so
+  `user.role === 'ADMIN'` is now correct server-side, and `isAdminInDb` is belt-and-braces.
+  All three helpers (`getCurrentUser`, `withAuth`/`withAdmin`, `requireAdminPage`) go
+  through it; **never call `jwt.verify` on `auth_token` directly**. Before this, a forged
+  or stale token for a deleted user was accepted, and deactivated staff kept 30 days' access.
+- **`endAllSessions(userId)` signs someone out everywhere.** Called on password change
+  (re-issues the caller's own cookie so they stay in), reset, an admin setting a password,
+  a role change, and deactivation. Tokens issued before `sv` existed count as version 0.
+- Passwords: one rule for every path, `passwordProblem()` in `src/lib/password-policy.ts`
+  (10+ characters, no top-guess passwords, no email name). An admin-set password is always
+  temporary — it sets `mustChangePassword`. Reset tokens are stored as SHA-256 hashes.
+- Lockout: 8 wrong passwords locks the account for 15 min (`failedLoginCount`/`lockedUntil`),
+  on top of 5 attempts/min per address in `proxy.ts`. The per-address key is nginx's
+  `X-Real-IP` — never the first `X-Forwarded-For` hop, which the client writes.
 - `proxy.ts` decodes the JWT with `atob` **without verifying the signature** — it is a UX
-  redirect, not a security boundary. Real enforcement is `requireAdminPage()` in the
-  `finance` and `admin` layouts.
+  redirect, not a security boundary (middleware can't reach the database). Real
+  enforcement is `requireAdminPage()` in the `finance` and `admin` layouts.
+- Signed-out screens (`/login`, `/reset-password`, forced `/me/change-password`) share
+  `src/components/auth/` — labelled fields, announced errors, 44px targets. Build any new
+  signed-out screen from those parts rather than hand-rolling inputs.
 
 ## Data conventions
 

@@ -6,7 +6,7 @@ import { businessDaysBetween } from '@/lib/holiday'
 const ALLOWED_TYPES = ['ANNUAL', 'SICK', 'PERSONAL', 'OTHER']
 
 export async function GET(request: NextRequest) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()

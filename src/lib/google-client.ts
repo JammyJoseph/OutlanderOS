@@ -8,7 +8,8 @@ export function createOAuth2Client() {
   )
 }
 
-export function getAuthUrl(accountLabel: string) {
+/** `state` is a signed token from oauth-state.ts, never a bare label. */
+export function getAuthUrl(state: string) {
   const client = createOAuth2Client()
   return client.generateAuthUrl({
     access_type: 'offline',
@@ -21,7 +22,7 @@ export function getAuthUrl(accountLabel: string) {
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile',
     ],
-    state: accountLabel,
+    state,
   })
 }
 

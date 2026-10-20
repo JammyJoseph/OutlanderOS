@@ -20,7 +20,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
@@ -42,7 +42,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (me.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 

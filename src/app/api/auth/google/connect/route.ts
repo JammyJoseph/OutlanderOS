@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
-import { getJwtSecret } from "@/lib/jwt-secret"
 import { withAuth } from '@/lib/auth'
+import { signOAuthState } from '@/lib/oauth-state'
 import {
   createUserOAuthClient,
   googleRedirectIsHosted,
@@ -10,9 +9,9 @@ import {
 
 
 // Generates the Google OAuth consent URL for the signed-in user. The `state`
-// is a short-lived JWT identifying who is connecting.
+// is a short-lived signed token identifying who is connecting — see oauth-state.ts.
 export const GET = withAuth(async (_request: NextRequest, _ctx, user) => {
-  const state = jwt.sign({ userId: user.userId }, getJwtSecret(), { expiresIn: '1h' })
+  const state = signOAuthState({ userId: user.userId })
 
   const client = createUserOAuthClient()
   const authUrl = client.generateAuthUrl({

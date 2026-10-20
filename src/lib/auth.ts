@@ -1,6 +1,5 @@
 import type { NextRequest } from "next/server"
-import jwt from "jsonwebtoken"
-import { getJwtSecret } from "@/lib/jwt-secret"
+import { resolveSession } from "@/lib/session"
 
 // ===== JWT AUTH HELPERS (custom email/password login) =====
 // The portal logs users in via /api/auth/login, which issues a signed JWT
@@ -30,22 +29,12 @@ function readAuthToken(request: Request): string | null {
   return match ? decodeURIComponent(match[1]) : null
 }
 
-// Returns the authenticated user, or null when no valid token is present.
+// Returns the authenticated user, or null when no valid session is present.
+// Delegates to resolveSession, which checks the database on every call — the
+// token alone is never trusted for identity, role or whether the account is
+// still active. See src/lib/session.ts for why.
 export async function getOptionalAuthUser(request: Request): Promise<AuthUser | null> {
-  const token = readAuthToken(request)
-  if (!token) return null
-  try {
-    const payload = jwt.verify(token, getJwtSecret()) as jwt.JwtPayload
-    if (!payload?.userId) return null
-    return {
-      userId: String(payload.userId),
-      email: String(payload.email ?? ""),
-      role: String(payload.role ?? "MEMBER"),
-      name: String(payload.name ?? ""),
-    }
-  } catch {
-    return null
-  }
+  return resolveSession(readAuthToken(request))
 }
 
 // Returns the authenticated user, or throws AuthError(401).

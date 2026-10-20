@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/current-user'
 import { isAdminInDb } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // DB role, not JWT — the JWT role can be stale after a promotion.

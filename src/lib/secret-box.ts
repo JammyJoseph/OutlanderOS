@@ -103,3 +103,27 @@ export function decrypt(payload: string): string {
 export function looksEncrypted(value: string): boolean {
   return value.startsWith(`${VERSION}.`) && value.split('.').length === 4
 }
+
+/**
+ * Seals an optional value, preserving `undefined` and `null` exactly.
+ *
+ * The distinction matters for OAuth refresh tokens: Google omits the refresh
+ * token on a re-consent, and Prisma treats `undefined` as "leave this column
+ * alone" but `null` as "clear it". Turning undefined into null here would wipe
+ * a working refresh token every time somebody reconnected.
+ */
+export function sealOptional<T extends string | null | undefined>(value: T): T {
+  return (value ? encrypt(value) : value) as T
+}
+
+/**
+ * Opens an optional value, accepting legacy plaintext.
+ *
+ * Columns that predate encryption still hold plaintext. Reading those as-is
+ * means nobody has to reconnect anything when this ships; the caller re-seals
+ * on its next write, and a one-off migration converts the rest.
+ */
+export function openOptional(value: string | null | undefined): string | null {
+  if (!value) return null
+  return looksEncrypted(value) ? decrypt(value) : value
+}

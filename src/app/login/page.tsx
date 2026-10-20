@@ -1,282 +1,204 @@
 'use client'
-import { Suspense, useMemo, useState } from 'react'
+
+// Sign in, and "forgot password", as two separate forms on one page.
+//
+// They used to share a single <form>, so pressing Enter in the forgot-password
+// box submitted the LOGIN form — with an empty password — and answered with a
+// login error. Two forms, each with its own submit, means Enter does what the
+// box you are typing in is for.
+//
+// The page never shows a reset link. The old one could display a live link on
+// screen for an admin; a reset link is a credential, and it belongs in the
+// inbox of the person it is for.
+
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { AuthHeading, AuthShell } from '@/components/auth/AuthShell'
+import {
+  AuthAlert,
+  AuthButton,
+  AuthField,
+  AuthLinkButton,
+  AuthNotice,
+} from '@/components/auth/AuthField'
 
-// Deterministic pseudo-random so the star field is identical on server and
-// client (no hydration mismatch) but still looks scattered.
-function mulberry32(seed: number) {
-  return function () {
-    seed |= 0
-    seed = (seed + 0x6d2b79f5) | 0
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
+type View = 'signin' | 'forgot' | 'sent'
 
-interface Star {
-  top: number
-  left: number
-  size: number
-  delay: number
-  duration: number
-  opacity: number
-}
+function SignIn() {
+  const router = useRouter()
+  const params = useSearchParams()
+  const justReset = params.get('reset') === '1'
 
-function useStars(count: number): Star[] {
-  return useMemo(() => {
-    const rand = mulberry32(20260630)
-    return Array.from({ length: count }, () => ({
-      top: rand() * 100,
-      left: rand() * 100,
-      size: rand() * 1.6 + 0.6,
-      delay: rand() * 6,
-      duration: rand() * 3 + 2.5,
-      opacity: rand() * 0.5 + 0.3,
-    }))
-  }, [count])
-}
-
-function ResetSuccessBanner() {
-  const done = useSearchParams().get('reset') === '1'
-  if (!done) return null
-  return (
-    <div className="mb-4 text-sm text-[#7ddca4] bg-[#7ddca4]/10 border border-[#7ddca4]/20 rounded-lg px-3 py-2">
-      Password updated. Sign in with your new password.
-    </div>
-  )
-}
-
-export default function LoginPage() {
+  const [view, setView] = useState<View>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [forgotOpen, setForgotOpen] = useState(false)
-  const [forgotEmail, setForgotEmail] = useState('')
-  const [forgotSending, setForgotSending] = useState(false)
-  const [forgotMessage, setForgotMessage] = useState('')
-  const [forgotLink, setForgotLink] = useState('')
-  const router = useRouter()
-  const stars = useStars(90)
+  const [busy, setBusy] = useState(false)
+  const heading = useRef<HTMLHeadingElement>(null)
 
-  async function handleForgot(e: React.FormEvent) {
-    e.preventDefault()
-    setForgotSending(true)
-    setForgotMessage('')
-    setForgotLink('')
-    try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail }),
-      })
-      const data = await res.json()
-      setForgotMessage(data.message || data.error || 'Something went wrong')
-      if (data.link) setForgotLink(data.link)
-    } catch {
-      setForgotMessage('Connection error')
+  // Move focus to the new heading whenever the view changes, so a screen reader
+  // announces where you are instead of leaving focus on a button that vanished.
+  const firstRender = useRef(true)
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
     }
-    setForgotSending(false)
+    heading.current?.focus()
+  }, [view])
+
+  const go = (next: View) => {
+    setError('')
+    setView(next)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function signIn(e: React.FormEvent) {
     e.preventDefault()
+    if (busy) return
     setError('')
-    setLoading(true)
+    setBusy(true)
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Login failed'); setLoading(false); return }
-      router.push(data.mustChangePassword ? '/me/change-password' : '/me')
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || 'Something went wrong. Try again.')
+        setBusy(false)
+        return
+      }
+      const next = params.get('next')
+      // Only ever a path on this site, never somewhere else.
+      const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/me'
+      router.push(data.mustChangePassword ? '/me/change-password' : safeNext)
       router.refresh()
-    } catch { setError('Connection error'); setLoading(false) }
+    } catch {
+      setError("Can't reach Outlander OS. Check your connection and try again.")
+      setBusy(false)
+    }
+  }
+
+  async function requestReset(e: React.FormEvent) {
+    e.preventDefault()
+    if (busy) return
+    setError('')
+    setBusy(true)
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Something went wrong. Try again.')
+      } else {
+        setView('sent')
+      }
+    } catch {
+      setError("Can't reach Outlander OS. Check your connection and try again.")
+    }
+    setBusy(false)
+  }
+
+  if (view === 'sent') {
+    return (
+      <>
+        <AuthHeading focusRef={heading} sub={<>If <strong className="text-foreground">{email}</strong> has an account, a reset link is on its way. It works for one hour.</>}>
+          Check your email
+        </AuthHeading>
+        <p className="mb-8 text-sm text-muted-foreground">
+          Nothing after a few minutes? Look in your spam folder, then try again.
+        </p>
+        <AuthLinkButton onClick={() => go('signin')}>Back to sign in</AuthLinkButton>
+      </>
+    )
+  }
+
+  if (view === 'forgot') {
+    return (
+      <>
+        <AuthHeading focusRef={heading} sub="We'll email you a link to choose a new one.">
+          Reset your password
+        </AuthHeading>
+        <AuthAlert>{error}</AuthAlert>
+        <form onSubmit={requestReset} className="grid gap-5" noValidate>
+          <AuthField
+            id="reset-email"
+            label="Email"
+            type="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
+            inputMode="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <AuthButton busy={busy} busyLabel="Sending…">
+            Send reset link
+          </AuthButton>
+        </form>
+        <div className="mt-6">
+          <AuthLinkButton onClick={() => go('signin')}>Back to sign in</AuthLinkButton>
+        </div>
+      </>
+    )
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#05060a]">
-      {/* ── Ambient night sky ─────────────────────────────────────────── */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Deep gradient backdrop */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_30%,#10131f_0%,#05060a_55%,#020308_100%)]" />
-
-        {/* Star field */}
-        {stars.map((s, i) => (
-          <span
-            key={i}
-            className="absolute rounded-full bg-white login-twinkle"
-            style={{
-              top: `${s.top}%`,
-              left: `${s.left}%`,
-              width: `${s.size}px`,
-              height: `${s.size}px`,
-              opacity: s.opacity,
-              animationDelay: `${s.delay}s`,
-              animationDuration: `${s.duration}s`,
-            }}
-          />
-        ))}
-
-        {/* Moon — glowing orb, top-right, gently drifting */}
-        <div className="absolute right-[8%] top-[12%] login-moon-float">
-          <div
-            className="relative h-[200px] w-[200px] rounded-full"
-            style={{
-              background:
-                'radial-gradient(circle at 35% 30%, #ffffff 0%, #e8edf7 35%, #b9c4dc 70%, #8a98bd 100%)',
-              boxShadow:
-                '0 0 60px 18px rgba(190,205,255,0.35), 0 0 140px 50px rgba(120,150,255,0.18), inset -18px -14px 40px rgba(60,72,110,0.55)',
-            }}
-          >
-            {/* Soft craters */}
-            <span className="absolute left-[28%] top-[30%] h-5 w-5 rounded-full bg-[#9aa6c4]/40" />
-            <span className="absolute left-[58%] top-[55%] h-7 w-7 rounded-full bg-[#9aa6c4]/30" />
-            <span className="absolute left-[44%] top-[68%] h-3.5 w-3.5 rounded-full bg-[#9aa6c4]/35" />
-
-            {/* Flagpole + waving Outlander flag, planted on the moon */}
-            <div className="absolute left-1/2 top-[-58px] -translate-x-1/2">
-              <div className="relative h-[64px] w-[2px] bg-gradient-to-b from-[#f2f4fa] to-[#aab2c8]">
-                <span className="absolute left-1/2 top-[-3px] h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#9C7C2E] shadow-[0_0_6px_#9C7C2E]" />
-                <div className="absolute left-[2px] top-0 origin-left login-flag-wave">
-                  <div className="flex h-[26px] w-[38px] items-center justify-center rounded-r-[3px] bg-gradient-to-r from-[#9C7C2E] to-[#C9A44A] shadow-md">
-                    <span className="font-extrabold text-[15px] leading-none text-black">O</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Subtle colour washes for depth */}
-        <div className="absolute -bottom-40 -left-40 h-[480px] w-[480px] rounded-full bg-[#2F4B8F]/8 blur-3xl" />
-        <div className="absolute -top-32 -right-24 h-[420px] w-[420px] rounded-full bg-[#6B4E8E]/8 blur-3xl" />
+    <>
+      <AuthHeading focusRef={heading} sub="Use your Outlander email address.">
+        Sign in
+      </AuthHeading>
+      {justReset && !error && <AuthNotice>Password changed. Sign in with your new one.</AuthNotice>}
+      <AuthAlert>{error}</AuthAlert>
+      <form onSubmit={signIn} className="grid gap-5" noValidate>
+        <AuthField
+          id="email"
+          label="Email"
+          type="email"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          inputMode="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <AuthField
+          id="password"
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <AuthButton busy={busy} busyLabel="Signing in…">
+          Sign in
+        </AuthButton>
+      </form>
+      {/* After the button, not in the password label row: there it sat between
+          the two fields in tab order, so Tab from Email landed on this link. */}
+      <div className="mt-6">
+        <AuthLinkButton onClick={() => go('forgot')}>Forgot your password?</AuthLinkButton>
       </div>
+      <p className="mt-10 text-sm text-muted-foreground">
+        New here, or locked out? An admin can set you up or reset your access.
+      </p>
+    </>
+  )
+}
 
-      {/* ── Login card ─────────────────────────────────────────────────── */}
-      <div className="relative w-full max-w-sm px-4">
-        <div className="text-center mb-8">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-400 mb-2">Outlander Magazine</p>
-          {/* Always the white-fill cut: this page sits on the space backdrop in
-              both themes, so it can't follow the dark: variant. */}
-          <h1>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/OutlanderOS_Logo_Dark.svg"
-              alt="OutlanderOS"
-              className="mx-auto h-8 w-auto"
-            />
-          </h1>
-          <p className="text-sm text-gray-400 mt-2">Sign in to your workspace</p>
-        </div>
-        <Suspense fallback={null}>
-          <ResetSuccessBanner />
-        </Suspense>
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-[#2a2a2a] bg-[#0e1018]/80 p-6 shadow-2xl shadow-black/50 backdrop-blur-md space-y-4">
-          {error && <div className="text-sm text-[#ff6b6b] bg-[#ff6b6b]/10 border border-[#ff6b6b]/20 rounded-lg px-3 py-2">{error}</div>}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username"
-              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all"
-              placeholder="you@outlandermag.com" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all" />
-          </div>
-          <button type="submit" disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black font-semibold text-sm hover:brightness-110 disabled:opacity-50 transition-all duration-200">
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-
-          <div className="pt-1 border-t border-[#2a2a2a]">
-            {!forgotOpen ? (
-              <button
-                type="button"
-                onClick={() => { setForgotOpen(true); setForgotEmail(email) }}
-                className="mt-3 text-xs text-gray-400 hover:text-gray-200 transition-colors"
-              >
-                Forgot password?
-              </button>
-            ) : (
-              <div className="mt-3 space-y-2">
-                <label className="block text-xs font-medium text-gray-400">
-                  Enter your email to generate a reset link
-                </label>
-                <input
-                  type="email"
-                  value={forgotEmail}
-                  onChange={e => setForgotEmail(e.target.value)}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  placeholder="you@outlandermag.com"
-                  className="w-full px-3 py-2 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all"
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleForgot}
-                    disabled={forgotSending || !forgotEmail}
-                    className="flex-1 py-2 rounded-lg border border-[#2a2a2a] text-gray-200 text-xs font-semibold hover:bg-[#161922] disabled:opacity-50 transition-all"
-                  >
-                    {forgotSending ? 'Sending...' : 'Send reset link'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setForgotOpen(false); setForgotMessage(''); setForgotLink('') }}
-                    className="px-3 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-                {forgotMessage && (
-                  <p className="text-xs text-gray-400 leading-relaxed">{forgotMessage}</p>
-                )}
-                {forgotLink && (
-                  <div className="rounded-lg border border-[#9C7C2E]/30 bg-[#9C7C2E]/10 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-wider text-[#C9A44A] mb-1">
-                      Admin only — reset link
-                    </p>
-                    <code className="block break-all text-[11px] text-gray-200">{forgotLink}</code>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </form>
-        <p className="mt-6 text-center text-[11px] text-gray-500">Internal operating system · Outlander Magazine</p>
-      </div>
-
-      <style>{`
-        @keyframes loginTwinkle {
-          0%, 100% { opacity: 0.25; transform: scale(0.85); }
-          50%      { opacity: 1;    transform: scale(1.1); }
-        }
-        .login-twinkle { animation-name: loginTwinkle; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
-
-        @keyframes loginMoonFloat {
-          0%, 100% { transform: translateY(0); }
-          50%      { transform: translateY(-3px); }
-        }
-        .login-moon-float { animation: loginMoonFloat 5s ease-in-out infinite; }
-
-        @keyframes loginFlagWave {
-          0%, 100% { transform: rotate(-2deg) skewX(0deg) scaleY(1); }
-          35%      { transform: rotate(1.5deg) skewX(-5deg) scaleY(0.97); }
-          65%      { transform: rotate(-1deg) skewX(4deg) scaleY(1.02); }
-        }
-        .login-flag-wave { animation: loginFlagWave 3.2s ease-in-out infinite; }
-
-        @media (prefers-reduced-motion: reduce) {
-          .login-twinkle, .login-moon-float, .login-flag-wave { animation: none !important; }
-        }
-      `}</style>
-    </div>
+export default function LoginPage() {
+  return (
+    <AuthShell>
+      <Suspense fallback={null}>
+        <SignIn />
+      </Suspense>
+    </AuthShell>
   )
 }

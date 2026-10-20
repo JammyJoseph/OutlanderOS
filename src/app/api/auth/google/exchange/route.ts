@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sealOptional } from '@/lib/secret-box'
 import { google } from 'googleapis'
 import prisma from '@/lib/prisma'
 import { withAuth } from '@/lib/auth'
@@ -42,8 +43,8 @@ export const POST = withAuth(async (request: NextRequest, _ctx, user) => {
     await prisma.user.update({
       where: { id: user.userId },
       data: {
-        googleAccessToken: tokens.access_token,
-        googleRefreshToken: tokens.refresh_token,
+        googleAccessToken: sealOptional(tokens.access_token),
+        googleRefreshToken: sealOptional(tokens.refresh_token),
         googleTokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
         googleEmail: email,
         googleConnected: true,

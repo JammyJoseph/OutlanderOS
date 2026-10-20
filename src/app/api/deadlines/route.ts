@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
 
 export async function GET(request: NextRequest) {
-  const me = getCurrentUser(request);
+  const me = await getCurrentUser(request);
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const me = getCurrentUser(request);
+  const me = await getCurrentUser(request);
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {

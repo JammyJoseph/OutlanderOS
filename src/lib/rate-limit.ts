@@ -36,10 +36,26 @@ export function checkRateLimit(
   return { ok: true, retryAfter: 0 }
 }
 
+// The client's address, as nginx saw it.
+//
+// X-Real-IP first, because nginx SETS it from $remote_addr, overwriting anything
+// the client sent. The old code read the first entry of X-Forwarded-For — which
+// is the one the client writes, since nginx only appends. Verified on production
+// 2026-10-20: a different X-Forwarded-For on each request walked straight past
+// the login limit, eight attempts in a row, none refused.
+//
+// The fallback is the LAST X-Forwarded-For entry, the one nginx appended. The
+// app port is also bound to localhost and firewalled, so nothing reaches it
+// without passing through nginx first.
 export function getClientIp(request: Request): string {
+  const real = request.headers.get("x-real-ip")
+  if (real) return real.trim()
   const forwarded = request.headers.get("x-forwarded-for")
-  if (forwarded) return forwarded.split(",")[0].trim()
-  return request.headers.get("x-real-ip") || "local"
+  if (forwarded) {
+    const hops = forwarded.split(",").map((h) => h.trim()).filter(Boolean)
+    if (hops.length) return hops[hops.length - 1]
+  }
+  return "local"
 }
 
 // Expensive AI/Claude-backed endpoints get a tighter budget.

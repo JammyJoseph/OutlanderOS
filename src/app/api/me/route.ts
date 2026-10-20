@@ -24,7 +24,7 @@ const SELECT = {
 } as const
 
 export async function GET(request: NextRequest) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ user: null }, { status: 401 })
   try {
     const user = await prisma.user.findUnique({
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest) {
 // PATCH — lightweight preference updates (currently the theme toggle). Kept
 // separate from PUT so a theme change never touches profile/admin fields.
 export async function PATCH(request: NextRequest) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json().catch(() => ({}))

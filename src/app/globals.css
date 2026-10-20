@@ -97,6 +97,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-hero: var(--hero);
+  --color-on-hero: var(--on-hero);
+  --color-hero-tint: var(--hero-tint);
+  --color-hero-ink: var(--hero-ink);
   /* Acumin Pro is the UI face; Manrope stays as the loaded fallback */
   --font-sans: "Acumin Pro", var(--font-manrope), system-ui, sans-serif;
   --font-mono: var(--font-mono), 'Courier New', monospace;
@@ -192,6 +196,16 @@
   --sidebar-accent-foreground: #111111;
   --sidebar-border: #e8e8e6;
   --sidebar-ring: #111111;
+
+  /* ── Hero ──────────────────────────────────────────────────────────────
+     The one brand colour, used at full strength for blocks and the primary
+     action. Klein by default (see the redesign direction). Changing the hero
+     colour is these two lines; everything else derives from them.
+     --on-hero is the ink that sits on a hero block. */
+  --hero: #2440F0;
+  --on-hero: #FFFFFF;
+  --hero-tint: color-mix(in oklab, var(--hero) 12%, var(--card));
+  --hero-ink: color-mix(in oklab, var(--hero) 62%, var(--foreground));
 }
 
 /* ===== DARK THEME — applied when <html class="dark"> =====

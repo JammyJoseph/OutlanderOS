@@ -32,7 +32,7 @@ async function loadOwnedTask(id: string, userId: string, isAdmin: boolean) {
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
   const owned = await loadOwnedTask(id, me.userId, me.role === 'ADMIN')
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 async function updateTask(request: NextRequest, params: Promise<{ id: string }>) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
   const owned = await loadOwnedTask(id, me.userId, me.role === 'ADMIN')
@@ -93,7 +93,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
   const owned = await loadOwnedTask(id, me.userId, me.role === 'ADMIN')

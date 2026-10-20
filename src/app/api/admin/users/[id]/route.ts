@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { endAllSessions } from "@/lib/session";
+import { passwordProblem } from "@/lib/password-policy";
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/auth";
 import bcrypt from "bcryptjs";
@@ -71,13 +73,15 @@ export const PATCH = withAdmin(async (
     }
     if (typeof body.holidayAllowance === "number") data.holidayAllowance = body.holidayAllowance;
     if (typeof body.password === "string" && body.password) {
-      if (body.password.length < 6) {
-        return NextResponse.json(
-          { error: "Password must be at least 6 characters" },
-          { status: 400 }
-        );
-      }
+      const problem = passwordProblem(body.password);
+      if (problem) return NextResponse.json({ error: problem }, { status: 400 });
       data.password = await bcrypt.hash(body.password, 10);
+      // A password set by somebody else is a temporary one. The person has to
+      // choose their own the next time they sign in, so nobody keeps knowing a
+      // colleague's password. This used to be permanent, at six characters.
+      data.mustChangePassword = true;
+      data.failedLoginCount = 0;
+      data.lockedUntil = null;
     }
 
     if (Object.keys(data).length === 0) {
@@ -89,6 +93,13 @@ export const PATCH = withAdmin(async (
       data,
       select: STAFF_SELECT,
     });
+
+    // A new password, a change of role, or being switched off ends every
+    // session this person has, on every device, on their very next request.
+    // Before this, all three left an existing 30-day cookie working.
+    if ("password" in data || "role" in data || data.isActive === false) {
+      await endAllSessions(id);
+    }
 
     return NextResponse.json(user);
   } catch (err) {

@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
+import { resolveSession } from "@/lib/session";
 import { redirect } from "next/navigation";
-import jwt from "jsonwebtoken";
-import { getJwtSecret } from "@/lib/jwt-secret"
 import prisma from "@/lib/prisma";
 
 const OUTLANDER_DOMAIN = "@outlandermag.com";
@@ -26,16 +25,8 @@ export default async function ProductionSharePage({
 }) {
   const { token } = await params;
 
-  const authToken = (await cookies()).get("auth_token")?.value;
-  let email = "";
-  if (authToken) {
-    try {
-      const payload = jwt.verify(authToken, getJwtSecret()) as { email?: string };
-      email = String(payload?.email ?? "");
-    } catch {
-      email = "";
-    }
-  }
+  const viewer = await resolveSession((await cookies()).get("auth_token")?.value);
+  const email = viewer?.email ?? "";
 
   if (!email) {
     redirect(`/login?next=${encodeURIComponent(`/production/share/${token}`)}`);

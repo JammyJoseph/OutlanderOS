@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
-import { getJwtSecret } from "@/lib/jwt-secret"
+import { sealOptional } from '@/lib/secret-box'
 import { google } from 'googleapis'
 import prisma from '@/lib/prisma'
 import { createOAuth2Client } from '@/lib/google-client'
 import { createUserOAuthClient } from '@/lib/google-user-auth'
 import { setToken } from '@/lib/token-store'
+import { getCurrentUser } from '@/lib/current-user'
+import { readOAuthState } from '@/lib/oauth-state'
 
 
 // Redirects here are RELATIVE on purpose.
@@ -24,32 +25,29 @@ function back(path: string) {
   return new NextResponse(null, { status: 307, headers: { Location: path } })
 }
 
-// Single Google OAuth callback for both flows:
-//  - App-level: `state` is an account label (e.g. "primary"); tokens go to the
-//    shared token store.
-//  - Per-user: `state` is a short-lived JWT carrying the signed-in user's id
-//    (minted by /api/auth/google/connect); tokens are stored on that user's
-//    record. Per-user redirects normally land on an unreachable localhost page
-//    where the user copies the code manually, but if this handler is reached
-//    with a valid JWT state it completes the connection directly.
+// Single Google OAuth callback for both flows. `state` is always a signed token
+// from oauth-state.ts naming who started the flow:
+//  - Shared account (`state.account` set, e.g. "primary"): tokens go to the
+//    shared token store. Admins only.
+//  - Per-user (no account): tokens are stored on that user's record.
+//
+// Either way the browser finishing the flow must be signed in as the person who
+// started it. This route used to accept a bare label from anyone, signed in or
+// not, so any Google code for this app could overwrite the shared account.
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
-  const state = request.nextUrl.searchParams.get('state') || 'primary'
+  const state = readOAuthState(request.nextUrl.searchParams.get('state'))
+  const failed = state?.account ? '/admin/settings?error=auth_failed' : '/me/settings?google_error=bad_state'
 
   if (!code) {
-    return back('/me/settings?google_error=no_code')
+    return back(state?.account ? '/admin/settings?error=no_code' : '/me/settings?google_error=no_code')
   }
 
-  // Per-user flow: a valid JWT state identifies who is connecting.
-  let userId: string | null = null
-  try {
-    const decoded = jwt.verify(state, getJwtSecret()) as { userId?: string }
-    if (decoded?.userId) userId = decoded.userId
-  } catch {
-    // Not a per-user JWT — treat as an app-level account label below.
-  }
+  const viewer = await getCurrentUser(request)
+  if (!state || !viewer || viewer.userId !== state.userId) return back(failed)
 
-  if (userId) {
+  if (!state.account) {
+    const userId = state.userId
     try {
       const client = createUserOAuthClient()
       const { tokens } = await client.getToken(code)
@@ -66,8 +64,8 @@ export async function GET(request: NextRequest) {
       await prisma.user.update({
         where: { id: userId },
         data: {
-          googleAccessToken: tokens.access_token,
-          googleRefreshToken: tokens.refresh_token,
+          googleAccessToken: sealOptional(tokens.access_token),
+          googleRefreshToken: sealOptional(tokens.refresh_token),
           googleTokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
           googleEmail: profile.data.emailAddress || '',
           googleConnected: true,
@@ -81,20 +79,23 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // App-level flow.
+  // Shared-account flow. Role is read from the database by getCurrentUser, so an
+  // admin demoted since starting the flow is refused here.
+  if (viewer.role !== 'ADMIN') return back(failed)
+  const account = state.account
   try {
     const client = createOAuth2Client()
     const { tokens } = await client.getToken(code)
 
-    setToken('google_' + state, {
+    setToken('google_' + account, {
       ...tokens,
       expires_at: Date.now() + (tokens.expiry_date ? tokens.expiry_date - Date.now() : 3600000),
-      connected_email: state,
+      connected_email: account,
       connected_at: new Date().toISOString(),
     })
 
-    const response = back('/admin/settings?connected=' + encodeURIComponent(state))
-    response.cookies.set('google_' + state + '_token', 'connected', {
+    const response = back('/admin/settings?connected=' + encodeURIComponent(account))
+    response.cookies.set('google_' + account + '_token', 'connected', {
       httpOnly: false,
       maxAge: 60 * 60 * 24 * 365,
     })

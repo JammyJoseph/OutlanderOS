@@ -15,14 +15,25 @@ Status key: `[ ]` open · `[~]` partial · `[x]` done
 
 Verified against live prod on 2026-07-27.
 
-- [ ] 🔴 **PRODUCTION HAS NO TLS.** nginx listens on port 80 only; no 443 listener, no
-      certificate, `server_name` is the bare IP `204.168.245.185`. Every staff login sends
-      the password in cleartext, every request sends the 30-day session cookie in cleartext,
-      and password-reset links cross the wire in the clear. Anyone on the network path — café
-      wifi, ISP, any hop — can read credentials and steal sessions. **This outranks
-      everything else in this file.** Blocked on pointing a domain at the IP (Let's Encrypt
-      will not issue for a bare IP), then certbot + an nginx 443 server block + redirecting
-      80→443, then setting `NEXTAUTH_URL` to the `https://` origin.
+- [x] ~~Production has no TLS~~ — **done.** Verified 2026-10-20: the app serves on
+      `https://os.outlanderdirectory.com`, and plain http and the bare IP both 301 there.
+      The app now also sends HSTS (one year).
+- [x] ~~Sessions trusted the token alone~~ — **fixed 2026-10-20.** Proven on prod first: a
+      token for a user who doesn't exist, claiming ADMIN, got 200 from `/api/finance/position`
+      and `/api/admin/users`; deactivated staff kept 30 days' access; nothing could sign a
+      person out. Now `src/lib/session.ts` checks the `User` row on every request (active,
+      current `sessionVersion`, role from the DB) and `endAllSessions()` runs on every
+      password change, reset, admin password set, role change and deactivation. Same day:
+      account lockout (8 wrong → 15 min), the per-address login limit keyed on nginx's
+      `X-Real-IP` (a spoofed `X-Forwarded-For` walked past it — proven on prod), one 10+
+      character password rule everywhere, admin-set passwords always temporary, reset tokens
+      stored hashed, Google tokens on `User` sealed like Xero's, and the Google OAuth
+      callback refusing a state it didn't issue (it let anyone replace the shared Google
+      account). Rerun `bash scripts/auth-smoke.sh` against a local build after any auth change.
+- [ ] **Server hardening left over from the 2026-10-20 audit.** `next start` listens on
+      `*:3000` (ufw blocks it from outside, but bind it to `127.0.0.1` anyway); nginx
+      advertises its version (`server_tokens off`). Two accounts have never signed in —
+      Callum (ADMIN) and Shreeya — and are worth confirming or deactivating.
 - [x] ~~Rotate the two committed API keys~~ — **fallbacks removed from source** (2026-07-27).
       Both routes now read env-only and degrade cleanly when unset. ⚠️ **Still to do: rotate
       both at the provider** — they remain in git history. OpenWeather: regenerate at
@@ -51,8 +62,10 @@ Verified against live prod on 2026-07-27.
       disk in `process.cwd()`, read-modify-write with no locking, write failures swallowed
       silently. Xero rotates refresh tokens on every use, so one lost write **permanently**
       breaks the Xero connection. Move into the DB, encrypted, with atomic writes.
-- [ ] Stop logging the password-reset token in plaintext to pm2 logs
-      (`api/auth/forgot-password/route.ts:48`) once email delivery exists.
+- [x] ~~Stop logging the password-reset token~~ — reset emails send now and the route logs
+      only the address. Tokens are also stored hashed since 2026-10-20, so the database no
+      longer holds a usable one either. (One expired token from 3 Sep is still in old pm2
+      logs.)
 
 ## 1. Engineering safety net
 
@@ -63,9 +76,9 @@ The architecture is sounder than the tooling around it. This is the real gap.
       rebuilds the schema exactly on a scratch database (51 tables, 6 enums, 47 FKs) before
       marking it applied on prod and local. Use `prisma migrate dev` / `migrate deploy` now,
       not `db push`. Note: `migrate diff` silently emits nothing if `DATABASE_URL` is unset.
-- [ ] **Any test suite at all.** Zero tests, zero test runner. 139 API routes verified only
-      by manual clicking. Start with the money paths: auth, budget maths, call-sheet
-      publishing, Xero sync.
+- [~] **Any test suite at all.** Auth has one: `scripts/auth-smoke.sh` (44 end-to-end
+      checks against a local production build). Everything else is still verified by manual
+      clicking. Next: budget maths, call-sheet publishing, Xero sync.
 - [ ] **CI.** No `.github/`, no pre-commit hooks, no build gate. Deploy is `git pull` on the
       live box. At minimum: typecheck + lint + build on PR.
 - [~] **Error tracking and alerting.** Partly done 2026-07-27:
@@ -84,8 +97,8 @@ The architecture is sounder than the tooling around it. This is the real gap.
       type errors, several of them genuine Next 16 route-signature drift. Ratchet down.
 - [ ] **Adopt Zod for request validation.** Zod is already a dependency and used nowhere;
       most routes destructure `request.json()` straight into Prisma.
-- [ ] Add try/catch to the 34 routes without it (incl. `/api/auth/login` — a malformed JSON
-      body is an unhandled 500 today).
+- [ ] Add try/catch to the routes without it. (`/api/auth/login` is done — a malformed body
+      is now a plain sign-in failure, not a 500.)
 - [ ] Structured logging — `src/lib/logger.ts` exists but only 6 files use it, against 112
       raw `console.*` calls.
 - [ ] Bound the 86 unbounded `findMany` calls; `src/lib/pagination.ts` exists but is barely

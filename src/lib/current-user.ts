@@ -1,23 +1,11 @@
 import { NextRequest } from 'next/server'
-import jwt from 'jsonwebtoken'
-import { getJwtSecret } from "@/lib/jwt-secret"
+import { resolveSession, type SessionUser } from '@/lib/session'
 
+export type CurrentUser = SessionUser
 
-export type CurrentUser = {
-  userId: string
-  email: string
-  role: string
-  name: string
-}
-
-export function getCurrentUser(request: NextRequest): CurrentUser | null {
-  const token = request.cookies.get('auth_token')?.value
-  if (!token) return null
-  try {
-    const payload = jwt.verify(token, getJwtSecret()) as CurrentUser
-    if (!payload?.userId) return null
-    return payload
-  } catch {
-    return null
-  }
+// The signed-in person for this request, checked against the database.
+// Was synchronous and signature-only; see src/lib/session.ts for what that let
+// through. Callers now await it.
+export async function getCurrentUser(request: NextRequest): Promise<CurrentUser | null> {
+  return resolveSession(request.cookies.get('auth_token')?.value)
 }

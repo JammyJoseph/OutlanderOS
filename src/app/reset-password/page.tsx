@@ -1,135 +1,130 @@
 'use client'
+
+// Choosing a new password from an emailed link.
+//
+// The old version told anyone without a link to "ask an admin to generate one".
+// Self-service reset by email has worked since September, so the dead end now
+// points back at the form that sends the link.
+
 import { Suspense, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { AuthHeading, AuthShell } from '@/components/auth/AuthShell'
+import { AuthAlert, AuthButton, AuthField, PasswordRules } from '@/components/auth/AuthField'
+import { MIN_PASSWORD_LENGTH } from '@/lib/password-rules'
 
-const inputClass =
-  'w-full px-3 py-2.5 rounded-lg border border-[#2a2a2a] bg-[#161922] text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#9C7C2E] focus:border-transparent transition-all'
+const linkClass =
+  'text-sm font-semibold text-foreground underline underline-offset-4 hover:text-hero-ink ' +
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground'
 
-function ResetPasswordForm() {
-  const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+function ResetForm() {
+  const token = useSearchParams().get('token')
   const router = useRouter()
-
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [expired, setExpired] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  if (!token) {
+    return (
+      <>
+        <AuthHeading sub="This page needs the link from your reset email, and the one you opened is incomplete.">
+          That link doesn&rsquo;t work
+        </AuthHeading>
+        <Link href="/login" className={linkClass}>
+          Request a new link
+        </Link>
+      </>
+    )
+  }
+
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (busy) return
     setError('')
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`)
+      return
+    }
     if (password !== confirm) {
-      setError('Passwords do not match')
+      setError("The two passwords don't match.")
       return
     }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
-      return
-    }
-    setLoading(true)
+    setBusy(true)
     try {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword: password }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error || 'Could not reset password')
-        setLoading(false)
+        setExpired(/invalid or has expired/i.test(data.error ?? ''))
+        setError(data.error || 'Something went wrong. Try again.')
+        setBusy(false)
         return
       }
       router.push('/login?reset=1')
     } catch {
-      setError('Connection error')
-      setLoading(false)
+      setError("Can't reach Outlander OS. Check your connection and try again.")
+      setBusy(false)
     }
   }
 
-  if (!token) {
-    return (
-      <div className="rounded-2xl border border-[#2a2a2a] bg-[#0e1018]/80 p-6 shadow-2xl shadow-black/50 backdrop-blur-md">
-        <p className="text-sm text-gray-300">
-          This page needs a reset link. Ask an admin to generate one for you.
-        </p>
-        <a href="/login" className="mt-4 block text-sm text-[#C9A44A] hover:underline">
-          Back to sign in
-        </a>
-      </div>
-    )
-  }
-
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-2xl border border-[#2a2a2a] bg-[#0e1018]/80 p-6 shadow-2xl shadow-black/50 backdrop-blur-md space-y-4"
-    >
+    <>
+      <AuthHeading sub="This signs you out on every other device.">
+        Choose a new password
+      </AuthHeading>
       {error && (
-        <div className="text-sm text-[#ff6b6b] bg-[#ff6b6b]/10 border border-[#ff6b6b]/20 rounded-lg px-3 py-2">
+        <AuthAlert>
           {error}
-        </div>
+          {expired && (
+            <>
+              {' '}
+              <Link href="/login" className="underline underline-offset-4">
+                Request a new link
+              </Link>
+              .
+            </>
+          )}
+        </AuthAlert>
       )}
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">New password</label>
-        <input
+      <form onSubmit={submit} className="grid gap-5" noValidate>
+        <AuthField
+          id="new-password"
+          label="New password"
           type="password"
+          autoComplete="new-password"
+          required
           value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-          className={inputClass}
+          onChange={(e) => setPassword(e.target.value)}
         />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Confirm password</label>
-        <input
+        <AuthField
+          id="confirm-password"
+          label="Type it again"
           type="password"
-          value={confirm}
-          onChange={e => setConfirm(e.target.value)}
+          autoComplete="new-password"
           required
-          className={inputClass}
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
         />
-      </div>
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full py-2.5 rounded-lg bg-[#111111] text-white dark:bg-white dark:text-black font-semibold text-sm hover:brightness-110 disabled:opacity-50 transition-all duration-200"
-      >
-        {loading ? 'Saving...' : 'Set new password'}
-      </button>
-    </form>
+        <PasswordRules password={password} confirm={confirm} min={MIN_PASSWORD_LENGTH} />
+        <AuthButton busy={busy} busyLabel="Saving…">
+          Save password
+        </AuthButton>
+      </form>
+    </>
   )
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#05060a]">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_30%,#10131f_0%,#05060a_55%,#020308_100%)]"
-      />
-      <div className="relative w-full max-w-sm px-4">
-        <div className="text-center mb-8">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-400 mb-2">
-            Outlander Magazine
-          </p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/OutlanderOS_Logo_Dark.svg"
-            alt="OutlanderOS"
-            className="mx-auto h-8 w-auto"
-          />
-          <p className="text-sm text-gray-400 mt-2">Choose a new password</p>
-        </div>
-        <Suspense
-          fallback={
-            <div className="rounded-2xl border border-[#2a2a2a] bg-[#0e1018]/80 p-6 text-sm text-gray-400">
-              Loading...
-            </div>
-          }
-        >
-          <ResetPasswordForm />
-        </Suspense>
-      </div>
-    </div>
+    <AuthShell>
+      <Suspense fallback={null}>
+        <ResetForm />
+      </Suspense>
+    </AuthShell>
   )
 }

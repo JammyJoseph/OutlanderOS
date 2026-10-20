@@ -1,4 +1,5 @@
 import { google } from 'googleapis'
+import { openOptional, sealOptional } from '@/lib/secret-box'
 import prisma from '@/lib/prisma'
 
 // Per-user Google OAuth. Each team member connects their own Google account;
@@ -101,34 +102,31 @@ export async function getUserGoogleTokens(userId: string): Promise<UserGoogleTok
     },
   })
 
-  if (!user?.googleConnected || !user.googleRefreshToken) return null
+  // Stored encrypted (secret-box). Older rows may still be plaintext, which
+  // openOptional accepts; they are re-sealed below on the first refresh.
+  const refreshToken = openOptional(user?.googleRefreshToken)
+  const accessToken = openOptional(user?.googleAccessToken)
+  if (!user?.googleConnected || !refreshToken) return null
 
   const expiry = user.googleTokenExpiry
-  const stillValid =
-    !!user.googleAccessToken && !!expiry && expiry.getTime() - 60_000 > Date.now()
+  const stillValid = !!accessToken && !!expiry && expiry.getTime() - 60_000 > Date.now()
 
   if (stillValid) {
-    return {
-      accessToken: user.googleAccessToken as string,
-      refreshToken: user.googleRefreshToken,
-      expiry: expiry as Date,
-    }
+    return { accessToken: accessToken as string, refreshToken, expiry: expiry as Date }
   }
 
-  const refreshed = await refreshGoogleToken(user.googleRefreshToken)
+  const refreshed = await refreshGoogleToken(refreshToken)
   await prisma.user.update({
     where: { id: userId },
     data: {
-      googleAccessToken: refreshed.accessToken,
+      googleAccessToken: sealOptional(refreshed.accessToken),
+      // Re-sealed on every refresh, so a legacy plaintext row converts itself.
+      googleRefreshToken: sealOptional(refreshToken),
       googleTokenExpiry: refreshed.expiry,
     },
   })
 
-  return {
-    accessToken: refreshed.accessToken,
-    refreshToken: user.googleRefreshToken,
-    expiry: refreshed.expiry,
-  }
+  return { accessToken: refreshed.accessToken, refreshToken, expiry: refreshed.expiry }
 }
 
 // Fetches Gmail messages using the user's personal token. Returns the

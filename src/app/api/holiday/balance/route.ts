@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/current-user'
 import { businessDaysBetween } from '@/lib/holiday'
 
 export async function GET(request: NextRequest) {
-  const me = getCurrentUser(request)
+  const me = await getCurrentUser(request)
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const user = await prisma.user.findUnique({
